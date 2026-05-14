@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Profile, Artist, Album, Track, Release, TimelineEntry } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist } from '../types/music';
 
 interface MusicState {
   activeProfile: Profile;
@@ -8,6 +8,7 @@ interface MusicState {
   albums: Album[];
   tracks: Track[];
   releases: Release[];
+  playlists: Playlist[];
   timeline: TimelineEntry[];
   currentTrackId: string | null;
   isPlaying: boolean;
@@ -20,6 +21,8 @@ interface MusicState {
   addAlbum: (album: Album) => void;
   addRelease: (release: Release) => void;
   addTracks: (tracks: Track[]) => void;
+  addPlaylist: (playlist: Playlist) => void;
+  addTrackToPlaylist: (playlistId: string, trackId: string) => void;
   addTimelineEntry: (entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => void;
   resetDatabase: () => void;
 }
@@ -40,6 +43,7 @@ export const useMusicStore = create<MusicState>()(
       albums: [],
       tracks: [],
       releases: [],
+      playlists: [],
       timeline: [],
       currentTrackId: null,
       isPlaying: false,
@@ -89,6 +93,28 @@ export const useMusicStore = create<MusicState>()(
       addTracks: (newTracks) =>
         set((state) => ({ tracks: [...state.tracks, ...newTracks] })),
 
+      addPlaylist: (playlist) =>
+        set((state) => ({ 
+          playlists: [...state.playlists, playlist],
+          timeline: [
+            { 
+              id: Math.random().toString(36), 
+              type: 'entry', 
+              timestamp: new Date(), 
+              title: `Created Playlist: ${playlist.name}`, 
+              description: 'New collection initialized.' 
+            },
+            ...state.timeline
+          ]
+        })),
+
+      addTrackToPlaylist: (playlistId, trackId) =>
+        set((state) => ({
+          playlists: state.playlists.map(p => 
+            p.id === playlistId ? { ...p, trackIds: [...new Set([...p.trackIds, trackId])] } : p
+          )
+        })),
+
       addTimelineEntry: (entry) => set((state) => ({
         timeline: [
           { ...entry, id: Math.random().toString(36), timestamp: new Date() },
@@ -101,6 +127,7 @@ export const useMusicStore = create<MusicState>()(
         albums: [],
         tracks: [],
         releases: [],
+        playlists: [],
         timeline: [],
         currentTrackId: null,
         isPlaying: false

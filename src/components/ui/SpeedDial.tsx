@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Plus, Mic2, Disc, BookOpen, X } from 'lucide-react';
+import { Plus, Mic2, Disc, BookOpen, ListMusic, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CreateArtistModal } from '@/components/modals/CreateArtistModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryModal';
+import { CreatePlaylistModal } from '@/components/modals/CreatePlaylistModal';
 
 export const SpeedDial = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const actions = [
     { icon: Mic2, label: 'Artist', modal: CreateArtistModal, color: 'bg-blue-600' },
-    { icon: Disc, label: 'Album', modal: CreateAlbumModal, color: 'bg-emerald-600' },
+    { icon: Disc, label: 'Album', modal: CreateAlbumModal, color: 'bg-zinc-600' },
+    { icon: ListMusic, label: 'Playlist', modal: CreatePlaylistModal, color: 'bg-emerald-600' },
     { icon: BookOpen, label: 'Journal', modal: CreateJournalEntryModal, color: 'bg-purple-600' },
   ];
 

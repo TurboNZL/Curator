@@ -58,6 +58,15 @@ export interface Track {
   bitrate?: string;
 }
 
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string;
+  coverImage?: string;
+  trackIds: string[];
+  createdAt: Date;
+}
+
 export interface TimelineEntry {
   id: string;
   type: 'entry' | 'playback' | 'rating';
