@@ -6,19 +6,20 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 
 export const BottomPlayer = () => {
-  const { currentTrackId, tracks, albums, artists, isPlaying, togglePlay, logPlayback } = useMusicStore();
+  const { currentTrackId, tracks = [], albums = [], artists = [], isPlaying, togglePlay, logPlayback } = useMusicStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   
-  const currentTrack = tracks.find(t => t.id === currentTrackId);
-  const currentAlbum = albums.find(a => a.id === currentTrack?.albumIds[0]);
-  const currentArtist = artists.find(a => a.id === currentTrack?.artistId);
+  // Ensure tracks is an array before calling find
+  const currentTrack = Array.isArray(tracks) ? tracks.find(t => t.id === currentTrackId) : null;
+  const currentAlbum = Array.isArray(albums) ? albums.find(a => a.id === currentTrack?.albumIds[0]) : null;
+  const currentArtist = Array.isArray(artists) ? artists.find(a => a.id === currentTrack?.artistId) : null;
 
   useEffect(() => {
     if (audioRef.current) {
-      if (isPlaying) {
+      if (isPlaying && currentTrack?.localFilePath) {
         audioRef.current.play().catch(() => {
           useMusicStore.setState({ isPlaying: false });
         });
@@ -32,13 +33,15 @@ export const BottomPlayer = () => {
         }
       }
     }
-  }, [isPlaying, currentTrackId]);
+  }, [isPlaying, currentTrackId, currentTrack?.localFilePath]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       const current = audioRef.current.currentTime;
       const total = audioRef.current.duration;
-      setProgress((current / total) * 100);
+      if (total > 0) {
+        setProgress((current / total) * 100);
+      }
     }
   };
 
@@ -49,7 +52,7 @@ export const BottomPlayer = () => {
   };
 
   const handleSliderChange = (value: number[]) => {
-    if (audioRef.current) {
+    if (audioRef.current && audioRef.current.duration > 0) {
       const newTime = (value[0] / 100) * audioRef.current.duration;
       audioRef.current.currentTime = newTime;
       setProgress(value[0]);
@@ -57,7 +60,7 @@ export const BottomPlayer = () => {
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
+    if (isNaN(time) || !isFinite(time)) return "0:00";
     const mins = Math.floor(time / 60);
     const secs = Math.floor(time % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -78,7 +81,7 @@ export const BottomPlayer = () => {
 
       <div className="flex items-center gap-4 w-[30%]">
         <div className="w-12 h-12 bg-zinc-900 rounded border border-zinc-800 flex items-center justify-center overflow-hidden">
-          {currentAlbum?.covers[0] ? (
+          {currentAlbum?.covers?.[0] ? (
             <img src={currentAlbum.covers[0]} className="w-full h-full object-cover" alt="" />
           ) : (
             <Disc className="text-zinc-700" size={24} />
@@ -105,7 +108,8 @@ export const BottomPlayer = () => {
           <Button 
             size="icon" 
             onClick={togglePlay}
-            className="rounded-full w-10 h-10 bg-white text-black hover:scale-105 transition-transform"
+            disabled={!currentTrack}
+            className="rounded-full w-10 h-10 bg-white text-black hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
           >
             {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </Button>
@@ -125,6 +129,7 @@ export const BottomPlayer = () => {
             max={100} 
             step={0.1} 
             onValueChange={handleSliderChange}
+            disabled={!currentTrack}
             className="flex-1" 
           />
           <span className="text-[10px] text-zinc-500 w-10 font-mono">
