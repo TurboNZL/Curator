@@ -5,6 +5,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Artists from "./pages/Artists";
 import ArtistDetail from "./pages/ArtistDetail";
+import Albums from "./pages/Albums";
+import AlbumDetail from "./pages/AlbumDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,7 +20,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/artists" element={<Artists />} />
           <Route path="/artists/:id" element={<ArtistDetail />} />
-          <Route path="/albums" element={<Index />} /> {/* Placeholder */}
+          <Route path="/albums" element={<Albums />} />
+          <Route path="/albums/:id" element={<AlbumDetail />} />
           <Route path="/tracks" element={<Index />} /> {/* Placeholder */}
           <Route path="/playlists" element={<Index />} /> {/* Placeholder */}
           <Route path="*" element={<NotFound />} />

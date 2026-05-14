@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Profile, Artist, Album, Track, Release, TimelineEntry } from '../types/music';
-import { MOCK_ARTISTS, MOCK_ALBUMS, MOCK_TIMELINE } from './mockData';
 
 interface MusicState {
   activeProfile: Profile;
@@ -17,6 +16,9 @@ interface MusicState {
   setCurrentTrack: (trackId: string | null) => void;
   togglePlay: () => void;
   addArtist: (artist: Artist) => void;
+  addAlbum: (album: Album) => void;
+  addRelease: (release: Release) => void;
+  addTracks: (tracks: Track[]) => void;
   addTimelineEntry: (entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => void;
 }
 
@@ -30,11 +32,11 @@ const DEFAULT_PROFILE: Profile = {
 
 export const useMusicStore = create<MusicState>((set) => ({
   activeProfile: DEFAULT_PROFILE,
-  artists: MOCK_ARTISTS,
-  albums: MOCK_ALBUMS,
+  artists: [],
+  albums: [],
   tracks: [],
   releases: [],
-  timeline: MOCK_TIMELINE,
+  timeline: [],
   currentTrackId: null,
   isPlaying: false,
 
@@ -49,6 +51,15 @@ export const useMusicStore = create<MusicState>((set) => ({
 
   addArtist: (artist) => 
     set((state) => ({ artists: [...state.artists, artist] })),
+
+  addAlbum: (album) =>
+    set((state) => ({ albums: [...state.albums, album] })),
+
+  addRelease: (release) =>
+    set((state) => ({ releases: [...state.releases, release] })),
+
+  addTracks: (newTracks) =>
+    set((state) => ({ tracks: [...state.tracks, ...newTracks] })),
 
   addTimelineEntry: (entry) => set((state) => ({
     timeline: [
