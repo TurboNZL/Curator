@@ -7,19 +7,26 @@ import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryM
 import { cn } from '@/lib/utils';
 
 const Index = () => {
-  const { timeline, artists, albums, tracks, fetchData, isLoading } = useMusicStore();
+  const { timeline, artists, albums, tracks, releases, fetchData, isLoading } = useMusicStore();
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  if (isLoading && timeline.length === 0) {
+  if (isLoading && (!timeline || timeline.length === 0)) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
       </div>
     );
   }
+
+  // Safe length checks
+  const artistsCount = artists?.length || 0;
+  const albumsCount = albums?.length || 0;
+  const tracksCount = tracks?.length || 0;
+  const releasesCount = releases?.length || 0;
+  const timelineEntries = timeline || [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -40,7 +47,7 @@ const Index = () => {
         </div>
 
         <div className="space-y-4">
-          {timeline.length === 0 ? (
+          {timelineEntries.length === 0 ? (
             <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center mb-4 text-zinc-600">
                 <Plus size={24} />
@@ -51,7 +58,7 @@ const Index = () => {
               </p>
             </div>
           ) : (
-            timeline.map((entry) => (
+            timelineEntries.map((entry) => (
               <div key={entry.id} className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex gap-4 group hover:border-zinc-700 transition-colors">
                 <div className={cn(
                   "w-1 rounded-full",
@@ -60,7 +67,7 @@ const Index = () => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                      {format(new Date(entry.timestamp), 'HH:mm · MMM d, yyyy')}
+                      {entry.timestamp ? format(new Date(entry.timestamp), 'HH:mm · MMM d, yyyy') : 'Recent'}
                     </span>
                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">
                       {entry.type}
@@ -79,10 +86,10 @@ const Index = () => {
         <Card className="bg-zinc-900 border-zinc-800 p-6">
           <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4">Completion Status</h3>
           <div className="space-y-4">
-            <StatItem label="Albums Fully Completed" value={albums.length.toString()} icon={CheckCircle2} color="text-green-500" />
-            <StatItem label="Releases Indexed" value={useMusicStore.getState().releases.length.toString()} />
-            <StatItem label="Artists Entered" value={artists.length.toString()} />
-            <StatItem label="Total Tracks" value={tracks.length.toString()} />
+            <StatItem label="Albums Fully Completed" value={albumsCount.toString()} icon={CheckCircle2} color="text-green-500" />
+            <StatItem label="Releases Indexed" value={releasesCount.toString()} />
+            <StatItem label="Artists Entered" value={artistsCount.toString()} />
+            <StatItem label="Total Tracks" value={tracksCount.toString()} />
           </div>
         </Card>
 
