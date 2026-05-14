@@ -1,4 +1,3 @@
-import { defineEventHandler, readMultipartFormData, createError } from 'h3';
 import { join } from 'path';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { randomUUID } from 'crypto';

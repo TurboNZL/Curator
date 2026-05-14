@@ -1,4 +1,3 @@
-import { defineEventHandler, readBody } from 'h3';
 import { db } from '../../db';
 import { timeline } from '../../db/schema';
 import { desc } from 'drizzle-orm';

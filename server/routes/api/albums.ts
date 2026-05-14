@@ -1,4 +1,3 @@
-import { defineEventHandler, readBody } from 'h3';
 import { db } from '../../db';
 import { albums } from '../../db/schema';
 
