@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
@@ -52,22 +53,19 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Image</Label>
+            <ImageUpload 
+              value={formData.image} 
+              onChange={(val) => setFormData({...formData, image: val})} 
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Name</Label>
             <Input 
               id="name" 
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               placeholder="e.g. Kendrick Lamar" 
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="image" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Image URL</Label>
-            <Input 
-              id="image" 
-              value={formData.image}
-              onChange={(e) => setFormData({...formData, image: e.target.value})}
-              placeholder="https://..." 
               className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
             />
           </div>
