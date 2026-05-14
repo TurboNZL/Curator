@@ -1,3 +1,4 @@
+import { defineNitroPlugin } from 'nitro/runtime';
 import { initDb } from '../db';
 
 export default defineNitroPlugin(async (nitroApp) => {
