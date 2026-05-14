@@ -8,16 +8,17 @@ export default defineHandler(async (event) => {
   const id = event.context.params?.id;
   if (!id) return { error: 'Missing ID' };
 
-  const body = await readBody(event);
+  const body = await readBody(event) as any;
+  
+  const updateData: any = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.theme !== undefined) updateData.theme = body.theme;
+  if (body.accentColor !== undefined) updateData.accentColor = body.accentColor;
+  if (body.playbackMode !== undefined) updateData.playbackMode = body.playbackMode;
+  if (body.settings !== undefined) updateData.settings = body.settings;
   
   await db.update(profiles)
-    .set({
-      name: body.name,
-      theme: body.theme,
-      accentColor: body.accentColor,
-      playbackMode: body.playbackMode,
-      settings: body.settings,
-    })
+    .set(updateData)
     .where(eq(profiles.id, id));
 
   return { success: true };

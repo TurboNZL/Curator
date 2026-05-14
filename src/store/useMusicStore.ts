@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Note, Group } from '../types/music';
 
 interface MusicState {
   activeProfile: Profile;
@@ -8,6 +8,8 @@ interface MusicState {
   tracks: Track[];
   releases: Release[];
   playlists: Playlist[];
+  notes: Note[];
+  groups: Group[];
   timeline: TimelineEntry[];
   playbackLogs: any[];
   queue: string[];
@@ -18,7 +20,7 @@ interface MusicState {
   fetchData: () => Promise<void>;
   setCurrentTrack: (trackId: string | null) => void;
   togglePlay: () => void;
-  logPlayback: (trackId: string, duration: number) => Promise<void>;
+  logPlayback: (trackId: string, duration: number, source?: { type: string, id: string }, isSkip?: boolean) => Promise<void>;
   
   removeFromQueue: (trackId: string) => void;
   clearQueue: () => void;
@@ -35,11 +37,16 @@ interface MusicState {
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<void>;
   addRelease: (release: Omit<Release, 'id'>) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
+  
+  addNote: (note: Omit<Note, 'id' | 'createdAt'>) => Promise<void>;
+  updateNote: (id: string, data: Partial<Note>) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
+  
   vote: (data: { trackAId: string, trackBId: string, winnerId?: string, isEqual?: boolean }) => Promise<void>;
   updateSettings: (settings: Partial<Profile['settings']>) => Promise<void>;
+  updatePlaybackMode: (mode: Profile['playbackMode']) => Promise<void>;
   
   uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
-
   resetDatabase: () => Promise<void>;
 }
 
@@ -58,6 +65,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   tracks: [],
   releases: [],
   playlists: [],
+  notes: [],
+  groups: [],
   timeline: [],
   playbackLogs: [],
   queue: [],
@@ -68,7 +77,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   fetchData: async () => {
     set({ isLoading: true });
     try {
-      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles] = await Promise.all([
+      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, notes, groups] = await Promise.all([
         fetch('/api/artists').then(res => res.json()),
         fetch('/api/albums').then(res => res.json()),
         fetch('/api/tracks').then(res => res.json()),
@@ -77,6 +86,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         fetch('/api/playlists').then(res => res.json()).catch(() => []),
         fetch('/api/playback-stats').then(res => res.json()).catch(() => []),
         fetch('/api/profiles').then(res => res.json()).catch(() => []),
+        fetch('/api/notes').then(res => res.json()).catch(() => []),
+        fetch('/api/groups').then(res => res.json()).catch(() => []),
       ]);
       
       const activeProfile = profiles[0] ? {
@@ -88,15 +99,24 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         activeProfile,
         artists: artists.map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })),
         albums: albums.map((al: any) => ({ ...al, covers: JSON.parse(al.covers || '[]') })),
-        tracks,
+        tracks: tracks.map((t: any) => ({
+          ...t,
+          genres: typeof t.genres === 'string' ? JSON.parse(t.genres || '[]') : (t.genres || []),
+          producers: typeof t.producers === 'string' ? JSON.parse(t.producers || '[]') : (t.producers || []),
+          writers: typeof t.writers === 'string' ? JSON.parse(t.writers || '[]') : (t.writers || []),
+          credits: typeof t.credits === 'string' ? JSON.parse(t.credits || '[]') : (t.credits || []),
+          queueRules: typeof t.queueRules === 'string' ? JSON.parse(t.queueRules || '{}') : (t.queueRules || {}),
+          isFavorite: !!t.isFavorite
+        })),
         releases,
         playlists,
+        notes: notes.map((n: any) => ({ ...n, createdAt: new Date(n.createdAt) })),
+        groups,
         timeline: timeline.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
         playbackLogs: logs,
         isLoading: false
       });
     } catch (error) {
-
       console.error('Failed to fetch data:', error);
       set({ isLoading: false });
     }
@@ -108,11 +128,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   togglePlay: () => 
     set((state) => ({ isPlaying: !state.isPlaying })),
 
-  logPlayback: async (trackId, duration) => {
+  logPlayback: async (trackId, duration, source, isSkip) => {
     await fetch('/api/playback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trackId, duration })
+      body: JSON.stringify({ trackId, duration, sourceType: source?.type, sourceId: source?.id, isSkip })
     });
   },
 
@@ -222,6 +242,30 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }));
   },
 
+  addNote: async (noteData) => {
+    const res = await fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(noteData)
+    });
+    const newNote = await res.json();
+    set(state => ({ notes: [...state.notes, { ...newNote, createdAt: new Date(newNote.createdAt) }] }));
+  },
+
+  updateNote: async (id, data) => {
+    await fetch(`/api/notes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    await get().fetchData();
+  },
+
+  deleteNote: async (id) => {
+    await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+    set(state => ({ notes: state.notes.filter(n => n.id !== id) }));
+  },
+
   vote: async (voteData) => {
     await fetch('/api/votes', {
       method: 'POST',
@@ -249,9 +293,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }));
   },
 
-  resetDatabase: async () => {
+  updatePlaybackMode: async (mode) => {
+    const profile = get().activeProfile;
+    await fetch(`/api/profiles/${profile.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playbackMode: mode })
+    });
+    set(state => ({ activeProfile: { ...state.activeProfile, playbackMode: mode } }));
+  },
 
+  resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
-    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [] });
+    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], notes: [], groups: [] });
   }
 }));

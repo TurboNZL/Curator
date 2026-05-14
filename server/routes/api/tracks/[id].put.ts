@@ -21,11 +21,14 @@ export default defineHandler(async (event) => {
     bitrate: body.bitrate,
     bpm: body.bpm,
     key: body.key,
-    isFavorite: body.isFavorite,
+    isFavorite: body.isFavorite ? 1 : 0,
   };
 
   if (body.genres) updateData.genres = JSON.stringify(body.genres);
   if (body.producers) updateData.producers = JSON.stringify(body.producers);
+  if (body.writers) updateData.writers = JSON.stringify(body.writers);
+  if (body.credits) updateData.credits = JSON.stringify(body.credits);
+  if (body.queueRules) updateData.queueRules = JSON.stringify(body.queueRules);
 
   await db.update(tracks).set(updateData).where(eq(tracks.id, id));
 

@@ -65,13 +65,42 @@ export const tracks = sqliteTable('tracks', {
   youtubeMusicUrl: text('youtube_music_url'),
   genres: text('genres'), // JSON string array
   producers: text('producers'), // JSON string array
+  writers: text('writers'), // JSON string array
+  credits: text('credits'), // JSON string array
   bitrate: text('bitrate'),
   bpm: integer('bpm'),
   key: text('key'),
   isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+  queueRules: text('queue_rules'), // JSON: { nextTrackId?: string, forbiddenStandalone?: boolean }
 });
 
+export const notes = sqliteTable('notes', {
+  id: text('id').primaryKey(),
+  entityType: text('entity_type').notNull(), // 'artist', 'album', 'track'
+  entityId: text('entity_id').notNull(),
+  label: text('label'),
+  content: text('content').notNull(),
+  isLinked: integer('is_linked', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const groups = sqliteTable('groups', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  type: text('type').notNull().default('thematic'), // 'collective', 'thematic', 'relationship'
+});
+
+export const groupMembers = sqliteTable('group_members', {
+  groupId: text('group_id').notNull(),
+  entityType: text('entity_type').notNull(), // 'artist', 'album', 'track'
+  entityId: text('entity_id').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.groupId, table.entityType, table.entityId] }),
+}));
+
 export const albumTracks = sqliteTable('album_tracks', {
+
   albumId: text('album_id').notNull(),
   trackId: text('track_id').notNull(),
 }, (table) => ({
@@ -108,6 +137,9 @@ export const playbackLogs = sqliteTable('playback_logs', {
   trackId: text('track_id').notNull(),
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
   duration: integer('duration'), // seconds played
+  sourceType: text('source_type'), // 'album', 'playlist', 'shuffle', 'search'
+  sourceId: text('source_id'),
+  isSkip: integer('is_skip', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const votes = sqliteTable('votes', {

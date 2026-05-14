@@ -56,17 +56,22 @@ export interface Track {
   eloScore: number;
   comparisons: number;
   localFilePath?: string;
-
   spotifyUrl?: string;
   geniusUrl?: string;
   soundcloudUrl?: string;
   youtubeMusicUrl?: string;
   genres: string[];
   producers: string[];
+  writers: string[];
+  credits: string[];
   bitrate?: string;
   bpm?: number;
   key?: string;
   isFavorite: boolean;
+  queueRules?: {
+    nextTrackId?: string;
+    forbiddenStandalone?: boolean;
+  };
 }
 
 export interface Playlist {
@@ -85,4 +90,21 @@ export interface TimelineEntry {
   title: string;
   description: string;
   entityId?: string;
+}
+
+export interface Note {
+  id: string;
+  entityType: 'artist' | 'album' | 'track';
+  entityId: string;
+  label?: string;
+  content: string;
+  isLinked: boolean;
+  createdAt: Date;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'collective' | 'thematic' | 'relationship';
 }

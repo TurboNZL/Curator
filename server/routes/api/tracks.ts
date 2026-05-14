@@ -12,25 +12,21 @@ export default defineHandler(async (event) => {
       const relations = await db.select().from(albumTracks);
       
       return allTracks.map(track => {
-        let genres = [];
-        let producers = [];
-        
-        try {
-          genres = typeof track.genres === 'string' ? JSON.parse(track.genres || '[]') : (track.genres || []);
-        } catch (e) {
-          genres = [];
-        }
-
-        try {
-          producers = typeof track.producers === 'string' ? JSON.parse(track.producers || '[]') : (track.producers || []);
-        } catch (e) {
-          producers = [];
-        }
+        const parseJson = (val: any) => {
+          if (typeof val === 'string') {
+            try { return JSON.parse(val || '[]'); } catch (e) { return []; }
+          }
+          return val || [];
+        };
 
         return {
           ...track,
-          genres,
-          producers,
+          genres: parseJson(track.genres),
+          producers: parseJson(track.producers),
+          writers: parseJson(track.writers),
+          credits: parseJson(track.credits),
+          queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
+          isFavorite: !!track.isFavorite,
           albumIds: relations.filter(r => r.trackId === track.id).map(r => r.albumId)
         };
       });
@@ -50,6 +46,8 @@ export default defineHandler(async (event) => {
       artistId: body.artistId,
       rating: body.rating || 0,
       initialRating: body.initialRating || 0,
+      eloScore: body.eloScore || 1000,
+      comparisons: body.comparisons || 0,
       localFilePath: body.localFilePath,
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
@@ -57,10 +55,13 @@ export default defineHandler(async (event) => {
       youtubeMusicUrl: body.youtubeMusicUrl,
       genres: JSON.stringify(body.genres || []),
       producers: JSON.stringify(body.producers || []),
+      writers: JSON.stringify(body.writers || []),
+      credits: JSON.stringify(body.credits || []),
       bitrate: body.bitrate,
       bpm: body.bpm,
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
+      queueRules: JSON.stringify(body.queueRules || {}),
     };
 
     await db.insert(tracks).values(newTrack);
@@ -75,6 +76,10 @@ export default defineHandler(async (event) => {
       ...newTrack,
       genres: body.genres || [],
       producers: body.producers || [],
+      writers: body.writers || [],
+      credits: body.credits || [],
+      queueRules: body.queueRules || {},
+      isFavorite: !!body.isFavorite,
       albumIds: body.albumIds || []
     };
   }

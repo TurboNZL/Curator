@@ -58,7 +58,10 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       initialRating: parseFloat(formData.rating),
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
       producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
+      writers: [],
+      credits: [],
       bitrate: formData.bitrate,
+
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,

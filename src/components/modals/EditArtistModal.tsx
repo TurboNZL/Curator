@@ -5,14 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2 } from 'lucide-react';
+import { Edit2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Artist } from '@/types/music';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NotesSection } from '@/components/ui/NotesSection';
 
 export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const updateArtist = useMusicStore((state) => state.updateArtist);
+  const { updateArtist, notes } = useMusicStore();
+  const artistNotes = notes.filter(n => n.entityType === 'artist' && n.entityId === artist.id);
   
   const [formData, setFormData] = useState({
     name: artist.name,
@@ -43,42 +46,59 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-black uppercase tracking-tight">Edit Artist</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Image</Label>
-            <ImageUpload 
-              value={formData.image} 
-              onChange={(val) => setFormData({...formData, image: val})} 
-            />
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px] p-0 overflow-hidden">
+        <Tabs defaultValue="metadata" className="w-full">
+          <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4">
+            <div className="flex items-center gap-3">
+              <User size={20} className="text-blue-500" />
+              <h2 className="text-xl font-black uppercase tracking-tight">Edit Artist</h2>
+            </div>
+            <TabsList className="bg-zinc-900 border-zinc-800">
+              <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
+              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes ({artistNotes.length})</TabsTrigger>
+            </TabsList>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Name</Label>
-            <Input 
-              id="name" 
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bio" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Short Bio</Label>
-            <Textarea 
-              id="bio" 
-              value={formData.bio}
-              onChange={(e) => setFormData({...formData, bio: e.target.value})}
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </form>
+
+          <form onSubmit={handleSubmit}>
+            <TabsContent value="metadata" className="p-6 space-y-6 mt-0">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Image</Label>
+                <ImageUpload 
+                  value={formData.image} 
+                  onChange={(val) => setFormData({...formData, image: val})} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Name</Label>
+                <Input 
+                  id="name" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bio" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Short Bio</Label>
+                <Textarea 
+                  id="bio" 
+                  value={formData.bio}
+                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="notes" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <NotesSection entityType="artist" entityId={artist.id} />
+            </TabsContent>
+
+            <div className="p-6 border-t border-zinc-900">
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

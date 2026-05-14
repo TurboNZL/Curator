@@ -12,6 +12,9 @@ export default defineHandler(async (event) => {
     trackId: body.trackId,
     timestamp: new Date(),
     duration: body.duration || 0,
+    sourceType: body.sourceType,
+    sourceId: body.sourceId,
+    isSkip: body.isSkip ? 1 : 0,
   };
 
   await db.insert(playbackLogs).values(log);

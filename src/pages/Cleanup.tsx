@@ -1,21 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Rating } from '@/components/ui/Rating';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Cleanup = () => {
-  const { tracks, albums, resetDatabase, vote } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote } = useMusicStore();
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
+  // Task Generation Logic
+  const tasks = [
+    ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
+    ...albums.filter(al => !al.covers || al.covers.length === 0).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
+    ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Music, color: 'text-green-500' })),
+    ...tracks.filter(t => t.producers.length === 0).map(t => ({ type: 'producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' })),
+    ...releases.filter(r => !r.releaseDate).map(r => ({ type: 'release_date', entity: r, label: `Add date for ${r.title}`, icon: Calendar, color: 'text-orange-500' })),
+    ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
+  ];
+
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
-  const missingMetadata = tracks.filter(t => t.genres.length === 0 || t.producers.length === 0);
 
   const pickNewPair = () => {
     if (tracks.length < 2) return;
@@ -203,41 +213,68 @@ const Cleanup = () => {
         )}
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-zinc-900/50 border-zinc-800 p-6 space-y-4 group hover:border-yellow-500/30 transition-colors">
-          <div className="flex items-center gap-3 text-yellow-500">
-            <FileWarning size={20} />
-            <h3 className="text-xs font-black uppercase tracking-widest">Low Quality</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
+            <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-white">Task Queue</h2>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase">Missing or incomplete metadata</p>
+            </div>
           </div>
-          <p className="text-4xl font-black text-white">{lowQualityTracks.length}</p>
-          <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Tracks below 192kbps detected in library</p>
-          <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors">Review Files</Button>
-        </Card>
 
-        <Card className="bg-zinc-900/50 border-zinc-800 p-6 space-y-4 group hover:border-blue-500/30 transition-colors">
-          <div className="flex items-center gap-3 text-blue-500">
-            <AlertTriangle size={20} />
-            <h3 className="text-xs font-black uppercase tracking-widest">Missing Meta</h3>
-          </div>
-          <p className="text-4xl font-black text-white">{missingMetadata.length}</p>
-          <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Incomplete track data or missing tags</p>
-          <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-blue-500 group-hover:text-black transition-colors">Auto-Fill</Button>
-        </Card>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {tasks.length === 0 ? (
+                <div className="py-12 text-center border border-dashed border-zinc-900 rounded-2xl">
+                  <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3 opacity-20" />
+                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No tasks for now.</p>
+                </div>
+              ) : (
+                tasks.map((task, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-2 rounded-lg bg-zinc-950 border border-zinc-800", task.color)}>
+                        <task.icon size={16} />
+                      </div>
+                      <span className="text-xs font-bold text-zinc-300">{task.label}</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Resolve</Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
-        <Card className="bg-red-950/10 border-red-900/20 p-6 space-y-4 group hover:border-red-500/30 transition-colors">
-          <div className="flex items-center gap-3 text-red-500">
-            <Database size={20} />
-            <h3 className="text-xs font-black uppercase tracking-widest">Danger Zone</h3>
-          </div>
-          <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">Wipe all local indexing data and reset the curator environment. This action is irreversible.</p>
-          <Button 
-            onClick={handleReset}
-            variant="destructive" 
-            className="w-full text-[10px] font-black uppercase h-9 tracking-widest bg-red-600/80 hover:bg-red-600"
-          >
-            Reset Database
-          </Button>
-        </Card>
+        <div className="space-y-6">
+          <Card className="bg-zinc-900/50 border-zinc-800 p-6 space-y-4 group hover:border-yellow-500/30 transition-colors">
+            <div className="flex items-center gap-3 text-yellow-500">
+              <FileWarning size={20} />
+              <h3 className="text-xs font-black uppercase tracking-widest">Low Quality</h3>
+            </div>
+            <p className="text-4xl font-black text-white">{lowQualityTracks.length}</p>
+            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Tracks below 192kbps detected in library</p>
+            <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors">Review Files</Button>
+          </Card>
+
+          <Card className="bg-red-950/10 border-red-900/20 p-6 space-y-4 group hover:border-red-500/30 transition-colors">
+            <div className="flex items-center gap-3 text-red-500">
+              <Database size={20} />
+              <h3 className="text-xs font-black uppercase tracking-widest">Danger Zone</h3>
+            </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">Wipe all local indexing data and reset the curator environment. This action is irreversible.</p>
+            <Button 
+              onClick={handleReset}
+              variant="destructive" 
+              className="w-full text-[10px] font-black uppercase h-9 tracking-widest bg-red-600/80 hover:bg-red-600"
+            >
+              Reset Database
+            </Button>
+          </Card>
+        </div>
       </div>
 
       <Card className="bg-zinc-900/30 border-zinc-800 p-10 flex flex-col items-center justify-center text-center space-y-6 rounded-3xl">

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink } from 'lucide-react';
+import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords } from 'lucide-react';
 import { Track, Album, Artist } from '@/types/music';
+import { cn } from '@/lib/utils';
 
 interface StatsForNerdsModalProps {
   track?: Track;
@@ -26,7 +27,7 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
             <Info size={20} className="text-blue-500" />
@@ -34,12 +35,22 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-4">
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
             <StatRow icon={FileAudio} label="Bitrate" value={track.bitrate || 'Unknown'} />
+            <StatRow icon={Activity} label="BPM" value={track.bpm?.toString() || 'N/A'} />
+            <StatRow icon={Music} label="Key" value={track.key || 'N/A'} />
             <StatRow icon={Database} label="Track ID" value={track.id} />
             <StatRow icon={HardDrive} label="Local Path" value={track.localFilePath || 'N/A'} />
-            <StatRow icon={Calendar} label="Initial Rating" value={track.initialRating.toFixed(2)} />
-            <StatRow icon={Info} label="Balanced Rating" value={track.rating.toFixed(2)} />
+          </div>
+
+          <div className="pt-4 border-t border-zinc-900">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Rating Metrics</h4>
+            <div className="grid grid-cols-1 gap-3">
+              <StatRow icon={Star} label="Initial Rating" value={track.initialRating.toFixed(2)} />
+              <StatRow icon={Star} label="Balanced Rating" value={track.rating.toFixed(2)} className="text-blue-400" />
+              <StatRow icon={Swords} label="Comparisons" value={track.comparisons.toString()} />
+              <StatRow icon={Activity} label="Elo Score" value={track.eloScore.toFixed(0)} />
+            </div>
           </div>
           
           {links.length > 0 && (
@@ -73,6 +84,14 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
                 <span className="text-zinc-500">Album</span>
                 <span className="text-white font-bold">{album?.title || 'Single'}</span>
               </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Producers</span>
+                <span className="text-white font-bold truncate max-w-[250px]">{track.producers.join(', ') || 'None'}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Writers</span>
+                <span className="text-white font-bold truncate max-w-[250px]">{track.writers.join(', ') || 'None'}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -81,7 +100,7 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
   );
 };
 
-const StatRow = ({ icon: Icon, label, value }: { icon: any, label: string, value: string }) => (
+const StatRow = ({ icon: Icon, label, value, className }: { icon: any, label: string, value: string, className?: string }) => (
   <div className="flex items-center justify-between group">
     <div className="flex items-center gap-3">
       <div className="p-2 rounded bg-zinc-900 text-zinc-500 group-hover:text-blue-400 transition-colors">
@@ -89,10 +108,8 @@ const StatRow = ({ icon: Icon, label, value }: { icon: any, label: string, value
       </div>
       <span className="text-xs font-bold text-zinc-400 uppercase tracking-tight">{label}</span>
     </div>
-    <span className="text-xs font-mono text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded border border-zinc-800/50 truncate max-w-[200px]">
+    <span className={cn("text-xs font-mono text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded border border-zinc-800/50 truncate max-w-[200px]", className)}>
       {value}
     </span>
   </div>
 );
-
-import { cn } from '@/lib/utils';
