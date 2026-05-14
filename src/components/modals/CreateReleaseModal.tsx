@@ -23,29 +23,33 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
     releaseDate: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Release title is required");
 
-    addRelease({
-      albumId,
-      title: formData.title,
-      coverImage: formData.coverImage,
-      trackIds: [],
-      releaseDate: formData.releaseDate
-    });
+    try {
+      await addRelease({
+        albumId,
+        title: formData.title,
+        coverImage: formData.coverImage,
+        trackIds: [],
+        releaseDate: formData.releaseDate
+      });
 
-    toast.success(`Release "${formData.title}" indexed`);
-    setOpen(false);
-    setFormData({ title: '', coverImage: '', releaseDate: '' });
+      toast.success(`Release "${formData.title}" indexed`);
+      setOpen(false);
+      setFormData({ title: '', coverImage: '', releaseDate: '' });
+    } catch (error) {
+      toast.error("Failed to save release");
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-          <Button variant="outline" size="sm" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">
-            <Plus size={14} /> Add Release
+          <Button variant="link" className="text-xs text-blue-500 font-bold p-0 h-auto uppercase tracking-wider flex items-center gap-1">
+            <Plus size={12} /> Add Release
           </Button>
         )}
       </DialogTrigger>

@@ -1,0 +1,85 @@
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useMusicStore } from '@/store/useMusicStore';
+import { Edit2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { ImageUpload } from '@/components/ui/ImageUpload';
+import { Artist } from '@/types/music';
+
+export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactNode }) => {
+  const [open, setOpen] = useState(false);
+  const updateArtist = useMusicStore((state) => state.updateArtist);
+  
+  const [formData, setFormData] = useState({
+    name: artist.name,
+    image: artist.image || '',
+    bio: artist.bio || ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name) return toast.error("Artist name is required");
+
+    await updateArtist(artist.id, {
+      name: formData.name,
+      image: formData.image || undefined,
+      bio: formData.bio || undefined
+    });
+
+    toast.success(`Updated ${formData.name}`);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {children || (
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">
+            <Edit2 size={14}/>
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight">Edit Artist</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Image</Label>
+            <ImageUpload 
+              value={formData.image} 
+              onChange={(val) => setFormData({...formData, image: val})} 
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Name</Label>
+            <Input 
+              id="name" 
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="bio" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Short Bio</Label>
+            <Textarea 
+              id="bio" 
+              value={formData.bio}
+              onChange={(e) => setFormData({...formData, bio: e.target.value})}
+              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};

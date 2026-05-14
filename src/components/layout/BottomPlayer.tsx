@@ -6,10 +6,11 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 
 export const BottomPlayer = () => {
-  const { currentTrackId, tracks, albums, artists, isPlaying, togglePlay } = useMusicStore();
+  const { currentTrackId, tracks, albums, artists, isPlaying, togglePlay, logPlayback } = useMusicStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
   
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const currentAlbum = albums.find(a => a.id === currentTrack?.albumIds[0]);
@@ -21,8 +22,14 @@ export const BottomPlayer = () => {
         audioRef.current.play().catch(() => {
           useMusicStore.setState({ isPlaying: false });
         });
+        setStartTime(Date.now());
       } else {
         audioRef.current.pause();
+        if (startTime && currentTrackId) {
+          const playedDuration = Math.floor((Date.now() - startTime) / 1000);
+          if (playedDuration > 5) logPlayback(currentTrackId, playedDuration);
+          setStartTime(null);
+        }
       }
     }
   }, [isPlaying, currentTrackId]);
@@ -63,7 +70,10 @@ export const BottomPlayer = () => {
         src={currentTrack?.localFilePath} 
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => useMusicStore.setState({ isPlaying: false })}
+        onEnded={() => {
+          if (currentTrackId) logPlayback(currentTrackId, Math.floor(duration));
+          useMusicStore.setState({ isPlaying: false });
+        }}
       />
 
       <div className="flex items-center gap-4 w-[30%]">

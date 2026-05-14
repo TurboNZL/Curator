@@ -1,0 +1,38 @@
+import { defineHandler } from "nitro";
+import { readBody, createError } from "h3";
+import { db } from '../../../db';
+import { tracks, albumTracks } from '../../../db/schema';
+import { eq } from 'drizzle-orm';
+
+export default defineHandler(async (event) => {
+  const id = event.context.params?.id;
+  if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing ID' });
+
+  const body = await readBody(event) as any;
+  
+  const updateData: any = {
+    title: body.title,
+    rating: body.rating,
+    localFilePath: body.localFilePath,
+    spotifyUrl: body.spotifyUrl,
+    geniusUrl: body.geniusUrl,
+    soundcloudUrl: body.soundcloudUrl,
+    youtubeMusicUrl: body.youtubeMusicUrl,
+    bitrate: body.bitrate,
+  };
+
+  if (body.genres) updateData.genres = JSON.stringify(body.genres);
+  if (body.producers) updateData.producers = JSON.stringify(body.producers);
+
+  await db.update(tracks).set(updateData).where(eq(tracks.id, id));
+
+  // Update album relations if provided
+  if (body.albumIds && Array.isArray(body.albumIds)) {
+    await db.delete(albumTracks).where(eq(albumTracks.trackId, id));
+    for (const albumId of body.albumIds) {
+      await db.insert(albumTracks).values({ albumId, trackId: id });
+    }
+  }
+  
+  return { success: true };
+});

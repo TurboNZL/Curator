@@ -48,8 +48,10 @@ export const tracks = sqliteTable('tracks', {
   rating: real('rating').notNull().default(0),
   initialRating: real('initial_rating').notNull().default(0),
   localFilePath: text('local_file_path'),
-  spotifyUri: text('spotify_uri'),
-  youtubeUrl: text('youtube_url'),
+  spotifyUrl: text('spotify_url'),
+  geniusUrl: text('genius_url'),
+  soundcloudUrl: text('soundcloud_url'),
+  youtubeMusicUrl: text('youtube_music_url'),
   genres: text('genres'), // JSON string array
   producers: text('producers'), // JSON string array
   bitrate: text('bitrate'),
@@ -85,4 +87,11 @@ export const timeline = sqliteTable('timeline', {
   title: text('title').notNull(),
   description: text('description').notNull(),
   entityId: text('entity_id'),
+});
+
+export const playbackLogs = sqliteTable('playback_logs', {
+  id: text('id').primaryKey(),
+  trackId: text('track_id').notNull(),
+  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
+  duration: integer('duration'), // seconds played
 });

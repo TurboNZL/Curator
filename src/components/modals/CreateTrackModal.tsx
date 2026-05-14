@@ -3,51 +3,76 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Plus, Music, Info } from 'lucide-react';
+import { Plus, Music } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 
 interface CreateTrackModalProps {
-  albumId: string;
-  artistId: string;
+  albumId?: string;
+  artistId?: string;
   children?: React.ReactNode;
 }
 
-export const CreateTrackModal = ({ albumId, artistId, children }: CreateTrackModalProps) => {
+export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', children }: CreateTrackModalProps) => {
   const [open, setOpen] = useState(false);
-  const addTracks = useMusicStore((state) => state.addTracks);
+  const { artists, albums, addTracks } = useMusicStore();
   
   const [formData, setFormData] = useState({
     title: '',
+    artistId: initialArtistId,
+    albumId: initialAlbumId,
     rating: '5.0',
     genres: '',
     producers: '',
     bitrate: '320kbps',
-    audioUrl: ''
+    audioUrl: '',
+    spotifyUrl: '',
+    geniusUrl: '',
+    soundcloudUrl: '',
+    youtubeMusicUrl: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const cleanSpotifyUrl = (url: string) => {
+    if (!url) return '';
+    try {
+      const u = new URL(url);
+      u.search = '';
+      return u.toString();
+    } catch {
+      return url;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Track title is required");
+    if (!formData.artistId) return toast.error("Artist is required");
 
     const newTrack = {
-      id: Math.random().toString(36).substring(7),
       title: formData.title,
-      artistId,
-      albumIds: [albumId],
+      artistId: formData.artistId,
+      albumIds: formData.albumId ? [formData.albumId] : [],
       rating: parseFloat(formData.rating),
       initialRating: parseFloat(formData.rating),
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
       producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
       bitrate: formData.bitrate,
-      localFilePath: formData.audioUrl
+      localFilePath: formData.audioUrl,
+      spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
+      geniusUrl: formData.geniusUrl,
+      soundcloudUrl: formData.soundcloudUrl,
+      youtubeMusicUrl: formData.youtubeMusicUrl
     };
 
-    addTracks([newTrack]);
+    await addTracks([newTrack]);
     toast.success(`"${formData.title}" indexed successfully`);
     setOpen(false);
-    setFormData({ title: '', rating: '5.0', genres: '', producers: '', bitrate: '320kbps', audioUrl: '' });
+    setFormData({ 
+      title: '', artistId: initialArtistId, albumId: initialAlbumId, rating: '5.0', genres: '', producers: '', bitrate: '320kbps', 
+      audioUrl: '', spotifyUrl: '', geniusUrl: '', soundcloudUrl: '', youtubeMusicUrl: '' 
+    });
   };
 
   return (
@@ -59,7 +84,7 @@ export const CreateTrackModal = ({ albumId, artistId, children }: CreateTrackMod
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
             <Music size={20} className="text-blue-500" />
@@ -69,76 +94,72 @@ export const CreateTrackModal = ({ albumId, artistId, children }: CreateTrackMod
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Audio Source</Label>
-            <FileUpload 
-              value={formData.audioUrl} 
-              onChange={(url) => setFormData({...formData, audioUrl: url})} 
-            />
+            <FileUpload value={formData.audioUrl} onChange={(url) => setFormData({...formData, audioUrl: url})} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Track Title</Label>
-              <Input 
-                id="title" 
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                placeholder="e.g. Wesley's Theory" 
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-              />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
+              <Select value={formData.artistId} onValueChange={(val) => setFormData({...formData, artistId: val})}>
+                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                  <SelectValue placeholder="Select Artist" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                  {artists.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="rating" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rating (0-10)</Label>
-              <Input 
-                id="rating" 
-                type="number"
-                min="0"
-                max="10"
-                step="0.1"
-                value={formData.rating}
-                onChange={(e) => setFormData({...formData, rating: e.target.value})}
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-              />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album (Optional)</Label>
+              <Select value={formData.albumId} onValueChange={(val) => setFormData({...formData, albumId: val})}>
+                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                  <SelectValue placeholder="Select Album" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                  <SelectItem value="none">None (Single)</SelectItem>
+                  {albums.filter(al => al.artistId === formData.artistId).map(al => (
+                    <SelectItem key={al.id} value={al.id}>{al.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="producers" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Producers</Label>
-            <Input 
-              id="producers" 
-              value={formData.producers}
-              onChange={(e) => setFormData({...formData, producers: e.target.value})}
-              placeholder="Flying Lotus, Ronald Isley, Sounwave..." 
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="genres" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
-              <Input 
-                id="genres" 
-                value={formData.genres}
-                onChange={(e) => setFormData({...formData, genres: e.target.value})}
-                placeholder="Hip Hop, Jazz Fusion..." 
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-              />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Track Title</Label>
+              <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bitrate" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Quality / Bitrate</Label>
-              <Input 
-                id="bitrate" 
-                value={formData.bitrate}
-                onChange={(e) => setFormData({...formData, bitrate: e.target.value})}
-                placeholder="320kbps, FLAC..." 
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-              />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rating (0-10)</Label>
+              <Input type="number" step="0.1" value={formData.rating} onChange={(e) => setFormData({...formData, rating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Spotify Link</Label>
+              <Input value={formData.spotifyUrl} onChange={(e) => setFormData({...formData, spotifyUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genius Link</Label>
+              <Input value={formData.geniusUrl} onChange={(e) => setFormData({...formData, geniusUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">SoundCloud Link</Label>
+              <Input value={formData.soundcloudUrl} onChange={(e) => setFormData({...formData, soundcloudUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">YouTube Music Link</Label>
+              <Input value={formData.youtubeMusicUrl} onChange={(e) => setFormData({...formData, youtubeMusicUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
-              Commit to Database
-            </Button>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">Commit to Database</Button>
           </DialogFooter>
         </form>
       </DialogContent>

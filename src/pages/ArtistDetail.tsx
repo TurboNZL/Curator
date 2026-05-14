@@ -2,10 +2,11 @@ import { useParams } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Music2, Calendar, Share2, Edit2, Play, Star, TrendingUp } from 'lucide-react';
+import { Music2, Calendar, Share2, Play, Star, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
+import { EditArtistModal } from '@/components/modals/EditArtistModal';
 
 const ArtistDetail = () => {
   const { id } = useParams();
@@ -18,33 +19,22 @@ const ArtistDetail = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Hero Section */}
       <div className="relative h-80 -mt-8 -mx-8 overflow-hidden">
-        <img 
-          src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} 
-          className="w-full h-full object-cover blur-sm opacity-30 scale-110" 
-          alt="" 
-        />
+        <img src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} className="w-full h-full object-cover blur-sm opacity-30 scale-110" alt="" />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
         
         <div className="absolute bottom-0 left-0 p-12 flex items-end gap-8">
-          <img 
-            src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} 
-            className="w-48 h-48 object-cover rounded-2xl shadow-2xl border-4 border-zinc-900" 
-            alt={artist.name} 
-          />
+          <img src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} className="w-48 h-48 object-cover rounded-2xl shadow-2xl border-4 border-zinc-900" alt={artist.name} />
           <div className="flex-1 pb-4">
             <div className="flex items-center gap-3 mb-2">
-              <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30 font-black uppercase text-[10px]">
-                Verified Entity
-              </Badge>
+              <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30 font-black uppercase text-[10px]">Verified Entity</Badge>
             </div>
             <h1 className="text-6xl font-black tracking-tighter text-white uppercase">{artist.name}</h1>
             <div className="flex items-center gap-6 mt-4 text-zinc-400 text-sm font-medium">
               <span className="flex items-center gap-1.5"><Music2 size={16} className="text-zinc-600"/> {artistAlbums.length} Albums</span>
               <span className="flex items-center gap-1.5"><Calendar size={16} className="text-zinc-600"/> {artist.eras.length} Eras</span>
               <div className="flex gap-2 ml-4">
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50"><Edit2 size={14}/></Button>
+                <EditArtistModal artist={artist} />
                 <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50"><Share2 size={14}/></Button>
               </div>
             </div>
@@ -53,20 +43,17 @@ const ArtistDetail = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Main Content: Eras & Albums */}
         <div className="lg:col-span-2 space-y-12">
           <section>
             <div className="flex items-center justify-between mb-6 border-b border-zinc-900 pb-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
-                Era Timeline
-              </h2>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Era Timeline</h2>
               <CreateEraModal artistId={artist.id} />
             </div>
             <div className="space-y-4">
               {artist.eras.length === 0 ? (
                 <p className="text-xs text-zinc-600 italic">No eras defined for this artist.</p>
               ) : (
-                artist.eras.map((era, i) => (
+                artist.eras.map((era) => (
                   <div key={era.id} className="relative pl-8 group">
                     <div className="absolute left-[3px] top-0 bottom-0 w-[2px] bg-zinc-900 group-last:bottom-auto group-last:h-4" />
                     <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
@@ -83,9 +70,7 @@ const ArtistDetail = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
-              <CreateAlbumModal>
-                <Button variant="link" className="text-xs text-blue-500 font-bold p-0 h-auto uppercase tracking-wider">Add Album</Button>
-              </CreateAlbumModal>
+              <CreateAlbumModal />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
@@ -106,7 +91,6 @@ const ArtistDetail = () => {
           </section>
         </div>
 
-        {/* Sidebar Info */}
         <div className="space-y-8">
           <section>
             <div className="flex items-center gap-2 mb-4">
@@ -114,44 +98,24 @@ const ArtistDetail = () => {
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Top Rated Tracks</h2>
             </div>
             <div className="space-y-2">
-              {artistTracks.length === 0 ? (
-                <p className="text-xs text-zinc-600 italic">No tracks indexed yet.</p>
-              ) : (
-                artistTracks.slice(0, 5).map((track, i) => (
-                  <div 
-                    key={track.id} 
-                    className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group"
-                    onClick={() => setCurrentTrack(track.id)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
-                      <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
-                    </div>
-                    <div className="flex items-center gap-1 ml-2">
-                      <Star size={10} className="text-yellow-500 fill-yellow-500" />
-                      <span className="text-[10px] font-bold text-zinc-400">{track.rating.toFixed(1)}</span>
-                    </div>
+              {artistTracks.slice(0, 5).map((track, i) => (
+                <div key={track.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
+                    <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
                   </div>
-                ))
-              )}
+                  <div className="flex items-center gap-1 ml-2">
+                    <Star size={10} className="text-yellow-500 fill-yellow-500" />
+                    <span className="text-[10px] font-bold text-zinc-400">{track.rating.toFixed(1)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 
           <section>
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Biography</h2>
-            <p className="text-sm text-zinc-400 leading-relaxed italic">
-              {artist.bio ? `"${artist.bio}"` : "No biography provided."}
-            </p>
-          </section>
-          
-          <section>
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Collectives & Groups</h2>
-            <div className="space-y-2">
-              <p className="text-xs text-zinc-600 italic">No associated groups linked.</p>
-              <Button variant="outline" className="w-full justify-start text-[10px] font-bold uppercase tracking-wider border-dashed border-zinc-800 text-zinc-500 h-8">
-                Link Collective
-              </Button>
-            </div>
+            <p className="text-sm text-zinc-400 leading-relaxed italic">{artist.bio ? `"${artist.bio}"` : "No biography provided."}</p>
           </section>
         </div>
       </div>

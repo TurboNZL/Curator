@@ -51,8 +51,10 @@ export interface Track {
   rating: number; // Balanced rating
   initialRating: number;
   localFilePath?: string;
-  spotifyUri?: string;
-  youtubeUrl?: string;
+  spotifyUrl?: string;
+  geniusUrl?: string;
+  soundcloudUrl?: string;
+  youtubeMusicUrl?: string;
   genres: string[];
   producers: string[];
   bitrate?: string;

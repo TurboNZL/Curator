@@ -9,23 +9,29 @@ interface MusicState {
   releases: Release[];
   playlists: Playlist[];
   timeline: TimelineEntry[];
+  playbackLogs: any[];
   queue: string[];
   currentTrackId: string | null;
   isPlaying: boolean;
   isLoading: boolean;
   
-  // Actions
   fetchData: () => Promise<void>;
-  setPlaybackMode: (mode: Profile['playbackMode']) => void;
   setCurrentTrack: (trackId: string | null) => void;
   togglePlay: () => void;
-  addToQueue: (trackId: string) => void;
+  logPlayback: (trackId: string, duration: number) => Promise<void>;
+  
   removeFromQueue: (trackId: string) => void;
   clearQueue: () => void;
   
   addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<void>;
+  updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
+  
   addAlbum: (album: Omit<Album, 'id'>) => Promise<void>;
+  updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
+  
   addTracks: (tracks: Omit<Track, 'id'>[]) => Promise<void>;
+  updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
+  
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<void>;
   addRelease: (release: Omit<Release, 'id'>) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
@@ -50,6 +56,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   releases: [],
   playlists: [],
   timeline: [],
+  playbackLogs: [],
   queue: [],
   currentTrackId: null,
   isPlaying: false,
@@ -58,13 +65,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   fetchData: async () => {
     set({ isLoading: true });
     try {
-      const [artists, albums, tracks, timeline, releases, playlists] = await Promise.all([
+      const [artists, albums, tracks, timeline, releases, playlists, logs] = await Promise.all([
         fetch('/api/artists').then(res => res.json()),
         fetch('/api/albums').then(res => res.json()),
         fetch('/api/tracks').then(res => res.json()),
         fetch('/api/timeline').then(res => res.json()),
         fetch('/api/releases').then(res => res.json()).catch(() => []),
         fetch('/api/playlists').then(res => res.json()).catch(() => []),
+        fetch('/api/playback-stats').then(res => res.json()).catch(() => []),
       ]);
       
       set({ 
@@ -74,6 +82,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         releases,
         playlists,
         timeline: timeline.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
+        playbackLogs: logs,
         isLoading: false 
       });
     } catch (error) {
@@ -82,17 +91,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
-  setPlaybackMode: (mode) => 
-    set((state) => ({ activeProfile: { ...state.activeProfile, playbackMode: mode } })),
-    
   setCurrentTrack: (trackId) => 
     set({ currentTrackId: trackId, isPlaying: !!trackId }),
     
   togglePlay: () => 
     set((state) => ({ isPlaying: !state.isPlaying })),
 
-  addToQueue: (trackId) =>
-    set((state) => ({ queue: [...state.queue, trackId] })),
+  logPlayback: async (trackId, duration) => {
+    await fetch('/api/playback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackId, duration })
+    });
+  },
 
   removeFromQueue: (trackId) =>
     set((state) => ({ queue: state.queue.filter(id => id !== trackId) })),
@@ -103,12 +114,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
-    
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-    
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
     if (!res.ok) throw new Error('Upload failed');
     const data = await res.json();
     return data.url;
@@ -122,12 +128,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     });
     const newArtist = await res.json();
     set(state => ({ artists: [...state.artists, { ...newArtist, eras: [], groups: JSON.parse(newArtist.groups) }] }));
-    
-    await get().addTimelineEntry({
-      type: 'entry',
-      title: `Added Artist: ${newArtist.name}`,
-      description: 'New root entity created in catalog.'
+  },
+
+  updateArtist: async (id, data) => {
+    await fetch(`/api/artists/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
+    await get().fetchData();
   },
 
   addAlbum: async (albumData) => {
@@ -138,12 +147,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     });
     const newAlbum = await res.json();
     set(state => ({ albums: [...state.albums, { ...newAlbum, covers: JSON.parse(newAlbum.covers) }] }));
-    
-    await get().addTimelineEntry({
-      type: 'entry',
-      title: `Added Album: ${newAlbum.title}`,
-      description: 'New project indexed.'
+  },
+
+  updateAlbum: async (id, data) => {
+    await fetch(`/api/albums/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
+    await get().fetchData();
   },
 
   addTracks: async (tracksData) => {
@@ -156,6 +168,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       const newTrack = await res.json();
       set(state => ({ tracks: [...state.tracks, newTrack] }));
     }
+  },
+
+  updateTrack: async (id, data) => {
+    await fetch(`/api/tracks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    await get().fetchData();
   },
 
   addPlaylist: async (playlistData) => {

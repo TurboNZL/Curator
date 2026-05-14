@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, Search, ListMusic } from 'lucide-react';
+import { Star, Search, ListMusic, Edit2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
 
 const Tracks = () => {
   const { tracks, artists, albums, setCurrentTrack, fetchData } = useMusicStore();
@@ -52,7 +53,7 @@ const Tracks = () => {
               <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
               <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
               <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Genres</TableHead>
+              <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -62,10 +63,9 @@ const Tracks = () => {
               return (
                 <TableRow 
                   key={track.id} 
-                  className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors cursor-pointer group"
-                  onClick={() => setCurrentTrack(track.id)}
+                  className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                 >
-                  <TableCell>
+                  <TableCell onClick={() => setCurrentTrack(track.id)} className="cursor-pointer">
                     <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
                   </TableCell>
                   <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
@@ -76,8 +76,8 @@ const Tracks = () => {
                       <span className="text-xs font-bold text-zinc-300">{track.rating.toFixed(1)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-zinc-500 font-mono text-[10px] uppercase tracking-tighter">
-                    {track.genres.join(' / ')}
+                  <TableCell className="text-right">
+                    <EditTrackModal track={track} />
                   </TableCell>
                 </TableRow>
               );

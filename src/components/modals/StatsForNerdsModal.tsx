@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Info, FileAudio, Database, HardDrive, Calendar } from 'lucide-react';
+import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink } from 'lucide-react';
 import { Track, Album, Artist } from '@/types/music';
 
 interface StatsForNerdsModalProps {
@@ -13,6 +13,13 @@ interface StatsForNerdsModalProps {
 
 export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForNerdsModalProps) => {
   if (!track) return <>{children}</>;
+
+  const links = [
+    { label: 'Spotify', url: track.spotifyUrl, color: 'text-green-500' },
+    { label: 'Genius', url: track.geniusUrl, color: 'text-yellow-500' },
+    { label: 'SoundCloud', url: track.soundcloudUrl, color: 'text-orange-500' },
+    { label: 'YouTube Music', url: track.youtubeMusicUrl, color: 'text-red-500' },
+  ].filter(l => l.url);
 
   return (
     <Dialog>
@@ -34,6 +41,26 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
             <StatRow icon={Calendar} label="Initial Rating" value={track.initialRating.toFixed(2)} />
             <StatRow icon={Info} label="Balanced Rating" value={track.rating.toFixed(2)} />
           </div>
+          
+          {links.length > 0 && (
+            <div className="pt-4 border-t border-zinc-900">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Platform Links</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {links.map(link => (
+                  <a 
+                    key={link.label} 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2 rounded bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors group"
+                  >
+                    <span className={cn("text-[10px] font-bold uppercase", link.color)}>{link.label}</span>
+                    <ExternalLink size={10} className="text-zinc-600 group-hover:text-white" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           
           <div className="pt-4 border-t border-zinc-900">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Entity Relations</h4>
@@ -67,3 +94,5 @@ const StatRow = ({ icon: Icon, label, value }: { icon: any, label: string, value
     </span>
   </div>
 );
+
+import { cn } from '@/lib/utils';
