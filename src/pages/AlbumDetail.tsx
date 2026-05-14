@@ -9,8 +9,10 @@ import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Card } from '@/components/ui/card';
+import { Rating } from '@/components/ui/Rating';
 
 const AlbumDetail = () => {
+
   const { id } = useParams();
   const { albums, artists, releases, tracks, setCurrentTrack } = useMusicStore();
   const album = albums.find(a => a.id === id);
@@ -77,11 +79,13 @@ const AlbumDetail = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Star size={12} className="text-yellow-500 fill-yellow-500" />
-                        <span className="text-xs font-bold text-zinc-300">{track.rating.toFixed(1)}</span>
-                      </div>
+                      <Rating
+                        balanced={track.rating}
+                        unbalanced={track.initialRating}
+                        comparisons={track.comparisons}
+                      />
                     </TableCell>
+
                     <TableCell className="text-right">
                       <EditTrackModal track={track} />
                     </TableCell>

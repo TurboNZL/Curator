@@ -1,18 +1,27 @@
 import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
-import { releases } from '../../db/schema';
+import { releases, releaseTracks } from '../../db/schema';
 
 export default defineHandler(async (event) => {
   const method = event.method;
 
   if (method === 'GET') {
-    return await db.select().from(releases);
+    const allReleases = await db.select().from(releases);
+    const allReleaseTracks = await db.select().from(releaseTracks);
+    
+    return allReleases.map(r => ({
+      ...r,
+      trackIds: allReleaseTracks
+        .filter(rt => rt.releaseId === r.id)
+        .map(rt => rt.trackId)
+    }));
   }
 
   if (method === 'POST') {
     const body = await readBody(event) as any;
     const id = Math.random().toString(36).substring(7);
+    
     const newRelease = {
       id,
       albumId: body.albumId,
@@ -21,7 +30,21 @@ export default defineHandler(async (event) => {
       releaseDate: body.releaseDate,
       spotifyUri: body.spotifyUri,
     };
+
     await db.insert(releases).values(newRelease);
-    return newRelease;
+
+    if (body.trackIds && Array.isArray(body.trackIds)) {
+      for (const trackId of body.trackIds) {
+        await db.insert(releaseTracks).values({
+          releaseId: id,
+          trackId
+        });
+      }
+    }
+
+    return {
+      ...newRelease,
+      trackIds: body.trackIds || []
+    };
   }
 });

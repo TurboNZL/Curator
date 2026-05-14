@@ -6,6 +6,7 @@ export const profiles = sqliteTable('profiles', {
   theme: text('theme').notNull().default('dark'),
   accentColor: text('accent_color').notNull().default('#3b82f6'),
   playbackMode: text('playback_mode').notNull().default('local'),
+  settings: text('settings'), // JSON: { showUnbalancedFirst: boolean }
 });
 
 export const artists = sqliteTable('artists', {
@@ -41,12 +42,22 @@ export const releases = sqliteTable('releases', {
   spotifyUri: text('spotify_uri'),
 });
 
+export const releaseTracks = sqliteTable('release_tracks', {
+  releaseId: text('release_id').notNull(),
+  trackId: text('track_id').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.releaseId, table.trackId] }),
+}));
+
 export const tracks = sqliteTable('tracks', {
+
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(),
-  rating: real('rating').notNull().default(0),
-  initialRating: real('initial_rating').notNull().default(0),
+  rating: real('rating').notNull().default(0), // Balanced rating (0-10)
+  initialRating: real('initial_rating').notNull().default(0), // Unbalanced rating
+  eloScore: real('elo_score').notNull().default(1000), // Internal ELO for calculation
+  comparisons: integer('comparisons').notNull().default(0),
   localFilePath: text('local_file_path'),
   spotifyUrl: text('spotify_url'),
   geniusUrl: text('genius_url'),
@@ -55,6 +66,9 @@ export const tracks = sqliteTable('tracks', {
   genres: text('genres'), // JSON string array
   producers: text('producers'), // JSON string array
   bitrate: text('bitrate'),
+  bpm: integer('bpm'),
+  key: text('key'),
+  isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const albumTracks = sqliteTable('album_tracks', {
@@ -94,4 +108,14 @@ export const playbackLogs = sqliteTable('playback_logs', {
   trackId: text('track_id').notNull(),
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
   duration: integer('duration'), // seconds played
+});
+
+export const votes = sqliteTable('votes', {
+  id: text('id').primaryKey(),
+  winnerId: text('winner_id'), // null if equal
+  loserId: text('loser_id'),
+  trackAId: text('track_a_id').notNull(),
+  trackBId: text('track_b_id').notNull(),
+  isEqual: integer('is_equal', { mode: 'boolean' }).notNull().default(false),
+  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
 });

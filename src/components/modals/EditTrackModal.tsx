@@ -23,7 +23,10 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     spotifyUrl: track.spotifyUrl || '',
     geniusUrl: track.geniusUrl || '',
     soundcloudUrl: track.soundcloudUrl || '',
-    youtubeMusicUrl: track.youtubeMusicUrl || ''
+    youtubeMusicUrl: track.youtubeMusicUrl || '',
+    bpm: track.bpm?.toString() || '',
+    key: track.key || '',
+    isFavorite: track.isFavorite
   });
 
   const cleanSpotifyUrl = (url: string) => {
@@ -51,7 +54,10 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
       soundcloudUrl: formData.soundcloudUrl,
-      youtubeMusicUrl: formData.youtubeMusicUrl
+      youtubeMusicUrl: formData.youtubeMusicUrl,
+      bpm: formData.bpm ? parseInt(formData.bpm) : undefined,
+      key: formData.key,
+      isFavorite: formData.isFavorite
     });
 
     toast.success(`Updated ${formData.title}`);

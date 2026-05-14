@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
+import { Rating } from '@/components/ui/Rating';
 
 const ArtistDetail = () => {
+
   const { id } = useParams();
   const { artists, albums, tracks, setCurrentTrack } = useMusicStore();
   const artist = artists.find(a => a.id === id);
@@ -105,9 +107,13 @@ const ArtistDetail = () => {
                     <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
-                    <Star size={10} className="text-yellow-500 fill-yellow-500" />
-                    <span className="text-[10px] font-bold text-zinc-400">{track.rating.toFixed(1)}</span>
+                    <Rating
+                      balanced={track.rating}
+                      unbalanced={track.initialRating}
+                      comparisons={track.comparisons}
+                    />
                   </div>
+
                 </div>
               ))}
             </div>

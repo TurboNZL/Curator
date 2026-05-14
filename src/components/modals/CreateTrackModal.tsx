@@ -63,7 +63,10 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
       soundcloudUrl: formData.soundcloudUrl,
-      youtubeMusicUrl: formData.youtubeMusicUrl
+      youtubeMusicUrl: formData.youtubeMusicUrl,
+      eloScore: 1000,
+      comparisons: 0,
+      isFavorite: false
     };
 
     await addTracks([newTrack]);

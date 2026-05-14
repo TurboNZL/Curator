@@ -19,6 +19,9 @@ export default defineHandler(async (event) => {
     soundcloudUrl: body.soundcloudUrl,
     youtubeMusicUrl: body.youtubeMusicUrl,
     bitrate: body.bitrate,
+    bpm: body.bpm,
+    key: body.key,
+    isFavorite: body.isFavorite,
   };
 
   if (body.genres) updateData.genres = JSON.stringify(body.genres);

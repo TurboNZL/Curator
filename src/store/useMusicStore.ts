@@ -35,8 +35,11 @@ interface MusicState {
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<void>;
   addRelease: (release: Omit<Release, 'id'>) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
+  vote: (data: { trackAId: string, trackBId: string, winnerId?: string, isEqual?: boolean }) => Promise<void>;
+  updateSettings: (settings: Partial<Profile['settings']>) => Promise<void>;
   
   uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
+
   resetDatabase: () => Promise<void>;
 }
 
@@ -65,7 +68,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   fetchData: async () => {
     set({ isLoading: true });
     try {
-      const [artists, albums, tracks, timeline, releases, playlists, logs] = await Promise.all([
+      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles] = await Promise.all([
         fetch('/api/artists').then(res => res.json()),
         fetch('/api/albums').then(res => res.json()),
         fetch('/api/tracks').then(res => res.json()),
@@ -73,19 +76,27 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         fetch('/api/releases').then(res => res.json()).catch(() => []),
         fetch('/api/playlists').then(res => res.json()).catch(() => []),
         fetch('/api/playback-stats').then(res => res.json()).catch(() => []),
+        fetch('/api/profiles').then(res => res.json()).catch(() => []),
       ]);
       
-      set({ 
-        artists: artists.map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })), 
-        albums: albums.map((al: any) => ({ ...al, covers: JSON.parse(al.covers || '[]') })), 
-        tracks, 
+      const activeProfile = profiles[0] ? {
+        ...profiles[0],
+        settings: JSON.parse(profiles[0].settings || '{"showUnbalancedFirst": false}')
+      } : DEFAULT_PROFILE;
+
+      set({
+        activeProfile,
+        artists: artists.map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })),
+        albums: albums.map((al: any) => ({ ...al, covers: JSON.parse(al.covers || '[]') })),
+        tracks,
         releases,
         playlists,
         timeline: timeline.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
         playbackLogs: logs,
-        isLoading: false 
+        isLoading: false
       });
     } catch (error) {
+
       console.error('Failed to fetch data:', error);
       set({ isLoading: false });
     }
@@ -206,12 +217,40 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(entry)
     });
     const newEntry = await res.json();
-    set(state => ({ 
-      timeline: [{ ...newEntry, timestamp: new Date(newEntry.timestamp) }, ...state.timeline] 
+    set(state => ({
+      timeline: [{ ...newEntry, timestamp: new Date(newEntry.timestamp) }, ...state.timeline]
+    }));
+  },
+
+  vote: async (voteData) => {
+    await fetch('/api/votes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(voteData)
+    });
+    await get().fetchData();
+  },
+
+  updateSettings: async (newSettings) => {
+    const profile = get().activeProfile;
+    const updatedSettings = { ...profile.settings, ...newSettings };
+    
+    await fetch(`/api/profiles/${profile.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: JSON.stringify(updatedSettings) })
+    });
+    
+    set(state => ({
+      activeProfile: {
+        ...state.activeProfile,
+        settings: updatedSettings
+      }
     }));
   },
 
   resetDatabase: async () => {
+
     await fetch('/api/reset', { method: 'POST' });
     set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [] });
   }

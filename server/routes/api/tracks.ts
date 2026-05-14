@@ -58,6 +58,9 @@ export default defineHandler(async (event) => {
       genres: JSON.stringify(body.genres || []),
       producers: JSON.stringify(body.producers || []),
       bitrate: body.bitrate,
+      bpm: body.bpm,
+      key: body.key,
+      isFavorite: body.isFavorite ? 1 : 0,
     };
 
     await db.insert(tracks).values(newTrack);

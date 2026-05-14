@@ -6,6 +6,9 @@ export interface Profile {
   theme: 'dark' | 'light';
   accentColor: string;
   playbackMode: 'local' | 'spotify' | 'youtube' | 'soundcloud';
+  settings?: {
+    showUnbalancedFirst: boolean;
+  };
 }
 
 export interface Artist {
@@ -50,7 +53,10 @@ export interface Track {
   albumIds: string[];
   rating: number; // Balanced rating
   initialRating: number;
+  eloScore: number;
+  comparisons: number;
   localFilePath?: string;
+
   spotifyUrl?: string;
   geniusUrl?: string;
   soundcloudUrl?: string;
@@ -58,6 +64,9 @@ export interface Track {
   genres: string[];
   producers: string[];
   bitrate?: string;
+  bpm?: number;
+  key?: string;
+  isFavorite: boolean;
 }
 
 export interface Playlist {

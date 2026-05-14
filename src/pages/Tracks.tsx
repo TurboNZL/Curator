@@ -4,8 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Star, Search, ListMusic, Edit2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { Rating } from '@/components/ui/Rating';
 
 const Tracks = () => {
+
   const { tracks, artists, albums, setCurrentTrack, fetchData } = useMusicStore();
   const [search, setSearch] = useState('');
 
@@ -71,11 +73,13 @@ const Tracks = () => {
                   <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
                   <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Star size={12} className="text-yellow-500 fill-yellow-500" />
-                      <span className="text-xs font-bold text-zinc-300">{track.rating.toFixed(1)}</span>
-                    </div>
+                    <Rating
+                      balanced={track.rating}
+                      unbalanced={track.initialRating}
+                      comparisons={track.comparisons}
+                    />
                   </TableCell>
+
                   <TableCell className="text-right">
                     <EditTrackModal track={track} />
                   </TableCell>
