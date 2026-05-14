@@ -10,6 +10,7 @@ interface MusicState {
   releases: Release[];
   playlists: Playlist[];
   timeline: TimelineEntry[];
+  queue: string[];
   currentTrackId: string | null;
   isPlaying: boolean;
   
@@ -17,6 +18,9 @@ interface MusicState {
   setPlaybackMode: (mode: Profile['playbackMode']) => void;
   setCurrentTrack: (trackId: string | null) => void;
   togglePlay: () => void;
+  addToQueue: (trackId: string) => void;
+  removeFromQueue: (trackId: string) => void;
+  clearQueue: () => void;
   addArtist: (artist: Artist) => void;
   addAlbum: (album: Album) => void;
   addRelease: (release: Release) => void;
@@ -45,6 +49,7 @@ export const useMusicStore = create<MusicState>()(
       releases: [],
       playlists: [],
       timeline: [],
+      queue: [],
       currentTrackId: null,
       isPlaying: false,
 
@@ -56,6 +61,14 @@ export const useMusicStore = create<MusicState>()(
         
       togglePlay: () => 
         set((state) => ({ isPlaying: !state.isPlaying })),
+
+      addToQueue: (trackId) =>
+        set((state) => ({ queue: [...state.queue, trackId] })),
+
+      removeFromQueue: (trackId) =>
+        set((state) => ({ queue: state.queue.filter(id => id !== trackId) })),
+
+      clearQueue: () => set({ queue: [] }),
 
       addArtist: (artist) => 
         set((state) => ({ 
@@ -129,6 +142,7 @@ export const useMusicStore = create<MusicState>()(
         releases: [],
         playlists: [],
         timeline: [],
+        queue: [],
         currentTrackId: null,
         isPlaying: false
       })
