@@ -6,6 +6,8 @@ import { Play, ListMusic, Calendar, Layers, Star, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
+import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
+import { Card } from '@/components/ui/card';
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -116,16 +118,20 @@ const AlbumDetail = () => {
           <div className="space-y-6">
             <Card className="bg-zinc-900/50 border-zinc-800 p-6 space-y-6">
               <div>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-3 flex items-center gap-2">
-                  <Layers size={12} /> Releases
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
+                    <Layers size={12} /> Releases
+                  </h3>
+                  <CreateReleaseModal albumId={album.id} />
+                </div>
                 {albumReleases.length === 0 ? (
                   <p className="text-[10px] text-zinc-700 italic">No alternative releases indexed.</p>
                 ) : (
                   <div className="space-y-2">
                     {albumReleases.map(release => (
-                      <div key={release.id} className="text-xs font-bold text-zinc-400 border-l-2 border-zinc-800 pl-3 py-1">
-                        {release.title}
+                      <div key={release.id} className="text-xs font-bold text-zinc-400 border-l-2 border-zinc-800 pl-3 py-1 flex items-center justify-between group/rel">
+                        <span>{release.title}</span>
+                        {release.releaseDate && <span className="text-[9px] text-zinc-600">{new Date(release.releaseDate).getFullYear()}</span>}
                       </div>
                     ))}
                   </div>
@@ -154,7 +160,5 @@ const AlbumDetail = () => {
     </AppShell>
   );
 };
-
-import { Card } from '@/components/ui/card';
 
 export default AlbumDetail;
