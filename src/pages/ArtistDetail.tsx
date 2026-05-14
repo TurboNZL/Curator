@@ -3,16 +3,17 @@ import { AppShell } from '@/components/layout/AppShell';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Music2, Calendar, Share2, Edit2, Play } from 'lucide-react';
+import { Music2, Calendar, Share2, Edit2, Play, Star, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 
 const ArtistDetail = () => {
   const { id } = useParams();
-  const { artists, albums } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack } = useMusicStore();
   const artist = artists.find(a => a.id === id);
   const artistAlbums = albums.filter(al => al.artistId === id);
+  const artistTracks = tracks.filter(t => t.artistId === id).sort((a, b) => b.rating - a.rating);
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -109,6 +110,35 @@ const ArtistDetail = () => {
 
           {/* Sidebar Info */}
           <div className="space-y-8">
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Top Rated Tracks</h2>
+              </div>
+              <div className="space-y-2">
+                {artistTracks.length === 0 ? (
+                  <p className="text-xs text-zinc-600 italic">No tracks indexed yet.</p>
+                ) : (
+                  artistTracks.slice(0, 5).map((track, i) => (
+                    <div 
+                      key={track.id} 
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group"
+                      onClick={() => setCurrentTrack(track.id)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
+                        <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2">
+                        <Star size={10} className="text-yellow-500 fill-yellow-500" />
+                        <span className="text-[10px] font-bold text-zinc-400">{track.rating.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
             <section>
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Biography</h2>
               <p className="text-sm text-zinc-400 leading-relaxed italic">
