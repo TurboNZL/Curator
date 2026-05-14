@@ -38,4 +38,20 @@ export async function initDb() {
       console.error(`Error creating table: ${e}`);
     }
   }
+
+  // Migration: Ensure new columns exist in tracks table
+  const migrations = [
+    `ALTER TABLE tracks ADD COLUMN spotify_url TEXT`,
+    `ALTER TABLE tracks ADD COLUMN genius_url TEXT`,
+    `ALTER TABLE tracks ADD COLUMN soundcloud_url TEXT`,
+    `ALTER TABLE tracks ADD COLUMN youtube_music_url TEXT`,
+  ];
+
+  for (const migration of migrations) {
+    try {
+      await client.execute(migration);
+    } catch (e) {
+      // Ignore errors if columns already exist
+    }
+  }
 }
