@@ -1,3 +1,4 @@
+import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Info, Repeat, Shuffle, Disc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -5,13 +6,66 @@ import { useMusicStore } from '@/store/useMusicStore';
 
 export const BottomPlayer = () => {
   const { currentTrackId, tracks, albums, artists, isPlaying, togglePlay } = useMusicStore();
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
   
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const currentAlbum = albums.find(a => a.id === currentTrack?.albumIds[0]);
   const currentArtist = artists.find(a => a.id === currentTrack?.artistId);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {
+          // Handle autoplay restrictions or missing source
+          useMusicStore.setState({ isPlaying: false });
+        });
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, currentTrackId]);
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      const current = audioRef.current.currentTime;
+      const total = audioRef.current.duration;
+      setProgress((current / total) * 100);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSliderChange = (value: number[]) => {
+    if (audioRef.current) {
+      const newTime = (value[0] / 100) * audioRef.current.duration;
+      audioRef.current.currentTime = newTime;
+      setProgress(value[0]);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="h-20 bg-zinc-950 border-t border-zinc-800 px-6 flex items-center justify-between">
+      <audio 
+        ref={audioRef} 
+        src={currentTrack?.localFilePath} 
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => useMusicStore.setState({ isPlaying: false })}
+      />
+
       {/* Track Info */}
       <div className="flex items-center gap-4 w-[30%]">
         <div className="w-12 h-12 bg-zinc-900 rounded border border-zinc-800 flex items-center justify-center overflow-hidden">
@@ -55,9 +109,19 @@ export const BottomPlayer = () => {
           </Button>
         </div>
         <div className="w-full flex items-center gap-3">
-          <span className="text-[10px] text-zinc-500 w-10 text-right font-mono">0:00</span>
-          <Slider defaultValue={[0]} max={100} step={1} className="flex-1" />
-          <span className="text-[10px] text-zinc-500 w-10 font-mono">0:00</span>
+          <span className="text-[10px] text-zinc-500 w-10 text-right font-mono">
+            {formatTime(audioRef.current?.currentTime || 0)}
+          </span>
+          <Slider 
+            value={[progress]} 
+            max={100} 
+            step={0.1} 
+            onValueChange={handleSliderChange}
+            className="flex-1" 
+          />
+          <span className="text-[10px] text-zinc-500 w-10 font-mono">
+            {formatTime(duration)}
+          </span>
         </div>
       </div>
 
@@ -69,7 +133,14 @@ export const BottomPlayer = () => {
         </Button>
         <div className="flex items-center gap-2 w-32">
           <Volume2 size={18} className="text-zinc-500" />
-          <Slider defaultValue={[80]} max={100} step={1} />
+          <Slider 
+            defaultValue={[80]} 
+            max={100} 
+            step={1} 
+            onValueChange={(val) => {
+              if (audioRef.current) audioRef.current.volume = val[0] / 100;
+            }}
+          />
         </div>
       </div>
     </div>
