@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
@@ -7,7 +8,11 @@ import { Link } from 'react-router-dom';
 import { CreateArtistModal } from '@/components/modals/CreateArtistModal';
 
 const Artists = () => {
-  const { artists } = useMusicStore();
+  const { artists, fetchData } = useMusicStore();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <AppShell>

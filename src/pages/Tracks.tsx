@@ -1,13 +1,17 @@
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Star, Search, Filter, ListMusic } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useState } from 'react';
 
 const Tracks = () => {
-  const { tracks, artists, albums, setCurrentTrack } = useMusicStore();
+  const { tracks, artists, albums, setCurrentTrack, fetchData } = useMusicStore();
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filteredTracks = tracks.filter(t => 
     t.title.toLowerCase().includes(search.toLowerCase()) ||

@@ -1,12 +1,28 @@
+import { useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Plus, History, CheckCircle2, BarChart3 } from 'lucide-react';
 import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryModal';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
-  const { timeline, artists, albums, tracks } = useMusicStore();
+  const { timeline, artists, albums, tracks, fetchData, isLoading } = useMusicStore();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading && timeline.length === 0) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist } from '../types/music';
 
 interface MusicState {
@@ -13,22 +12,23 @@ interface MusicState {
   queue: string[];
   currentTrackId: string | null;
   isPlaying: boolean;
+  isLoading: boolean;
   
   // Actions
+  fetchData: () => Promise<void>;
   setPlaybackMode: (mode: Profile['playbackMode']) => void;
   setCurrentTrack: (trackId: string | null) => void;
   togglePlay: () => void;
   addToQueue: (trackId: string) => void;
   removeFromQueue: (trackId: string) => void;
   clearQueue: () => void;
-  addArtist: (artist: Artist) => void;
-  addAlbum: (album: Album) => void;
-  addRelease: (release: Release) => void;
-  addTracks: (tracks: Track[]) => void;
-  addPlaylist: (playlist: Playlist) => void;
-  addTrackToPlaylist: (playlistId: string, trackId: string) => void;
-  addTimelineEntry: (entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => void;
-  resetDatabase: () => void;
+  
+  addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<void>;
+  addAlbum: (album: Omit<Album, 'id'>) => Promise<void>;
+  addTracks: (tracks: Omit<Track, 'id'>[]) => Promise<void>;
+  addTimelineEntry: (entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
+  
+  uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
 }
 
 const DEFAULT_PROFILE: Profile = {
@@ -39,117 +39,132 @@ const DEFAULT_PROFILE: Profile = {
   playbackMode: 'local',
 };
 
-export const useMusicStore = create<MusicState>()(
-  persist(
-    (set) => ({
-      activeProfile: DEFAULT_PROFILE,
-      artists: [],
-      albums: [],
-      tracks: [],
-      releases: [],
-      playlists: [],
-      timeline: [],
-      queue: [],
-      currentTrackId: null,
-      isPlaying: false,
+export const useMusicStore = create<MusicState>((set, get) => ({
+  activeProfile: DEFAULT_PROFILE,
+  artists: [],
+  albums: [],
+  tracks: [],
+  releases: [],
+  playlists: [],
+  timeline: [],
+  queue: [],
+  currentTrackId: null,
+  isPlaying: false,
+  isLoading: false,
 
-      setPlaybackMode: (mode) => 
-        set((state) => ({ activeProfile: { ...state.activeProfile, playbackMode: mode } })),
-        
-      setCurrentTrack: (trackId) => 
-        set({ currentTrackId: trackId, isPlaying: !!trackId }),
-        
-      togglePlay: () => 
-        set((state) => ({ isPlaying: !state.isPlaying })),
-
-      addToQueue: (trackId) =>
-        set((state) => ({ queue: [...state.queue, trackId] })),
-
-      removeFromQueue: (trackId) =>
-        set((state) => ({ queue: state.queue.filter(id => id !== trackId) })),
-
-      clearQueue: () => set({ queue: [] }),
-
-      addArtist: (artist) => 
-        set((state) => ({ 
-          artists: [...state.artists, artist],
-          timeline: [
-            { 
-              id: Math.random().toString(36), 
-              type: 'entry', 
-              timestamp: new Date(), 
-              title: `Added Artist: ${artist.name}`, 
-              description: 'New root entity created in catalog.' 
-            },
-            ...state.timeline
-          ]
-        })),
-
-      addAlbum: (album) =>
-        set((state) => ({ 
-          albums: [...state.albums, album],
-          timeline: [
-            { 
-              id: Math.random().toString(36), 
-              type: 'entry', 
-              timestamp: new Date(), 
-              title: `Added Album: ${album.title}`, 
-              description: 'New project indexed.' 
-            },
-            ...state.timeline
-          ]
-        })),
-
-      addRelease: (release) =>
-        set((state) => ({ releases: [...state.releases, release] })),
-
-      addTracks: (newTracks) =>
-        set((state) => ({ tracks: [...state.tracks, ...newTracks] })),
-
-      addPlaylist: (playlist) =>
-        set((state) => ({ 
-          playlists: [...state.playlists, playlist],
-          timeline: [
-            { 
-              id: Math.random().toString(36), 
-              type: 'entry', 
-              timestamp: new Date(), 
-              title: `Created Playlist: ${playlist.name}`, 
-              description: 'New collection initialized.' 
-            },
-            ...state.timeline
-          ]
-        })),
-
-      addTrackToPlaylist: (playlistId, trackId) =>
-        set((state) => ({
-          playlists: state.playlists.map(p => 
-            p.id === playlistId ? { ...p, trackIds: [...new Set([...p.trackIds, trackId])] } : p
-          )
-        })),
-
-      addTimelineEntry: (entry) => set((state) => ({
-        timeline: [
-          { ...entry, id: Math.random().toString(36), timestamp: new Date() },
-          ...state.timeline
-        ]
-      })),
-
-      resetDatabase: () => set({
-        artists: [],
-        albums: [],
-        tracks: [],
-        releases: [],
-        playlists: [],
-        timeline: [],
-        queue: [],
-        currentTrackId: null,
-        isPlaying: false
-      })
-    }),
-    {
-      name: 'curator-local-db',
-      storage: createJSONStorage(() => localStorage),
+  fetchData: async () => {
+    set({ isLoading: true });
+    try {
+      const [artists, albums, tracks, timeline] = await Promise.all([
+        fetch('/api/artists').then(res => res.json()),
+        fetch('/api/albums').then(res => res.json()),
+        fetch('/api/tracks').then(res => res.json()),
+        fetch('/api/timeline').then(res => res.json()),
+      ]);
+      
+      set({ 
+        artists: artists.map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })), 
+        albums: albums.map((al: any) => ({ ...al, covers: JSON.parse(al.covers || '[]') })), 
+        tracks, 
+        timeline: timeline.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
+        isLoading: false 
+      });
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      set({ isLoading: false });
     }
-  )
-);
+  },
+
+  setPlaybackMode: (mode) => 
+    set((state) => ({ activeProfile: { ...state.activeProfile, playbackMode: mode } })),
+    
+  setCurrentTrack: (trackId) => 
+    set({ currentTrackId: trackId, isPlaying: !!trackId }),
+    
+  togglePlay: () => 
+    set((state) => ({ isPlaying: !state.isPlaying })),
+
+  addToQueue: (trackId) =>
+    set((state) => ({ queue: [...state.queue, trackId] })),
+
+  removeFromQueue: (trackId) =>
+    set((state) => ({ queue: state.queue.filter(id => id !== trackId) })),
+
+  clearQueue: () => set({ queue: [] }),
+
+  uploadFile: async (file: File, type: 'audio' | 'image') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', type);
+    
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!res.ok) throw new Error('Upload failed');
+    const data = await res.json();
+    return data.url;
+  },
+
+  addArtist: async (artistData) => {
+    const res = await fetch('/api/artists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(artistData)
+    });
+    const newArtist = await res.json();
+    set(state => ({ artists: [...state.artists, { ...newArtist, eras: [], groups: JSON.parse(newArtist.groups) }] }));
+    
+    await get().addTimelineEntry({
+      type: 'entry',
+      title: `Added Artist: ${newArtist.name}`,
+      description: 'New root entity created in catalog.'
+    });
+  },
+
+  addAlbum: async (albumData) => {
+    const res = await fetch('/api/albums', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(albumData)
+    });
+    const newAlbum = await res.json();
+    set(state => ({ albums: [...state.albums, { ...newAlbum, covers: JSON.parse(newAlbum.covers) }] }));
+    
+    await get().addTimelineEntry({
+      type: 'entry',
+      title: `Added Album: ${newAlbum.title}`,
+      description: 'New project indexed.'
+    });
+  },
+
+  addTracks: async (tracksData) => {
+    for (const trackData of tracksData) {
+      const res = await fetch('/api/tracks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(trackData)
+      });
+      const newTrack = await res.json();
+      set(state => ({ tracks: [...state.tracks, newTrack] }));
+    }
+  },
+
+  addTimelineEntry: async (entry) => {
+    const res = await fetch('/api/timeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+    const newEntry = await res.json();
+    set(state => ({ 
+      timeline: [{ ...newEntry, timestamp: new Date(newEntry.timestamp) }, ...state.timeline] 
+    }));
+  },
+
+  resetDatabase: () => {
+    // This would need a DELETE route on the backend
+    console.warn('Reset database not implemented on backend yet');
+  }
+}));
