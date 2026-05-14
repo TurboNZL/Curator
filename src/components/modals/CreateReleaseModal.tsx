@@ -28,7 +28,6 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
     if (!formData.title) return toast.error("Release title is required");
 
     addRelease({
-      id: Math.random().toString(36).substring(7),
       albumId,
       title: formData.title,
       coverImage: formData.coverImage,

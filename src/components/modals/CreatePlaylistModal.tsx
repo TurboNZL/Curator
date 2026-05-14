@@ -26,12 +26,10 @@ export const CreatePlaylistModal = ({ children }: { children?: React.ReactNode }
     if (!formData.name) return toast.error("Playlist name is required");
 
     addPlaylist({
-      id: Math.random().toString(36).substring(7),
       name: formData.name,
       description: formData.description,
       coverImage: formData.coverImage,
       trackIds: [],
-      createdAt: new Date()
     });
 
     toast.success(`Playlist "${formData.name}" created`);
