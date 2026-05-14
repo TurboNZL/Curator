@@ -1,19 +1,94 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
-import { MadeWithDyad } from "@/components/made-with-dyad";
+import { AppShell } from '@/components/layout/AppShell';
+import { useMusicStore } from '@/store/useMusicStore';
+import { Card } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { Plus, History, CheckCircle2 } from 'lucide-react';
 
 const Index = () => {
+  const { timeline, artists, albums, tracks } = useMusicStore();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">
-          Start building your amazing project here!
-        </p>
+    <AppShell>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left: Main Journal / Timeline */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <History size={24} className="text-blue-500" />
+              Journal
+            </h2>
+            <div className="flex gap-2">
+              <button className="px-3 py-1 text-xs font-bold bg-zinc-800 rounded-full hover:bg-zinc-700">Filter</button>
+              <button className="px-3 py-1 text-xs font-bold bg-blue-600 rounded-full hover:bg-blue-500">+ Entry</button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {timeline.length === 0 ? (
+              <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center mb-4 text-zinc-600">
+                  <Plus size={24} />
+                </div>
+                <h3 className="text-zinc-300 font-medium">No timeline events yet</h3>
+                <p className="text-sm text-zinc-500 max-w-xs mt-1">
+                  Start by adding an artist or uploading local tracks to populate your curation journal.
+                </p>
+              </div>
+            ) : (
+              timeline.map((entry) => (
+                <div key={entry.id} className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl flex gap-4">
+                  <div className="w-1 bg-blue-500 rounded-full" />
+                  <div>
+                    <span className="text-[10px] font-mono text-zinc-500 uppercase">
+                      {format(entry.timestamp, 'HH:mm · MMM d, yyyy')}
+                    </span>
+                    <h4 className="text-sm font-bold text-white mt-1">{entry.title}</h4>
+                    <p className="text-xs text-zinc-400 mt-1">{entry.description}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Right: Database Stats & Quick Stats */}
+        <div className="space-y-6">
+          <Card className="bg-zinc-900 border-zinc-800 p-6">
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4">Completion Status</h3>
+            <div className="space-y-4">
+              <StatItem label="Albums Fully Completed" value={albums.length.toString()} icon={CheckCircle2} color="text-green-500" />
+              <StatItem label="Releases Indexed" value="0" />
+              <StatItem label="Artists Entered" value={artists.length.toString()} />
+              <StatItem label="Total Tracks" value={tracks.length.toString()} />
+            </div>
+          </Card>
+
+          <Card className="bg-zinc-900 border-zinc-800 p-6 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <BarChart3 size={80} />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4">Listening Stats</h3>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold text-white">0.0h</div>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">Time spent curating this week</p>
+            </div>
+          </Card>
+        </div>
       </div>
-      <MadeWithDyad />
-    </div>
+    </AppShell>
   );
 };
+
+const StatItem = ({ label, value, icon: Icon, color }: any) => (
+  <div className="flex items-center justify-between group">
+    <div className="flex items-center gap-2">
+      {Icon && <Icon size={14} className={color} />}
+      <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors">{label}</span>
+    </div>
+    <span className="text-sm font-mono font-bold text-white">{value}</span>
+  </div>
+);
+
+import { BarChart3 } from 'lucide-react';
 
 export default Index;
