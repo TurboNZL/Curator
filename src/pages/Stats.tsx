@@ -1,7 +1,8 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { 
+import { cn } from '@/lib/utils';
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
@@ -119,7 +120,5 @@ const StatCard = ({ icon: Icon, label, value, color }: any) => (
     </div>
   </Card>
 );
-
-import { cn } from '@/lib/utils';
 
 export default Stats;

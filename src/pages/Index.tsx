@@ -118,6 +118,4 @@ const StatItem = ({ label, value, icon: Icon, color }: any) => (
   </div>
 );
 
-import { cn } from '@/lib/utils';
-
 export default Index;
