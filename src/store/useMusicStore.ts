@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Profile, Artist, Album, Track, Release, TimelineEntry } from '../types/music';
 
 interface MusicState {
@@ -20,6 +21,7 @@ interface MusicState {
   addRelease: (release: Release) => void;
   addTracks: (tracks: Track[]) => void;
   addTimelineEntry: (entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => void;
+  resetDatabase: () => void;
 }
 
 const DEFAULT_PROFILE: Profile = {
@@ -30,41 +32,83 @@ const DEFAULT_PROFILE: Profile = {
   playbackMode: 'local',
 };
 
-export const useMusicStore = create<MusicState>((set) => ({
-  activeProfile: DEFAULT_PROFILE,
-  artists: [],
-  albums: [],
-  tracks: [],
-  releases: [],
-  timeline: [],
-  currentTrackId: null,
-  isPlaying: false,
+export const useMusicStore = create<MusicState>()(
+  persist(
+    (set) => ({
+      activeProfile: DEFAULT_PROFILE,
+      artists: [],
+      albums: [],
+      tracks: [],
+      releases: [],
+      timeline: [],
+      currentTrackId: null,
+      isPlaying: false,
 
-  setPlaybackMode: (mode) => 
-    set((state) => ({ activeProfile: { ...state.activeProfile, playbackMode: mode } })),
-    
-  setCurrentTrack: (trackId) => 
-    set({ currentTrackId: trackId, isPlaying: !!trackId }),
-    
-  togglePlay: () => 
-    set((state) => ({ isPlaying: !state.isPlaying })),
+      setPlaybackMode: (mode) => 
+        set((state) => ({ activeProfile: { ...state.activeProfile, playbackMode: mode } })),
+        
+      setCurrentTrack: (trackId) => 
+        set({ currentTrackId: trackId, isPlaying: !!trackId }),
+        
+      togglePlay: () => 
+        set((state) => ({ isPlaying: !state.isPlaying })),
 
-  addArtist: (artist) => 
-    set((state) => ({ artists: [...state.artists, artist] })),
+      addArtist: (artist) => 
+        set((state) => ({ 
+          artists: [...state.artists, artist],
+          timeline: [
+            { 
+              id: Math.random().toString(36), 
+              type: 'entry', 
+              timestamp: new Date(), 
+              title: `Added Artist: ${artist.name}`, 
+              description: 'New root entity created in catalog.' 
+            },
+            ...state.timeline
+          ]
+        })),
 
-  addAlbum: (album) =>
-    set((state) => ({ albums: [...state.albums, album] })),
+      addAlbum: (album) =>
+        set((state) => ({ 
+          albums: [...state.albums, album],
+          timeline: [
+            { 
+              id: Math.random().toString(36), 
+              type: 'entry', 
+              timestamp: new Date(), 
+              title: `Added Album: ${album.title}`, 
+              description: 'New project indexed.' 
+            },
+            ...state.timeline
+          ]
+        })),
 
-  addRelease: (release) =>
-    set((state) => ({ releases: [...state.releases, release] })),
+      addRelease: (release) =>
+        set((state) => ({ releases: [...state.releases, release] })),
 
-  addTracks: (newTracks) =>
-    set((state) => ({ tracks: [...state.tracks, ...newTracks] })),
+      addTracks: (newTracks) =>
+        set((state) => ({ tracks: [...state.tracks, ...newTracks] })),
 
-  addTimelineEntry: (entry) => set((state) => ({
-    timeline: [
-      { ...entry, id: Math.random().toString(36), timestamp: new Date() },
-      ...state.timeline
-    ]
-  })),
-}));
+      addTimelineEntry: (entry) => set((state) => ({
+        timeline: [
+          { ...entry, id: Math.random().toString(36), timestamp: new Date() },
+          ...state.timeline
+        ]
+      })),
+
+      resetDatabase: () => set({
+        artists: [],
+        albums: [],
+        tracks: [],
+        releases: [],
+        timeline: [],
+        currentTrackId: null,
+        isPlaying: false
+      })
+    }),
+    {
+      name: 'curator-local-db',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);
