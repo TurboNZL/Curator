@@ -3,6 +3,7 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, Info, Repeat, Shuffle, Dis
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { useMusicStore } from '@/store/useMusicStore';
+import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 
 export const BottomPlayer = () => {
   const { currentTrackId, tracks, albums, artists, isPlaying, togglePlay } = useMusicStore();
@@ -18,7 +19,6 @@ export const BottomPlayer = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.play().catch(() => {
-          // Handle autoplay restrictions or missing source
           useMusicStore.setState({ isPlaying: false });
         });
       } else {
@@ -66,7 +66,6 @@ export const BottomPlayer = () => {
         onEnded={() => useMusicStore.setState({ isPlaying: false })}
       />
 
-      {/* Track Info */}
       <div className="flex items-center gap-4 w-[30%]">
         <div className="w-12 h-12 bg-zinc-900 rounded border border-zinc-800 flex items-center justify-center overflow-hidden">
           {currentAlbum?.covers[0] ? (
@@ -85,7 +84,6 @@ export const BottomPlayer = () => {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="flex flex-col items-center gap-2 max-w-xl w-full">
         <div className="flex items-center gap-6">
           <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white">
@@ -125,12 +123,13 @@ export const BottomPlayer = () => {
         </div>
       </div>
 
-      {/* Volume & Stats */}
       <div className="flex items-center gap-4 w-[30%] justify-end">
-        <Button variant="ghost" size="sm" className="text-zinc-500 gap-2 h-8 px-2 hover:text-blue-400">
-          <Info size={16} />
-          <span className="text-[10px] font-bold uppercase tracking-tighter">Stats for nerds</span>
-        </Button>
+        <StatsForNerdsModal track={currentTrack} album={currentAlbum} artist={currentArtist}>
+          <Button variant="ghost" size="sm" className="text-zinc-500 gap-2 h-8 px-2 hover:text-blue-400">
+            <Info size={16} />
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Stats for nerds</span>
+          </Button>
+        </StatsForNerdsModal>
         <div className="flex items-center gap-2 w-32">
           <Volume2 size={18} className="text-zinc-500" />
           <Slider 
