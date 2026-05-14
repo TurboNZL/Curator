@@ -1,24 +1,23 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
 import * as schema from './schema';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
 const dataDir = join(process.cwd(), 'data');
 if (!existsSync(dataDir)) {
-  mkdirSync(dataDir);
+  mkdirSync(dataDir, { recursive: true });
 }
 
-const sqlite = new Database(join(dataDir, 'curator.db'));
-export const db = drizzle(sqlite, { schema });
+const dbPath = join(dataDir, 'curator.db');
+const client = createClient({
+  url: `file:${dbPath}`,
+});
 
-// Simple migration/init
-import { sql } from 'drizzle-orm';
+export const db = drizzle(client, { schema });
 
-export function initDb() {
-  // In a real app we'd use drizzle-kit push or migrations
-  // For simplicity here, we'll just ensure tables exist if they don't
-  // This is a bit hacky but works for a local-first setup without complex migration runners
+export async function initDb() {
+  // Ensure tables exist
   const tables = [
     `CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, theme TEXT NOT NULL DEFAULT 'dark', accent_color TEXT NOT NULL DEFAULT '#3b82f6', playback_mode TEXT NOT NULL DEFAULT 'local')`,
     `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT, bio TEXT, groups TEXT)`,
@@ -33,6 +32,10 @@ export function initDb() {
   ];
 
   for (const table of tables) {
-    sqlite.prepare(table).run();
+    try {
+      await client.execute(table);
+    } catch (e) {
+      console.error(`Error creating table: ${e}`);
+    }
   }
 }
