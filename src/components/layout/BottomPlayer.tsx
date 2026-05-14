@@ -1,18 +1,33 @@
-import { Play, SkipBack, SkipForward, Volume2, Info, Repeat, Shuffle } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Info, Repeat, Shuffle, Disc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { useMusicStore } from '@/store/useMusicStore';
 
 export const BottomPlayer = () => {
+  const { currentTrackId, tracks, albums, artists, isPlaying, togglePlay } = useMusicStore();
+  
+  const currentTrack = tracks.find(t => t.id === currentTrackId);
+  const currentAlbum = albums.find(a => a.id === currentTrack?.albumIds[0]);
+  const currentArtist = artists.find(a => a.id === currentTrack?.artistId);
+
   return (
     <div className="h-20 bg-zinc-950 border-t border-zinc-800 px-6 flex items-center justify-between">
       {/* Track Info */}
       <div className="flex items-center gap-4 w-[30%]">
-        <div className="w-12 h-12 bg-zinc-900 rounded border border-zinc-800 flex items-center justify-center">
-          <disc className="text-zinc-700" size={24} />
+        <div className="w-12 h-12 bg-zinc-900 rounded border border-zinc-800 flex items-center justify-center overflow-hidden">
+          {currentAlbum?.covers[0] ? (
+            <img src={currentAlbum.covers[0]} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <Disc className="text-zinc-700" size={24} />
+          )}
         </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-white">No track playing</span>
-          <span className="text-xs text-zinc-500">Select a file to begin</span>
+        <div className="flex flex-col min-w-0">
+          <span className="text-sm font-medium text-white truncate">
+            {currentTrack?.title || "No track playing"}
+          </span>
+          <span className="text-xs text-zinc-500 truncate">
+            {currentArtist?.name || "Select a file to begin"}
+          </span>
         </div>
       </div>
 
@@ -25,8 +40,12 @@ export const BottomPlayer = () => {
           <Button variant="ghost" size="icon" className="text-zinc-300">
             <SkipBack size={20} />
           </Button>
-          <Button size="icon" className="rounded-full w-10 h-10 bg-white text-black hover:scale-105 transition-transform">
-            <Play size={20} fill="currentColor" />
+          <Button 
+            size="icon" 
+            onClick={togglePlay}
+            className="rounded-full w-10 h-10 bg-white text-black hover:scale-105 transition-transform"
+          >
+            {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </Button>
           <Button variant="ghost" size="icon" className="text-zinc-300">
             <SkipForward size={20} />
