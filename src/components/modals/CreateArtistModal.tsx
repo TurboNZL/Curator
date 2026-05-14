@@ -24,11 +24,9 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) 
     if (!formData.name) return toast.error("Artist name is required");
 
     addArtist({
-      id: Math.random().toString(36).substring(7),
       name: formData.name,
       image: formData.image || undefined,
       bio: formData.bio || undefined,
-      eras: [],
       groups: []
     });
 

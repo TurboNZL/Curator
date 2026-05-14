@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const profiles = sqliteTable('profiles', {
   id: text('id').primaryKey(),
@@ -59,7 +59,7 @@ export const albumTracks = sqliteTable('album_tracks', {
   albumId: text('album_id').notNull(),
   trackId: text('track_id').notNull(),
 }, (table) => ({
-  pk: [table.albumId, table.trackId],
+  pk: primaryKey({ columns: [table.albumId, table.trackId] }),
 }));
 
 export const playlists = sqliteTable('playlists', {
@@ -75,7 +75,7 @@ export const playlistTracks = sqliteTable('playlist_tracks', {
   trackId: text('track_id').notNull(),
   order: integer('order').notNull(),
 }, (table) => ({
-  pk: [table.playlistId, table.trackId],
+  pk: primaryKey({ columns: [table.playlistId, table.trackId] }),
 }));
 
 export const timeline = sqliteTable('timeline', {

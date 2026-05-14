@@ -1,8 +1,10 @@
+import { defineHandler } from "nitro";
+import { readMultipartFormData, createError } from "h3";
 import { join } from 'path';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { randomUUID } from 'crypto';
 
-export default defineEventHandler(async (event) => {
+export default defineHandler(async (event) => {
   const formData = await readMultipartFormData(event);
   if (!formData) {
     throw createError({ statusCode: 400, statusMessage: 'No form data provided' });

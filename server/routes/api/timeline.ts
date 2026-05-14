@@ -1,8 +1,10 @@
+import { defineHandler } from "nitro";
+import { readBody } from "h3";
 import { db } from '../../db';
 import { timeline } from '../../db/schema';
 import { desc } from 'drizzle-orm';
 
-export default defineEventHandler(async (event) => {
+export default defineHandler(async (event) => {
   const method = event.method;
 
   if (method === 'GET') {

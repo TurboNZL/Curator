@@ -26,7 +26,6 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
     if (!formData.artistId) return toast.error("Please select an artist");
 
     addAlbum({
-      id: Math.random().toString(36).substring(7),
       title: formData.title,
       artistId: formData.artistId,
       covers: formData.cover ? [formData.cover] : [],
