@@ -8,7 +8,8 @@ import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 
 const Albums = () => {
-  const { albums, artists, fetchData } = useMusicStore();
+  const { albums, artists, fetchData, activeProfile } = useMusicStore();
+  const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
 
   useEffect(() => {
     fetchData();
@@ -40,8 +41,8 @@ const Albums = () => {
                 <Link to={`/albums/${album.id}`}>
                   <Card className="bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden cursor-pointer">
                     <div className="aspect-square overflow-hidden relative">
-                      <img 
-                        src={album.covers[0] || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop'} 
+                      <img
+                        src={album.covers[0] || defaultImage}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         alt={album.title}
                       />

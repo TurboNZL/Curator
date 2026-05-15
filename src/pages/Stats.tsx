@@ -15,7 +15,7 @@ const Stats = () => {
     const trackStats = tracks.map(track => {
       const logs = playbackLogs.filter(l => l.trackId === track.id);
       const fullPlays = logs.filter(l => !l.isSkip && l.duration > 30).length;
-      const partialPlays = logs.filter(l => l.isSkip || l.duration <= 30).length;
+      const partialPlays = logs.filter(l => l.isSkip || (l.duration !== null && l.duration <= 30)).length;
       return {
         name: track.title,
         fullPlays,

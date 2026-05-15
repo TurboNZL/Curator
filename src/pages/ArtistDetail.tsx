@@ -1,8 +1,8 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Music2, Calendar, Share2, Play, Star, TrendingUp } from 'lucide-react';
+import { Music2, Calendar, Share2, Play, Star, TrendingUp, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
@@ -12,21 +12,28 @@ import { Rating } from '@/components/ui/Rating';
 const ArtistDetail = () => {
 
   const { id } = useParams();
-  const { artists, albums, tracks, setCurrentTrack } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile } = useMusicStore();
   const artist = artists.find(a => a.id === id);
+  const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
   const artistAlbums = albums.filter(al => al.artistId === id);
-  const artistTracks = tracks.filter(t => t.artistId === id).sort((a, b) => b.rating - a.rating);
+  const artistTracks = tracks.filter(t => t.artistId === id).sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+  const artistGroups = groups.filter(g =>
+    (g.isArtistOnly && g.members?.some(m => m.entityId === id && m.entityType === 'artist')) ||
+    (!g.isArtistOnly && g.members?.some(m => m.entityId === id && m.entityType === 'artist'))
+  );
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
   return (
     <div className="space-y-8 pb-12">
       <div className="relative h-80 -mt-8 -mx-8 overflow-hidden">
-        <img src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} className="w-full h-full object-cover blur-sm opacity-30 scale-110" alt="" />
+        <img src={artist.image || defaultImage} className="w-full h-full object-cover blur-sm opacity-30 scale-110" alt="" />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
         
         <div className="absolute bottom-0 left-0 p-12 flex items-end gap-8">
-          <img src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} className="w-48 h-48 object-cover rounded-2xl shadow-2xl border-4 border-zinc-900" alt={artist.name} />
+          <img src={artist.image || defaultImage} className="w-48 h-48 object-cover rounded-2xl shadow-2xl border-4 border-zinc-900" alt={artist.name} />
           <div className="flex-1 pb-4">
             <div className="flex items-center gap-3 mb-2">
               <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30 font-black uppercase text-[10px]">Verified Entity</Badge>
@@ -46,6 +53,39 @@ const ArtistDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
+          {artistGroups.length > 0 && (
+            <section className="space-y-6">
+              <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
+                <LinkIcon size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {artistGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                        {group.label || group.name}
+                      </h3>
+                      {group.isArtistOnly && <Badge variant="outline" className="text-[8px] border-zinc-800 text-zinc-500">Artist Only</Badge>}
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                        <Link
+                          key={i}
+                          to={`/${member.entityType}s/${member.entityId}`}
+                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
+                        >
+                          {member.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section>
             <div className="flex items-center justify-between mb-6 border-b border-zinc-900 pb-2">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Era Timeline</h2>
@@ -76,9 +116,9 @@ const ArtistDetail = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
-                <Card key={album.id} className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all cursor-pointer group">
+                <Card key={album.id} className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all cursor-pointer group" onClick={() => window.location.href = `/albums/${album.id}`}>
                   <div className="aspect-square rounded-lg overflow-hidden mb-3 relative">
-                    <img src={album.covers[0] || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop'} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={album.title} />
+                    <img src={album.covers[0] || defaultAlbumImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={album.title} />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button size="icon" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white w-10 h-10">
                         <Play fill="currentColor" size={18}/>
@@ -107,6 +147,7 @@ const ArtistDetail = () => {
                   </div>
                   <div className="flex items-center gap-1 ml-2">
                     <Rating
+                      trackId={track.id}
                       balanced={track.rating}
                       unbalanced={track.initialRating}
                       comparisons={track.comparisons}

@@ -10,12 +10,12 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 
 export const BottomPlayer = () => {
-  const { 
-    currentTrackId, tracks, artists, albums, isPlaying, togglePlay, 
+  const {
+    currentTrackId, tracks, artists, albums, isPlaying, togglePlay,
     volume, setVolume, nextTrack, previousTrack, logPlayback,
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
-    isShuffled, toggleShuffle
+    isShuffled, toggleShuffle, activeProfile
   } = useMusicStore();
 
   const [progress, setProgress] = useState(0);
@@ -26,6 +26,7 @@ export const BottomPlayer = () => {
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
   const album = albums.find(al => currentTrack?.albumIds.includes(al.id));
+  const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -89,7 +90,7 @@ export const BottomPlayer = () => {
       {/* Track Info */}
       <div className="flex items-center gap-4 w-1/3">
         <div className="w-14 h-14 rounded-lg overflow-hidden border border-zinc-800 shadow-lg">
-          <img src={album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+          <img src={album?.covers[0] || defaultImage} className="w-full h-full object-cover" alt="" />
         </div>
         <div className="min-w-0">
           <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{currentTrack?.title}</h4>

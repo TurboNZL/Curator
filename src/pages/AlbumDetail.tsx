@@ -7,9 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Link } from 'react-router-dom';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
-
 import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
@@ -22,11 +20,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 
 const AlbumDetail = () => {
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
+  const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
   
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
@@ -77,7 +76,7 @@ const AlbumDetail = () => {
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
-  const displayCover = currentRelease?.coverImage || album.covers[0] || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
+  const displayCover = currentRelease?.coverImage || album.covers[0] || defaultImage;
 
   return (
     <div className="space-y-8 pb-12">

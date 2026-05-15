@@ -42,6 +42,7 @@ interface MusicState {
   mergeActiveToUserQueue: () => void;
   clearActiveQueue: () => void;
   shuffleActiveQueue: () => void;
+  shuffleUserQueue: () => void;
   
   addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<void>;
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
@@ -180,8 +181,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }
     }
 
-    set({ 
-      currentTrackId: trackId, 
+    // Back-to-back rules
+    if (trackId) {
+      const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
+      if (rule) {
+        // Add followup to user queue if not already there
+        if (!state.userQueue.includes(rule.trackBId)) {
+          set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
+        }
+      }
+    }
+
+    set({
+      currentTrackId: trackId,
       isPlaying: !!trackId,
       activeQueue: newActiveQueue
     });
@@ -251,8 +263,51 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   })),
   clearActiveQueue: () => set({ activeQueue: [] }),
   shuffleActiveQueue: () => {
-    const shuffled = [...get().activeQueue].sort(() => Math.random() - 0.5);
+    const state = get();
+    const shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
+    
+    // Apply shuffle rules
+    const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
+    for (const rule of rules) {
+      const indexB = shuffled.indexOf(rule.trackBId);
+      if (indexB !== -1) {
+        // Remove B
+        shuffled.splice(indexB, 1);
+        // Find A or insert A at indexB
+        const indexA = shuffled.indexOf(rule.trackAId);
+        if (indexA !== -1) {
+          // Move B after A
+          shuffled.splice(indexA + 1, 0, rule.trackBId);
+        } else {
+          // Replace B with A and add B after
+          shuffled.splice(indexB, 0, rule.trackAId, rule.trackBId);
+        }
+      }
+    }
+
     set({ activeQueue: shuffled });
+  },
+
+  shuffleUserQueue: () => {
+    const state = get();
+    const shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
+    
+    // Apply shuffle rules
+    const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
+    for (const rule of rules) {
+      const indexB = shuffled.indexOf(rule.trackBId);
+      if (indexB !== -1) {
+        shuffled.splice(indexB, 1);
+        const indexA = shuffled.indexOf(rule.trackAId);
+        if (indexA !== -1) {
+          shuffled.splice(indexA + 1, 0, rule.trackBId);
+        } else {
+          shuffled.splice(indexB, 0, rule.trackAId, rule.trackBId);
+        }
+      }
+    }
+
+    set({ userQueue: shuffled });
   },
 
   uploadFile: async (file: File, type: 'audio' | 'image') => {

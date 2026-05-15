@@ -8,7 +8,8 @@ import { CreateArtistModal } from '@/components/modals/CreateArtistModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
 
 const Artists = () => {
-  const { artists, fetchData } = useMusicStore();
+  const { artists, fetchData, activeProfile } = useMusicStore();
+  const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
 
   useEffect(() => {
     fetchData();
@@ -51,8 +52,8 @@ const Artists = () => {
               <Link to={`/artists/${artist.id}`}>
                 <Card className="bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden cursor-pointer">
                   <div className="aspect-square overflow-hidden relative">
-                    <img 
-                      src={artist.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop'} 
+                    <img
+                      src={artist.image || defaultImage}
                       alt={artist.name}
                       className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105"
                     />
