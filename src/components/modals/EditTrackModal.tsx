@@ -5,22 +5,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Music, Plus, Trash2, StickyNote, Heart } from 'lucide-react';
+import { Edit2, Music, Plus, Trash2, StickyNote, Heart, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Track, Note } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { NotesSection } from '@/components/ui/NotesSection';
+import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
 
 export const EditTrackModal = ({ track, children }: { track: Track, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { updateTrack, notes, addNote, updateNote, deleteNote } = useMusicStore();
+  const { updateTrack, notes, deleteTrack } = useMusicStore();
   
   const trackNotes = notes.filter(n => n.entityType === 'track' && n.entityId === track.id);
   
   const [formData, setFormData] = useState({
     title: track.title,
-    rating: track.rating.toString(),
+    rating: track.rating?.toString() || '',
     genres: track.genres.join(', '),
     producers: track.producers.join(', '),
     writers: track.writers.join(', '),
@@ -35,8 +37,6 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     key: track.key || '',
     isFavorite: track.isFavorite
   });
-
-  const [newNote, setNewNote] = useState({ label: '', content: '' });
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -55,7 +55,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
 
     await updateTrack(track.id, {
       title: formData.title,
-      rating: parseFloat(formData.rating),
+      rating: formData.rating ? parseFloat(formData.rating) : undefined,
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
       producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
       writers: formData.writers.split(',').map(s => s.trim()).filter(Boolean),
@@ -75,17 +75,12 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     setOpen(false);
   };
 
-  const handleAddNote = async () => {
-    if (!newNote.content) return toast.error("Note content is required");
-    await addNote({
-      entityType: 'track',
-      entityId: track.id,
-      label: newNote.label,
-      content: newNote.content,
-      isLinked: false
-    });
-    setNewNote({ label: '', content: '' });
-    toast.success("Note added");
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this track?")) {
+      await deleteTrack(track.id);
+      toast.success("Track deleted");
+      setOpen(false);
+    }
   };
 
   return (
@@ -107,7 +102,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
               <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Credits</TabsTrigger>
-              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes ({trackNotes.length})</TabsTrigger>
+              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes</TabsTrigger>
+              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational</TabsTrigger>
             </TabsList>
           </div>
 
@@ -185,58 +181,24 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
               </div>
             </TabsContent>
 
-            <TabsContent value="notes" className="p-6 space-y-6 mt-0">
-              <div className="space-y-4">
-                {trackNotes.map(note => (
-                  <div key={note.id} className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-2 group/note">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">{note.label || 'Note'}</span>
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 opacity-0 group-hover/note:opacity-100 text-zinc-500 hover:text-red-500"
-                        onClick={() => deleteNote(note.id)}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-zinc-300 leading-relaxed">{note.content}</p>
-                  </div>
-                ))}
-
-                <div className="p-4 bg-zinc-900/30 border border-dashed border-zinc-800 rounded-xl space-y-4">
-                  <div className="flex items-center gap-2">
-                    <StickyNote size={14} className="text-zinc-500" />
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Add New Note</h4>
-                  </div>
-                  <div className="space-y-2">
-                    <Input 
-                      placeholder="Label (e.g. Transition, Trivia)" 
-                      value={newNote.label}
-                      onChange={(e) => setNewNote({...newNote, label: e.target.value})}
-                      className="bg-zinc-900 border-zinc-800 text-xs"
-                    />
-                    <Textarea 
-                      placeholder="Write your note here..." 
-                      value={newNote.content}
-                      onChange={(e) => setNewNote({...newNote, content: e.target.value})}
-                      className="bg-zinc-900 border-zinc-800 text-sm min-h-[80px]"
-                    />
-                    <Button 
-                      type="button"
-                      onClick={handleAddNote}
-                      className="w-full bg-zinc-800 hover:bg-zinc-700 text-[10px] font-black uppercase tracking-widest h-8"
-                    >
-                      Add Note
-                    </Button>
-                  </div>
-                </div>
-              </div>
+            <TabsContent value="notes" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <NotesSection entityType="track" entityId={track.id} />
             </TabsContent>
 
-            <div className="p-6 border-t border-zinc-900">
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">Save Changes</Button>
+            <TabsContent value="relational" className="p-6 space-y-6 mt-0">
+              <RelationalBioSection entityType="track" entityId={track.id} />
+            </TabsContent>
+
+            <div className="p-6 border-t border-zinc-900 flex items-center gap-4">
+              <Button 
+                type="button" 
+                variant="destructive" 
+                className="bg-red-600/10 text-red-500 border-red-500/20 hover:bg-red-600 hover:text-white font-black uppercase tracking-widest h-10 px-6"
+                onClick={handleDelete}
+              >
+                <Trash2 size={16} className="mr-2" /> Delete Track
+              </Button>
+              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider h-10">Save Changes</Button>
             </div>
           </form>
         </Tabs>

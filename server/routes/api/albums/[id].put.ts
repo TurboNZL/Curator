@@ -15,6 +15,7 @@ export default defineHandler(async (event) => {
   if (body.artistId !== undefined) updateData.artistId = body.artistId;
   if (body.eraId !== undefined) updateData.eraId = body.eraId;
   if (body.covers !== undefined) updateData.covers = JSON.stringify(body.covers);
+  if (body.pendingFiles !== undefined) updateData.pendingFiles = JSON.stringify(body.pendingFiles);
   if (body.defaultReleaseId !== undefined) updateData.defaultReleaseId = body.defaultReleaseId;
 
   await db.update(albums).set(updateData).where(eq(albums.id, id));

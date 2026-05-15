@@ -1,86 +1,180 @@
+"use client";
+
+import React from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ListOrdered, Trash2, Play, GripVertical } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { ListMusic, Trash2, Shuffle, Play, GripVertical, Disc, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 
 const Queue = () => {
-  const { queue, tracks, artists, setCurrentTrack, removeFromQueue, clearQueue } = useMusicStore();
+  const { 
+    userQueue, 
+    activeQueue, 
+    tracks, 
+    artists, 
+    albums, 
+    currentTrackId, 
+    setCurrentTrack, 
+    removeFromQueue, 
+    clearQueue, 
+    shuffleQueue,
+    mergeActiveToUser
+  } = useMusicStore();
 
-  const queueTracks = queue.map(id => tracks.find(t => t.id === id)).filter(Boolean);
+  const getTrackData = (id: string) => {
+    const track = tracks.find(t => t.id === id);
+    const artist = artists.find(a => a.id === track?.artistId);
+    const album = albums.find(al => track?.albumIds.includes(al.id));
+    return { track, artist, album };
+  };
+
+  const currentTrackData = currentTrackId ? getTrackData(currentTrackId) : null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Playback Queue</h1>
-          <p className="text-zinc-500 text-sm mt-1">Manage the sequence of your current listening session.</p>
+          <p className="text-zinc-500 text-sm mt-1">Manage your upcoming tracks and session flow.</p>
         </div>
-        <Button 
-          variant="ghost" 
-          onClick={clearQueue}
-          className="text-zinc-500 hover:text-red-500 gap-2 font-bold uppercase text-[10px]"
-        >
-          <Trash2 size={14} /> Clear Queue
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            className="border-zinc-800 bg-zinc-900/50 text-[10px] font-black uppercase tracking-widest h-9 gap-2"
+            onClick={() => clearQueue('all')}
+          >
+            <Trash2 size={14} /> Clear All
+          </Button>
+        </div>
       </div>
 
-      {queueTracks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-3xl">
-          <ListOrdered size={48} className="text-zinc-800 mb-4" />
-          <h3 className="text-zinc-400 font-bold">Queue is empty</h3>
-          <p className="text-zinc-600 text-sm mt-1">Add tracks from your library to start a session.</p>
+      {/* Now Playing */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Now Playing</h2>
+        {currentTrackData?.track ? (
+          <Card className="bg-blue-600/10 border-blue-500/30 p-4 flex items-center gap-4">
+            <div className="w-16 h-16 rounded-lg overflow-hidden border border-blue-500/20">
+              <img src={currentTrackData.album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-black text-white uppercase truncate">{currentTrackData.track.title}</h3>
+              <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrackContextMenu track={currentTrackData.track} />
+            </div>
+          </Card>
+        ) : (
+          <p className="text-xs text-zinc-600 italic">Nothing currently playing.</p>
+        )}
+      </section>
+
+      {/* User Queue (Manual) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Next in Queue</h2>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={() => shuffleQueue('user')}>
+              <Shuffle size={12} className="mr-1" /> Shuffle
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={() => clearQueue('user')}>
+              <Trash2 size={12} className="mr-1" /> Clear
+            </Button>
+          </div>
         </div>
-      ) : (
-        <Table>
-          <TableHeader className="hover:bg-transparent border-zinc-900">
-            <TableRow className="border-zinc-900 hover:bg-transparent">
-              <TableHead className="w-10"></TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Title</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {queueTracks.map((track, index) => {
-              const artist = artists.find(a => a.id === track?.artistId);
+        <div className="space-y-2">
+          {userQueue.length === 0 ? (
+            <p className="text-xs text-zinc-700 py-4 text-center border border-dashed border-zinc-900 rounded-xl">Manual queue is empty.</p>
+          ) : (
+            userQueue.map((id, index) => {
+              const { track, artist, album } = getTrackData(id);
+              if (!track) return null;
               return (
-                <TableRow 
-                  key={`${track?.id}-${index}`} 
-                  className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
-                >
-                  <TableCell>
-                    <GripVertical size={14} className="text-zinc-700 group-hover:text-zinc-500 cursor-grab" />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => track && setCurrentTrack(track.id)}
-                        className="w-8 h-8 rounded bg-zinc-900 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-blue-600 transition-colors"
-                      >
-                        <Play size={14} fill="currentColor" />
-                      </button>
-                      <span className="text-sm font-bold text-white">{track?.title}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => track && removeFromQueue(track.id)}
-                      className="text-zinc-600 hover:text-red-500"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <QueueItem 
+                  key={`${id}-${index}`} 
+                  track={track} 
+                  artist={artist} 
+                  album={album} 
+                  onRemove={() => removeFromQueue(id, 'user')}
+                  onPlay={() => {
+                    removeFromQueue(id, 'user');
+                    setCurrentTrack(id);
+                  }}
+                />
               );
-            })}
-          </TableBody>
-        </Table>
-      )}
+            })
+          )}
+        </div>
+      </section>
+
+      {/* Active Queue (Album/Playlist) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Playing From Source</h2>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={mergeActiveToUser}>
+              Merge to Queue
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={() => shuffleQueue('active')}>
+              <Shuffle size={12} className="mr-1" /> Shuffle
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={() => clearQueue('active')}>
+              <Trash2 size={12} className="mr-1" /> Clear
+            </Button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {activeQueue.length === 0 ? (
+            <p className="text-xs text-zinc-700 py-4 text-center border border-dashed border-zinc-900 rounded-xl">No source tracks queued.</p>
+          ) : (
+            activeQueue.map((id, index) => {
+              const { track, artist, album } = getTrackData(id);
+              if (!track) return null;
+              return (
+                <QueueItem 
+                  key={`${id}-${index}`} 
+                  track={track} 
+                  artist={artist} 
+                  album={album} 
+                  onRemove={() => removeFromQueue(id, 'active')}
+                  onPlay={() => {
+                    removeFromQueue(id, 'active');
+                    setCurrentTrack(id);
+                  }}
+                />
+              );
+            })
+          )}
+        </div>
+      </section>
     </div>
   );
 };
+
+const QueueItem = ({ track, artist, album, onRemove, onPlay }: any) => (
+  <div className="group flex items-center gap-4 p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-lg hover:bg-zinc-900 transition-colors">
+    <div className="text-zinc-700 group-hover:text-zinc-500 cursor-grab">
+      <GripVertical size={14} />
+    </div>
+    <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden">
+      <img src={album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
+      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name}</p>
+    </div>
+    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={onPlay}>
+        <Play size={14} fill="currentColor" />
+      </Button>
+      <TrackContextMenu track={track} />
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={onRemove}>
+        <Trash2 size={14} />
+      </Button>
+    </div>
+  </div>
+);
 
 export default Queue;

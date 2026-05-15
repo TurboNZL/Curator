@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Link } from 'react-router-dom';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
+
 import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
@@ -26,6 +28,7 @@ const AlbumDetail = () => {
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
   
+  const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
     const cached = sessionStorage.getItem(`album_sort_${id}`);
     return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
@@ -57,12 +60,15 @@ const AlbumDetail = () => {
 
   const currentRelease = albumReleases.find(r => r.id === selectedReleaseId);
   
-  const albumTracks = tracks.filter(t => {
-    if (currentRelease) {
-      return currentRelease.trackIds.includes(t.id);
+  const albumTracks = useMemo(() => {
+    if (showAllTracks) {
+      return tracks.filter(t => t.albumIds.includes(id || ''));
     }
-    return t.albumIds.includes(id || '');
-  });
+    if (currentRelease) {
+      return tracks.filter(t => currentRelease.trackIds.includes(t.id));
+    }
+    return tracks.filter(t => t.albumIds.includes(id || ''));
+  }, [showAllTracks, currentRelease, tracks, id]);
 
   const handleSetDefault = async (releaseId: string) => {
     if (!album) return;
@@ -86,13 +92,19 @@ const AlbumDetail = () => {
             <h1 className="text-5xl font-black tracking-tighter text-white uppercase leading-none">
               {album.title}
             </h1>
-            <p className="text-xl font-bold text-blue-500">{artist?.name}</p>
+            <Link 
+              to={`/artists/${artist?.id}`}
+              className="text-xl font-bold text-blue-500 hover:text-blue-400 flex items-center gap-2 group"
+            >
+              {artist?.name}
+              <User size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
           </div>
           
           <div className="flex gap-3">
             <Button 
               className="bg-white text-black hover:bg-zinc-200 font-bold px-8 rounded-full gap-2" 
-              onClick={() => albumTracks.length > 0 && setCurrentTrack(albumTracks[0].id)}
+              onClick={() => albumTracks.length > 0 && setCurrentTrack(albumTracks[0].id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}
             >
               <Play fill="currentColor" size={18} /> Play
             </Button>
@@ -109,7 +121,7 @@ const AlbumDetail = () => {
         <div className="lg:col-span-3 space-y-8">
           <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-              <ListMusic size={14} /> Tracklist
+              <ListMusic size={14} /> {showAllTracks ? 'All Project Tracks' : 'Tracklist'}
             </h2>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-bold text-zinc-600 uppercase">{albumTracks.length} Tracks</span>
@@ -135,7 +147,7 @@ const AlbumDetail = () => {
                 {albumTracks.map((track, index) => (
                   <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
                     <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                    <TableCell onClick={() => setCurrentTrack(track.id)} className="cursor-pointer">
+                    <TableCell onClick={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })} className="cursor-pointer">
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
                         <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
@@ -143,6 +155,7 @@ const AlbumDetail = () => {
                     </TableCell>
                     <TableCell>
                       <Rating
+                        trackId={track.id}
                         balanced={track.rating}
                         unbalanced={track.initialRating}
                         comparisons={track.comparisons}
@@ -169,6 +182,15 @@ const AlbumDetail = () => {
                   <Layers size={12} /> Releases
                 </h3>
                 <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn("h-6 w-6", showAllTracks ? "text-blue-500" : "text-zinc-500")}
+                    onClick={() => setShowAllTracks(!showAllTracks)}
+                    title="Show All Tracks"
+                  >
+                    <List size={12} />
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500">
@@ -197,10 +219,13 @@ const AlbumDetail = () => {
                 {sortedReleases.map(release => (
                   <div key={release.id} className="group/rel relative">
                     <button 
-                      onClick={() => setSelectedReleaseId(release.id)}
+                      onClick={() => {
+                        setSelectedReleaseId(release.id);
+                        setShowAllTracks(false);
+                      }}
                       className={cn(
                         "w-full text-left text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center justify-between pr-12",
-                        selectedReleaseId === release.id 
+                        selectedReleaseId === release.id && !showAllTracks
                           ? "bg-blue-600 text-white" 
                           : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                       )}

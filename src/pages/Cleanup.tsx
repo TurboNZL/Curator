@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -9,11 +9,18 @@ import { Rating } from '@/components/ui/Rating';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote, volume } = useMusicStore();
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
+
+  // Sync volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
 
   // Task Generation Logic
   const tasks = [
@@ -82,6 +89,7 @@ const Cleanup = () => {
     }
 
     audioRef.current.src = track.localFilePath;
+    audioRef.current.volume = volume;
     audioRef.current.onloadedmetadata = () => {
       const duration = audioRef.current?.duration || 0;
       const start = Math.max(0, (duration / 2) - 7.5);
@@ -143,50 +151,51 @@ const Cleanup = () => {
             </div>
 
             {pair.map((track, idx) => (
-              <Card 
-                key={track.id}
-                className={cn(
-                  "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                  "before:absolute before:inset-0 before:bg-gradient-to-b before:from-transparent before:to-black/80 before:opacity-60"
-                )}
-                onClick={() => handleVote(track.id)}
-              >
-                <div className="aspect-[16/9] relative overflow-hidden">
-                  <img 
-                    src={getAlbumArt(track)} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                    alt="" 
-                  />
-                  <div 
-                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playSnippet(track);
-                    }}
-                  >
-                    <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
-                      {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
-                  <div className="flex items-end justify-between gap-4">
-                    <div className="min-w-0">
-                      <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                      <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                        {albums.find(a => track.albumIds?.includes(a.id))?.title || 'Unknown Album'}
-                      </p>
-                    </div>
-                    <Rating 
-                      balanced={track.rating} 
-                      unbalanced={track.initialRating} 
-                      comparisons={track.comparisons}
-                      size="md"
+              <div key={track.id} className="space-y-4">
+                <Card 
+                  className={cn(
+                    "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
+                    "before:absolute before:inset-0 before:bg-gradient-to-b before:from-transparent before:to-black/80 before:opacity-60"
+                  )}
+                  onClick={() => playSnippet(track)}
+                >
+                  <div className="aspect-[16/9] relative overflow-hidden">
+                    <img 
+                      src={getAlbumArt(track)} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                      alt="" 
                     />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
+                        {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </Card>
+
+                  <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                    <div className="flex items-end justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                        <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                          {albums.find(a => track.albumIds?.includes(a.id))?.title || 'Unknown Album'}
+                        </p>
+                      </div>
+                      <Rating 
+                        balanced={track.rating} 
+                        unbalanced={track.initialRating} 
+                        comparisons={track.comparisons}
+                        size="md"
+                      />
+                    </div>
+                  </div>
+                </Card>
+                <Button 
+                  onClick={() => handleVote(track.id)}
+                  className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
+                >
+                  <ThumbsUp size={16} /> Vote for this
+                </Button>
+              </div>
             ))}
 
             <div className="md:col-span-2 flex justify-center gap-4 pt-4">

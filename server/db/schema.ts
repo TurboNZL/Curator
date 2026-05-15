@@ -6,7 +6,8 @@ export const profiles = sqliteTable('profiles', {
   theme: text('theme').notNull().default('dark'),
   accentColor: text('accent_color').notNull().default('#3b82f6'),
   playback_mode: text('playback_mode').notNull().default('local'),
-  settings: text('settings'), // JSON: { showUnbalancedFirst: boolean }
+  settings: text('settings'), // JSON: { showUnbalancedFirst: boolean, defaultArtistImage?: string, defaultAlbumImage?: string }
+  playbackRules: text('playback_rules'), // JSON array of { trackAId: string, trackBId: string, playFirstOnShuffle: boolean }
 });
 
 export const artists = sqliteTable('artists', {
@@ -31,6 +32,7 @@ export const albums = sqliteTable('albums', {
   eraId: text('era_id'),
   covers: text('covers'), // JSON string array
   defaultReleaseId: text('default_release_id'),
+  pendingFiles: text('pending_files'), // JSON string array
 });
 
 export const releaseTypes = sqliteTable('release_types', {
@@ -58,8 +60,8 @@ export const tracks = sqliteTable('tracks', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(),
-  rating: real('rating').notNull().default(0), // Balanced rating (0-10)
-  initialRating: real('initial_rating').notNull().default(0), // Unbalanced rating
+  rating: real('rating'), // Balanced rating (0-10), nullable for unrated
+  initialRating: real('initial_rating'), // Unbalanced rating, nullable for unrated
   eloScore: real('elo_score').notNull().default(1000), // Internal ELO for calculation
   comparisons: integer('comparisons').notNull().default(0),
   localFilePath: text('local_file_path'),
@@ -74,7 +76,7 @@ export const tracks = sqliteTable('tracks', {
   bitrate: text('bitrate'),
   bpm: integer('bpm'),
   key: text('key'),
-  isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+  memories: integer('memories').notNull().default(0),
   queueRules: text('queue_rules'), // JSON: { nextTrackId?: string, forbiddenStandalone?: boolean }
 });
 
@@ -92,7 +94,9 @@ export const groups = sqliteTable('groups', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description'),
+  label: text('label'),
   type: text('type').notNull().default('thematic'), // 'collective', 'thematic', 'relationship'
+  isArtistOnly: integer('is_artist_only', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const groupMembers = sqliteTable('group_members', {

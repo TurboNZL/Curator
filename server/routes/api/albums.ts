@@ -19,7 +19,9 @@ export default defineHandler(async (event) => {
       artistId: body.artistId,
       eraId: body.eraId,
       covers: JSON.stringify(body.covers || []),
+      pendingFiles: JSON.stringify(body.pendingFiles || []),
     };
+
     await db.insert(albums).values(newAlbum);
     return newAlbum;
   }

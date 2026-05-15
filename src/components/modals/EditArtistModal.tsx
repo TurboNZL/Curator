@@ -11,6 +11,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Artist } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NotesSection } from '@/components/ui/NotesSection';
+import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
 
 export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
@@ -55,7 +56,8 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes ({artistNotes.length})</TabsTrigger>
+              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes</TabsTrigger>
+              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational</TabsTrigger>
             </TabsList>
           </div>
 
@@ -90,6 +92,10 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
 
             <TabsContent value="notes" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <NotesSection entityType="artist" entityId={artist.id} />
+            </TabsContent>
+
+            <TabsContent value="relational" className="p-6 space-y-6 mt-0">
+              <RelationalBioSection entityType="artist" entityId={artist.id} />
             </TabsContent>
 
             <div className="p-6 border-t border-zinc-900">

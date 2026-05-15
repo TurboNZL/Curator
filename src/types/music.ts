@@ -1,5 +1,11 @@
 export type RatingMode = '1-10' | '1-5' | '1-5-hidden' | '1-10-hidden';
 
+export interface PlaybackRule {
+  trackAId: string;
+  trackBId: string;
+  playFirstOnShuffle: boolean;
+}
+
 export interface Profile {
   id: string;
   name: string;
@@ -8,7 +14,10 @@ export interface Profile {
   playbackMode: 'local' | 'spotify' | 'youtube' | 'soundcloud';
   settings?: {
     showUnbalancedFirst: boolean;
+    defaultArtistImage?: string;
+    defaultAlbumImage?: string;
   };
+  playbackRules: PlaybackRule[];
 }
 
 export interface Artist {
@@ -34,6 +43,7 @@ export interface Album {
   eraId?: string;
   covers: string[];
   defaultReleaseId?: string;
+  pendingFiles?: string[]; // URLs of uploaded but unassigned audio files
 }
 
 export interface ReleaseType {
@@ -56,8 +66,8 @@ export interface Track {
   title: string;
   artistId: string;
   albumIds: string[];
-  rating: number; // Balanced rating
-  initialRating: number;
+  rating?: number; // Balanced rating, nullable
+  initialRating?: number;
   eloScore: number;
   comparisons: number;
   localFilePath?: string;
@@ -72,7 +82,7 @@ export interface Track {
   bitrate?: string;
   bpm?: number;
   key?: string;
-  isFavorite: boolean;
+  memories: number;
   queueRules?: {
     nextTrackId?: string;
     forbiddenStandalone?: boolean;
@@ -111,5 +121,7 @@ export interface Group {
   id: string;
   name: string;
   description?: string;
+  label?: string;
   type: 'collective' | 'thematic' | 'relationship';
+  isArtistOnly: boolean;
 }

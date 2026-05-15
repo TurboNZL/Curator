@@ -6,17 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Layers, Check } from 'lucide-react';
+import { Edit2, Layers, Check, FileAudio, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NotesSection } from '@/components/ui/NotesSection';
 import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
 
 export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, notes, releases } = useMusicStore();
+  const { artists, updateAlbum, notes, releases, uploadFile } = useMusicStore();
   const albumNotes = notes.filter(n => n.entityType === 'album' && n.entityId === album.id);
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
@@ -29,6 +30,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     title: album.title,
     artistId: album.artistId,
     cover: album.covers[0] || '',
+    pendingFiles: album.pendingFiles || []
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,10 +41,34 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
       title: formData.title,
       artistId: formData.artistId,
       covers: formData.cover ? [formData.cover] : [],
+      pendingFiles: formData.pendingFiles
     });
 
     toast.success(`Updated ${formData.title}`);
     setOpen(false);
+  };
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const uploadPromises = Array.from(files).map(file => uploadFile(file, 'audio'));
+    try {
+      toast.promise(Promise.all(uploadPromises), {
+        loading: 'Uploading audio files...',
+        success: (urls) => {
+          setFormData(prev => ({ ...prev, pendingFiles: [...prev.pendingFiles, ...urls] }));
+          return `Uploaded ${urls.length} files`;
+        },
+        error: 'Failed to upload some files'
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const removePendingFile = (url: string) => {
+    setFormData(prev => ({ ...prev, pendingFiles: prev.pendingFiles.filter(u => u !== url) }));
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
@@ -56,7 +82,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px] p-0 overflow-hidden">
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] p-0 overflow-hidden">
         <Tabs defaultValue="metadata" className="w-full">
           <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4">
             <div className="flex items-center gap-3">
@@ -65,7 +91,9 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes ({albumNotes.length})</TabsTrigger>
+              <TabsTrigger value="files" className="text-[10px] font-black uppercase tracking-widest">Files ({formData.pendingFiles.length})</TabsTrigger>
+              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes</TabsTrigger>
+              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational</TabsTrigger>
             </TabsList>
           </div>
 
@@ -92,11 +120,6 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
                       )}
                     </button>
                   ))}
-                  {availableCovers.length === 0 && (
-                    <div className="col-span-4 py-8 text-center border-2 border-dashed border-zinc-800 rounded-xl">
-                      <p className="text-[10px] text-zinc-600 uppercase font-bold">No covers available. Add a release first.</p>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -121,8 +144,61 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
               </div>
             </TabsContent>
 
+            <TabsContent value="files" className="p-6 space-y-6 mt-0">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Unassigned Audio Files</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="h-8 border-zinc-800 bg-zinc-900/50 text-[10px] font-black uppercase tracking-widest gap-2"
+                    onClick={() => document.getElementById('bulk-audio')?.click()}
+                  >
+                    <Plus size={14} /> Upload Folder/Files
+                  </Button>
+                  <input 
+                    id="bulk-audio" 
+                    type="file" 
+                    multiple 
+                    accept="audio/*" 
+                    className="hidden" 
+                    onChange={handleBulkUpload}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  {formData.pendingFiles.map((url, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-zinc-900 border border-zinc-800 rounded-lg group">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileAudio size={16} className="text-blue-500" />
+                        <span className="text-xs font-mono text-zinc-400 truncate">{url.split('/').pop()}</span>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removePendingFile(url)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  ))}
+                  {formData.pendingFiles.length === 0 && (
+                    <div className="py-12 text-center border-2 border-dashed border-zinc-900 rounded-xl">
+                      <p className="text-[10px] text-zinc-600 uppercase font-bold">No unassigned files. Upload audio to start indexing.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="notes" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <NotesSection entityType="album" entityId={album.id} />
+            </TabsContent>
+
+            <TabsContent value="relational" className="p-6 space-y-6 mt-0">
+              <RelationalBioSection entityType="album" entityId={album.id} />
             </TabsContent>
 
             <div className="p-6 border-t border-zinc-900">
