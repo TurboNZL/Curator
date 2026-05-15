@@ -11,12 +11,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, addAlbum, addRelease, releaseTypes, addReleaseType, addArtist } = useMusicStore();
+  const { artists, addAlbum, addRelease, releaseTypes, addReleaseType } = useMusicStore();
   
   const [formData, setFormData] = useState({
     title: '',
     artistId: '',
-    type: 'Full Album',
     releases: [] as { title: string; date: string; type: string }[]
   });
 
@@ -49,7 +48,6 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
     try {
       let finalArtistId = formData.artistId;
       
-      // Check if artistId is actually a new artist name
       if (!artists.find(a => a.id === formData.artistId)) {
         const res = await fetch('/api/artists', {
           method: 'POST',
@@ -60,28 +58,19 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
         finalArtistId = newArtist.id;
       }
 
-      // Check if type is a new release type
-      const standardTypes = ['Full Album', 'EP', 'Single', 'Deluxe'];
-      if (!standardTypes.includes(formData.type) && !releaseTypes.find(t => t.name === formData.type)) {
-        await addReleaseType(formData.type);
-      }
-
-      // 1. Create Album
       const albumRes = await fetch('/api/albums', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
           artistId: finalArtistId,
-          type: formData.type,
           covers: []
         })
       });
       const newAlbum = await albumRes.json();
 
-      // 2. Create Releases
       for (const rel of formData.releases) {
-        // Check if release type is new
+        const standardTypes = ['Full Album', 'EP', 'Single', 'Deluxe'];
         if (!standardTypes.includes(rel.type) && !releaseTypes.find(t => t.name === rel.type)) {
           await addReleaseType(rel.type);
         }
@@ -97,7 +86,7 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
       setOpen(false);
-      setFormData({ title: '', artistId: '', type: 'Full Album', releases: [] });
+      setFormData({ title: '', artistId: '', releases: [] });
     } catch (error) {
       console.error(error);
       toast.error("Failed to create album");
@@ -150,15 +139,6 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
                 placeholder="e.g. My Beautiful Dark Twisted Fantasy" 
                 className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Project Type</Label>
-              <SearchableSelect 
-                options={typeOptions} 
-                value={formData.type} 
-                onValueChange={(val) => setFormData({...formData, type: val})}
-                allowCustom
               />
             </div>
           </div>

@@ -33,7 +33,6 @@ export interface Album {
   artistId: string;
   eraId?: string;
   covers: string[];
-  type: string;
   defaultReleaseId?: string;
 }
 

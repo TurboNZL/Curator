@@ -11,7 +11,7 @@ export default defineHandler(async (event) => {
   }
 
   if (method === 'POST') {
-    const body = await readBody(event);
+    const body = await readBody(event) as any;
     const id = Math.random().toString(36).substring(7);
     const newAlbum = {
       id,
@@ -19,7 +19,6 @@ export default defineHandler(async (event) => {
       artistId: body.artistId,
       eraId: body.eraId,
       covers: JSON.stringify(body.covers || []),
-      type: body.type || 'Full Album',
     };
     await db.insert(albums).values(newAlbum);
     return newAlbum;

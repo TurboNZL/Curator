@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,11 +16,10 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, notes, releases, releaseTypes } = useMusicStore();
+  const { artists, updateAlbum, notes, releases } = useMusicStore();
   const albumNotes = notes.filter(n => n.entityType === 'album' && n.entityId === album.id);
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
-  // Collect all unique covers from releases
   const availableCovers = Array.from(new Set([
     ...album.covers,
     ...albumReleases.map(r => r.coverImage).filter(Boolean) as string[]
@@ -28,7 +29,6 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     title: album.title,
     artistId: album.artistId,
     cover: album.covers[0] || '',
-    type: album.type
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +39,6 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
       title: formData.title,
       artistId: formData.artistId,
       covers: formData.cover ? [formData.cover] : [],
-      type: formData.type
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -47,13 +46,6 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const typeOptions = [
-    { value: 'Full Album', label: 'Full Album' },
-    { value: 'EP', label: 'EP' },
-    { value: 'Single', label: 'Single' },
-    { value: 'Deluxe', label: 'Deluxe' },
-    ...releaseTypes.map(t => ({ value: t.name, label: t.name }))
-  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -117,27 +109,15 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
                   className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
-                  <SearchableSelect 
-                    options={artistOptions} 
-                    value={formData.artistId} 
-                    onValueChange={(val) => setFormData({...formData, artistId: val})}
-                    placeholder="Search or type artist..."
-                    allowCustom
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Release Type</Label>
-                  <SearchableSelect 
-                    options={typeOptions} 
-                    value={formData.type} 
-                    onValueChange={(val) => setFormData({...formData, type: val})}
-                    placeholder="Search or type type..."
-                    allowCustom
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
+                <SearchableSelect 
+                  options={artistOptions} 
+                  value={formData.artistId} 
+                  onValueChange={(val) => setFormData({...formData, artistId: val})}
+                  placeholder="Search or type artist..."
+                  allowCustom
+                />
               </div>
             </TabsContent>
 

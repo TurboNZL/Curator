@@ -5,7 +5,7 @@ export const profiles = sqliteTable('profiles', {
   name: text('name').notNull(),
   theme: text('theme').notNull().default('dark'),
   accentColor: text('accent_color').notNull().default('#3b82f6'),
-  playbackMode: text('playback_mode').notNull().default('local'),
+  playback_mode: text('playback_mode').notNull().default('local'),
   settings: text('settings'), // JSON: { showUnbalancedFirst: boolean }
 });
 
@@ -30,7 +30,6 @@ export const albums = sqliteTable('albums', {
   artistId: text('artist_id').notNull(),
   eraId: text('era_id'),
   covers: text('covers'), // JSON string array
-  type: text('type').notNull().default('Full Album'),
   defaultReleaseId: text('default_release_id'),
 });
 
@@ -40,7 +39,6 @@ export const releaseTypes = sqliteTable('release_types', {
 });
 
 export const releases = sqliteTable('releases', {
-
   id: text('id').primaryKey(),
   albumId: text('album_id').notNull(),
   title: text('title').notNull(),
@@ -57,7 +55,6 @@ export const releaseTracks = sqliteTable('release_tracks', {
 }));
 
 export const tracks = sqliteTable('tracks', {
-
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(),
@@ -107,7 +104,6 @@ export const groupMembers = sqliteTable('group_members', {
 }));
 
 export const albumTracks = sqliteTable('album_tracks', {
-
   albumId: text('album_id').notNull(),
   trackId: text('track_id').notNull(),
 }, (table) => ({

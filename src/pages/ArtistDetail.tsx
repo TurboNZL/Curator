@@ -86,7 +86,6 @@ const ArtistDetail = () => {
                     </div>
                   </div>
                   <h3 className="text-sm font-bold text-white truncate">{album.title}</h3>
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase mt-1 tracking-tighter">{album.type}</p>
                 </Card>
               ))}
             </div>

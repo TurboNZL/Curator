@@ -26,7 +26,6 @@ const AlbumDetail = () => {
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
   
-  // Sorting state (persisted in session cache)
   const [sortConfig, setSortConfig] = useState(() => {
     const cached = sessionStorage.getItem(`album_sort_${id}`);
     return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
@@ -48,7 +47,6 @@ const AlbumDetail = () => {
     });
   }, [albumReleases, sortConfig]);
 
-  // Release switching logic
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
   
   useEffect(() => {
@@ -85,9 +83,6 @@ const AlbumDetail = () => {
         />
         <div className="flex-1 space-y-4">
           <div className="space-y-1">
-            <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 uppercase text-[9px] font-black">
-              {album.type}
-            </Badge>
             <h1 className="text-5xl font-black tracking-tighter text-white uppercase leading-none">
               {album.title}
             </h1>

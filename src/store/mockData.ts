@@ -32,7 +32,6 @@ export const MOCK_ALBUMS: Album[] = [
     artistId: 'a1',
     eraId: 'e1',
     covers: ['https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop'],
-    type: 'Full Album'
   },
   {
     id: 'al2',
@@ -40,7 +39,6 @@ export const MOCK_ALBUMS: Album[] = [
     artistId: 'a2',
     eraId: 'e4',
     covers: ['https://images.unsplash.com/photo-1619983081563-430f63602796?w=400&h=400&fit=crop'],
-    type: 'Full Album'
   }
 ];
 
