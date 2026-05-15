@@ -1,3 +1,5 @@
+"use client";
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -9,7 +11,6 @@ import ArtistDetail from "./pages/ArtistDetail";
 import Albums from "./pages/Albums";
 import AlbumDetail from "./pages/AlbumDetail";
 import Tracks from "./pages/Tracks";
-import Releases from "./pages/Releases";
 import Playlists from "./pages/Playlists";
 import Stats from "./pages/Stats";
 import Cleanup from "./pages/Cleanup";
@@ -31,7 +32,6 @@ const App = () => (
             <Route path="/albums" element={<Albums />} />
             <Route path="/albums/:id" element={<AlbumDetail />} />
             <Route path="/tracks" element={<Tracks />} />
-            <Route path="/releases" element={<Releases />} />
             <Route path="/playlists" element={<Playlists />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/cleanup" element={<Cleanup />} />

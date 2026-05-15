@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -5,18 +7,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Layers } from 'lucide-react';
+import { Edit2, Layers, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NotesSection } from '@/components/ui/NotesSection';
+import { cn } from '@/lib/utils';
 
 export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, notes } = useMusicStore();
+  const { artists, updateAlbum, notes, releases } = useMusicStore();
   const albumNotes = notes.filter(n => n.entityType === 'album' && n.entityId === album.id);
+  const albumReleases = releases.filter(r => r.albumId === album.id);
   
+  // Collect all unique covers from releases
+  const availableCovers = Array.from(new Set([
+    ...album.covers,
+    ...albumReleases.map(r => r.coverImage).filter(Boolean) as string[]
+  ]));
+
   const [formData, setFormData] = useState({
     title: album.title,
     artistId: album.artistId,
@@ -63,13 +72,35 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
           <form onSubmit={handleSubmit}>
             <TabsContent value="metadata" className="p-6 space-y-6 mt-0">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Cover Art</Label>
-                <ImageUpload 
-                  value={formData.cover} 
-                  onChange={(val) => setFormData({...formData, cover: val})} 
-                />
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Select Primary Cover</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {availableCovers.map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setFormData({...formData, cover: url})}
+                      className={cn(
+                        "aspect-square rounded-lg overflow-hidden border-2 transition-all relative group",
+                        formData.cover === url ? "border-blue-500" : "border-zinc-800 hover:border-zinc-600"
+                      )}
+                    >
+                      <img src={url} className="w-full h-full object-cover" alt="" />
+                      {formData.cover === url && (
+                        <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                          <Check size={20} className="text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  {availableCovers.length === 0 && (
+                    <div className="col-span-4 py-8 text-center border-2 border-dashed border-zinc-800 rounded-xl">
+                      <p className="text-[10px] text-zinc-600 uppercase font-bold">No covers available. Add a release first.</p>
+                    </div>
+                  )}
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Title</Label>
                 <Input 

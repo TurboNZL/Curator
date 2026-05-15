@@ -1,13 +1,15 @@
+"use client";
+
 import { useEffect, useState } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, Search, ListMusic, Edit2 } from 'lucide-react';
+import { Search, ListMusic } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating';
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 
 const Tracks = () => {
-
   const { tracks, artists, albums, setCurrentTrack, fetchData } = useMusicStore();
   const [search, setSearch] = useState('');
 
@@ -79,9 +81,11 @@ const Tracks = () => {
                       comparisons={track.comparisons}
                     />
                   </TableCell>
-
                   <TableCell className="text-right">
-                    <EditTrackModal track={track} />
+                    <div className="flex items-center justify-end gap-1">
+                      <TrackContextMenu track={track} />
+                      <EditTrackModal track={track} />
+                    </div>
                   </TableCell>
                 </TableRow>
               );

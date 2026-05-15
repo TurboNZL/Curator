@@ -1,11 +1,12 @@
+"use client";
+
 import { NavLink } from 'react-router-dom';
-import { Users, Disc, FileAudio, ListMusic, Mic2 } from 'lucide-react';
+import { Disc, FileAudio, ListMusic, Mic2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { icon: Mic2, label: 'Artists', href: '/artists' },
   { icon: Disc, label: 'Albums', href: '/albums' },
-  { icon: FileAudio, label: 'Releases', href: '/releases' },
   { icon: ListMusic, label: 'Tracks', href: '/tracks' },
   { icon: ListMusic, label: 'Playlists', href: '/playlists' },
 ];
