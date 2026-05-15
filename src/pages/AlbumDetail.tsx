@@ -1,47 +1,75 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
 import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
 import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const AlbumDetail = () => {
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
   
+  // Sorting state (persisted in session cache)
+  const [sortConfig, setSortConfig] = useState(() => {
+    const cached = sessionStorage.getItem(`album_sort_${id}`);
+    return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem(`album_sort_${id}`, JSON.stringify(sortConfig));
+  }, [sortConfig, id]);
+
+  const sortedReleases = useMemo(() => {
+    return [...albumReleases].sort((a, b) => {
+      let comparison = 0;
+      if (sortConfig.field === 'date') {
+        comparison = new Date(a.releaseDate || 0).getTime() - new Date(b.releaseDate || 0).getTime();
+      } else {
+        comparison = a.title.localeCompare(b.title);
+      }
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [albumReleases, sortConfig]);
+
   // Release switching logic
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
   
   useEffect(() => {
-    if (albumReleases.length > 0 && !selectedReleaseId) {
-      setSelectedReleaseId(albumReleases[0].id);
+    if (album && !selectedReleaseId) {
+      setSelectedReleaseId(album.defaultReleaseId || (albumReleases.length > 0 ? albumReleases[0].id : null));
     }
-  }, [albumReleases, selectedReleaseId]);
+  }, [album, albumReleases, selectedReleaseId]);
 
   const currentRelease = albumReleases.find(r => r.id === selectedReleaseId);
   
-  // Filter tracks based on selected release
   const albumTracks = tracks.filter(t => {
     if (currentRelease) {
       return currentRelease.trackIds.includes(t.id);
     }
     return t.albumIds.includes(id || '');
   });
+
+  const handleSetDefault = async (releaseId: string) => {
+    if (!album) return;
+    await updateAlbum(album.id, { defaultReleaseId: releaseId });
+  };
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
@@ -145,23 +173,57 @@ const AlbumDetail = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                   <Layers size={12} /> Releases
                 </h3>
-                <CreateReleaseModal albumId={album.id} />
+                <div className="flex items-center gap-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500">
+                        <ArrowUpDown size={12} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                      <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sort By</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'date' })} className="text-xs font-bold gap-2">
+                        <Calendar size={14} /> Release Date
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'name' })} className="text-xs font-bold gap-2">
+                        <SortAsc size={14} /> Name
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-zinc-800" />
+                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
+                        {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
+                        {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <CreateReleaseModal albumId={album.id} />
+                </div>
               </div>
               <div className="space-y-2">
-                {albumReleases.map(release => (
-                  <button 
-                    key={release.id} 
-                    onClick={() => setSelectedReleaseId(release.id)}
-                    className={cn(
-                      "w-full text-left text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center justify-between group",
-                      selectedReleaseId === release.id 
-                        ? "bg-blue-600 text-white" 
-                        : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                    )}
-                  >
-                    <span className="truncate">{release.title}</span>
-                    {selectedReleaseId === release.id && <Check size={12} />}
-                  </button>
+                {sortedReleases.map(release => (
+                  <div key={release.id} className="group/rel relative">
+                    <button 
+                      onClick={() => setSelectedReleaseId(release.id)}
+                      className={cn(
+                        "w-full text-left text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center justify-between pr-12",
+                        selectedReleaseId === release.id 
+                          ? "bg-blue-600 text-white" 
+                          : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                      )}
+                    >
+                      <span className="truncate">{release.title}</span>
+                      {album.defaultReleaseId === release.id && <Star size={10} fill="currentColor" className="text-yellow-400" />}
+                    </button>
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/rel:opacity-100 transition-opacity">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleSetDefault(release.id); }}
+                        className="p-1 text-zinc-500 hover:text-yellow-400"
+                        title="Set as Default"
+                      >
+                        <Check size={12} />
+                      </button>
+                      <EditReleaseModal release={release} albumId={album.id} />
+                    </div>
+                  </div>
                 ))}
                 {albumReleases.length === 0 && (
                   <p className="text-[10px] text-zinc-600 italic">No releases indexed.</p>

@@ -31,9 +31,16 @@ export const albums = sqliteTable('albums', {
   eraId: text('era_id'),
   covers: text('covers'), // JSON string array
   type: text('type').notNull().default('Full Album'),
+  defaultReleaseId: text('default_release_id'),
+});
+
+export const releaseTypes = sqliteTable('release_types', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
 });
 
 export const releases = sqliteTable('releases', {
+
   id: text('id').primaryKey(),
   albumId: text('album_id').notNull(),
   title: text('title').notNull(),

@@ -1,11 +1,8 @@
-"use client";
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, Layers, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,10 +10,11 @@ import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NotesSection } from '@/components/ui/NotesSection';
 import { cn } from '@/lib/utils';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, notes, releases } = useMusicStore();
+  const { artists, updateAlbum, notes, releases, releaseTypes } = useMusicStore();
   const albumNotes = notes.filter(n => n.entityType === 'album' && n.entityId === album.id);
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
@@ -47,6 +45,15 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     toast.success(`Updated ${formData.title}`);
     setOpen(false);
   };
+
+  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
+  const typeOptions = [
+    { value: 'Full Album', label: 'Full Album' },
+    { value: 'EP', label: 'EP' },
+    { value: 'Single', label: 'Single' },
+    { value: 'Deluxe', label: 'Deluxe' },
+    ...releaseTypes.map(t => ({ value: t.name, label: t.name }))
+  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,31 +120,23 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
-                  <Select value={formData.artistId} onValueChange={(val) => setFormData({...formData, artistId: val})}>
-                    <SelectTrigger className="bg-zinc-900 border-zinc-800">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                      {artists.map(artist => (
-                        <SelectItem key={artist.id} value={artist.id}>{artist.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect 
+                    options={artistOptions} 
+                    value={formData.artistId} 
+                    onValueChange={(val) => setFormData({...formData, artistId: val})}
+                    placeholder="Search or type artist..."
+                    allowCustom
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Release Type</Label>
-                  <Select value={formData.type} onValueChange={(val) => setFormData({...formData, type: val as any})}>
-                    <SelectTrigger className="bg-zinc-900 border-zinc-800">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                      <SelectItem value="Full Album">Full Album</SelectItem>
-                      <SelectItem value="EP">EP</SelectItem>
-                      <SelectItem value="Single">Single</SelectItem>
-                      <SelectItem value="Deluxe">Deluxe</SelectItem>
-                      <SelectItem value="Custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect 
+                    options={typeOptions} 
+                    value={formData.type} 
+                    onValueChange={(val) => setFormData({...formData, type: val})}
+                    placeholder="Search or type type..."
+                    allowCustom
+                  />
                 </div>
               </div>
             </TabsContent>

@@ -3,11 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Plus, Music } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 interface CreateTrackModalProps {
   albumId?: string;
@@ -53,7 +53,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     const newTrack = {
       title: formData.title,
       artistId: formData.artistId,
-      albumIds: formData.albumId ? [formData.albumId] : [],
+      albumIds: formData.albumId && formData.albumId !== 'none' ? [formData.albumId] : [],
       rating: parseFloat(formData.rating),
       initialRating: parseFloat(formData.rating),
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
@@ -61,7 +61,6 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       writers: [],
       credits: [],
       bitrate: formData.bitrate,
-
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
@@ -80,6 +79,12 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       audioUrl: '', spotifyUrl: '', geniusUrl: '', soundcloudUrl: '', youtubeMusicUrl: '' 
     });
   };
+
+  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
+  const albumOptions = [
+    { value: 'none', label: 'None (Single)' },
+    ...albums.filter(al => al.artistId === formData.artistId).map(al => ({ value: al.id, label: al.title }))
+  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -106,28 +111,23 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
-              <Select value={formData.artistId} onValueChange={(val) => setFormData({...formData, artistId: val})}>
-                <SelectTrigger className="bg-zinc-900 border-zinc-800">
-                  <SelectValue placeholder="Select Artist" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                  {artists.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect 
+                options={artistOptions} 
+                value={formData.artistId} 
+                onValueChange={(val) => setFormData({...formData, artistId: val})}
+                placeholder="Search or type artist..."
+                allowCustom
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album (Optional)</Label>
-              <Select value={formData.albumId} onValueChange={(val) => setFormData({...formData, albumId: val})}>
-                <SelectTrigger className="bg-zinc-900 border-zinc-800">
-                  <SelectValue placeholder="Select Album" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                  <SelectItem value="none">None (Single)</SelectItem>
-                  {albums.filter(al => al.artistId === formData.artistId).map(al => (
-                    <SelectItem key={al.id} value={al.id}>{al.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect 
+                options={albumOptions} 
+                value={formData.albumId} 
+                onValueChange={(val) => setFormData({...formData, albumId: val})}
+                placeholder="Search or type album..."
+                allowCustom
+              />
             </div>
           </div>
 

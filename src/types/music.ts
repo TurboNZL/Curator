@@ -33,7 +33,13 @@ export interface Album {
   artistId: string;
   eraId?: string;
   covers: string[];
-  type: 'Full Album' | 'Deluxe' | 'EP' | 'Single' | 'Custom';
+  type: string;
+  defaultReleaseId?: string;
+}
+
+export interface ReleaseType {
+  id: string;
+  name: string;
 }
 
 export interface Release {
