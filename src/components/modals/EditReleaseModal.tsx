@@ -153,10 +153,19 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
                       {formData.selectedTrackIds.map((tid, index) => {
                         const track = tracks.find(t => t.id === tid);
                         return (
-                          <div key={tid} className="flex items-center gap-2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg group">
-                            <div className="flex flex-col gap-0.5">
-                              <button type="button" onClick={() => moveTrack(index, 'up')} className="text-zinc-600 hover:text-white"><ArrowUp size={10} /></button>
-                              <button type="button" onClick={() => moveTrack(index, 'down')} className="text-zinc-600 hover:text-white"><ArrowDown size={10} /></button>
+                          <div
+                            key={tid}
+                            draggable
+                            onDragStart={() => onDragStart(index)}
+                            onDragOver={(e) => onDragOver(e, index)}
+                            onDragEnd={onDragEnd}
+                            className={cn(
+                              "flex items-center gap-2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg group cursor-move transition-all",
+                              draggedIndex === index && "opacity-50 scale-[0.98] border-blue-500/50"
+                            )}
+                          >
+                            <div className="text-zinc-600 group-hover:text-zinc-400">
+                              <GripVertical size={14} />
                             </div>
                             <span className="text-xs font-bold truncate flex-1">{track?.title}</span>
                             <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500" onClick={() => toggleTrack(tid)}>
