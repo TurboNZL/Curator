@@ -21,7 +21,7 @@ export const SpeedDial = () => {
   ];
 
   return (
-    <div className="fixed bottom-32 left-72 flex flex-col items-start gap-4 z-50">
+    <div className="fixed bottom-32 left-8 flex flex-col items-start gap-4 z-50">
       {/* Action Buttons */}
       <div className={cn(
         "flex flex-col items-start gap-3 transition-all duration-300 origin-bottom-left",
