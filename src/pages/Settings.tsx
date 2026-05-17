@@ -49,16 +49,20 @@ const Settings = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
             <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Default Artist Image</Label>
-            <FileUpload 
-              value={activeProfile.settings?.defaultArtistImage || ''} 
-              onChange={(url) => updateSettings({ defaultArtistImage: url })} 
+            <FileUpload
+              value={activeProfile.settings?.defaultArtistImage || ''}
+              onChange={(url) => updateSettings({ defaultArtistImage: url })}
+              type="image"
+              accept="image/*"
             />
           </div>
           <div className="space-y-4">
             <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Default Album Cover</Label>
-            <FileUpload 
-              value={activeProfile.settings?.defaultAlbumImage || ''} 
-              onChange={(url) => updateSettings({ defaultAlbumImage: url })} 
+            <FileUpload
+              value={activeProfile.settings?.defaultAlbumImage || ''}
+              onChange={(url) => updateSettings({ defaultAlbumImage: url })}
+              type="image"
+              accept="image/*"
             />
           </div>
         </div>

@@ -122,14 +122,6 @@ export const BottomPlayer = () => {
       {/* Controls */}
       <div className="flex flex-col items-center gap-2 w-1/3">
         <div className="flex items-center gap-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("h-8 w-8", isShuffled ? "text-blue-500" : "text-zinc-500")}
-            onClick={toggleShuffle}
-          >
-            <Shuffle size={16} />
-          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={handlePrevious}>
             <SkipBack size={20} fill="currentColor" />
           </Button>
@@ -141,9 +133,6 @@ export const BottomPlayer = () => {
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={handleNext}>
             <SkipForward size={20} fill="currentColor" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500">
-            <Repeat size={16} />
           </Button>
         </div>
         <div className="flex items-center gap-3 w-full max-w-md">

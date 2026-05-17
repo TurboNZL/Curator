@@ -100,10 +100,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const albumOptions = [
-    { value: 'none', label: 'None (Single)' },
-    ...albums.filter(al => al.artistId === formData.artistId).map(al => ({ value: al.id, label: al.title }))
-  ];
+  const albumOptions = albums.filter(al => al.artistId === formData.artistId).map(al => ({ value: al.id, label: al.title }));
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

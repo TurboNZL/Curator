@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useRef, useState } from 'react';
-import { Upload, Music, X, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, Music, X, CheckCircle2, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   value?: string;
   onChange: (url: string, fileName: string) => void;
   accept?: string;
+  type?: 'audio' | 'image';
 }
 
-export const FileUpload = ({ value, onChange, accept = "audio/*" }: FileUploadProps) => {
+export const FileUpload = ({ value, onChange, accept = "audio/*", type = "audio" }: FileUploadProps) => {
   const [fileName, setFileName] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,17 +25,19 @@ export const FileUpload = ({ value, onChange, accept = "audio/*" }: FileUploadPr
     if (file) {
       setIsUploading(true);
       try {
-        const url = await uploadFile(file, 'audio');
+        const url = await uploadFile(file, type);
         setFileName(file.name);
         onChange(url, file.name);
-        toast.success('Audio file uploaded');
+        toast.success(`${type === 'audio' ? 'Audio' : 'Image'} file uploaded`);
       } catch (error) {
-        toast.error('Failed to upload audio');
+        toast.error(`Failed to upload ${type}`);
       } finally {
         setIsUploading(false);
       }
     }
   };
+
+  const Icon = type === 'audio' ? Music : ImageIcon;
 
   return (
     <div className="space-y-2">
@@ -57,18 +61,27 @@ export const FileUpload = ({ value, onChange, accept = "audio/*" }: FileUploadPr
           </div>
           <div className="text-center">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
-              {isUploading ? 'Uploading...' : 'Upload Audio File'}
+              {isUploading ? 'Uploading...' : `Upload ${type === 'audio' ? 'Audio' : 'Image'} File`}
             </p>
-            <p className="text-[10px] text-zinc-600 mt-1">MP3, WAV, or FLAC</p>
+            <p className="text-[10px] text-zinc-600 mt-1">
+              {type === 'audio' ? 'MP3, WAV, or FLAC' : 'JPG, PNG, or WEBP'}
+            </p>
           </div>
         </button>
       ) : (
         <div className="flex items-center gap-4 p-4 bg-zinc-900 rounded-xl border border-zinc-800">
-          <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-500">
-            <Music size={20} />
+          <div className={cn(
+            "w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden",
+            type === 'audio' ? "bg-blue-600/20 text-blue-500" : "bg-purple-600/20 text-purple-500"
+          )}>
+            {type === 'image' && value ? (
+              <img src={value} className="w-full h-full object-cover" alt="" />
+            ) : (
+              <Icon size={20} />
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white truncate">{fileName || "Audio File Loaded"}</p>
+            <p className="text-xs font-bold text-white truncate">{fileName || (type === 'audio' ? "Audio File Loaded" : "Image Loaded")}</p>
             <div className="flex items-center gap-1 mt-0.5">
               <CheckCircle2 size={10} className="text-emerald-500" />
               <span className="text-[10px] text-zinc-500 uppercase font-bold">Stored on local disk</span>

@@ -55,19 +55,19 @@ export const SearchableSelect = ({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 bg-zinc-950 border-zinc-800">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-950 border-zinc-800">
         <Command className="bg-transparent">
-          <CommandInput 
-            placeholder={placeholder} 
-            className="h-9 text-white" 
+          <CommandInput
+            placeholder={placeholder}
+            className="h-9 text-white"
             value={inputValue}
             onValueChange={setInputValue}
           />
           <CommandList>
             <CommandEmpty className="p-2">
               {allowCustom && inputValue ? (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="w-full justify-start text-xs text-blue-400"
                   onClick={() => {
                     onValueChange(inputValue);
@@ -84,9 +84,9 @@ export const SearchableSelect = ({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onValueChange(option.value);
+                  value={option.value}
+                  onSelect={(currentValue) => {
+                    onValueChange(currentValue);
                     setOpen(false);
                   }}
                   className="text-white focus:bg-zinc-900 cursor-pointer"

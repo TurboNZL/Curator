@@ -223,13 +223,13 @@ const AlbumDetail = () => {
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "h-7 text-[10px] font-black uppercase tracking-widest gap-2",
+                      "h-6 px-2 text-[8px] font-black uppercase tracking-widest gap-1.5",
                       showAllTracks ? "bg-blue-600 text-white border-blue-500" : "border-zinc-800 text-zinc-500"
                     )}
                     onClick={() => setShowAllTracks(!showAllTracks)}
                   >
-                    <List size={12} />
-                    {showAllTracks ? "Showing All" : "Show All"}
+                    <List size={10} />
+                    {showAllTracks ? "All" : "Show All"}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

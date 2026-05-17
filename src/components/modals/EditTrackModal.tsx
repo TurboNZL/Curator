@@ -13,15 +13,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { NotesSection } from '@/components/ui/NotesSection';
 import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export const EditTrackModal = ({ track, children }: { track: Track, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { updateTrack, notes, deleteTrack } = useMusicStore();
+  const { updateTrack, notes, deleteTrack, albums, artists } = useMusicStore();
   
   const trackNotes = notes.filter(n => n.entityType === 'track' && n.entityId === track.id);
   
   const [formData, setFormData] = useState({
     title: track.title,
+    artistId: track.artistId,
+    albumId: track.albumIds[0] || '',
     initialRating: track.initialRating?.toString() || '',
     genres: track.genres.join(', '),
     producers: track.producers.join(', '),
@@ -34,6 +37,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     soundcloudUrl: track.soundcloudUrl || '',
     youtubeMusicUrl: track.youtubeMusicUrl || '',
   });
+
+  const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -52,6 +57,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
 
     await updateTrack(track.id, {
       title: formData.title,
+      artistId: formData.artistId,
+      albumIds: formData.albumId ? [formData.albumId] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
       producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
@@ -114,8 +121,24 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
                   <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album</Label>
+                  <SearchableSelect
+                    options={albumOptions}
+                    value={formData.albumId}
+                    onValueChange={(val) => setFormData({...formData, albumId: val})}
+                    placeholder="Select album..."
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10)</Label>
                   <Input type="number" step="0.1" value={formData.initialRating} onChange={(e) => setFormData({...formData, initialRating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bitrate</Label>
+                  <Input value={formData.bitrate} onChange={(e) => setFormData({...formData, bitrate: e.target.value})} className="bg-zinc-900 border-zinc-800" />
                 </div>
               </div>
 

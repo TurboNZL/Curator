@@ -14,9 +14,9 @@ export const AppShell = () => {
         <main className="flex-1 overflow-y-auto bg-zinc-950 p-8 pb-32 relative">
           <Outlet />
         </main>
-        <SpeedDial />
         <BottomPlayer />
       </div>
+      <SpeedDial />
     </div>
   );
 };
