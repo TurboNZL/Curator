@@ -1,7 +1,8 @@
 import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
-import { playbackLogs } from '../../db/schema';
+import { playbackLogs, tracks } from '../../db/schema';
+import { eq, sql } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
   const body = await readBody(event) as any;
@@ -18,5 +19,13 @@ export default defineHandler(async (event) => {
   };
 
   await db.insert(playbackLogs).values(log);
+
+  // Increment memories on the track
+  if (!body.isSkip) {
+    await db.update(tracks)
+      .set({ memories: sql`${tracks.memories} + 1` })
+      .where(eq(tracks.id, body.trackId));
+  }
+
   return log;
 });

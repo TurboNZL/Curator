@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, Calendar, SortAsc, SortDesc } from 'lucide-react';
+import { Search, ListMusic, ArrowUpDown, Brain, Calendar, SortAsc, SortDesc, Play, Music, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating';
@@ -21,11 +21,17 @@ const Tracks = () => {
   }, []);
 
   const filteredTracks = useMemo(() => {
-    return tracks.filter(t => 
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
-      artists.find(a => a.id === t.artistId)?.name.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [tracks, search, artists]);
+    return tracks.filter(t => {
+      const artist = artists.find(a => a.id === t.artistId);
+      const album = albums.find(al => t.albumIds.includes(al.id));
+      const searchLower = search.toLowerCase();
+      return (
+        t.title.toLowerCase().includes(searchLower) ||
+        artist?.name.toLowerCase().includes(searchLower) ||
+        album?.title.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [tracks, search, artists, albums]);
 
   const sortedTracks = useMemo(() => {
     return [...filteredTracks].sort((a, b) => {
@@ -55,7 +61,7 @@ const Tracks = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
           <Input 
             className="bg-zinc-900/50 border-none rounded-lg pl-10 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 text-white" 
-            placeholder="Search by title, artist, or genre..."
+            placeholder="Search by title, artist, or album..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -70,13 +76,13 @@ const Tracks = () => {
           <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
             <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sort By</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'title' })} className="text-xs font-bold gap-2">
-              <ListMusic size={14} /> Title
+              <Music size={14} /> Title
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'memories' })} className="text-xs font-bold gap-2">
               <Brain size={14} /> Memories
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'rating' })} className="text-xs font-bold gap-2">
-              <Calendar size={14} /> Rating
+              <Star size={14} /> Rating
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
@@ -94,56 +100,69 @@ const Tracks = () => {
           <p className="text-zinc-600 text-sm mt-1">Try adjusting your search or add tracks to an album.</p>
         </div>
       ) : (
-        <Table>
-          <TableHeader className="hover:bg-transparent border-zinc-900">
-            <TableRow className="border-zinc-900 hover:bg-transparent">
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Title</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Memories</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
-              <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedTracks.map((track) => {
-              const artist = artists.find(a => a.id === track.artistId);
-              const album = albums.find(al => track.albumIds.includes(al.id));
-              return (
-                <TableRow 
-                  key={track.id} 
-                  className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
-                >
-                  <TableCell onClick={() => setCurrentTrack(track.id)} className="cursor-pointer">
-                    <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                  </TableCell>
-                  <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
-                  <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Brain size={12} className="text-purple-500" />
-                      <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Rating
-                      trackId={track.id}
-                      balanced={track.rating}
-                      unbalanced={track.initialRating}
-                      comparisons={track.comparisons}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <TrackContextMenu track={track} />
-                      <EditTrackModal track={track} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="bg-zinc-900/20 rounded-2xl border border-zinc-900 overflow-hidden">
+          <Table>
+            <TableHeader className="hover:bg-transparent border-zinc-900">
+              <TableRow className="border-zinc-900 hover:bg-transparent">
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase w-12">#</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Title</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Memories</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedTracks.map((track, i) => {
+                const artist = artists.find(a => a.id === track.artistId);
+                const album = albums.find(al => track.albumIds.includes(al.id));
+                return (
+                  <TableRow 
+                    key={track.id} 
+                    className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
+                  >
+                    <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => setCurrentTrack(track)}
+                          className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:border-blue-500/50 transition-all"
+                        >
+                          <Play size={14} fill="currentColor" />
+                        </button>
+                        <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
+                    <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Brain size={12} className="text-purple-500" />
+                        <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Rating
+                        trackId={track.id}
+                        balanced={track.rating}
+                        unbalanced={track.initialRating}
+                        comparisons={track.comparisons}
+                        size="sm"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <TrackContextMenu track={track} />
+                        <EditTrackModal track={track} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
