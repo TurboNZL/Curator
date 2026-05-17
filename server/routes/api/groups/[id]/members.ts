@@ -1,4 +1,4 @@
-import { defineHandler } from "nitro";
+import { defineHandler, getMethod } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../../db';
 import { groupMembers } from '../../../db/schema';
@@ -8,7 +8,7 @@ export default defineHandler(async (event) => {
   const groupId = event.context.params?.id;
   if (!groupId) return { error: 'Missing Group ID' };
 
-  const method = event.method;
+  const method = getMethod(event);
   const body = await readBody(event) as any;
 
   if (method === 'POST') {

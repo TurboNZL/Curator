@@ -84,9 +84,9 @@ export const SearchableSelect = ({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue);
+                  value={option.label}
+                  onSelect={() => {
+                    onValueChange(option.value);
                     setOpen(false);
                   }}
                   className="text-white focus:bg-zinc-900 cursor-pointer"

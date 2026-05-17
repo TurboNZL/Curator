@@ -1,4 +1,4 @@
-import { defineHandler } from "nitro";
+import { defineHandler, getMethod } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../../db';
 import { notes } from '../../../db/schema';
@@ -8,7 +8,7 @@ export default defineHandler(async (event) => {
   const id = event.context.params?.id;
   if (!id) return { error: 'Missing ID' };
 
-  const method = event.method;
+  const method = getMethod(event);
 
   if (method === 'PUT') {
     const body = await readBody(event) as any;

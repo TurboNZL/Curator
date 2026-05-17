@@ -348,8 +348,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteArtist: async (id) => {
-    await fetch(`/api/artists/${id}`, { method: 'DELETE' });
-    set(state => ({ artists: state.artists.filter(a => a.id !== id) }));
+    try {
+      const res = await fetch(`/api/artists/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete artist');
+      await get().fetchData();
+      toast.success("Artist deleted from database");
+    } catch (err) {
+      toast.error("Failed to delete artist");
+    }
   },
 
   addAlbum: async (albumData) => {
@@ -372,8 +378,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteAlbum: async (id) => {
-    await fetch(`/api/albums/${id}`, { method: 'DELETE' });
-    set(state => ({ albums: state.albums.filter(a => a.id !== id) }));
+    try {
+      const res = await fetch(`/api/albums/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete album');
+      await get().fetchData();
+      toast.success("Album deleted from database");
+    } catch (err) {
+      toast.error("Failed to delete album");
+    }
   },
 
   addTracks: async (tracksData) => {
@@ -398,8 +410,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteTrack: async (id) => {
-    await fetch(`/api/tracks/${id}`, { method: 'DELETE' });
-    set(state => ({ tracks: state.tracks.filter(t => t.id !== id) }));
+    try {
+      const res = await fetch(`/api/tracks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete track');
+      await get().fetchData();
+      toast.success("Track deleted from database");
+    } catch (err) {
+      toast.error("Failed to delete track");
+    }
   },
 
   incrementMemories: async (id) => {
@@ -516,11 +534,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteGroup: async (id) => {
-    await fetch(`/api/groups/${id}`, { method: 'DELETE' });
-    set(state => ({ groups: state.groups.filter(g => g.id !== id) }));
+    try {
+      const res = await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete bio');
+      await get().fetchData();
+      toast.success("Relational bio deleted");
+    } catch (err) {
+      toast.error("Failed to delete bio");
+    }
   },
 
   addGroupMember: async (groupId, entityType, entityId) => {
+    console.log('Store: addGroupMember', { groupId, entityType, entityId });
     await fetch(`/api/groups/${groupId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

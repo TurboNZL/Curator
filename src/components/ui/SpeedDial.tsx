@@ -21,10 +21,10 @@ export const SpeedDial = () => {
   ];
 
   return (
-    <div className="fixed bottom-32 left-8 flex flex-col items-start gap-4 z-50">
+    <div className="relative flex flex-col items-start gap-4 z-50">
       {/* Action Buttons */}
       <div className={cn(
-        "flex flex-col items-start gap-3 transition-all duration-300 origin-bottom-left",
+        "absolute bottom-full left-0 mb-4 flex flex-col items-start gap-3 transition-all duration-300 origin-bottom-left",
         isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4 pointer-events-none"
       )}>
         {actions.map((action, index) => (

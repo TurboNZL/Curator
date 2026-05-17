@@ -30,7 +30,7 @@ const AlbumDetail = () => {
   const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
   
   const albumGroups = groups.filter(g =>
-    g.members?.some(m => m.entityId === id && m.entityType === 'album')
+    !g.isArtistOnly && g.members?.some(m => m.entityId === id && m.entityType === 'album')
   );
 
   const [showAllTracks, setShowAllTracks] = useState(false);

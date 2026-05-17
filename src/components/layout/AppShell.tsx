@@ -16,7 +16,6 @@ export const AppShell = () => {
         </main>
         <BottomPlayer />
       </div>
-      <SpeedDial />
     </div>
   );
 };

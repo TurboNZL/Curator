@@ -133,7 +133,17 @@ export const RelationalBioSection = ({ entityType, entityId }: RelationalBioSect
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-blue-400" onClick={() => startEditing(group)}>
                       <Edit2 size={12} />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500" onClick={() => deleteGroup(group.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-zinc-500 hover:text-red-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Delete this relational bio?")) {
+                          deleteGroup(group.id);
+                        }
+                      }}
+                    >
                       <Trash2 size={12} />
                     </Button>
                   </div>
@@ -159,8 +169,9 @@ export const RelationalBioSection = ({ entityType, entityId }: RelationalBioSect
                       options={entityOptions.filter(opt => !group.members?.some(m => `${m.entityType}:${m.entityId}` === opt.value))}
                       value=""
                       onValueChange={(val) => {
+                        console.log('Linking entity:', val);
                         const [type, id] = val.split(':');
-                        addGroupMember(group.id, type as any, id);
+                        addGroupMember(group.id, type, id);
                       }}
                       placeholder="Link entity..."
                       className="h-6 text-[8px]"

@@ -17,6 +17,8 @@ export const ImageUpload = ({ value, onChange, className }: ImageUploadProps) =>
   const [isUploading, setIsUploading] = useState(false);
   const uploadFile = useMusicStore(state => state.uploadFile);
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) return;
     
@@ -45,7 +47,7 @@ export const ImageUpload = ({ value, onChange, className }: ImageUploadProps) =>
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "relative aspect-square rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 cursor-pointer overflow-hidden group",
         isDragging ? "border-blue-500 bg-blue-500/10" : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700",
@@ -55,12 +57,12 @@ export const ImageUpload = ({ value, onChange, className }: ImageUploadProps) =>
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={onDrop}
-      onClick={() => !value && document.getElementById('image-upload-input')?.click()}
+      onClick={() => !value && fileInputRef.current?.click()}
     >
-      <input 
-        id="image-upload-input"
-        type="file" 
-        className="hidden" 
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
         accept="image/*"
         onChange={onFileSelect}
       />
