@@ -15,6 +15,7 @@ import Playlists from "./pages/Playlists";
 import Stats from "./pages/Stats";
 import Cleanup from "./pages/Cleanup";
 import Queue from "./pages/Queue";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/stats" element={<Stats />} />
             <Route path="/cleanup" element={<Cleanup />} />
             <Route path="/queue" element={<Queue />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

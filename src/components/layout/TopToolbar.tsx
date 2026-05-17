@@ -82,7 +82,10 @@ export const TopToolbar = () => {
               </div>
             </div>
             <DropdownMenuSeparator className="bg-zinc-800" />
-            <DropdownMenuItem className="text-xs font-bold uppercase tracking-widest focus:bg-zinc-900 focus:text-blue-400 cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => navigate('/settings')}
+              className="text-xs font-bold uppercase tracking-widest focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
+            >
               <Settings size={14} className="mr-2" /> Profile Settings
             </DropdownMenuItem>
           </DropdownMenuContent>
