@@ -81,17 +81,4 @@ export async function initDb() {
       // Ignore errors if columns already exist
     }
   }
-
-  // Ensure default profile exists
-  try {
-    const profiles = await client.execute("SELECT id FROM profiles LIMIT 1");
-    if (profiles.rows.length === 0) {
-      await client.execute({
-        sql: "INSERT INTO profiles (id, name, theme, accent_color, playback_mode, settings, playback_rules) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        args: ['1', 'Main Curator', 'dark', '#3b82f6', 'local', '{"showUnbalancedFirst": false}', '[]']
-      });
-    }
-  } catch (e) {
-    console.error("Error seeding default profile:", e);
-  }
 }

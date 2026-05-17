@@ -126,7 +126,7 @@ const Tracks = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <button 
-                          onClick={() => setCurrentTrack(track.id)}
+                          onClick={() => setCurrentTrack(track)}
                           className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:border-blue-500/50 transition-all"
                         >
                           <Play size={14} fill="currentColor" />

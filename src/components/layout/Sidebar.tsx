@@ -3,7 +3,6 @@
 import { NavLink } from 'react-router-dom';
 import { Disc, FileAudio, ListMusic, Mic2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SpeedDial } from '../ui/SpeedDial';
 
 const navItems = [
   { icon: Mic2, label: 'Artists', href: '/artists' },
@@ -35,9 +34,6 @@ export const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-6 mt-auto">
-        <SpeedDial />
-      </div>
     </aside>
   );
 };
