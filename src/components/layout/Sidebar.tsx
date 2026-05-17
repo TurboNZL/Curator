@@ -1,7 +1,7 @@
 "use client";
 
 import { NavLink } from 'react-router-dom';
-import { Disc, FileAudio, ListMusic, Mic2, Settings } from 'lucide-react';
+import { Disc, FileAudio, ListMusic, Mic2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -34,20 +34,6 @@ export const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t border-zinc-900">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => cn(
-            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium",
-            isActive
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
-          )}
-        >
-          <Settings size={18} />
-          Settings
-        </NavLink>
-      </div>
     </aside>
   );
 };

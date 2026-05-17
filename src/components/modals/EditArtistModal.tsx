@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, User } from 'lucide-react';
+import { Edit2, User, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Artist } from '@/types/music';
@@ -15,7 +15,7 @@ import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
 
 export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { updateArtist, notes } = useMusicStore();
+  const { updateArtist, deleteArtist, notes } = useMusicStore();
   const artistNotes = notes.filter(n => n.entityType === 'artist' && n.entityId === artist.id);
   
   const [formData, setFormData] = useState({
@@ -36,6 +36,14 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
 
     toast.success(`Updated ${formData.name}`);
     setOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this artist? This will remove all associated data.")) {
+      await deleteArtist(artist.id);
+      toast.success("Artist deleted");
+      setOpen(false);
+    }
   };
 
   return (
@@ -65,15 +73,15 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
             <TabsContent value="metadata" className="p-6 space-y-6 mt-0">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Image</Label>
-                <ImageUpload 
-                  value={formData.image} 
-                  onChange={(val) => setFormData({...formData, image: val})} 
+                <ImageUpload
+                  value={formData.image}
+                  onChange={(val) => setFormData({...formData, image: val})}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Name</Label>
-                <Input 
-                  id="name" 
+                <Input
+                  id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
@@ -81,8 +89,8 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bio" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Short Bio</Label>
-                <Textarea 
-                  id="bio" 
+                <Textarea
+                  id="bio"
                   value={formData.bio}
                   onChange={(e) => setFormData({...formData, bio: e.target.value})}
                   className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
@@ -98,8 +106,16 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
               <RelationalBioSection entityType="artist" entityId={artist.id} />
             </TabsContent>
 
-            <div className="p-6 border-t border-zinc-900">
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
+            <div className="p-6 border-t border-zinc-900 flex items-center gap-4">
+              <Button
+                type="button"
+                variant="destructive"
+                className="bg-red-600/10 text-red-500 border-red-500/20 hover:bg-red-600 hover:text-white font-black uppercase tracking-widest h-10 px-6"
+                onClick={handleDelete}
+              >
+                <Trash2 size={16} className="mr-2" /> Delete Artist
+              </Button>
+              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider h-10">
                 Save Changes
               </Button>
             </div>

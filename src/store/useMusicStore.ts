@@ -46,9 +46,11 @@ interface MusicState {
   
   addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<void>;
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
+  deleteArtist: (id: string) => Promise<void>;
   
   addAlbum: (album: Omit<Album, 'id'>) => Promise<void>;
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
+  deleteAlbum: (id: string) => Promise<void>;
   
   addTracks: (tracks: Omit<Track, 'id'>[]) => Promise<void>;
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
@@ -345,6 +347,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await get().fetchData();
   },
 
+  deleteArtist: async (id) => {
+    await fetch(`/api/artists/${id}`, { method: 'DELETE' });
+    set(state => ({ artists: state.artists.filter(a => a.id !== id) }));
+  },
+
   addAlbum: async (albumData) => {
     const res = await fetch('/api/albums', {
       method: 'POST',
@@ -362,6 +369,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(data)
     });
     await get().fetchData();
+  },
+
+  deleteAlbum: async (id) => {
+    await fetch(`/api/albums/${id}`, { method: 'DELETE' });
+    set(state => ({ albums: state.albums.filter(a => a.id !== id) }));
   },
 
   addTracks: async (tracksData) => {

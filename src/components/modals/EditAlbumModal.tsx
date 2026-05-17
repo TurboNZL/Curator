@@ -17,7 +17,7 @@ import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
 
 export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, notes, releases, uploadFile } = useMusicStore();
+  const { artists, updateAlbum, deleteAlbum, notes, releases, uploadFile } = useMusicStore();
   const albumNotes = notes.filter(n => n.entityType === 'album' && n.entityId === album.id);
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
@@ -46,6 +46,14 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
     toast.success(`Updated ${formData.title}`);
     setOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this album? This will remove all associated data.")) {
+      await deleteAlbum(album.id);
+      toast.success("Album deleted");
+      setOpen(false);
+    }
   };
 
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,8 +213,16 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
               <RelationalBioSection entityType="album" entityId={album.id} />
             </TabsContent>
 
-            <div className="p-6 border-t border-zinc-900">
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
+            <div className="p-6 border-t border-zinc-900 flex items-center gap-4">
+              <Button
+                type="button"
+                variant="destructive"
+                className="bg-red-600/10 text-red-500 border-red-500/20 hover:bg-red-600 hover:text-white font-black uppercase tracking-widest h-10 px-6"
+                onClick={handleDelete}
+              >
+                <Trash2 size={16} className="mr-2" /> Delete Album
+              </Button>
+              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider h-10">
                 Save Changes
               </Button>
             </div>
