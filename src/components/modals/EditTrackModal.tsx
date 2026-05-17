@@ -22,7 +22,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
   
   const [formData, setFormData] = useState({
     title: track.title,
-    rating: track.rating?.toString() || '',
+    initialRating: track.initialRating?.toString() || '',
     genres: track.genres.join(', '),
     producers: track.producers.join(', '),
     writers: track.writers.join(', '),
@@ -33,9 +33,6 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     geniusUrl: track.geniusUrl || '',
     soundcloudUrl: track.soundcloudUrl || '',
     youtubeMusicUrl: track.youtubeMusicUrl || '',
-    bpm: track.bpm?.toString() || '',
-    key: track.key || '',
-    isFavorite: track.isFavorite
   });
 
   const cleanSpotifyUrl = (url: string) => {
@@ -55,7 +52,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
 
     await updateTrack(track.id, {
       title: formData.title,
-      rating: formData.rating ? parseFloat(formData.rating) : undefined,
+      initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
       producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
       writers: formData.writers.split(',').map(s => s.trim()).filter(Boolean),
@@ -66,9 +63,6 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
       geniusUrl: formData.geniusUrl,
       soundcloudUrl: formData.soundcloudUrl,
       youtubeMusicUrl: formData.youtubeMusicUrl,
-      bpm: formData.bpm ? parseInt(formData.bpm) : undefined,
-      key: formData.key,
-      isFavorite: formData.isFavorite
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -120,33 +114,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
                   <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rating (0-10)</Label>
-                  <Input type="number" step="0.1" value={formData.rating} onChange={(e) => setFormData({...formData, rating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">BPM</Label>
-                  <Input type="number" value={formData.bpm} onChange={(e) => setFormData({...formData, bpm: e.target.value})} className="bg-zinc-900 border-zinc-800" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Key</Label>
-                  <Input value={formData.key} onChange={(e) => setFormData({...formData, key: e.target.value})} className="bg-zinc-900 border-zinc-800" placeholder="e.g. C# Minor" />
-                </div>
-                <div className="flex items-end pb-2">
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className={cn(
-                      "w-full border-zinc-800 gap-2 font-black uppercase text-[10px] tracking-widest",
-                      formData.isFavorite ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-zinc-900"
-                    )}
-                    onClick={() => setFormData({...formData, isFavorite: !formData.isFavorite})}
-                  >
-                    <Heart size={14} fill={formData.isFavorite ? "currentColor" : "none"} />
-                    {formData.isFavorite ? "Favorited" : "Favorite"}
-                  </Button>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10)</Label>
+                  <Input type="number" step="0.1" value={formData.initialRating} onChange={(e) => setFormData({...formData, initialRating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
                 </div>
               </div>
 

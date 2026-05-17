@@ -36,6 +36,11 @@ export interface Era {
   description?: string;
 }
 
+export interface PendingFile {
+  url: string;
+  name: string;
+}
+
 export interface Album {
   id: string;
   title: string;
@@ -43,7 +48,7 @@ export interface Album {
   eraId?: string;
   covers: string[];
   defaultReleaseId?: string;
-  pendingFiles?: string[]; // URLs of uploaded but unassigned audio files
+  pendingFiles?: PendingFile[]; // Uploaded but unassigned audio files
 }
 
 export interface ReleaseType {

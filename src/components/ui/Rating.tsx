@@ -36,7 +36,7 @@ export const Rating = ({ trackId, balanced, unbalanced, comparisons = 0, classNa
     e.stopPropagation();
     const val = parseFloat(editValue);
     if (!isNaN(val)) {
-      await updateTrack(trackId, { rating: val, initialRating: val });
+      await updateTrack(trackId, { initialRating: val });
     }
     setIsEditing(false);
   };

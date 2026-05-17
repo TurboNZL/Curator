@@ -52,13 +52,17 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     const files = e.target.files;
     if (!files) return;
 
-    const uploadPromises = Array.from(files).map(file => uploadFile(file, 'audio'));
+    const uploadPromises = Array.from(files).map(async file => {
+      const url = await uploadFile(file, 'audio');
+      return { url, name: file.name };
+    });
+
     try {
       toast.promise(Promise.all(uploadPromises), {
         loading: 'Uploading audio files...',
-        success: (urls) => {
-          setFormData(prev => ({ ...prev, pendingFiles: [...prev.pendingFiles, ...urls] }));
-          return `Uploaded ${urls.length} files`;
+        success: (newFiles) => {
+          setFormData(prev => ({ ...prev, pendingFiles: [...prev.pendingFiles, ...newFiles] }));
+          return `Uploaded ${newFiles.length} files`;
         },
         error: 'Failed to upload some files'
       });
@@ -68,7 +72,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   };
 
   const removePendingFile = (url: string) => {
-    setFormData(prev => ({ ...prev, pendingFiles: prev.pendingFiles.filter(u => u !== url) }));
+    setFormData(prev => ({ ...prev, pendingFiles: prev.pendingFiles.filter(f => f.url !== url) }));
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
@@ -167,18 +171,18 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
                 </div>
                 
                 <div className="grid grid-cols-1 gap-2">
-                  {formData.pendingFiles.map((url, i) => (
+                  {formData.pendingFiles.map((file, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-zinc-900 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0">
                         <FileAudio size={16} className="text-blue-500" />
-                        <span className="text-xs font-mono text-zinc-400 truncate">{url.split('/').pop()}</span>
+                        <span className="text-xs font-mono text-zinc-400 truncate">{file.name}</span>
                       </div>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removePendingFile(url)}
+                        onClick={() => removePendingFile(file.url)}
                       >
                         <Trash2 size={14} />
                       </Button>
