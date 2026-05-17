@@ -26,18 +26,18 @@ export const RelationalBioSection = ({ entityType, entityId }: RelationalBioSect
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
-    label: '',
     isArtistOnly: false,
     type: 'relationship' as const
   });
 
   const handleCreateGroup = async () => {
-    if (!newGroup.name) return toast.error("Group name is required");
+    if (!newGroup.name) return toast.error("Bio name is required");
     await addGroup({
       ...newGroup,
+      label: newGroup.name, // Keep label in sync for now or just use name
       members: [{ entityType, entityId }]
     });
-    setNewGroup({ name: '', description: '', label: '', isArtistOnly: false, type: 'relationship' });
+    setNewGroup({ name: '', description: '', isArtistOnly: false, type: 'relationship' });
     toast.success("Relational bio created");
   };
 
@@ -57,7 +57,6 @@ export const RelationalBioSection = ({ entityType, entityId }: RelationalBioSect
               <div className="flex items-center gap-2">
                 <LinkIcon size={14} className="text-blue-500" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-white">{group.name}</span>
-                {group.label && <span className="text-[8px] font-bold px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400 uppercase">{group.label}</span>}
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500 opacity-0 group-hover/bio:opacity-100 transition-opacity" onClick={() => deleteGroup(group.id)}>
                 <Trash2 size={12} />
@@ -80,8 +79,8 @@ export const RelationalBioSection = ({ entityType, entityId }: RelationalBioSect
                 </div>
               ))}
               <div className="w-32">
-                <SearchableSelect 
-                  options={entityOptions.filter(opt => !group.members?.some(m => ` ${m.entityType}:${m.entityId}` === opt.value))}
+                <SearchableSelect
+                  options={entityOptions.filter(opt => !group.members?.some(m => `${m.entityType}:${m.entityId}` === opt.value))}
                   value=""
                   onValueChange={(val) => {
                     const [type, id] = val.split(':');
@@ -101,22 +100,13 @@ export const RelationalBioSection = ({ entityType, entityId }: RelationalBioSect
           <Plus size={14} className="text-zinc-500" />
           <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Create Relational Bio</h4>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bio Name</Label>
-            <Input 
-              placeholder="e.g. Sample Source, Collective" 
+            <Input
+              placeholder="e.g. Sample Source, Collective"
               value={newGroup.name}
               onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
-              className="bg-zinc-900 border-zinc-800 text-xs"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Label (Optional)</Label>
-            <Input 
-              placeholder="e.g. Transition" 
-              value={newGroup.label}
-              onChange={(e) => setNewGroup({...newGroup, label: e.target.value})}
               className="bg-zinc-900 border-zinc-800 text-xs"
             />
           </div>

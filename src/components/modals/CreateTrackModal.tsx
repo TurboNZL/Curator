@@ -81,9 +81,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     await addTracks([newTrack]);
 
     // If we used a pending file, remove it from the album
-    if (selectedAlbum && pendingFiles.includes(formData.audioUrl)) {
+    if (selectedAlbum && pendingFiles.some(f => f.url === formData.audioUrl)) {
       await updateAlbum(selectedAlbum.id, {
-        pendingFiles: pendingFiles.filter(f => f !== formData.audioUrl)
+        pendingFiles: pendingFiles.filter(f => f.url !== formData.audioUrl)
       });
     }
 
@@ -129,18 +129,18 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
               <div className="space-y-2">
                 <Label className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Pick from unassigned files</Label>
                 <div className="grid grid-cols-1 gap-1 max-h-[120px] overflow-y-auto pr-2">
-                  {pendingFiles.map((url, i) => (
+                  {pendingFiles.map((file, i) => (
                     <button
                       key={i}
                       type="button"
-                      onClick={() => setFormData({...formData, audioUrl: url, title: formData.title || url.split('/').pop()?.split('.')[0] || ''})}
+                      onClick={() => setFormData({...formData, audioUrl: file.url, title: formData.title || file.name.split('.')[0] || ''})}
                       className={cn(
                         "flex items-center gap-3 p-2 rounded-lg border text-left transition-all",
-                        formData.audioUrl === url ? "bg-blue-500/10 border-blue-500/50 text-blue-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                        formData.audioUrl === file.url ? "bg-blue-500/10 border-blue-500/50 text-blue-400" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700"
                       )}
                     >
                       <FileAudio size={14} />
-                      <span className="text-[10px] font-mono truncate">{url.split('/').pop()}</span>
+                      <span className="text-[10px] font-mono truncate">{file.name}</span>
                     </button>
                   ))}
                 </div>

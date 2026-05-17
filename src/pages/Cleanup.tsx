@@ -180,9 +180,10 @@ const Cleanup = () => {
                           {albums.find(a => track.albumIds?.includes(a.id))?.title || 'Unknown Album'}
                         </p>
                       </div>
-                      <Rating 
-                        balanced={track.rating} 
-                        unbalanced={track.initialRating} 
+                      <Rating
+                        trackId={track.id}
+                        balanced={track.rating}
+                        unbalanced={track.initialRating}
                         comparisons={track.comparisons}
                         size="md"
                       />

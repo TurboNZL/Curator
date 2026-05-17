@@ -219,14 +219,17 @@ const AlbumDetail = () => {
                   <Layers size={12} /> Releases
                 </h3>
                 <div className="flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn("h-6 w-6", showAllTracks ? "text-blue-500" : "text-zinc-500")}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-7 text-[10px] font-black uppercase tracking-widest gap-2",
+                      showAllTracks ? "bg-blue-600 text-white border-blue-500" : "border-zinc-800 text-zinc-500"
+                    )}
                     onClick={() => setShowAllTracks(!showAllTracks)}
-                    title="Show All Tracks"
                   >
                     <List size={12} />
+                    {showAllTracks ? "Showing All" : "Show All"}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

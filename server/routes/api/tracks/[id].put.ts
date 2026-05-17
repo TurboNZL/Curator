@@ -13,6 +13,8 @@ export default defineHandler(async (event) => {
   const updateData: any = {
     title: body.title,
     rating: body.rating,
+    initialRating: body.initialRating,
+    memories: body.memories,
     localFilePath: body.localFilePath,
     spotifyUrl: body.spotifyUrl,
     geniusUrl: body.geniusUrl,

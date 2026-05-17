@@ -207,6 +207,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const state = get();
     const { activeQueue, userQueue, currentTrackId, activeProfile } = state;
     
+    // Log partial playback if skipping
+    // Note: We don't have easy access to current time here,
+    // but we can assume if nextTrack is called manually, it's a skip.
+    // However, nextTrack is also called on end.
+    // Let's handle logging in the component instead.
+
     // Check playback rules for current track
     const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
     if (rule) {
@@ -285,7 +291,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }
     }
 
-    set({ activeQueue: shuffled });
+    set({ activeQueue: shuffled, isShuffled: true });
   },
 
   shuffleUserQueue: () => {
@@ -307,7 +313,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }
     }
 
-    set({ userQueue: shuffled });
+    set({ userQueue: shuffled, isShuffled: true });
   },
 
   uploadFile: async (file: File, type: 'audio' | 'image') => {

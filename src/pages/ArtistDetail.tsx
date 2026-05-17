@@ -1,8 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Music2, Calendar, Share2, Play, Star, TrendingUp, Link as LinkIcon } from 'lucide-react';
+import { Music2, Calendar, Share2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
@@ -12,7 +12,9 @@ import { Rating } from '@/components/ui/Rating';
 const ArtistDetail = () => {
 
   const { id } = useParams();
+  const navigate = useNavigate();
   const { artists, albums, tracks, setCurrentTrack, groups, activeProfile } = useMusicStore();
+
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
@@ -53,39 +55,6 @@ const ArtistDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
-          {artistGroups.length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
-                <LinkIcon size={14} className="text-blue-500" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {artistGroups.map(group => (
-                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
-                        {group.label || group.name}
-                      </h3>
-                      {group.isArtistOnly && <Badge variant="outline" className="text-[8px] border-zinc-800 text-zinc-500">Artist Only</Badge>}
-                    </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
-                        <Link
-                          key={i}
-                          to={`/${member.entityType}s/${member.entityId}`}
-                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
-                        >
-                          {member.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          )}
-
           <section>
             <div className="flex items-center justify-between mb-6 border-b border-zinc-900 pb-2">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Era Timeline</h2>
@@ -116,7 +85,7 @@ const ArtistDetail = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
-                <Card key={album.id} className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all cursor-pointer group" onClick={() => window.location.href = `/albums/${album.id}`}>
+                <Card key={album.id} className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all cursor-pointer group" onClick={() => navigate(`/albums/${album.id}`)}>
                   <div className="aspect-square rounded-lg overflow-hidden mb-3 relative">
                     <img src={album.covers[0] || defaultAlbumImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={album.title} />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -133,6 +102,43 @@ const ArtistDetail = () => {
         </div>
 
         <div className="space-y-8">
+          {artistGroups.length > 0 && (
+            <section className="space-y-6">
+              <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
+                <LinkIcon size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {artistGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                        {group.name}
+                      </h3>
+                      {group.isArtistOnly && <Badge variant="outline" className="text-[8px] border-zinc-800 text-zinc-500">Artist Only</Badge>}
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                        <Link
+                          key={i}
+                          to={`/${member.entityType}s/${member.entityId}`}
+                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors flex items-center gap-1.5"
+                        >
+                          {member.entityType === 'artist' && <User size={10} />}
+                          {member.entityType === 'album' && <Disc size={10} />}
+                          {member.entityType === 'track' && <Music size={10} />}
+                          {member.entityType === 'release' && <Layers size={10} />}
+                          {member.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={14} className="text-blue-500" />

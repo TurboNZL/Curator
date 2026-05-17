@@ -38,7 +38,9 @@ export const BottomPlayer = () => {
     const handleTimeUpdate = () => setProgress(audio.currentTime);
     const handleLoadedMetadata = () => setDuration(audio.duration);
     const handleEnded = () => {
-      logPlayback(currentTrackId!, audio.duration);
+      if (currentTrackId && audio.duration) {
+        logPlayback(currentTrackId, Math.floor(audio.duration));
+      }
       nextTrack();
     };
 
@@ -85,6 +87,20 @@ export const BottomPlayer = () => {
 
   if (!currentTrackId) return null;
 
+  const handleNext = () => {
+    if (currentTrackId && audioRef.current) {
+      logPlayback(currentTrackId, Math.floor(audioRef.current.currentTime), undefined, true);
+    }
+    nextTrack();
+  };
+
+  const handlePrevious = () => {
+    if (currentTrackId && audioRef.current) {
+      logPlayback(currentTrackId, Math.floor(audioRef.current.currentTime), undefined, true);
+    }
+    previousTrack();
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 h-24 bg-zinc-950 border-t border-zinc-800 px-6 flex items-center justify-between z-50">
       {/* Track Info */}
@@ -106,24 +122,24 @@ export const BottomPlayer = () => {
       {/* Controls */}
       <div className="flex flex-col items-center gap-2 w-1/3">
         <div className="flex items-center gap-6">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className={cn("h-8 w-8", isShuffled ? "text-blue-500" : "text-zinc-500")}
             onClick={toggleShuffle}
           >
             <Shuffle size={16} />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={previousTrack}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={handlePrevious}>
             <SkipBack size={20} fill="currentColor" />
           </Button>
-          <Button 
+          <Button
             onClick={togglePlay}
             className="h-10 w-10 rounded-full bg-white text-black hover:bg-zinc-200 flex items-center justify-center"
           >
             {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={nextTrack}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={handleNext}>
             <SkipForward size={20} fill="currentColor" />
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500">

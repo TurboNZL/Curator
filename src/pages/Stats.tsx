@@ -46,6 +46,13 @@ const Stats = () => {
     return ranges;
   }, [tracks]);
 
+  const totalSeconds = playbackLogs.reduce((a, b) => a + (b.duration || 0), 0);
+  const formatTotalTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h}h ${m}m`;
+  };
+
   return (
     <div className="space-y-8 pb-20">
       <div>
@@ -56,7 +63,7 @@ const Stats = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard icon={Play} label="Total Plays" value={playbackLogs.length.toString()} color="text-blue-500" />
         <StatCard icon={TrendingUp} label="Avg. Rating" value={(tracks.filter(t => t.rating !== undefined).reduce((a, b) => a + (b.rating || 0), 0) / (tracks.filter(t => t.rating !== undefined).length || 1)).toFixed(2)} color="text-yellow-500" />
-        <StatCard icon={Clock} label="Time Listened" value={`${Math.floor(playbackLogs.reduce((a, b) => a + (b.duration || 0), 0) / 3600)}h`} color="text-emerald-500" />
+        <StatCard icon={Clock} label="Time Listened" value={formatTotalTime(totalSeconds)} color="text-emerald-500" />
         <StatCard icon={Activity} label="Library Size" value={tracks.length.toString()} color="text-purple-500" />
       </div>
 

@@ -62,6 +62,18 @@ const Queue = () => {
         </div>
         <div className="flex gap-3">
           <Button
+            className="bg-white text-black hover:bg-zinc-200 font-bold gap-2"
+            onClick={() => {
+              if (activeQueue.length > 0) {
+                setCurrentTrack(activeQueue[0]);
+              } else if (userQueue.length > 0) {
+                setCurrentTrack(userQueue[0]);
+              }
+            }}
+          >
+            <Play fill="currentColor" size={18} /> Play Queue
+          </Button>
+          <Button
             variant="outline"
             className="border-zinc-800 bg-zinc-900/50 text-[10px] font-black uppercase tracking-widest h-9 gap-2"
             onClick={() => {

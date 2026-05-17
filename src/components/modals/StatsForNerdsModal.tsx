@@ -1,9 +1,10 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords } from 'lucide-react';
+import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock } from 'lucide-react';
 import { Track, Album, Artist } from '@/types/music';
 import { cn } from '@/lib/utils';
+import { useMusicStore } from '@/store/useMusicStore';
 
 interface StatsForNerdsModalProps {
   track?: Track;
@@ -13,7 +14,21 @@ interface StatsForNerdsModalProps {
 }
 
 export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForNerdsModalProps) => {
+  const { playbackLogs } = useMusicStore();
   if (!track) return <>{children}</>;
+
+  const trackLogs = playbackLogs.filter(l => l.trackId === track.id);
+  const playCount = trackLogs.length;
+  const totalPlaytime = trackLogs.reduce((acc, log) => acc + (log.duration || 0), 0);
+
+  const formatPlaytime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
 
   const links = [
     { label: 'Spotify', url: track.spotifyUrl, color: 'text-green-500' },
@@ -36,9 +51,9 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="grid grid-cols-1 gap-3">
+            <StatRow icon={Play} label="Play Count" value={playCount.toString()} />
+            <StatRow icon={Clock} label="Total Playtime" value={formatPlaytime(totalPlaytime)} />
             <StatRow icon={FileAudio} label="Bitrate" value={track.bitrate || 'Unknown'} />
-            <StatRow icon={Activity} label="BPM" value={track.bpm?.toString() || 'N/A'} />
-            <StatRow icon={Music} label="Key" value={track.key || 'N/A'} />
             <StatRow icon={Database} label="Track ID" value={track.id} />
             <StatRow icon={HardDrive} label="Local Path" value={track.localFilePath || 'N/A'} />
           </div>

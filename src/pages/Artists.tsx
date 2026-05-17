@@ -1,19 +1,36 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Plus, Search, Filter, Users } from 'lucide-react';
+import { Plus, Search, Filter, Users, ArrowUpDown, ListMusic, SortAsc, SortDesc } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { CreateArtistModal } from '@/components/modals/CreateArtistModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Artists = () => {
   const { artists, fetchData, activeProfile } = useMusicStore();
+  const [search, setSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState({ field: 'name', direction: 'asc' as 'asc' | 'desc' });
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const filteredArtists = useMemo(() => {
+    return artists.filter(a =>
+      a.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [artists, search]);
+
+  const sortedArtists = useMemo(() => {
+    return [...filteredArtists].sort((a, b) => {
+      let comparison = a.name.localeCompare(b.name);
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredArtists, sortConfig]);
 
   return (
     <div className="space-y-8">
@@ -28,26 +45,44 @@ const Artists = () => {
       <div className="flex items-center gap-4 py-4 border-y border-zinc-900">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
-          <input 
-            className="w-full bg-zinc-900/50 border-none rounded-lg py-2 pl-10 text-sm focus:ring-1 focus:ring-blue-500 text-white" 
-            placeholder="Filter artists by name, era, or genre..."
+          <Input
+            className="bg-zinc-900/50 border-none rounded-lg pl-10 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 text-white"
+            placeholder="Search artists..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="ghost" size="icon" className="text-zinc-500">
-          <Filter size={18} />
-        </Button>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 text-xs font-bold gap-2">
+              <ArrowUpDown size={14} /> Sort: {sortConfig.field}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sort By</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'name' })} className="text-xs font-bold gap-2">
+              <Users size={14} /> Name
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-zinc-800" />
+            <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
+              {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
+              {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {artists.length === 0 ? (
+      {sortedArtists.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-3xl">
           <Users size={48} className="text-zinc-800 mb-4" />
-          <h3 className="text-zinc-400 font-bold">No artists in catalog</h3>
-          <p className="text-zinc-600 text-sm mt-1 mb-6">Start by adding your first artist entity.</p>
+          <h3 className="text-zinc-400 font-bold">No artists found</h3>
+          <p className="text-zinc-600 text-sm mt-1 mb-6">Try adjusting your search or add a new artist.</p>
           <CreateArtistModal />
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {artists.map((artist) => (
+          {sortedArtists.map((artist) => (
             <div key={artist.id} className="relative group">
               <Link to={`/artists/${artist.id}`}>
                 <Card className="bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden cursor-pointer">
