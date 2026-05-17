@@ -18,15 +18,21 @@ import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
+import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
+
 const AlbumDetail = () => {
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
   const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
   
+  const albumGroups = groups.filter(g =>
+    g.members?.some(m => m.entityId === id && m.entityType === 'album')
+  );
+
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
     const cached = sessionStorage.getItem(`album_sort_${id}`);
@@ -118,6 +124,38 @@ const AlbumDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pt-8">
         <div className="lg:col-span-3 space-y-8">
+          {albumGroups.length > 0 && (
+            <section className="space-y-6">
+              <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
+                <Layers size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Relational Bios</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {albumGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                        {group.label || group.name}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                        <Link
+                          key={i}
+                          to={`/${member.entityType}s/${member.entityId}`}
+                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
+                        >
+                          {member.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
               <ListMusic size={14} /> {showAllTracks ? 'All Project Tracks' : 'Tracklist'}

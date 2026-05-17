@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { ListMusic, Trash2, Shuffle, Play, GripVertical, Disc, User } from 'lucide-react';
@@ -22,8 +22,27 @@ const Queue = () => {
     shuffleUserQueue,
     shuffleActiveQueue,
     mergeActiveToUserQueue,
-    clearActiveQueue
+    clearActiveQueue,
+    reorderUserQueue
   } = useMusicStore();
+
+  const [draggedIndex, setDragIndex] = useState<number | null>(null);
+
+  const onDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const onDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    
+    reorderUserQueue(draggedIndex, index);
+    setDragIndex(index);
+  };
+
+  const onDragEnd = () => {
+    setDragIndex(null);
+  };
 
   const getTrackData = (id: string) => {
     const track = tracks.find(t => t.id === id);
@@ -97,17 +116,28 @@ const Queue = () => {
               const { track, artist, album } = getTrackData(id);
               if (!track) return null;
               return (
-                <QueueItem
+                <div
                   key={`${id}-${index}`}
-                  track={track}
-                  artist={artist}
-                  album={album}
-                  onRemove={() => removeFromUserQueue(index)}
-                  onPlay={() => {
-                    removeFromUserQueue(index);
-                    setCurrentTrack(id);
-                  }}
-                />
+                  draggable
+                  onDragStart={() => onDragStart(index)}
+                  onDragOver={(e) => onDragOver(e, index)}
+                  onDragEnd={onDragEnd}
+                  className={cn(
+                    "transition-all",
+                    draggedIndex === index && "opacity-50 scale-[0.98]"
+                  )}
+                >
+                  <QueueItem
+                    track={track}
+                    artist={artist}
+                    album={album}
+                    onRemove={() => removeFromUserQueue(index)}
+                    onPlay={() => {
+                      removeFromUserQueue(index);
+                      setCurrentTrack(id);
+                    }}
+                  />
+                </div>
               );
             })
           )}
