@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { Album, Track } from '@/types/music';
 
 interface CreatePlaylistAddModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode; // Make children optional if it can sometimes be absent
   trackToAdd?: Track;
   albumToAdd?: Album;
 }
@@ -106,7 +106,13 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd }: Cre
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger asChild>
+        {children || (
+          <Button variant="outline" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">
+            <Plus size={14} /> Add to Playlist
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
