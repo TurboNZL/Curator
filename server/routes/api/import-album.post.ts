@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
-      noPlaylistAsChannel: true, // Prevents treating playlist URLs as channel URLs
+      // Removed: noPlaylistAsChannel: true, // This option might not be supported by older yt-dlp versions
     });
 
     let suggestedAlbumTitle = (info.title || "Untitled Album").trim();
