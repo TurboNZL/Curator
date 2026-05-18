@@ -69,7 +69,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
           </div>
 
           <form onSubmit={handleSubmit}>
-            <TabsContent value="metadata" className="p-6 space-y-6 mt-0">
+            <TabsContent value="metadata" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist Image</Label>
                 <ImageUpload

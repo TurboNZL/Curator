@@ -1,8 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Music2, Calendar, Share2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus } from 'lucide-react';
+import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
@@ -38,16 +37,12 @@ const ArtistDetail = () => {
         <div className="absolute bottom-0 left-0 p-12 flex items-end gap-8">
           <img src={artist.image || defaultImage} className="w-48 h-48 object-cover rounded-2xl shadow-2xl border-4 border-zinc-900" alt={artist.name} />
           <div className="flex-1 pb-4">
-            <div className="flex items-center gap-3 mb-2">
-              <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30 font-black uppercase text-[10px]">Verified Entity</Badge>
-            </div>
             <h1 className="text-6xl font-black tracking-tighter text-white uppercase">{artist.name}</h1>
             <div className="flex items-center gap-6 mt-4 text-zinc-400 text-sm font-medium">
               <span className="flex items-center gap-1.5"><Music2 size={16} className="text-zinc-600"/> {artistAlbums.length} Albums</span>
               <span className="flex items-center gap-1.5"><Calendar size={16} className="text-zinc-600"/> {artist.eras.length} Eras</span>
               <div className="flex gap-2 ml-4">
                 <EditArtistModal artist={artist} />
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50"><Share2 size={14}/></Button>
               </div>
             </div>
           </div>
@@ -151,26 +146,6 @@ const ArtistDetail = () => {
                       <h3 className="text-sm font-black uppercase tracking-widest text-white">
                         {group.name}
                       </h3>
-                      <div className="flex items-center gap-1 opacity-0 group-hover/bio:opacity-100 transition-opacity">
-                        <RelationalBioModal groupId={group.id}>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-blue-400">
-                            <Edit2 size={12} />
-                          </Button>
-                        </RelationalBioModal>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-zinc-500 hover:text-red-500"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm("Delete this relational bio?")) {
-                              deleteGroup(group.id);
-                            }
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
                     <div className="flex flex-wrap gap-2 pt-2">

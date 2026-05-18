@@ -7,11 +7,15 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 const Stats = () => {
-  const { tracks, playbackLogs, fetchData } = useMusicStore();
+  const { tracks, playbackLogs, fetchData, currentTrackId, isPlaying } = useMusicStore();
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 5000); // Live update every 5s
+    return () => clearInterval(interval);
   }, []);
+
+  const currentTrack = useMemo(() => tracks.find(t => t.id === currentTrackId), [tracks, currentTrackId]);
 
   const topTracks = useMemo(() => {
     const trackStats = tracks.map(track => {
@@ -54,6 +58,31 @@ const Stats = () => {
         <StatCard icon={SkipForward} label="Skip Rate" value={skipRate} color="text-red-500" />
         <StatCard icon={Activity} label="Active Tracks" value={new Set(playbackLogs.map(l => l.trackId)).size.toString()} color="text-purple-500" />
       </div>
+
+      {currentTrack && (
+        <Card className="bg-blue-600/10 border-blue-500/20 p-6 flex items-center justify-between group">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center text-white animate-pulse">
+                <Music size={24} />
+              </div>
+              {isPlaying && (
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-950 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-500">Now Playing</p>
+              <h3 className="text-lg font-black text-white uppercase truncate">{currentTrack.title}</h3>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Current Session</p>
+            <p className="text-xl font-black text-white">LIVE</p>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2 bg-zinc-900/50 border-zinc-800 p-6">

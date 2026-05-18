@@ -32,6 +32,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   const [formData, setFormData] = useState({
     title: album.title,
     artistId: album.artistId,
+    artistIds: album.artistIds || [],
     cover: album.covers[0] || '',
     pendingFiles: album.pendingFiles || []
   });
@@ -43,6 +44,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     await updateAlbum(album.id, {
       title: formData.title,
       artistId: formData.artistId,
+      artistIds: formData.artistIds,
       covers: formData.cover ? [formData.cover] : [],
       pendingFiles: formData.pendingFiles
     });
@@ -65,7 +67,8 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
     const uploadPromises = Array.from(files).map(async file => {
       const url = await uploadFile(file, 'audio');
-      return { url, name: file.name };
+      const cleanName = file.name.replace(/_/g, ' ');
+      return { url, name: cleanName };
     });
 
     try {
@@ -84,6 +87,16 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
   const removePendingFile = (url: string) => {
     setFormData(prev => ({ ...prev, pendingFiles: prev.pendingFiles.filter(f => f.url !== url) }));
+  };
+
+  const addArtist = (id: string) => {
+    if (!formData.artistIds.includes(id)) {
+      setFormData(prev => ({ ...prev, artistIds: [...prev.artistIds, id] }));
+    }
+  };
+
+  const removeArtist = (id: string) => {
+    setFormData(prev => ({ ...prev, artistIds: prev.artistIds.filter(aid => aid !== id) }));
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
@@ -112,7 +125,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
           </div>
 
           <form onSubmit={handleSubmit}>
-            <TabsContent value="metadata" className="p-6 space-y-6 mt-0">
+            <TabsContent value="metadata" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Select Primary Cover</Label>
                 <div className="grid grid-cols-4 gap-2">
@@ -139,26 +152,53 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Title</Label>
-                <Input 
-                  id="title" 
+                <Input
+                  id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
-                <SearchableSelect 
-                  options={artistOptions} 
-                  value={formData.artistId} 
-                  onValueChange={(val) => setFormData({...formData, artistId: val})}
-                  placeholder="Search or type artist..."
-                  allowCustom
-                />
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
+                  <SearchableSelect
+                    options={artistOptions}
+                    value={formData.artistId}
+                    onValueChange={(val) => setFormData({...formData, artistId: val})}
+                    placeholder="Search or type artist..."
+                    allowCustom
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Artists</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.artistIds.map(aid => {
+                      const a = artists.find(art => art.id === aid);
+                      return (
+                        <div key={aid} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
+                          <span>{a?.name || aid}</span>
+                          <button type="button" onClick={() => removeArtist(aid)} className="text-zinc-600 hover:text-red-500">
+                            <X size={10} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <SearchableSelect
+                    options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))}
+                    value=""
+                    onValueChange={addArtist}
+                    placeholder="Add another artist..."
+                    allowCustom
+                  />
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="files" className="p-6 space-y-6 mt-0">
+            <TabsContent value="files" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Unassigned Audio Files</Label>

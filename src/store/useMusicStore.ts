@@ -131,10 +131,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       set({
         activeProfile,
         artists: artists.map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })),
-        albums: albums.map((al: any) => ({ 
-          ...al, 
+        albums: albums.map((al: any) => ({
+          ...al,
           covers: JSON.parse(al.covers || '[]'),
-          pendingFiles: JSON.parse(al.pendingFiles || '[]')
+          pendingFiles: JSON.parse(al.pendingFiles || '[]'),
+          artistIds: JSON.parse(al.artistIds || '[]')
         })),
         tracks: tracks.map((t: any) => ({
           ...t,
@@ -143,6 +144,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           writers: typeof t.writers === 'string' ? JSON.parse(t.writers || '[]') : (t.writers || []),
           credits: typeof t.credits === 'string' ? JSON.parse(t.credits || '[]') : (t.credits || []),
           queueRules: typeof t.queueRules === 'string' ? JSON.parse(t.queueRules || '{}') : (t.queueRules || {}),
+          artistIds: typeof t.artistIds === 'string' ? JSON.parse(t.artistIds || '[]') : (t.artistIds || []),
           isFavorite: !!t.isFavorite
         })),
         releases,
@@ -338,7 +340,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(albumData)
     });
     const newAlbum = await res.json();
-    set(state => ({ albums: [...state.albums, { ...newAlbum, covers: JSON.parse(newAlbum.covers), pendingFiles: [] }] }));
+    set(state => ({ albums: [...state.albums, { ...newAlbum, covers: JSON.parse(newAlbum.covers), pendingFiles: [], artistIds: JSON.parse(newAlbum.artistIds || '[]') }] }));
   },
 
   updateAlbum: async (id, data) => {
@@ -427,8 +429,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     
     const state = get();
     const album = state.albums.find(a => a.id === releaseData.albumId);
-    if (album && album.covers.length === 0 && releaseData.coverImage) {
-      await get().updateAlbum(album.id, { covers: [releaseData.coverImage] });
+    if (album && releaseData.coverImage) {
+      const albumReleases = state.releases.filter(r => r.albumId === album.id);
+      // If this is the first release cover, or if there are no covers yet, set it as primary
+      if (album.covers.length === 0 || albumReleases.length === 0) {
+        await get().updateAlbum(album.id, { covers: [releaseData.coverImage] });
+      }
     }
 
     set(state => ({ releases: [...state.releases, newRelease] }));

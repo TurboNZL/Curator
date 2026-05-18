@@ -149,29 +149,31 @@ const AlbumDetail = () => {
               </TableHeader>
               <TableBody>
                 {albumTracks.map((track, index) => (
-                  <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
-                    <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                    <TableCell onClick={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })} className="cursor-pointer">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                        <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Rating
-                        trackId={track.id}
-                        balanced={track.rating}
-                        unbalanced={track.initialRating}
-                        comparisons={track.comparisons}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <TrackContextMenu track={track} />
-                        <EditTrackModal track={track} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TrackContextMenu key={track.id} track={track}>
+                    <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
+                      <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
+                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                          <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Rating
+                          trackId={track.id}
+                          balanced={track.rating}
+                          unbalanced={track.initialRating}
+                          comparisons={track.comparisons}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <TrackContextMenu track={track} />
+                          <EditTrackModal track={track} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TrackContextMenu>
                 ))}
               </TableBody>
             </Table>
@@ -281,26 +283,6 @@ const AlbumDetail = () => {
                       <h3 className="text-sm font-black uppercase tracking-widest text-white">
                         {group.name}
                       </h3>
-                      <div className="flex items-center gap-1 opacity-0 group-hover/bio:opacity-100 transition-opacity">
-                        <RelationalBioModal groupId={group.id}>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-blue-400">
-                            <Edit2 size={12} />
-                          </Button>
-                        </RelationalBioModal>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-zinc-500 hover:text-red-500"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm("Delete this relational bio?")) {
-                              deleteGroup(group.id);
-                            }
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
                     <div className="flex flex-wrap gap-2 pt-2">

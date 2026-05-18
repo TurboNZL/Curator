@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Plus, History, CheckCircle2, BarChart3, TrendingUp, Activity, Users, Disc, Music, Layers } from 'lucide-react';
+import { Plus, History, CheckCircle2, BarChart3, TrendingUp, Activity, Users, Disc, Music, Layers, Trash2 } from 'lucide-react';
 import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryModal';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -55,6 +55,13 @@ const Index = () => {
   const releasesCount = releases?.length || 0;
   const groupsCount = groups?.length || 0;
   const timelineEntries = timeline || [];
+
+  const handleDeleteEntry = async (id: string) => {
+    if (confirm("Delete this journal entry?")) {
+      await fetch(`/api/timeline/${id}`, { method: 'DELETE' });
+      fetchData();
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -109,9 +116,17 @@ const Index = () => {
                     )} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                          {entry.timestamp ? format(new Date(entry.timestamp), 'HH:mm · MMM d, yyyy') : 'Recent'}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-mono text-zinc-500 uppercase">
+                            {entry.timestamp ? format(new Date(entry.timestamp), 'HH:mm · MMM d, yyyy') : 'Recent'}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteEntry(entry.id)}
+                            className="text-zinc-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">
                           {entry.type}
                         </span>

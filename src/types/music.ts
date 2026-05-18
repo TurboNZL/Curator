@@ -44,6 +44,7 @@ export interface Album {
   id: string;
   title: string;
   artistId: string;
+  artistIds?: string[];
   eraId?: string;
   covers: string[];
   defaultReleaseId?: string;
@@ -69,6 +70,7 @@ export interface Track {
   id: string;
   title: string;
   artistId: string;
+  artistIds?: string[];
   albumIds: string[];
   rating?: number; // Balanced rating, nullable
   initialRating?: number;

@@ -16,6 +16,7 @@ export default defineHandler(async (event) => {
     const updateData: any = {
       title: body.title,
       artistId: body.artistId,
+      artistIds: JSON.stringify(body.artistIds || []),
       albumIds: JSON.stringify(body.albumIds || []),
       rating: body.rating,
       initialRating: body.initialRating,

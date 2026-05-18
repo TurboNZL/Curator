@@ -64,6 +64,7 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
         body: JSON.stringify({
           title: formData.title,
           artistId: finalArtistId,
+          artistIds: [], // Multi-artist support
           covers: []
         })
       });

@@ -27,7 +27,8 @@ export const eras = sqliteTable('eras', {
 export const albums = sqliteTable('albums', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
-  artistId: text('artist_id').notNull(),
+  artistId: text('artist_id').notNull(), // Primary artist
+  artistIds: text('artist_ids'), // JSON string array for multiple artists
   eraId: text('era_id'),
   covers: text('covers'), // JSON string array
   defaultReleaseId: text('default_release_id'),
@@ -58,7 +59,8 @@ export const releaseTracks = sqliteTable('release_tracks', {
 export const tracks = sqliteTable('tracks', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
-  artistId: text('artist_id').notNull(),
+  artistId: text('artist_id').notNull(), // Primary artist
+  artistIds: text('artist_ids'), // JSON string array for multiple artists
   rating: real('rating'), // Balanced rating (0-10), nullable for unrated
   initialRating: real('initial_rating'), // Unbalanced rating, nullable for unrated
   eloScore: real('elo_score').notNull().default(1000), // Internal ELO for calculation

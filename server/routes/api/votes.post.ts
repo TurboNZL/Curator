@@ -73,10 +73,16 @@ export default defineHandler(async (event) => {
       }
 
       // If this track was one of the ones just updated, use its new Elo
-      if (track.id === trackAId) {
-        balancedRating = range > 0 ? ((newRa - minElo) / range) * 10 : 5;
-      } else if (track.id === trackBId) {
-        balancedRating = range > 0 ? ((newRb - minElo) / range) * 10 : 5;
+      let currentElo = track.eloScore;
+      if (track.id === trackAId) currentElo = newRa;
+      if (track.id === trackBId) currentElo = newRb;
+      
+      balancedRating = range > 0 ? ((currentElo - minElo) / range) * 10 : 5;
+
+      // Apply floor based on lowest unbalanced rating
+      const minAllowed = track.initialRating !== null && track.initialRating !== undefined ? track.initialRating : 0;
+      if (balancedRating < minAllowed) {
+        balancedRating = minAllowed;
       }
 
       await db.update(tracks).set({ rating: balancedRating }).where(eq(tracks.id, track.id));

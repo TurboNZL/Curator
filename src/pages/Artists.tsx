@@ -37,7 +37,7 @@ const Artists = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Artists</h1>
-          <p className="text-zinc-500 text-sm mt-1">Manage your catalog hierarchy starting from the root.</p>
+          <p className="text-zinc-500 text-sm mt-1">Manage your catalog hierarchy.</p>
         </div>
         <CreateArtistModal />
       </div>

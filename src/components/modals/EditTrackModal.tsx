@@ -25,6 +25,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
   const [formData, setFormData] = useState({
     title: track.title,
     artistId: track.artistId,
+    artistIds: track.artistIds || [],
     albumId: track.albumIds[0] || '',
     initialRating: track.initialRating?.toString() || '',
     genres: track.genres.join(', '),
@@ -59,6 +60,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     await updateTrack(track.id, {
       title: formData.title,
       artistId: formData.artistId,
+      artistIds: formData.artistIds,
       albumIds: formData.albumId ? [formData.albumId] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
@@ -77,11 +79,49 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     setOpen(false);
   };
 
+  const addArtist = (id: string) => {
+    if (!formData.artistIds.includes(id)) {
+      setFormData(prev => ({ ...prev, artistIds: [...prev.artistIds, id] }));
+    }
+  };
+
+  const removeArtist = (id: string) => {
+    setFormData(prev => ({ ...prev, artistIds: prev.artistIds.filter(aid => aid !== id) }));
+  };
+
+  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
+
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this track?")) {
       await deleteTrack(track.id);
       toast.success("Track deleted");
       setOpen(false);
+    }
+  };
+
+  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const uploadPromises = Array.from(files).map(async file => {
+      const url = await uploadFile(file, 'audio');
+      const cleanName = file.name.replace(/_/g, ' ');
+      return { url, name: cleanName };
+    });
+
+    try {
+      toast.promise(Promise.all(uploadPromises), {
+        loading: 'Uploading audio files...',
+        success: (newFiles) => {
+          // This is for bulk upload in track modal if needed,
+          // but usually it's in album modal.
+          // Let's ensure it's consistent.
+          return `Uploaded ${newFiles.length} files`;
+        },
+        error: 'Failed to upload some files'
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -109,7 +149,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
           </div>
 
           <form onSubmit={handleSubmit}>
-            <TabsContent value="metadata" className="p-6 space-y-6 mt-0">
+            <TabsContent value="metadata" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Audio Source</Label>
                 <FileUpload value={formData.audioUrl} onChange={(url) => setFormData({...formData, audioUrl: url})} />
@@ -127,6 +167,43 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
                     value={formData.albumId}
                     onValueChange={(val) => setFormData({...formData, albumId: val})}
                     placeholder="Select album..."
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
+                  <SearchableSelect
+                    options={artistOptions}
+                    value={formData.artistId}
+                    onValueChange={(val) => setFormData({...formData, artistId: val})}
+                    placeholder="Search or type artist..."
+                    allowCustom
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Artists</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.artistIds.map(aid => {
+                      const a = artists.find(art => art.id === aid);
+                      return (
+                        <div key={aid} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
+                          <span>{a?.name || aid}</span>
+                          <button type="button" onClick={() => removeArtist(aid)} className="text-zinc-600 hover:text-red-500">
+                            <X size={10} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <SearchableSelect
+                    options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))}
+                    value=""
+                    onValueChange={addArtist}
+                    placeholder="Add another artist..."
+                    allowCustom
                   />
                 </div>
               </div>
@@ -154,7 +231,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
               </div>
             </TabsContent>
 
-            <TabsContent value="credits" className="p-6 space-y-6 mt-0">
+            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres (comma separated)</Label>
                 <Input value={formData.genres} onChange={(e) => setFormData({...formData, genres: e.target.value})} className="bg-zinc-900 border-zinc-800" />
