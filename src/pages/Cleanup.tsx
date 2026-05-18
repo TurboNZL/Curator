@@ -12,9 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ImageUpload } from '@/components/ui/ImageUpload'; // Assuming ImageUpload is a UI component
-import { Switch } from '@/components/ui/switch'; // Ensure Switch is imported
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Import EditTrackModal
+import { ImageUpload } from '@/components/ui/ImageUpload';
+import { Switch } from '@/components/ui/switch';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal'; // Import the new modal
 
 interface SpotifyUriGroupResolutionModalProps {
   isOpen: boolean;
@@ -202,7 +203,7 @@ const Cleanup = () => {
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isShufflePairing, setIsShufflePairing] = useState(false);
-  const [isShuffleTasks, setIsShuffleTasks] = useState(false); // New state for shuffling tasks
+  const [isShuffleTasks, setIsShuffleTasks] = useState(false);
   const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
   const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
 
@@ -225,14 +226,12 @@ const Cleanup = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
-  // Sync volume
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
   }, [volume]);
 
-  // Task Generation Logic
   const allTasks = useMemo(() => {
     const generatedTasks = [
       ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
@@ -245,7 +244,6 @@ const Cleanup = () => {
       ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
     ];
 
-    // Group consecutive tracks from the same album missing Spotify URLs
     const groupedSpotifyTasks: any[] = [];
     let currentGroup: any[] = [];
 
@@ -290,7 +288,6 @@ const Cleanup = () => {
       }
     });
 
-    // Handle last group if it exists
     if (currentGroup.length > 1) {
       groupedSpotifyTasks.push({
         type: 'grouped_spotify_uri',
@@ -312,7 +309,7 @@ const Cleanup = () => {
   const filteredTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
     if (isShuffleTasks) {
-      tasks = [...tasks].sort(() => Math.random() - 0.5); // Shuffle the filtered tasks
+      tasks = [...tasks].sort(() => Math.random() - 0.5);
     }
     return tasks;
   }, [allTasks, activeFilters, isShuffleTasks]);
@@ -465,7 +462,7 @@ const Cleanup = () => {
       return updateTrack(id, { spotifyUrl: uri });
     });
     await Promise.all(updatePromises);
-    fetchData(); // Refresh data after updates
+    fetchData();
   };
 
   const handleImageUploadResolution = async (id: string, imageUrl: string, type: 'artist' | 'album') => {
@@ -489,7 +486,7 @@ const Cleanup = () => {
     if (confirm("Are you sure you want to wipe the entire local database? This cannot be undone.")) {
       resetDatabase();
       toast.success("Database cleared successfully");
-      fetchData(); // Refresh UI after reset
+      fetchData();
     }
   };
 
@@ -515,7 +512,6 @@ const Cleanup = () => {
         </div>
       </div>
 
-      {/* This or That Section */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
           <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
@@ -549,7 +545,6 @@ const Cleanup = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                       alt="" 
                     />
-                    {/* White fade on hover */}
                     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
@@ -695,27 +690,9 @@ const Cleanup = () => {
             <p className="text-4xl font-black text-white">{lowQualityTracks.length}</p>
             <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Tracks below 192kbps detected in library</p>
             
-            {lowQualityTracks.length > 0 && (
-              <ScrollArea className="h-[150px] pr-4">
-                <div className="space-y-2">
-                  {lowQualityTracks.map(track => (
-                    <div key={track.id} className="flex items-center justify-between p-2 bg-zinc-950 border border-zinc-800 rounded-lg group/track">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate">{track.title}</p>
-                        <p className="text-[10px] text-zinc-500 truncate">{getArtistName(track)} - {track.bitrate}</p>
-                      </div>
-                      <EditTrackModal track={track}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400 opacity-0 group-hover/track:opacity-100">
-                          <Edit2 size={12} />
-                        </Button>
-                      </EditTrackModal>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-
-            <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors">Review Files</Button>
+            <LowQualityTracksModal> {/* Wrap the button with the new modal */}
+              <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors">Review Files</Button>
+            </LowQualityTracksModal>
           </Card>
 
           <Card className="bg-red-950/10 border-red-900/20 p-6 space-y-4 group hover:border-red-500/30 transition-colors">
