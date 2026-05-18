@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Removed DialogTrigger
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'; // Removed DialogTrigger
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -107,7 +107,9 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd, open,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
-      {children} {/* Children (trigger) is passed directly to Dialog */}
+      <DialogTrigger asChild>
+        {children || <div className="sr-only" />} {/* Render children as trigger, or an invisible div if none */}
+      </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">

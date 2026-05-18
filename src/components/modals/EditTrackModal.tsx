@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Removed DialogTrigger
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'; // Removed DialogTrigger
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -130,7 +132,9 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
-      {children} {/* Children (trigger) is passed directly to Dialog */}
+      <DialogTrigger asChild>
+        {children || <div className="sr-only" />} {/* Render children as trigger, or an invisible div if none */}
+      </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         <Tabs defaultValue="metadata" className="w-full flex flex-col overflow-hidden">
           <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4 shrink-0">
