@@ -34,7 +34,11 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     artistId: album.artistId,
     artistIds: album.artistIds || [],
     cover: album.covers[0] || '',
-    pendingFiles: album.pendingFiles || []
+    pendingFiles: album.pendingFiles || [],
+    genres: album.genres || [],
+    producers: album.producers || [],
+    writers: album.writers || [],
+    credits: album.credits || []
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +50,11 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
       artistId: formData.artistId,
       artistIds: formData.artistIds,
       covers: formData.cover ? [formData.cover] : [],
-      pendingFiles: formData.pendingFiles
+      pendingFiles: formData.pendingFiles,
+      genres: formData.genres,
+      producers: formData.producers,
+      writers: formData.writers,
+      credits: formData.credits
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -119,12 +127,90 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
+              <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Credits</TabsTrigger>
               <TabsTrigger value="files" className="text-[10px] font-black uppercase tracking-widest">Files ({formData.pendingFiles.length})</TabsTrigger>
               <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
 
           <form onSubmit={handleSubmit}>
+            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.genres.map(g => (
+                      <div key={g} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
+                        <span>{g}</span>
+                        <button type="button" onClick={() => setFormData({...formData, genres: formData.genres.filter(x => x !== g)})} className="text-zinc-600 hover:text-red-500">
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <SearchableSelect
+                    options={[]}
+                    value=""
+                    onValueChange={(val) => !formData.genres.includes(val) && setFormData({...formData, genres: [...formData.genres, val]})}
+                    placeholder="Add genre..."
+                    allowCustom
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Producers</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.producers.map(p => (
+                      <div key={p} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
+                        <span>{p}</span>
+                        <button type="button" onClick={() => setFormData({...formData, producers: formData.producers.filter(x => x !== p)})} className="text-zinc-600 hover:text-red-500">
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <SearchableSelect
+                    options={artistOptions}
+                    value=""
+                    onValueChange={(val) => {
+                      const name = artists.find(a => a.id === val)?.name || val;
+                      if (!formData.producers.includes(name)) {
+                        setFormData({...formData, producers: [...formData.producers, name]});
+                      }
+                    }}
+                    placeholder="Add producer..."
+                    allowCustom
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Writers</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.writers.map(w => (
+                      <div key={w} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
+                        <span>{w}</span>
+                        <button type="button" onClick={() => setFormData({...formData, writers: formData.writers.filter(x => x !== w)})} className="text-zinc-600 hover:text-red-500">
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <SearchableSelect
+                    options={artistOptions}
+                    value=""
+                    onValueChange={(val) => {
+                      const name = artists.find(a => a.id === val)?.name || val;
+                      if (!formData.writers.includes(name)) {
+                        setFormData({...formData, writers: [...formData.writers, name]});
+                      }
+                    }}
+                    placeholder="Add writer..."
+                    allowCustom
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="metadata" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Select Primary Cover</Label>

@@ -118,8 +118,16 @@ const Stats = () => {
                   contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                 />
-                <Bar dataKey="fullPlays" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={20} />
-                <Bar dataKey="partialPlays" stackId="a" fill="#3b82f6" opacity={0.3} radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="fullPlays" stackId="a" radius={[0, 0, 0, 0]} barSize={20}>
+                  {topTracks.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={currentTrackId === tracks.find(t => t.title === entry.name)?.id ? '#10b981' : '#3b82f6'} />
+                  ))}
+                </Bar>
+                <Bar dataKey="partialPlays" stackId="a" opacity={0.3} radius={[0, 4, 4, 0]} barSize={20}>
+                  {topTracks.map((entry, index) => (
+                    <Cell key={`cell-partial-${index}`} fill={currentTrackId === tracks.find(t => t.title === entry.name)?.id ? '#10b981' : '#3b82f6'} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

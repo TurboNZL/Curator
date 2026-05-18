@@ -62,6 +62,7 @@ export default defineHandler(async (event) => {
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
       queueRules: JSON.stringify(body.queueRules || {}),
+      syncWithAlbum: body.syncWithAlbum !== undefined ? (body.syncWithAlbum ? 1 : 0) : 1,
     };
 
     await db.insert(tracks).values(newTrack);

@@ -7,6 +7,7 @@ import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryM
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { EditHistoryModal } from '@/components/modals/EditHistoryModal';
 
 const Index = () => {
   const { timeline, artists, albums, tracks, releases, groups, fetchData, isLoading } = useMusicStore();
@@ -94,6 +95,7 @@ const Index = () => {
                 <History size={20} className="text-purple-500" />
                 Timeline
               </h2>
+              <EditHistoryModal />
             </div>
 
             <div className="space-y-4">

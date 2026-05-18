@@ -13,29 +13,32 @@ export default defineHandler(async (event) => {
 
   if (method === 'PUT') {
     const body = await readBody(event) as any;
-    const updateData: any = {
-      title: body.title,
-      artistId: body.artistId,
-      artistIds: JSON.stringify(body.artistIds || []),
-      albumIds: JSON.stringify(body.albumIds || []),
-      rating: body.rating,
-      initialRating: body.initialRating,
-      memories: body.memories,
-      localFilePath: body.localFilePath,
-      spotifyUrl: body.spotifyUrl,
-      geniusUrl: body.geniusUrl,
-      soundcloudUrl: body.soundcloudUrl,
-      youtubeMusicUrl: body.youtubeMusicUrl,
-      bitrate: body.bitrate,
-      bpm: body.bpm,
-      key: body.key,
-      isFavorite: body.isFavorite ? 1 : 0,
-      genres: JSON.stringify(body.genres || []),
-      producers: JSON.stringify(body.producers || []),
-      writers: JSON.stringify(body.writers || []),
-      credits: JSON.stringify(body.credits || []),
-    };
-    await db.update(tracks).set(updateData).where(eq(tracks.id, id));
+    const updateData: any = {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.artistId !== undefined) updateData.artistId = body.artistId;
+    if (body.artistIds !== undefined) updateData.artistIds = JSON.stringify(body.artistIds);
+    if (body.albumIds !== undefined) updateData.albumIds = JSON.stringify(body.albumIds);
+    if (body.rating !== undefined) updateData.rating = body.rating;
+    if (body.initialRating !== undefined) updateData.initialRating = body.initialRating;
+    if (body.memories !== undefined) updateData.memories = body.memories;
+    if (body.localFilePath !== undefined) updateData.localFilePath = body.localFilePath;
+    if (body.spotifyUrl !== undefined) updateData.spotifyUrl = body.spotifyUrl;
+    if (body.geniusUrl !== undefined) updateData.geniusUrl = body.geniusUrl;
+    if (body.soundcloudUrl !== undefined) updateData.soundcloudUrl = body.soundcloudUrl;
+    if (body.youtubeMusicUrl !== undefined) updateData.youtubeMusicUrl = body.youtubeMusicUrl;
+    if (body.bitrate !== undefined) updateData.bitrate = body.bitrate;
+    if (body.bpm !== undefined) updateData.bpm = body.bpm;
+    if (body.key !== undefined) updateData.key = body.key;
+    if (body.isFavorite !== undefined) updateData.isFavorite = body.isFavorite ? 1 : 0;
+    if (body.genres !== undefined) updateData.genres = JSON.stringify(body.genres);
+    if (body.producers !== undefined) updateData.producers = JSON.stringify(body.producers);
+    if (body.writers !== undefined) updateData.writers = JSON.stringify(body.writers);
+    if (body.credits !== undefined) updateData.credits = JSON.stringify(body.credits);
+    if (body.syncWithAlbum !== undefined) updateData.syncWithAlbum = body.syncWithAlbum ? 1 : 0;
+
+    if (Object.keys(updateData).length > 0) {
+      await db.update(tracks).set(updateData).where(eq(tracks.id, id));
+    }
     return { success: true };
   }
 
