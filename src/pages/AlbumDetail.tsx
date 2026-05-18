@@ -18,6 +18,8 @@ import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+
 
 const AlbumDetail = () => {
   const { id } = useParams();
@@ -124,6 +126,11 @@ const AlbumDetail = () => {
                 Edit Project
               </Button>
             </EditAlbumModal>
+            <CreatePlaylistAddModal albumToAdd={album}>
+              <Button variant="outline" className="border-emerald-800 bg-emerald-900/50 hover:bg-emerald-900 text-emerald-400 rounded-full font-bold">
+                <Plus size={18} className="mr-2"/>Add to Playlist
+              </Button>
+            </CreatePlaylistAddModal>
           </div>
         </div>
       </div>
@@ -223,7 +230,6 @@ const AlbumDetail = () => {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-zinc-800" />
                       <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
-                        {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
                         {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
                       </DropdownMenuItem>
                     </DropdownMenuContent>

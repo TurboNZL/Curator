@@ -1,15 +1,21 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Plus, History, CheckCircle2, BarChart3, TrendingUp, Activity, Users, Disc, Music, Layers, Trash2 } from 'lucide-react';
+import { Plus, History, CheckCircle2, BarChart3, TrendingUp, Activity, Users, Disc, Music, Layers, Trash2, Edit2 } from 'lucide-react';
 import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryModal';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+
 
 const Index = () => {
   const { timeline, artists, albums, tracks, releases, groups, fetchData, isLoading } = useMusicStore();
+  const [showAllEdits, setShowAllEdits] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const editsPerPage = 5;
 
   useEffect(() => {
     fetchData();
@@ -40,6 +46,21 @@ const Index = () => {
     if (ratedTracks.length === 0) return '0.00';
     return (ratedTracks.reduce((a, b) => a + (b.rating || 0), 0) / ratedTracks.length).toFixed(2);
   }, [tracks]);
+
+  const allEdits = useMemo(() => {
+    // For simplicity, consider any timeline entry that isn't a direct rating update or simple playback log as an "edit"
+    // In a real app, you'd have specific timeline types for 'track_updated', 'album_created', etc.
+    // For now, filtering to show more than just basic entries.
+    return timeline.filter(entry => entry.type !== 'playback' && entry.type !== 'rating');
+  }, [timeline]);
+
+  const paginatedEdits = useMemo(() => {
+    if (showAllEdits) return allEdits;
+    const startIndex = (currentPage - 1) * editsPerPage;
+    return allEdits.slice(startIndex, startIndex + editsPerPage);
+  }, [allEdits, showAllEdits, currentPage]);
+
+  const totalPages = Math.ceil(allEdits.length / editsPerPage);
 
   if (isLoading && (!timeline || timeline.length === 0)) {
     return (
@@ -170,6 +191,52 @@ const Index = () => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </Card>
+
+          <Card className="bg-zinc-900/50 border-zinc-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Edit2 size={16} className="text-emerald-500" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">Edit History</h3>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowAllEdits(!showAllEdits)}
+                className="h-7 text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400"
+              >
+                {showAllEdits ? 'Show Less' : 'Show All'}
+              </Button>
+            </div>
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-3 pr-4">
+                {paginatedEdits.length === 0 ? (
+                  <p className="text-[10px] text-zinc-600 italic text-center py-4">No edits recorded yet.</p>
+                ) : (
+                  paginatedEdits.map(entry => (
+                    <div key={entry.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-white truncate">{entry.title}</p>
+                        <p className="text-[10px] text-zinc-500 font-medium">{format(new Date(entry.timestamp), 'MMM d, HH:mm')}</p>
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{entry.type}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+            {!showAllEdits && totalPages > 1 && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </Card>
 
           <Card className="bg-zinc-900/50 border-zinc-800 p-6">

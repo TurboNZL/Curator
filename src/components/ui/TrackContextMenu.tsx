@@ -1,27 +1,5 @@
 "use client";
 
-import React from 'react';
-import {
-  MoreHorizontal,
-  ListPlus,
-  User,
-  Disc,
-  Plus,
-  Minus,
-  Link as LinkIcon,
-  ListMusic
-} from 'lucide-react';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
-} from "@/components/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,16 +7,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
-import { Track } from '@/types/music';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Play, ListMusic, Star, BookOpen, Brain, Trash2, Edit2 } from "lucide-react";
 import { useMusicStore } from '@/store/useMusicStore';
-import { useNavigate } from 'react-router-dom';
-import { RelationalBioModal } from '../modals/RelationalBioModal';
-import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
+import { toast } from 'sonner';
+import { Track } from '@/types/music';
+import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
+import { EditTrackModal } from '../modals/EditTrackModal';
+import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
+
 
 interface TrackContextMenuProps {
   track: Track;
@@ -46,199 +24,68 @@ interface TrackContextMenuProps {
 }
 
 export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => {
-  const { addToUserQueue, incrementMemories, decrementMemories, albums, groups, playlists, updatePlaylist } = useMusicStore();
-  const navigate = useNavigate();
+  const { setCurrentTrack, addToUserQueue, incrementMemories, updateTrack } = useMusicStore();
 
-  const album = albums.find(al => track.albumIds.includes(al.id));
-  const trackGroups = groups.filter(g => g.members?.some(m => m.entityId === track.id && m.entityType === 'track'));
-
-  const MenuItems = ({ isContext = false }: { isContext?: boolean }) => {
-    const Item = isContext ? ContextMenuItem : DropdownMenuItem;
-    const Label = isContext ? ContextMenuLabel : DropdownMenuLabel;
-    const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
-    const Sub = isContext ? ContextMenuSub : DropdownMenuSub;
-    const SubTrigger = isContext ? ContextMenuSubTrigger : DropdownMenuSubTrigger;
-    const SubContent = isContext ? ContextMenuSubContent : DropdownMenuSubContent;
-
-    const handleAddToPlaylist = async (playlistId: string) => {
-      const playlist = playlists.find(p => p.id === playlistId);
-      if (playlist) {
-        if (playlist.trackIds.includes(track.id)) {
-          toast.error("Track already in playlist");
-          return;
-        }
-        await updatePlaylist(playlistId, {
-          trackIds: [...playlist.trackIds, track.id]
-        });
-        toast.success(`Added to ${playlist.name}`);
-      }
-    };
-
-    return (
-      <>
-        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-          Track Actions
-        </Label>
-        
-        <Item
-          className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            addToUserQueue(track.id);
-            toast.success("Added to queue");
-          }}
-        >
-          <ListPlus size={14} /> Add to Queue
-        </Item>
-
-        <Sub>
-          <SubTrigger className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer">
-            <ListMusic size={14} /> Add to Playlist
-          </SubTrigger>
-          <SubContent className="bg-zinc-950 border-zinc-800 text-white w-48">
-            {playlists.length === 0 ? (
-              <div className="p-2 text-[10px] font-bold text-zinc-500 uppercase text-center">No playlists</div>
-            ) : (
-              playlists.map(p => (
-                <Item
-                  key={p.id}
-                  className="text-xs font-bold focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddToPlaylist(p.id);
-                  }}
-                >
-                  {p.name}
-                </Item>
-              ))
-            )}
-            <Separator className="bg-zinc-800" />
-            <CreatePlaylistModal>
-              <Item
-                className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer"
-                onSelect={(e) => e.preventDefault()}
-              >
-                <Plus size={14} /> New Playlist
-              </Item>
-            </CreatePlaylistModal>
-          </SubContent>
-        </Sub>
-
-        <Separator className="bg-zinc-800" />
-
-        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-          Navigation
-        </Label>
-
-        <Item
-          className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/artists/${track.artistId}`);
-          }}
-        >
-          <User size={14} /> Go to Artist
-        </Item>
-
-        {album && (
-          <Item
-            className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/albums/${album.id}`);
-            }}
-          >
-            <Disc size={14} /> Go to Album
-          </Item>
-        )}
-
-        <Separator className="bg-zinc-800" />
-
-        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-          Relational Bios ({trackGroups.length})
-        </Label>
-
-        {trackGroups.map(group => (
-          <RelationalBioModal key={group.id} groupId={group.id}>
-            <Item
-              className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-purple-400 cursor-pointer"
-              onSelect={(e) => e.preventDefault()}
-            >
-              <LinkIcon size={14} /> {group.name}
-            </Item>
-          </RelationalBioModal>
-        ))}
-
-        <RelationalBioModal initialEntity={{ type: 'track', id: track.id, label: track.title }}>
-          <Item
-            className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer"
-            onSelect={(e) => e.preventDefault()}
-          >
-            <Plus size={14} /> New Bio
-          </Item>
-        </RelationalBioModal>
-
-        <Separator className="bg-zinc-800" />
-
-        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-          Memories ({track.memories || 0})
-        </Label>
-
-        <Item
-          className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-purple-400 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            incrementMemories(track.id);
-          }}
-        >
-          <Plus size={14} /> Add Memory
-        </Item>
-
-        <Item
-          className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-red-400 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            decrementMemories(track.id);
-          }}
-        >
-          <Minus size={14} /> Remove Memory
-        </Item>
-      </>
-    );
+  const handleAddToQueue = (trackId: string) => {
+    addToUserQueue(trackId);
+    toast.info(`"${track.title}" added to queue.`);
   };
 
-  // If children are provided, we are wrapping a row for right-click only
-  if (children) {
-    return (
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          {children}
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white">
-          <MenuItems isContext />
-        </ContextMenuContent>
-      </ContextMenu>
-    );
-  }
+  const handleToggleFavorite = async () => {
+    await updateTrack(track.id, { isFavorite: !track.isFavorite });
+    toast.success(`"${track.title}" ${track.isFavorite ? 'removed from' : 'added to'} favorites.`);
+  };
 
-  // Otherwise, we are the three-dots button (left-click dropdown + right-click context)
+  const handleIncrementMemory = async () => {
+    await incrementMemories(track.id);
+    toast.success(`Memory count for "${track.title}" increased!`);
+  };
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="h-8 w-8 flex items-center justify-center text-zinc-500 hover:text-white transition-colors">
-              <MoreHorizontal size={16} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white">
-            <MenuItems />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white">
-        <MenuItems isContext />
-      </ContextMenuContent>
-    </ContextMenu>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {children || (
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
+            <MoreHorizontal size={16} />
+          </Button>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="bg-zinc-950 border-zinc-800 text-white">
+        <DropdownMenuLabel className="text-xs font-bold uppercase tracking-widest text-zinc-500 truncate max-w-[200px]">{track.title}</DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuItem onClick={() => setCurrentTrack(track.id)} className="text-xs font-medium">
+          <Play size={14} className="mr-2" /> Play Next
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleAddToQueue(track.id)} className="text-xs font-medium">
+          <ListMusic size={14} className="mr-2" /> Add to Queue
+        </DropdownMenuItem>
+        <CreatePlaylistAddModal trackToAdd={track}>
+          <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-xs font-medium">
+            <Plus size={14} className="mr-2" /> Add to Playlist
+          </DropdownMenuItem>
+        </CreatePlaylistAddModal>
+        <DropdownMenuItem onClick={handleToggleFavorite} className="text-xs font-medium">
+          <Star size={14} className="mr-2" /> {track.isFavorite ? 'Unfavorite' : 'Favorite'}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleIncrementMemory} className="text-xs font-medium">
+          <Brain size={14} className="mr-2" /> Add Memory
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <StatsForNerdsModal track={track}>
+          <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-xs font-medium">
+            <BookOpen size={14} className="mr-2" /> Stats for Nerds
+          </DropdownMenuItem>
+        </StatsForNerdsModal>
+        <EditTrackModal track={track}>
+          <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-xs font-medium">
+            <Edit2 size={14} className="mr-2" /> Edit Metadata
+          </DropdownMenuItem>
+        </EditTrackModal>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuItem onClick={() => useMusicStore.getState().deleteTrack(track.id)} className="text-xs font-medium text-red-500">
+          <Trash2 size={14} className="mr-2" /> Delete Track
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
