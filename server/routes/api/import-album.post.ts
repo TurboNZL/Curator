@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
         statusCode: 500,
         statusMessage: `yt-dlp executable not found at ${ytDlpBinaryPath}. Please download it from https://github.com/yt-dlp/yt-dlp/releases (get the 'yt-dlp.exe' for Windows) and place it in the 'server/bin/' folder.`,
       });
-    }
+    });
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
@@ -59,7 +59,6 @@ export default defineEventHandler(async (event) => {
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
-      // Removed: noPlaylistAsChannel: true, // This option might not be supported by older yt-dlp versions
     });
 
     let suggestedAlbumTitle = (info.title || "Untitled Album").trim();
@@ -132,7 +131,7 @@ export default defineEventHandler(async (event) => {
             output: localFilepathFull,
             noWarnings: true,
             preferFreeFormats: true,
-            ffmpegLocation: ffmpegStatic || undefined,
+            ffmpegLocation: ffmpegStatic ? path.dirname(ffmpegStatic) : undefined, // Corrected: provide directory path
             format: 'bestaudio', // Prioritize best audio quality
           });
 
