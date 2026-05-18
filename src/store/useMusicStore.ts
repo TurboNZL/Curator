@@ -14,9 +14,8 @@ interface MusicState {
   timeline: TimelineEntry[];
   playbackLogs: any[];
   
-  // Queue System
-  userQueue: string[]; // Manual queue
-  activeQueue: string[]; // Tracks from current album/playlist
+  userQueue: string[];
+  activeQueue: string[];
   currentTrackId: string | null;
   isPlaying: boolean;
   isLoading: boolean;
@@ -60,11 +59,10 @@ interface MusicState {
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
-  // Removed decrementMemories as it wasn't requested and can be handled via updateTrack if needed
   
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<Playlist>; 
   updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
-  deletePlaylist: (id: string) => Promise<void>; // Added deletePlaylist
+  deletePlaylist: (id: string) => Promise<void>;
   addRelease: (release: Omit<Release, 'id'>) => Promise<Release>; 
   updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
   addReleaseType: (name: string) => Promise<void>;
@@ -117,20 +115,31 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   fetchData: async () => {
     set({ isLoading: true });
     try {
+      const fetchJson = async (url: string) => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return [];
+          return await res.json();
+        } catch (e) {
+          console.error(`Fetch failed for ${url}:`, e);
+          return [];
+        }
+      };
+
       const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, groups, releaseTypes] = await Promise.all([
-        fetch('/api/artists').then(res => res.json()),
-        fetch('/api/albums').then(res => res.json()),
-        fetch('/api/tracks').then(res => res.json()),
-        fetch('/api/timeline').then(res => res.json()),
-        fetch('/api/releases').then(res => res.json()).catch(() => []),
-        fetch('/api/playlists').then(res => res.json()).catch(() => []),
-        fetch('/api/playback-stats').then(res => res.json()).catch(() => []),
-        fetch('/api/profiles').then(res => res.json()).catch(() => []),
-        fetch('/api/groups').then(res => res.json()).catch(() => []),
-        fetch('/api/release-types').then(res => res.json()).catch(() => []),
+        fetchJson('/api/artists'),
+        fetchJson('/api/albums'),
+        fetchJson('/api/tracks'),
+        fetchJson('/api/timeline'),
+        fetchJson('/api/releases'),
+        fetchJson('/api/playlists'),
+        fetchJson('/api/playback-stats'),
+        fetchJson('/api/profiles'),
+        fetchJson('/api/groups'),
+        fetchJson('/api/release-types'),
       ]);
       
-      const activeProfile = profiles[0] ? {
+      const activeProfile = profiles && profiles[0] ? {
         ...profiles[0],
         settings: JSON.parse(profiles[0].settings || '{"showUnbalancedFirst": false, "applyRulesFromAlbum": true}'),
         playbackRules: JSON.parse(profiles[0].playbackRules || '[]')
@@ -138,14 +147,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       set({
         activeProfile,
-        artists: artists.map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })),
-        albums: albums.map((al: any) => ({
+        artists: (artists || []).map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })),
+        albums: (albums || []).map((al: any) => ({
           ...al,
           covers: JSON.parse(al.covers || '[]'),
           pendingFiles: JSON.parse(al.pendingFiles || '[]'),
           artistIds: JSON.parse(al.artistIds || '[]')
         })),
-        tracks: tracks.map((t: any) => ({
+        tracks: (tracks || []).map((t: any) => ({
           ...t,
           genres: typeof t.genres === 'string' ? JSON.parse(t.genres || '[]') : (t.genres || []),
           producers: typeof t.producers === 'string' ? JSON.parse(t.producers || '[]') : (t.producers || []),
@@ -155,16 +164,16 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           artistIds: typeof t.artistIds === 'string' ? JSON.parse(t.artistIds || '[]') : (t.artistIds || []),
           isFavorite: !!t.isFavorite
         })),
-        releases,
-        playlists,
-        groups: groups.map((g: any) => ({
+        releases: releases || [],
+        playlists: playlists || [],
+        groups: (groups || []).map((g: any) => ({
           ...g,
           isArtistOnly: !!g.isArtistOnly,
           members: g.members ? g.members.map((m: any) => ({ ...m, showOnEntityPage: !!m.showOnEntityPage })) : []
         })),
-        releaseTypes,
-        timeline: timeline.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
-        playbackLogs: logs,
+        releaseTypes: releaseTypes || [],
+        timeline: (timeline || []).map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
+        playbackLogs: logs || [],
         isLoading: false
       });
     } catch (error) {
@@ -188,13 +197,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     if (trackId) {
       const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
       if (rule) {
-        // Apply rule only if not from album or if applyRulesFromAlbum is true
         const shouldApply = !context || context.type !== 'album' || state.activeProfile.settings?.applyRulesFromAlbum;
-
         if (shouldApply) {
           const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === rule.trackBId;
           const isNextInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === rule.trackBId;
-          
           if (!isNextInUserQueue && !isNextInActiveQueue) {
             set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
           }
@@ -213,7 +219,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   setProgress: (progress) => set({ currentProgress: progress }),
   setDuration: (duration) => set({ currentDuration: duration }),
-    
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
   setVolume: (val) => set({ volume: val }),
   toggleShuffle: () => set((state) => ({ isShuffled: !state.isShuffled })),
@@ -221,24 +226,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   nextTrack: () => {
     const state = get();
     const { activeQueue, userQueue, currentTrackId, activeProfile } = state;
-    
-    // Check for a rule that applies to the current track
     const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
     if (rule) {
-      // Apply rule only if not from album or if applyRulesFromAlbum is true
-      // This part is a bit tricky to determine 'source' dynamically here in nextTrack,
-      // as currentTrackId doesn't carry its source context. For a robust solution,
-      // context would need to be persisted with currentTrackId.
-      // For now, if we assume nextTrack is called generally, we'll apply the rule
-      // unless we explicitly track the current playback context.
-      
       const nextIdFromRule = rule.trackBId;
       const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
       const isNextInActiveQueue = activeQueue.length > 0 && activeQueue[0] === nextIdFromRule;
-
       if (!isNextInUserQueue && !isNextInActiveQueue) {
         set({ currentTrackId: nextIdFromRule, isPlaying: true });
-        // Also remove from actual queue if it was in there
         set(s => ({
           userQueue: s.userQueue.filter(id => id !== nextIdFromRule),
           activeQueue: s.activeQueue.filter(id => id !== nextIdFromRule)
@@ -246,30 +240,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         return;
       }
     }
-
-    if (userQueue.length > 0) { // Prioritize manual queue
+    if (userQueue.length > 0) {
       const nextId = userQueue[0];
-      set({ 
-        currentTrackId: nextId, 
-        userQueue: userQueue.slice(1),
-        isPlaying: true 
-      });
-    } else if (activeQueue.length > 0) { // Then active queue
+      set({ currentTrackId: nextId, userQueue: userQueue.slice(1), isPlaying: true });
+    } else if (activeQueue.length > 0) {
       const nextId = activeQueue[0];
-      set({ 
-        currentTrackId: nextId, 
-        activeQueue: activeQueue.slice(1),
-        isPlaying: true 
-      });
+      set({ currentTrackId: nextId, activeQueue: activeQueue.slice(1), isPlaying: true });
     } else {
       set({ currentTrackId: null, isPlaying: false });
     }
   },
 
   previousTrack: () => {},
-
   logPlayback: async (trackId, duration, source, isSkip) => {
-    // Memories increment removed from here
     await fetch('/api/playback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -287,54 +270,37 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     set({ userQueue: newQueue });
   },
 
-  mergeActiveToUserQueue: () => set(state => ({ 
-    userQueue: [...state.userQueue, ...state.activeQueue],
-    activeQueue: []
-  })),
+  mergeActiveToUserQueue: () => set(state => ({ userQueue: [...state.userQueue, ...state.activeQueue], activeQueue: [] })),
   clearActiveQueue: () => set({ activeQueue: [] }),
   shuffleActiveQueue: () => {
     const state = get();
     const shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
-    
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
     for (const rule of rules) {
       const indexB = shuffled.indexOf(rule.trackBId);
       if (indexB !== -1) {
         shuffled.splice(indexB, 1);
         const indexA = shuffled.indexOf(rule.trackAId);
-        if (indexA !== -1) {
-          shuffled.splice(indexA + 1, 0, rule.trackBId);
-        } else {
-          // If trackA is not in shuffled, place A and B at the start
-          shuffled.unshift(rule.trackBId);
-          shuffled.unshift(rule.trackAId);
-        }
+        if (indexA !== -1) shuffled.splice(indexA + 1, 0, rule.trackBId);
+        else { shuffled.unshift(rule.trackBId); shuffled.unshift(rule.trackAId); }
       }
     }
-
     set({ activeQueue: shuffled, isShuffled: true });
   },
 
   shuffleUserQueue: () => {
     const state = get();
     const shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
-    
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
     for (const rule of rules) {
       const indexB = shuffled.indexOf(rule.trackBId);
       if (indexB !== -1) {
         shuffled.splice(indexB, 1);
         const indexA = shuffled.indexOf(rule.trackAId);
-        if (indexA !== -1) {
-          shuffled.splice(indexA + 1, 0, rule.trackBId);
-        } else {
-          // If trackA is not in shuffled, place A and B at the start
-          shuffled.unshift(rule.trackBId);
-          shuffled.unshift(rule.trackAId);
-        }
+        if (indexA !== -1) shuffled.splice(indexA + 1, 0, rule.trackBId);
+        else { shuffled.unshift(rule.trackBId); shuffled.unshift(rule.trackAId); }
       }
     }
-
     set({ userQueue: shuffled, isShuffled: true });
   },
 
@@ -366,10 +332,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    // Optimistic update, then full fetch to sync complex relations
-    set(state => ({
-      artists: state.artists.map(a => a.id === id ? { ...a, ...data } : a)
-    }));
     await get().fetchData(); 
   },
 
@@ -377,9 +339,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     try {
       const res = await fetch(`/api/artists/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete artist');
-      set(state => ({ artists: state.artists.filter(a => a.id !== id) }));
-      await get().fetchData(); // Refetch to clean up all related entities
-      toast.success("Artist deleted from database");
+      await get().fetchData();
+      toast.success("Artist deleted");
     } catch (err) {
       toast.error("Failed to delete artist");
     }
@@ -409,15 +370,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(data)
     });
     if (!res.ok) throw new Error('Failed to update album');
-    set(state => ({
-      albums: state.albums.map(a => a.id === id ? { 
-        ...a, 
-        ...data,
-        covers: data.covers !== undefined ? data.covers : a.covers, // Ensure covers are preserved if not updated
-        pendingFiles: data.pendingFiles !== undefined ? data.pendingFiles : a.pendingFiles,
-        artistIds: data.artistIds !== undefined ? data.artistIds : a.artistIds,
-      } : a)
-    }));
     await get().fetchData();
   },
 
@@ -425,9 +377,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     try {
       const res = await fetch(`/api/albums/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete album');
-      set(state => ({ albums: state.albums.filter(a => a.id !== id) }));
       await get().fetchData(); 
-      toast.success("Album deleted from database");
+      toast.success("Album deleted");
     } catch (err) {
       toast.error("Failed to delete album");
     }
@@ -454,20 +405,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    // Optimistic update for immediate feedback
-    set(state => ({
-      tracks: state.tracks.map(t => t.id === id ? { ...t, ...data } : t)
-    }));
-    await get().fetchData(); // Full refetch to ensure all relations (e.g. playcounts) are updated
+    await get().fetchData();
   },
 
   deleteTrack: async (id) => {
     try {
       const res = await fetch(`/api/tracks/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete track');
-      set(state => ({ tracks: state.tracks.filter(t => t.id !== id) }));
       await get().fetchData(); 
-      toast.success("Track deleted from database");
+      toast.success("Track deleted");
     } catch (err) {
       toast.error("Failed to delete track");
     }
@@ -477,9 +423,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const track = get().tracks.find(t => t.id === id);
     if (track) {
       await get().updateTrack(id, { memories: (track.memories || 0) + 1 });
-      set(state => ({ // Optimistic update
-        tracks: state.tracks.map(t => t.id === id ? { ...t, memories: (t.memories || 0) + 1 } : t)
-      }));
     }
   },
 
@@ -500,18 +443,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    // Optimistic update
-    set(state => ({
-      playlists: state.playlists.map(p => p.id === id ? { ...p, ...data, trackIds: data.trackIds !== undefined ? data.trackIds : p.trackIds } : p)
-    }));
-    await get().fetchData(); // Full refetch to ensure consistent track ordering
+    await get().fetchData();
   },
 
   deletePlaylist: async (id) => {
     try {
       const res = await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete playlist');
-      set(state => ({ playlists: state.playlists.filter(p => p.id !== id) }));
       await get().fetchData(); 
       toast.success("Playlist deleted");
     } catch (err) {
@@ -526,18 +464,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(releaseData)
     });
     const newRelease = await res.json();
-    
-    const state = get();
-    const album = state.albums.find(a => a.id === releaseData.albumId);
-    if (album && releaseData.coverImage) {
-      // Ensure existing covers are merged
-      const updatedCovers = Array.from(new Set([...album.covers, releaseData.coverImage]));
-      if (updatedCovers.length !== album.covers.length) { // Only update if there's a change
-        await get().updateAlbum(album.id, { covers: updatedCovers });
-      }
-    }
-
-    set(state => ({ releases: [...state.releases, newRelease] }));
+    await get().fetchData();
     return newRelease;
   },
 
@@ -578,15 +505,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(groupData)
     });
     const newGroup = await res.json();
-    // Update local state optimistically
-    const parsedNewGroup = {
-      ...newGroup,
-      isArtistOnly: !!newGroup.isArtistOnly,
-      members: groupData.members ? groupData.members.map(m => ({...m, label: m.label || ''})) : []
-    };
-    set(state => ({ groups: [...state.groups, parsedNewGroup] }));
-    await get().fetchData(); // Refetch to get updated members with labels
-    return parsedNewGroup;
+    await get().fetchData();
+    return newGroup;
   },
 
   updateGroup: async (id, data) => {
@@ -595,22 +515,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    // Optimistic update
-    set(state => ({
-      groups: state.groups.map(g => g.id === id ? { 
-        ...g, 
-        ...data,
-        members: data.members !== undefined ? data.members.map(m => ({...m, label: m.label || ''})) : g.members, // Ensure members are updated
-      } : g)
-    }));
-    await get().fetchData(); // Full refetch to ensure member labels are correct
+    await get().fetchData();
   },
 
   deleteGroup: async (id) => {
     try {
       const res = await fetch(`/api/groups/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete bio');
-      set(state => ({ groups: state.groups.filter(g => g.id !== id) }));
       await get().fetchData();
       toast.success("Relational bio deleted");
     } catch (err) {
@@ -619,23 +530,21 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   addGroupMember: async (groupId, entityType, entityId, showOnEntityPage = false) => {
-    const res = await fetch(`/api/groups/${groupId}/members`, {
+    await fetch(`/api/groups/${groupId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entityType, entityId, showOnEntityPage })
     });
-    if (!res.ok) throw new Error('Failed to add group member');
-    await get().fetchData(); // Refetch to ensure state is fully consistent
+    await get().fetchData();
   },
 
   removeGroupMember: async (groupId, entityType, entityId) => {
-    const res = await fetch(`/api/groups/${groupId}/members`, {
+    await fetch(`/api/groups/${groupId}/members`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entityType, entityId })
     });
-    if (!res.ok) throw new Error('Failed to remove group member');
-    await get().fetchData(); // Refetch to ensure state is fully consistent
+    await get().fetchData();
   },
 
   vote: async (voteData) => {
@@ -650,19 +559,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   updateSettings: async (newSettings) => {
     const profile = get().activeProfile;
     const updatedSettings = { ...profile.settings, ...newSettings };
-    
     await fetch(`/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ settings: JSON.stringify(updatedSettings) })
     });
-    
-    set(state => ({
-      activeProfile: {
-        ...state.activeProfile,
-        settings: updatedSettings
-      }
-    }));
+    set(state => ({ activeProfile: { ...state.activeProfile, settings: updatedSettings } }));
   },
 
   updatePlaybackRules: async (rules) => {
