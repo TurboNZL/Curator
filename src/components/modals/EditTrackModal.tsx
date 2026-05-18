@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3 } from 'lucide-react';
+import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Track } from '@/types/music';
@@ -16,7 +16,7 @@ import { Card } from '../ui/card';
 
 export const EditTrackModal = ({ track, children }: { track: Track, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup } = useMusicStore();
+  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
   
   const trackGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === track.id && m.entityType === 'track')
@@ -105,8 +105,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
 
     const uploadPromises = Array.from(files).map(async file => {
       const url = await uploadFile(file, 'audio');
-      // Remove extension and replace underscores with spaces
-      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, ' ');
+      const cleanName = file.name.replace(/_/g, ' ');
       return { url, name: cleanName };
     });
 
@@ -114,9 +113,6 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
       toast.promise(Promise.all(uploadPromises), {
         loading: 'Uploading audio files...',
         success: (newFiles) => {
-          // This is for bulk upload in track modal if needed,
-          // but usually it's in album modal.
-          // Let's ensure it's consistent.
           return `Uploaded ${newFiles.length} files`;
         },
         error: 'Failed to upload some files'
@@ -175,9 +171,9 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
-                  <SearchableSelect
-                    options={artistOptions}
-                    value={formData.artistId}
+                  <SearchableSelect 
+                    options={artistOptions} 
+                    value={formData.artistId} 
                     onValueChange={(val) => setFormData({...formData, artistId: val})}
                     placeholder="Search or type artist..."
                     allowCustom
@@ -199,9 +195,9 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
                       );
                     })}
                   </div>
-                  <SearchableSelect
-                    options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))}
-                    value=""
+                  <SearchableSelect 
+                    options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))} 
+                    value="" 
                     onValueChange={addArtist}
                     placeholder="Add another artist..."
                     allowCustom

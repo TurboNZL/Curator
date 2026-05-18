@@ -118,46 +118,47 @@ const Tracks = () => {
                 const artist = artists.find(a => a.id === track.artistId);
                 const album = albums.find(al => track.albumIds.includes(al.id));
                 return (
-                  <TableRow 
-                    key={track.id} 
-                    className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
-                  >
-                    <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => setCurrentTrack(track.id)}
-                          className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:border-blue-500/50 transition-all"
-                        >
-                          <Play size={14} fill="currentColor" />
-                        </button>
-                        <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
-                    <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Brain size={12} className="text-purple-500" />
-                        <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Rating
-                        trackId={track.id}
-                        balanced={track.rating}
-                        unbalanced={track.initialRating}
-                        comparisons={track.comparisons}
-                        size="sm"
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <TrackContextMenu track={track} />
-                        <EditTrackModal track={track} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TrackContextMenu key={track.id} track={track}>
+                    <TableRow 
+                      className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
+                    >
+                      <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => setCurrentTrack(track.id)}
+                            className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:border-blue-500/50 transition-all"
+                          >
+                            <Play size={14} fill="currentColor" />
+                          </button>
+                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
+                      <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Brain size={12} className="text-purple-500" />
+                          <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Rating
+                          trackId={track.id}
+                          balanced={track.rating}
+                          unbalanced={track.initialRating}
+                          comparisons={track.comparisons}
+                          size="sm"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <TrackContextMenu track={track} />
+                          <EditTrackModal track={track} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TrackContextMenu>
                 );
               })}
             </TableBody>

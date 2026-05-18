@@ -5,7 +5,6 @@ export const MOCK_ARTISTS: Artist[] = [
     id: 'a1',
     name: 'Kanye West',
     image: 'https://images.unsplash.com/photo-1542124113-911d041ca49e?w=400&h=400&fit=crop',
-    bio: 'Influential hip-hop artist and producer.',
     eras: [
       { id: 'e1', artistId: 'a1', name: 'The College Trilogy', description: '2004-2007: Soul-sampling era' },
       { id: 'e2', artistId: 'a1', name: 'Experimental / Yeezus', description: '2013-2015: Industrial and harsh sounds' }
@@ -16,7 +15,6 @@ export const MOCK_ARTISTS: Artist[] = [
     id: 'a2',
     name: 'Radiohead',
     image: 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=400&h=400&fit=crop',
-    bio: 'English rock band formed in Abingdon-on-Thames.',
     eras: [
       { id: 'e3', artistId: 'a2', name: 'Alternative Rock', description: '90s era' },
       { id: 'e4', artistId: 'a2', name: 'Electronic / IDM', description: 'Kid A / Amnesiac period' }

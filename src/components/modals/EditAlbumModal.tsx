@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3 } from 'lucide-react';
+import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -67,8 +67,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
     const uploadPromises = Array.from(files).map(async file => {
       const url = await uploadFile(file, 'audio');
-      // Remove extension and replace underscores with spaces
-      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, ' ');
+      const cleanName = file.name.replace(/_/g, ' ');
       return { url, name: cleanName };
     });
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History, Music } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';

@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,7 +15,6 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) 
   const [formData, setFormData] = useState({
     name: '',
     image: '',
-    bio: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -26,13 +24,12 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) 
     addArtist({
       name: formData.name,
       image: formData.image || undefined,
-      bio: formData.bio || undefined,
       groups: []
     });
 
     toast.success(`${formData.name} added to catalog`);
     setOpen(false);
-    setFormData({ name: '', image: '', bio: '' });
+    setFormData({ name: '', image: '' });
   };
 
   return (
@@ -65,16 +62,6 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) 
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               placeholder="e.g. Kendrick Lamar" 
               className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bio" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Short Bio</Label>
-            <Textarea 
-              id="bio" 
-              value={formData.bio}
-              onChange={(e) => setFormData({...formData, bio: e.target.value})}
-              placeholder="Brief description of the artist..." 
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
             />
           </div>
           <DialogFooter>

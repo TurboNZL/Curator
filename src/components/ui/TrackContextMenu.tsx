@@ -57,7 +57,8 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
         
         <Item
           className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             addToUserQueue(track.id);
             toast.success("Added to queue");
           }}
@@ -73,7 +74,10 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
 
         <Item
           className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-          onClick={() => navigate(`/artists/${track.artistId}`)}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/artists/${track.artistId}`);
+          }}
         >
           <User size={14} /> Go to Artist
         </Item>
@@ -81,7 +85,10 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
         {album && (
           <Item
             className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-            onClick={() => navigate(`/albums/${album.id}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/albums/${album.id}`);
+            }}
           >
             <Disc size={14} /> Go to Album
           </Item>
@@ -121,14 +128,20 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
 
         <Item
           className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-purple-400 cursor-pointer"
-          onClick={() => incrementMemories(track.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            incrementMemories(track.id);
+          }}
         >
           <Plus size={14} /> Add Memory
         </Item>
 
         <Item
           className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-red-400 cursor-pointer"
-          onClick={() => decrementMemories(track.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            decrementMemories(track.id);
+          }}
         >
           <Minus size={14} /> Remove Memory
         </Item>
@@ -136,23 +149,34 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
     );
   };
 
+  // If children are provided, we are wrapping a row for right-click only
+  if (children) {
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          {children}
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white">
+          <MenuItems isContext />
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  }
+
+  // Otherwise, we are the three-dots button (left-click dropdown + right-click context)
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div className="contents">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              {children || (
-                <button className="h-8 w-8 flex items-center justify-center text-zinc-500 hover:text-white transition-colors">
-                  <MoreHorizontal size={16} />
-                </button>
-              )}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white">
-              <MenuItems />
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="h-8 w-8 flex items-center justify-center text-zinc-500 hover:text-white transition-colors">
+              <MoreHorizontal size={16} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white">
+            <MenuItems />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white">
         <MenuItems isContext />
