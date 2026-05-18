@@ -104,15 +104,6 @@ export interface Playlist {
   createdAt: Date;
 }
 
-export interface TimelineEntry {
-  id: string;
-  type: 'entry' | 'playback' | 'rating';
-  timestamp: Date;
-  title: string;
-  description: string;
-  entityId?: string;
-}
-
 export interface Group {
   id: string;
   name: string;
@@ -120,4 +111,5 @@ export interface Group {
   label?: string;
   type: 'collective' | 'thematic' | 'relationship';
   isArtistOnly: boolean;
+  members?: { entityType: string, entityId: string, label?: string }[]; // Added for relational bios
 }

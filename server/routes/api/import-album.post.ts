@@ -1,6 +1,5 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import pkg from "yt-dlp-exec";
-const { exec } = pkg;
+import { exec } from "child_process";
 import path from "path";
 import fs from "fs";
 import axios from "axios";
@@ -8,9 +7,10 @@ import nodeID3 from "node-id3";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
+import { eq } from 'drizzle-orm'; // Imported 'eq'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
+  const body = await readBody(event) as any; // Cast body to any
   const { url } = body;
 
   if (!url) {
@@ -23,35 +23,41 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
 
-    // 1. Get metadata using yt-dlp
-    console.log("Fetching metadata with yt-dlp...");
-    const metadata = await exec(url, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      preferFreeFormats: true,
+    const pythonScriptPath = path.join(process.cwd(), "server", "import-tool", "ytmpcli_api_wrapper.py");
+    const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
+
+    // Execute the Python script
+    const pythonCommand = `python ${pythonScriptPath} "${url}" "${uploadBaseDir}"`;
+    console.log(`Executing Python command: ${pythonCommand}`);
+
+    const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      exec(pythonCommand, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+        if (error) {
+          reject(new Error(`Python script execution failed: ${error.message}\nStderr: ${stderr}`));
+        }
+        resolve({ stdout, stderr });
+      });
     });
-    console.log("Metadata fetched successfully.");
 
-    const info = JSON.parse(metadata.stdout);
-    
-    // Handle both single video and playlist
-    const entries = info._type === 'playlist' ? info.entries : [info];
-    
-    if (!entries || entries.length === 0) {
-      throw new Error("No tracks found in the provided URL");
+    if (stderr) {
+      console.warn(`Python script stderr: ${stderr}`);
     }
 
-    const albumTitle = info.title || "Unknown Album";
-    const albumArtistName = info.uploader || info.artist || "Unknown Artist";
-    const albumId = uuidv4();
+    const pythonOutput = JSON.parse(stdout);
 
+    if (pythonOutput.error) {
+      throw new Error(pythonOutput.error);
+    }
+
+    const { albumTitle, albumArtistName, tracks: processedTracks } = pythonOutput;
+    
     // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "music");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    const musicUploadDir = path.join(uploadBaseDir, "music");
+    if (!fs.existsSync(musicUploadDir)) {
+      fs.mkdirSync(musicUploadDir, { recursive: true });
     }
 
-    // 2. Find or create artist
+    // 1. Find or create artist
     console.log(`Finding or creating artist: ${albumArtistName}`);
     let artistId = uuidv4();
     const existingArtists = await db.select().from(artists);
@@ -68,75 +74,79 @@ export default defineEventHandler(async (event) => {
       console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
     }
 
-    // 3. Create Album
+    // 2. Create Album
     console.log(`Creating album: ${albumTitle}`);
+    const albumId = uuidv4();
     await db.insert(albums).values({
       id: albumId,
       title: albumTitle,
       artistId: artistId,
       artistIds: JSON.stringify([artistId]),
-      covers: JSON.stringify([]),
+      covers: JSON.stringify([]), // Will update with first track thumbnail
     });
     console.log(`Album created with ID: ${albumId}`);
 
-    // 4. Process each track
+    // 3. Process each track from Python output
     const results = [];
-    for (const entry of entries) {
-      if (!entry) continue;
+    let firstTrackCover = null;
 
-      const trackId = uuidv4();
-      const trackTitle = entry.title || "Unknown Track";
-      const fileName = `${trackId}.mp3`;
-      const filePath = path.join(uploadDir, fileName);
+    for (const entry of processedTracks) {
+      const trackId = entry.id;
+      const trackTitle = entry.title;
+      const localFilePath = entry.localFilePath;
+      const youtubeMusicUrl = entry.youtubeMusicUrl;
+      const thumbnail_url = entry.thumbnail;
 
-      console.log(`Downloading track: ${trackTitle} (${entry.webpage_url || entry.url}) to ${filePath}`);
+      console.log(`Processing track: ${trackTitle}`);
 
-      // Download and convert to mp3
-      await exec(entry.webpage_url || entry.url, {
-        extractAudio: true,
-        audioFormat: "mp3",
-        output: filePath.replace('.mp3', '.%(ext)s'),
-      });
-      console.log(`Track ${trackTitle} downloaded.`);
-
-      // 5. Add metadata (ID3 tags)
-      console.log(`Adding ID3 tags to ${trackTitle}`);
+      // Add metadata (ID3 tags) and download thumbnail
       const tags: any = {
         title: trackTitle,
         artist: albumArtistName,
         album: albumTitle,
       };
 
-      // Download thumbnail if available
-      if (entry.thumbnail) {
+      if (thumbnail_url) {
         try {
-          const response = await axios.get(entry.thumbnail, { responseType: 'arraybuffer' });
+          const response = await axios.get(thumbnail_url, { responseType: 'arraybuffer' });
           tags.image = {
             mime: "image/jpeg",
             type: { id: 3, name: "front cover" },
             description: "Cover",
             imageBuffer: Buffer.from(response.data),
           };
+          if (!firstTrackCover) {
+            firstTrackCover = thumbnail_url;
+          }
           console.log(`Thumbnail downloaded for ${trackTitle}`);
         } catch (e) {
           console.warn(`Failed to download thumbnail for ${trackTitle}:`, e);
         }
       }
 
-      if (fs.existsSync(filePath)) {
-        nodeID3.write(tags, filePath);
+      const fullLocalFilePath = path.join(process.cwd(), "public", localFilePath);
+      if (fs.existsSync(fullLocalFilePath)) {
+        nodeID3.write(tags, fullLocalFilePath);
         console.log(`ID3 tags written for ${trackTitle}`);
       }
 
-      // 6. Save to DB
+      // Save to DB
       console.log(`Saving track ${trackTitle} to database.`);
       await db.insert(tracks).values({
         id: trackId,
         title: trackTitle,
         artistId: artistId,
         artistIds: JSON.stringify([artistId]),
-        localFilePath: `/uploads/music/${fileName}`,
-        youtubeMusicUrl: entry.webpage_url || entry.url,
+        localFilePath: localFilePath,
+        youtubeMusicUrl: youtubeMusicUrl,
+        genres: JSON.stringify([]), // Default empty
+        producers: JSON.stringify([]), // Default empty
+        writers: JSON.stringify([]), // Default empty
+        credits: JSON.stringify([]), // Default empty
+        eloScore: 1000,
+        comparisons: 0,
+        memories: 0,
+        queueRules: JSON.stringify({})
       });
       console.log(`Track ${trackTitle} saved to tracks table.`);
 
@@ -147,6 +157,14 @@ export default defineEventHandler(async (event) => {
       console.log(`Track ${trackTitle} associated with album ${albumTitle}.`);
 
       results.push({ id: trackId, title: trackTitle });
+    }
+
+    // Update album with the first track's cover image if available
+    if (firstTrackCover) {
+      await db.update(albums)
+        .set({ covers: JSON.stringify([firstTrackCover]) })
+        .where(eq(albums.id, albumId));
+      console.log(`Album ${albumTitle} cover updated with first track thumbnail.`);
     }
 
     return {
