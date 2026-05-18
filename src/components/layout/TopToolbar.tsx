@@ -26,6 +26,8 @@ export const TopToolbar = () => {
     { label: 'Albums', href: '/albums' },
     { label: 'Tracks', href: '/tracks' },
     { label: 'Playlists', href: '/playlists' },
+    { label: 'Stats', href: '/stats' },
+    { label: 'Cleanup', href: '/cleanup' },
   ];
 
   return (
