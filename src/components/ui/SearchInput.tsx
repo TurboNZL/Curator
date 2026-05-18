@@ -18,10 +18,10 @@ export const SearchInput = () => {
   const navigate = useNavigate();
 
   const allEntities = useMemo(() => ([
-    ...artists.map(e => ({ ...e, type: 'artist', display: e.name, image: e.image })),
-    ...albums.map(e => ({ ...e, type: 'album', display: e.title, image: e.covers[0] })),
-    ...tracks.map(e => ({ ...e, type: 'track', display: e.title, image: albums.find(a => e.albumIds.includes(a.id))?.covers[0] })),
-    ...playlists.map(e => ({ ...e, type: 'playlist', display: e.name, image: e.coverImage })),
+    ...artists.map(e => ({ ...e, type: 'artist', display: e.name, image: e.image, link: `/artists/${e.id}` })),
+    ...albums.map(e => ({ ...e, type: 'album', display: e.title, image: e.covers[0], link: `/albums/${e.id}` })),
+    ...tracks.map(e => ({ ...e, type: 'track', display: e.title, image: albums.find(a => e.albumIds.includes(a.id))?.covers[0], link: `/tracks` })), // Tracks don't have individual pages
+    ...playlists.map(e => ({ ...e, type: 'playlist', display: e.name, image: e.coverImage, link: `/playlists` })), // Playlists don't have individual pages, but can edit from list
   ]), [artists, albums, tracks, playlists]);
 
   const filteredResults = useMemo(() => {
@@ -39,14 +39,27 @@ export const SearchInput = () => {
   const handleSelectResult = useCallback((entity: any) => {
     setSearchTerm('');
     setIsOpen(false);
-    navigate(`/${entity.type}s/${entity.id}`);
+    navigate(entity.link);
   }, [navigate]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && filteredResults.length > 0) {
-      handleSelectResult(filteredResults[0]);
+    if (e.key === 'Enter') {
+      if (filteredResults.length > 0) {
+        handleSelectResult(filteredResults[0]);
+      } else if (searchTerm) {
+        // If no results in dropdown but there's a search term, go to general search results
+        setIsOpen(false);
+        navigate(`/search?query=${encodeURIComponent(searchTerm)}`);
+      }
     }
-  }, [filteredResults, handleSelectResult]);
+  }, [filteredResults, handleSelectResult, searchTerm, navigate]);
+
+  const handleSearchSubmit = useCallback(() => {
+    if (searchTerm) {
+      setIsOpen(false);
+      navigate(`/search?query=${encodeURIComponent(searchTerm)}`);
+    }
+  }, [searchTerm, navigate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,7 +77,11 @@ export const SearchInput = () => {
 
   return (
     <div className="relative w-80" ref={searchRef}>
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+      <Search 
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 cursor-pointer" 
+        size={16} 
+        onClick={handleSearchSubmit}
+      />
       <Input
         className="bg-zinc-900/50 border-none rounded-full pl-10 pr-4 text-sm focus-visible:ring-1 focus-visible:ring-blue-500 text-white h-9"
         placeholder="Search..."
@@ -80,7 +97,7 @@ export const SearchInput = () => {
               {filteredResults.map(entity => (
                 <Link
                   key={`${entity.type}-${entity.id}`}
-                  to={`/${entity.type}s/${entity.id}`}
+                  to={entity.link}
                   onClick={() => handleSelectResult(entity)}
                   className="flex items-center gap-3 p-3 hover:bg-zinc-900 transition-colors"
                 >

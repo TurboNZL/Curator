@@ -9,7 +9,8 @@ import Cleanup from './pages/Cleanup';
 import Settings from './pages/Settings';
 import Index from './pages/Index';
 import Stats from './pages/Stats';
-import Playlists from './pages/Playlists'; // Import Playlists page
+import Playlists from './pages/Playlists';
+import SearchResults from './pages/SearchResults'; // Import SearchResults page
 
 function App() {
   return (
@@ -21,10 +22,11 @@ function App() {
         <Route path="albums" element={<Albums />} />
         <Route path="albums/:id" element={<AlbumDetail />} />
         <Route path="tracks" element={<Tracks />} />
-        <Route path="playlists" element={<Playlists />} /> {/* New Playlists route */}
+        <Route path="playlists" element={<Playlists />} />
         <Route path="cleanup" element={<Cleanup />} />
         <Route path="settings" element={<Settings />} />
         <Route path="stats" element={<Stats />} />
+        <Route path="search" element={<SearchResults />} /> {/* New Search Results route */}
       </Route>
     </Routes>
   );
