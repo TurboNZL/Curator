@@ -16,6 +16,7 @@ export default defineHandler(async (event) => {
       groupId: id,
       entityType: body.entityType,
       entityId: body.entityId,
+      showOnEntityPage: body.showOnEntityPage ? 1 : 0,
     });
     return { success: true };
   }

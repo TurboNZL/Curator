@@ -6,7 +6,7 @@ export const profiles = sqliteTable('profiles', {
   theme: text('theme').notNull().default('dark'),
   accentColor: text('accent_color').notNull().default('#3b82f6'),
   playback_mode: text('playback_mode').notNull().default('local'),
-  settings: text('settings'), // JSON: { showUnbalancedFirst: boolean, defaultArtistImage?: string, defaultAlbumImage?: string }
+  settings: text('settings'), // JSON: { showUnbalancedFirst: boolean, defaultArtistImage?: string, defaultAlbumImage?: string, applyRulesFromAlbum?: boolean }
   playbackRules: text('playback_rules'), // JSON array of { trackAId: string, trackBId: string, playFirstOnShuffle: boolean }
 });
 
@@ -68,7 +68,7 @@ export const tracks = sqliteTable('tracks', {
   localFilePath: text('local_file_path'),
   spotifyUrl: text('spotify_url'),
   geniusUrl: text('genius_url'),
-  soundcloudUrl: text('soundcloud_url'),
+  // Removed soundcloudUrl: text('soundcloud_url'),
   youtubeMusicUrl: text('youtube_music_url'),
   genres: text('genres'), // JSON string array
   producers: text('producers'), // JSON string array
@@ -87,13 +87,14 @@ export const groups = sqliteTable('groups', {
   description: text('description'),
   label: text('label'),
   type: text('type').notNull().default('thematic'), // 'collective', 'thematic', 'relationship'
-  isArtistOnly: integer('is_artist_only', { mode: 'boolean' }).notNull().default(false),
+  isArtistOnly: integer('is_artist_only', { mode: 'boolean' }).notNull().default(false), // Still exists in DB but will be ignored in UI for now
 });
 
 export const groupMembers = sqliteTable('group_members', {
   groupId: text('group_id').notNull(),
   entityType: text('entity_type').notNull(), // 'artist', 'album', 'track'
   entityId: text('entity_id').notNull(),
+  showOnEntityPage: integer('show_on_entity_page', { mode: 'boolean' }).notNull().default(false), // New column
 }, (table) => ({
   pk: primaryKey({ columns: [table.groupId, table.entityType, table.entityId] }),
 }));

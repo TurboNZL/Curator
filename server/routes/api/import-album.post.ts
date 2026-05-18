@@ -100,8 +100,7 @@ export default defineEventHandler(async (event) => {
     const suggestedArtistId = existingArtist ? existingArtist.id : undefined;
 
     let suggestedAlbumCover = '';
-    const suggestedTracks: { title: string; youtubeMusicUrl: string; localFilePath: string; thumbnailUrl?: string; }[] = [];
-
+    
     // Download album cover from the first entry's thumbnail if available
     if (entries[0] && entries[0].thumbnail) {
       try {
@@ -116,9 +115,8 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-
-    for (const entry of entries) {
-      if (!entry || !entry.id) continue;
+    const downloadPromises = entries.map(async (entry) => {
+      if (!entry || !entry.id) return null;
 
       const trackTitle = (entry.title || "Unknown Track").trim();
       const youtubeMusicUrl = entry.webpage_url || `https://www.youtube.com/watch?v=${entry.id}`;
@@ -130,7 +128,6 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg
       try {
         await new Promise<void>((resolve, reject) => {
           const childProcess = youtubedl.exec(youtubeMusicUrl, { 
@@ -139,8 +136,8 @@ export default defineEventHandler(async (event) => {
             output: localFilepathFull,
             noWarnings: true,
             preferFreeFormats: true,
-            ffmpegLocation: ffmpegAndFfprobeBinDir, // Corrected: provide directory path to ffmpeg/ffprobe
-            format: 'bestaudio', // Prioritize best audio quality
+            ffmpegLocation: ffmpegAndFfprobeBinDir,
+            format: 'bestaudio', 
           });
 
           childProcess.on('error', (err: any) => reject(new Error(`Failed to download audio for ${trackTitle}: ${err.message}`)));
@@ -150,18 +147,19 @@ export default defineEventHandler(async (event) => {
           });
         });
         console.log(`Audio downloaded and converted for ${trackTitle}: ${relativeLocalFilePath}`);
+        return {
+          title: trackTitle,
+          youtubeMusicUrl,
+          localFilePath: relativeLocalFilePath,
+          thumbnailUrl: thumbnailUrl
+        };
       } catch (downloadError: any) {
         console.warn(`Skipping track "${trackTitle}" due to download error: ${downloadError.message}`);
-        continue; // Skip this track if download fails
+        return null;
       }
-      
-      suggestedTracks.push({
-        title: trackTitle,
-        youtubeMusicUrl,
-        localFilePath: relativeLocalFilePath,
-        thumbnailUrl: thumbnailUrl
-      });
-    }
+    });
+
+    const suggestedTracks = (await Promise.all(downloadPromises)).filter(Boolean) as { title: string; youtubeMusicUrl: string; localFilePath: string; thumbnailUrl?: string; }[];
 
     if (suggestedTracks.length === 0) {
       throw createError({ statusCode: 500, statusMessage: "No tracks could be downloaded from the provided URL." });

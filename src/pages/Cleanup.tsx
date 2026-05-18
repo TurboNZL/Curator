@@ -1,17 +1,147 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Rating } from '@/components/ui/Rating';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+
+interface SpotifyUriGroupResolutionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  tracks: any[];
+  onResolve: (trackIds: string[], uris: string[]) => Promise<void>;
+}
+
+const SpotifyUriGroupResolutionModal: React.FC<SpotifyUriGroupResolutionModalProps> = ({ isOpen, onClose, tracks, onResolve }) => {
+  const [uris, setUris] = useState<string[]>(tracks.map(t => t.spotifyUrl || ''));
+  const [pastedText, setPastedText] = useState('');
+  const [isResolving, setIsResolving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setUris(tracks.map(t => t.spotifyUrl || ''));
+      setPastedText('');
+    }
+  }, [isOpen, tracks]);
+
+  const handleUriChange = (index: number, value: string) => {
+    setUris(prev => {
+      const newUris = [...prev];
+      newUris[index] = value;
+      return newUris;
+    });
+  };
+
+  const handlePaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setPastedText(text);
+    const pastedUris = text.split('\n').map(line => line.trim()).filter(line => line.startsWith('https://open.spotify.com/track/'));
+    
+    setUris(prev => {
+      const newUris = [...prev];
+      pastedUris.forEach((uri, index) => {
+        if (index < newUris.length) {
+          newUris[index] = uri;
+        }
+      });
+      return newUris;
+    });
+  };
+
+  const submitResolution = async () => {
+    setIsResolving(true);
+    try {
+      const trackIds = tracks.map(t => t.id);
+      await onResolve(trackIds, uris);
+      toast.success("Spotify URIs updated successfully.");
+      onClose();
+    } catch (error) {
+      console.error("Failed to resolve Spotify URIs:", error);
+      toast.error("Failed to update Spotify URIs.");
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+            <Link size={20} className="text-green-500" />
+            Resolve Spotify URIs
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tracks</Label>
+              <ScrollArea className="h-[250px] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
+                <div className="space-y-1">
+                  {tracks.map((track) => (
+                    <div key={track.id} className="flex items-center p-2 rounded-lg text-zinc-400">
+                      <span className="text-xs font-bold truncate">{track.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Spotify URIs</Label>
+              <ScrollArea className="h-[250px] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
+                <div className="space-y-1">
+                  {uris.map((uri, index) => (
+                    <Input
+                      key={tracks[index]?.id || index}
+                      value={uri}
+                      onChange={(e) => handleUriChange(index, e.target.value)}
+                      placeholder={`URI for ${tracks[index]?.title}`}
+                      className="bg-zinc-900 border-zinc-800 focus-visible:ring-green-500 text-xs"
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="paste-uris" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Paste Multiple URIs</Label>
+            <Textarea
+              id="paste-uris"
+              value={pastedText}
+              onChange={handlePaste}
+              placeholder="Paste Spotify track URLs here (one per line)"
+              className="bg-zinc-900 border-zinc-800 focus-visible:ring-green-500 text-xs min-h-[100px]"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={isResolving}>
+            Cancel
+          </Button>
+          <Button onClick={submitResolution} className="bg-green-600 hover:bg-green-500 font-bold uppercase tracking-wider" disabled={isResolving}>
+            {isResolving ? "Resolving..." : "Resolve Group"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote, volume } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, fetchData, playbackLogs } = useMusicStore();
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [isShufflePairing, setIsShufflePairing] = useState(false);
+  const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
+  const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
@@ -23,25 +153,98 @@ const Cleanup = () => {
   }, [volume]);
 
   // Task Generation Logic
-  const tasks = [
-    ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
-    ...albums.filter(al => !al.covers || al.covers.length === 0).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
-    ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Music, color: 'text-green-500' })),
-    ...tracks.filter(t => t.producers.length === 0).map(t => ({ type: 'producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' })),
-    ...releases.filter(r => !r.releaseDate).map(r => ({ type: 'release_date', entity: r, label: `Add date for ${r.title}`, icon: Calendar, color: 'text-orange-500' })),
-    ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
-  ];
+  const allTasks = useMemo(() => {
+    const generatedTasks = [
+      ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
+      ...albums.filter(al => !al.covers || al.covers.length === 0).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
+      ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500' })),
+      ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
+      ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Link, color: 'text-red-500' })),
+      ...tracks.filter(t => t.producers.length === 0).map(t => ({ type: 'producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' })),
+      ...releases.filter(r => !r.releaseDate).map(r => ({ type: 'release_date', entity: r, label: `Add date for ${r.title}`, icon: Calendar, color: 'text-orange-500' })),
+      ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
+    ];
+
+    // Group consecutive tracks from the same album missing Spotify URLs
+    const groupedSpotifyTasks: any[] = [];
+    let currentGroup: any[] = [];
+
+    tracks.forEach((track, index) => {
+      if (!track.spotifyUrl && track.albumIds.length > 0) {
+        const prevTrack = tracks[index - 1];
+        if (currentGroup.length === 0 || (prevTrack && track.albumIds[0] === prevTrack.albumIds[0] && !prevTrack.spotifyUrl)) {
+          currentGroup.push(track);
+        } else {
+          if (currentGroup.length > 1) {
+            groupedSpotifyTasks.push({
+              type: 'grouped_spotify_uri',
+              entity: { albumId: currentGroup[0].albumIds[0], tracks: currentGroup },
+              label: `Add Spotify links for ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
+              icon: Link,
+              color: 'text-green-500',
+              isGrouped: true,
+            });
+          } else if (currentGroup.length === 1) {
+            generatedTasks.push({
+              type: 'spotify_uri', entity: currentGroup[0], label: `Add Spotify link for ${currentGroup[0].title}`, icon: Link, color: 'text-green-500'
+            });
+          }
+          currentGroup = [track];
+        }
+      } else {
+        if (currentGroup.length > 1) {
+          groupedSpotifyTasks.push({
+            type: 'grouped_spotify_uri',
+            entity: { albumId: currentGroup[0].albumIds[0], tracks: currentGroup },
+            label: `Add Spotify links for ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
+            icon: Link,
+            color: 'text-green-500',
+            isGrouped: true,
+          });
+        } else if (currentGroup.length === 1) {
+          generatedTasks.push({
+            type: 'spotify_uri', entity: currentGroup[0], label: `Add Spotify link for ${currentGroup[0].title}`, icon: Link, color: 'text-green-500'
+          });
+        }
+        currentGroup = [];
+      }
+    });
+
+    // Handle last group if it exists
+    if (currentGroup.length > 1) {
+      groupedSpotifyTasks.push({
+        type: 'grouped_spotify_uri',
+        entity: { albumId: currentGroup[0].albumIds[0], tracks: currentGroup },
+        label: `Add Spotify links for ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
+        icon: Link,
+        color: 'text-green-500',
+        isGrouped: true,
+      });
+    } else if (currentGroup.length === 1) {
+      generatedTasks.push({
+        type: 'spotify_uri', entity: currentGroup[0], label: `Add Spotify link for ${currentGroup[0].title}`, icon: Link, color: 'text-green-500'
+      });
+    }
+
+    return [...generatedTasks, ...groupedSpotifyTasks];
+  }, [tracks, artists, albums, releases]);
 
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
   const pickNewPair = () => {
     if (tracks.length < 2) return;
-    const t1 = tracks[Math.floor(Math.random() * tracks.length)];
-    let t2 = tracks[Math.floor(Math.random() * tracks.length)];
-    while (t2.id === t1.id) {
-      t2 = tracks[Math.floor(Math.random() * tracks.length)];
+    const availableTracks = isShufflePairing ? [...tracks].sort(() => Math.random() - 0.5) : tracks;
+    
+    let t1 = null;
+    let t2 = null;
+
+    if (availableTracks.length >= 2) {
+      t1 = availableTracks[Math.floor(Math.random() * availableTracks.length)];
+      do {
+        t2 = availableTracks[Math.floor(Math.random() * availableTracks.length)];
+      } while (t2.id === t1.id);
     }
-    setPair([t1, t2]);
+    setPair(t1 && t2 ? [t1, t2] : null);
     setPlayingId(null);
     if (audioRef.current) {
       audioRef.current.pause();
@@ -52,7 +255,7 @@ const Cleanup = () => {
     if (!pair && tracks.length >= 2) {
       pickNewPair();
     }
-  }, [tracks, pair]);
+  }, [tracks, pair, isShufflePairing]);
 
   const handleVote = async (winnerId?: string, isEqual?: boolean) => {
     if (!pair) return;
@@ -106,10 +309,50 @@ const Cleanup = () => {
     };
   };
 
+  const handleResolveTask = async (task: any) => {
+    if (task.type === 'spotify_uri') {
+      const spotifyUrl = prompt(`Enter Spotify URL for ${task.entity.title}:`);
+      if (spotifyUrl) {
+        await updateTrack(task.entity.id, { spotifyUrl });
+        toast.success("Spotify URL updated.");
+        fetchData();
+      }
+    } else if (task.type === 'genius_uri') {
+      const geniusUrl = prompt(`Enter Genius URL for ${task.entity.title}:`);
+      if (geniusUrl) {
+        await updateTrack(task.entity.id, { geniusUrl });
+        toast.success("Genius URL updated.");
+        fetchData();
+      }
+    } else if (task.type === 'youtube_music_uri') {
+      const youtubeMusicUrl = prompt(`Enter YouTube Music URL for ${task.entity.title}:`);
+      if (youtubeMusicUrl) {
+        await updateTrack(task.entity.id, { youtubeMusicUrl });
+        toast.success("YouTube Music URL updated.");
+        fetchData();
+      }
+    } else if (task.type === 'grouped_spotify_uri') {
+      setSpotifyResolutionTracks(task.entity.tracks);
+      setIsSpotifyResolutionModalOpen(true);
+    }
+    // Add logic for other task types here
+  };
+
+  const handleSpotifyResolution = async (trackIds: string[], uris: string[]) => {
+    const updatePromises = trackIds.map((id, index) => {
+      const uri = uris[index];
+      return updateTrack(id, { spotifyUrl: uri });
+    });
+    await Promise.all(updatePromises);
+    fetchData(); // Refresh data after updates
+  };
+
+
   const handleReset = () => {
     if (confirm("Are you sure you want to wipe the entire local database? This cannot be undone.")) {
       resetDatabase();
       toast.success("Database cleared successfully");
+      fetchData(); // Refresh UI after reset
     }
   };
 
@@ -155,7 +398,6 @@ const Cleanup = () => {
                 <Card 
                   className={cn(
                     "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                    "before:absolute before:inset-0 before:bg-gradient-to-b before:from-transparent before:to-black/80 before:opacity-60"
                   )}
                   onClick={() => playSnippet(track)}
                 >
@@ -165,6 +407,8 @@ const Cleanup = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                       alt="" 
                     />
+                    {/* White fade on hover */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
                         {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
@@ -214,6 +458,12 @@ const Cleanup = () => {
               >
                 <SkipForward size={14} /> Skip Pairing
               </Button>
+              <div className="flex items-center gap-2">
+                <Switch id="shuffle-pairing" checked={isShufflePairing} onCheckedChange={setIsShufflePairing} />
+                <Label htmlFor="shuffle-pairing" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                  Shuffle Pairings
+                </Label>
+              </div>
             </div>
           </div>
         ) : (
@@ -237,13 +487,13 @@ const Cleanup = () => {
 
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
-              {tasks.length === 0 ? (
-                <div className="py-12 text-center border border-dashed border-zinc-900 rounded-2xl">
+              {allTasks.length === 0 ? (
+                <div className="py-12 text-center border-2 border-dashed border-zinc-900 rounded-2xl">
                   <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3 opacity-20" />
                   <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No tasks for now.</p>
                 </div>
               ) : (
-                tasks.map((task, i) => (
+                allTasks.map((task, i) => (
                   <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-2 rounded-lg bg-zinc-950 border border-zinc-800", task.color)}>
@@ -251,7 +501,14 @@ const Cleanup = () => {
                       </div>
                       <span className="text-xs font-bold text-zinc-300">{task.label}</span>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Resolve</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-[10px] font-black uppercase tracking-widest text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleResolveTask(task)}
+                    >
+                      Resolve
+                    </Button>
                   </div>
                 ))
               )}
@@ -298,6 +555,13 @@ const Cleanup = () => {
           </p>
         </div>
       </Card>
+
+      <SpotifyUriGroupResolutionModal
+        isOpen={isSpotifyResolutionModalOpen}
+        onClose={() => setIsSpotifyResolutionModalOpen(false)}
+        tracks={spotifyResolutionTracks}
+        onResolve={handleSpotifyResolution}
+      />
     </div>
   );
 };

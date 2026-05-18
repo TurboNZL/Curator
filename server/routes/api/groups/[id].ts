@@ -19,7 +19,7 @@ export default defineHandler(async (event) => {
         description: body.description,
         label: body.label,
         type: body.type,
-        isArtistOnly: body.isArtistOnly ? 1 : 0,
+        isArtistOnly: body.isArtistOnly ? 1 : 0, // Kept for DB compatibility, but will be ignored in UI
       })
       .where(eq(groups.id, id));
 
@@ -32,7 +32,8 @@ export default defineHandler(async (event) => {
         await db.insert(groupMembers).values({
           groupId: id,
           entityType: member.entityType,
-          entityId: member.entityId
+          entityId: member.entityId,
+          showOnEntityPage: member.showOnEntityPage ? 1 : 0,
         });
       }
     }

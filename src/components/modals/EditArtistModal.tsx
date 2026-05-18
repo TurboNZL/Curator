@@ -17,7 +17,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
   const { updateArtist, deleteArtist, groups, deleteGroup } = useMusicStore();
   
   const artistGroups = groups.filter(g =>
-    g.members?.some(m => m.entityId === artist.id && m.entityType === 'artist')
+    g.members?.some(m => m.entityId === artist.id && m.entityType === 'artist' && m.showOnEntityPage)
   );
 
   const [formData, setFormData] = useState({
@@ -127,7 +127,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
                   </Card>
                 ))}
                 {artistGroups.length === 0 && (
-                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked.</p>
+                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked to show on this page.</p>
                 )}
               </div>
             </TabsContent>

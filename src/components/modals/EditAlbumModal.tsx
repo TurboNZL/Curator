@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X } from 'lucide-react';
+import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
@@ -21,7 +22,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
   const albumGroups = groups.filter(g =>
-    g.members?.some(m => m.entityId === album.id && m.entityType === 'album')
+    g.members?.some(m => m.entityId === album.id && m.entityType === 'album' && m.showOnEntityPage)
   );
 
   const availableCovers = Array.from(new Set([
@@ -34,7 +35,8 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     artistId: album.artistId,
     artistIds: album.artistIds || [],
     cover: album.covers[0] || '',
-    pendingFiles: album.pendingFiles || []
+    pendingFiles: album.pendingFiles || [],
+    releaseDate: albumReleases.length > 0 ? albumReleases.sort((a,b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime())[0].releaseDate : '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,6 +102,15 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
+
+  const handleInheritReleaseDate = (releaseDate: string) => {
+    setFormData(prev => ({ ...prev, releaseDate }));
+    toast.info(`Album release date inherited from ${releaseDate}`);
+  };
+
+  const sortedReleases = useMemo(() => {
+    return [...albumReleases].sort((a, b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime());
+  }, [albumReleases]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -195,6 +206,35 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
                     allowCustom
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="album-release-date" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Release Date</Label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      id="album-release-date" 
+                      type="date"
+                      value={formData.releaseDate}
+                      onChange={(e) => setFormData({...formData, releaseDate: e.target.value})}
+                      className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 flex-1"
+                    />
+                    {sortedReleases.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon" className="h-9 w-9 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white">
+                            <Calendar size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                          {sortedReleases.map(rel => rel.releaseDate && (
+                            <DropdownMenuItem key={rel.id} onClick={() => handleInheritReleaseDate(rel.releaseDate!)}>
+                              Inherit from "{rel.title}" ({rel.releaseDate})
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -286,7 +326,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
                   </Card>
                 ))}
                 {albumGroups.length === 0 && (
-                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked.</p>
+                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked to show on this page.</p>
                 )}
               </div>
             </TabsContent>

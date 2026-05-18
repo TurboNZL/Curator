@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -29,8 +29,12 @@ const AlbumDetail = () => {
   const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
   
   const albumGroups = groups.filter(g =>
-    !g.isArtistOnly && g.members?.some(m => m.entityId === id && m.entityType === 'album')
+    g.members?.some(m => m.entityId === id && m.entityType === 'album' && m.showOnEntityPage)
   );
+  
+  const totalAlbumRelatedGroups = groups.filter(g =>
+    g.members?.some(m => m.entityId === id && m.entityType === 'album')
+  ).length;
 
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
@@ -58,9 +62,9 @@ const AlbumDetail = () => {
   
   useEffect(() => {
     if (album && !selectedReleaseId) {
-      setSelectedReleaseId(album.defaultReleaseId || (albumReleases.length > 0 ? albumReleases[0].id : null));
+      setSelectedReleaseId(album.defaultReleaseId || (sortedReleases.length > 0 ? sortedReleases[0].id : null));
     }
-  }, [album, albumReleases, selectedReleaseId]);
+  }, [album, sortedReleases, selectedReleaseId]);
 
   const currentRelease = albumReleases.find(r => r.id === selectedReleaseId);
   
@@ -103,6 +107,9 @@ const AlbumDetail = () => {
               {artist?.name}
               <User size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
+            <span className="flex items-center gap-1.5 text-zinc-400 text-sm font-medium">
+              <Users size={16} className="text-zinc-600"/> {totalAlbumRelatedGroups} Bios
+            </span>
           </div>
           
           <div className="flex gap-3">
@@ -275,7 +282,7 @@ const AlbumDetail = () => {
             </div>
             <div className="grid grid-cols-1 gap-4">
               {albumGroups.length === 0 ? (
-                <p className="text-xs text-zinc-600 italic">No relational bios for this album.</p>
+                <p className="text-xs text-zinc-600 italic">No relational bios for this album to show on this page.</p>
               ) : (
                 albumGroups.map(group => (
                   <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4 group/bio">
@@ -286,12 +293,16 @@ const AlbumDetail = () => {
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
                     <div className="flex flex-wrap gap-2 pt-2">
-                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                      {group.members?.filter(m => m.entityId !== id && m.showOnEntityPage).map((member, i) => (
                         <Link
                           key={i}
                           to={`/${member.entityType}s/${member.entityId}`}
-                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
+                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors flex items-center gap-1.5"
                         >
+                          {member.entityType === 'artist' && <User size={10} />}
+                          {member.entityType === 'album' && <Disc size={10} />}
+                          {member.entityType === 'track' && <Music size={10} />}
+                          {/* Releases are not an option anymore */}
                           {member.label}
                         </Link>
                       ))}

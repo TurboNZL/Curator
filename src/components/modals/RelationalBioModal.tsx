@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
 import { SearchableSelect } from '../ui/SearchableSelect';
-import { X, User, Disc, Music, Layers, Link as LinkIcon } from 'lucide-react';
+import { X, User, Disc, Music, Layers, Link as LinkIcon, Check } from 'lucide-react';
+import { Checkbox } from '../ui/checkbox';
+import { cn } from '@/lib/utils';
 
 interface RelationalBioModalProps {
   children?: React.ReactNode;
@@ -25,7 +27,7 @@ interface RelationalBioModalProps {
 }
 
 export const RelationalBioModal = ({ children, initialEntity, groupId }: RelationalBioModalProps) => {
-  const { groups, artists, albums, tracks, releases, addGroup, updateGroup, addGroupMember, removeGroupMember } = useMusicStore();
+  const { groups, artists, albums, tracks, addGroup, updateGroup, addGroupMember, removeGroupMember, fetchData } = useMusicStore();
   const [open, setOpen] = useState(false);
 
   const group = groupId ? groups.find(g => g.id === groupId) : null;
@@ -33,8 +35,9 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    isArtistOnly: false,
-    members: [] as { entityType: string, entityId: string, label: string }[]
+    type: 'relationship' as 'collective' | 'thematic' | 'relationship' | 'era',
+    members: [] as { entityType: string, entityId: string, label: string, showOnEntityPage?: boolean }[],
+    // For era type, we would add startDate/endDate here
   });
 
   useEffect(() => {
@@ -43,15 +46,15 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
         setFormData({
           name: group.name,
           description: group.description || '',
-          isArtistOnly: group.isArtistOnly,
+          type: group.type,
           members: group.members || []
         });
       } else {
         setFormData({
           name: '',
           description: '',
-          isArtistOnly: false,
-          members: initialEntity ? [{ entityType: initialEntity.type, entityId: initialEntity.id, label: initialEntity.label }] : []
+          type: 'relationship',
+          members: initialEntity ? [{ entityType: initialEntity.type, entityId: initialEntity.id, label: initialEntity.label, showOnEntityPage: (initialEntity.type !== 'track' && initialEntity.type !== 'release') }] : []
         });
       }
     }
@@ -61,58 +64,81 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
     ...artists.map(a => ({ value: `artist:${a.id}`, label: `Artist: ${a.name}`, type: 'artist', name: a.name })),
     ...albums.map(a => ({ value: `album:${a.id}`, label: `Album: ${a.title}`, type: 'album', name: a.title })),
     ...tracks.map(t => ({ value: `track:${t.id}`, label: `Track: ${t.title}`, type: 'track', name: t.title })),
-    ...releases.map(r => ({ value: `release:${r.id}`, label: `Release: ${r.title}`, type: 'release', name: r.title })),
+    // Removed releases from dropdown options
   ];
 
   const handleSave = async () => {
     if (!formData.name) return toast.error("Bio name is required");
     if (formData.members.length === 0) return toast.error("At least one entity must be linked");
 
+    // Filter out `label` before sending to API for members
+    const membersWithoutLabel = formData.members.map(({ label, ...rest }) => rest);
+
     if (groupId) {
       await updateGroup(groupId, {
         name: formData.name,
         description: formData.description,
-        isArtistOnly: formData.isArtistOnly,
-        members: formData.members
+        type: formData.type,
+        members: membersWithoutLabel
       });
       toast.success("Relational bio updated");
     } else {
       await addGroup({
         name: formData.name,
         description: formData.description,
-        isArtistOnly: formData.isArtistOnly,
-        type: 'relationship',
-        label: formData.name,
-        members: formData.members
+        type: formData.type,
+        label: formData.name, // Using name as default label
+        members: membersWithoutLabel
       });
       toast.success("Relational bio created");
     }
     setOpen(false);
+    fetchData(); // Ensures local state is fully synchronized after add/update
   };
 
   const addMember = (val: string) => {
     const [type, id] = val.split(':');
     const entity = entityOptions.find(opt => opt.value === val);
     if (entity && !formData.members.some(m => m.entityId === id && m.entityType === type)) {
-      const newMember = { entityType: type, entityId: id, label: entity.name };
+      const newMember = { 
+        entityType: type, 
+        entityId: id, 
+        label: entity.name, 
+        showOnEntityPage: (type !== 'track' && type !== 'release') // Tracks and Releases don't have dedicated pages for this
+      };
+      // Optimistically update local state first
+      setFormData(prev => ({
+        ...prev,
+        members: [...prev.members, newMember]
+      }));
+      // If editing existing group, call API to add member
       if (groupId) {
-        addGroupMember(groupId, type, id);
+        addGroupMember(groupId, type, id, newMember.showOnEntityPage);
       }
-      setFormData({
-        ...formData,
-        members: [...formData.members, newMember]
-      });
     }
   };
 
   const removeMember = (type: string, id: string) => {
+    // Optimistically update local state first
+    setFormData(prev => ({
+      ...prev,
+      members: prev.members.filter(m => !(m.entityId === id && m.entityType === type))
+    }));
+    // If editing existing group, call API to remove member
     if (groupId) {
       removeGroupMember(groupId, type, id);
     }
-    setFormData({
-      ...formData,
-      members: formData.members.filter(m => !(m.entityId === id && m.entityType === type))
-    });
+  };
+
+  const toggleShowOnEntityPage = (entityId: string, entityType: string) => {
+    setFormData(prev => ({
+      ...prev,
+      members: prev.members.map(m => 
+        m.entityId === entityId && m.entityType === entityType 
+          ? { ...m, showOnEntityPage: !m.showOnEntityPage } 
+          : m
+      )
+    }));
   };
 
   return (
@@ -150,17 +176,37 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Entities</Label>
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-col gap-2 mb-3">
               {formData.members.map((m, i) => (
-                <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-md text-[10px] font-bold text-zinc-300">
-                  {m.entityType === 'artist' && <User size={10} />}
-                  {m.entityType === 'album' && <Disc size={10} />}
-                  {m.entityType === 'track' && <Music size={10} />}
-                  {m.entityType === 'release' && <Layers size={10} />}
-                  <span>{m.label}</span>
-                  <button onClick={() => removeMember(m.entityType, m.entityId)} className="ml-1 text-zinc-600 hover:text-red-500">
-                    <X size={10} />
-                  </button>
+                <div key={`${m.entityType}-${m.entityId}`} className="flex items-center justify-between px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-md text-[10px] font-bold text-zinc-300">
+                  <div className="flex items-center gap-1.5">
+                    {m.entityType === 'artist' && <User size={10} />}
+                    {m.entityType === 'album' && <Disc size={10} />}
+                    {m.entityType === 'track' && <Music size={10} />}
+                    {/* Releases are not an option anymore */}
+                    <span>{m.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {m.entityType !== 'track' && m.entityType !== 'release' && ( // No track page, so no checkbox needed
+                      <div className="flex items-center gap-1">
+                        <Checkbox 
+                          id={`show-on-${m.entityType}-${m.entityId}`} 
+                          checked={m.showOnEntityPage}
+                          onCheckedChange={() => toggleShowOnEntityPage(m.entityId, m.entityType)}
+                          className="h-3 w-3"
+                        />
+                        <Label 
+                          htmlFor={`show-on-${m.entityType}-${m.entityId}`} 
+                          className="text-[8px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer"
+                        >
+                          Show on Page
+                        </Label>
+                      </div>
+                    )}
+                    <button onClick={() => removeMember(m.entityType, m.entityId)} className="text-zinc-600 hover:text-red-500">
+                      <X size={10} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -173,17 +219,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
             />
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-2">
-              <Switch 
-                id="artist-only-modal" 
-                checked={formData.isArtistOnly} 
-                onCheckedChange={(val) => setFormData({...formData, isArtistOnly: val})} 
-              />
-              <Label htmlFor="artist-only-modal" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
-                Artist Only Mode
-              </Label>
-            </div>
+          <div className="flex items-center justify-end pt-2">
             <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-500 text-[10px] font-black uppercase tracking-widest h-10 px-8">
               {groupId ? 'Save Changes' : 'Create Bio'}
             </Button>

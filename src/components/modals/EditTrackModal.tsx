@@ -19,7 +19,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
   const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
   
   const trackGroups = groups.filter(g =>
-    g.members?.some(m => m.entityId === track.id && m.entityType === 'track')
+    g.members?.some(m => m.entityId === track.id && m.entityType === 'track' && m.showOnEntityPage)
   );
   
   const [formData, setFormData] = useState({
@@ -32,12 +32,11 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     producers: track.producers.join(', '),
     writers: track.writers.join(', '),
     credits: track.credits.join(', '),
-    bitrate: track.bitrate || '320kbps',
+    bitrate: track.bitrate || '320kbps', // Still stored, but not editable directly
     audioUrl: track.localFilePath || '',
     spotifyUrl: track.spotifyUrl || '',
     geniusUrl: track.geniusUrl || '',
-    soundcloudUrl: track.soundcloudUrl || '',
-    youtubeMusicUrl: track.youtubeMusicUrl || '',
+    youtubeMusicUrl: track.youtubeMusicUrl || '', // Removed soundcloudUrl
   });
 
   const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
@@ -71,7 +70,6 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
-      soundcloudUrl: formData.soundcloudUrl,
       youtubeMusicUrl: formData.youtubeMusicUrl,
     });
 
@@ -212,7 +210,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bitrate</Label>
-                  <Input value={formData.bitrate} onChange={(e) => setFormData({...formData, bitrate: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+                  {/* Bitrate is now display-only */}
+                  <Input value={formData.bitrate || 'Unknown'} disabled className="bg-zinc-900 border-zinc-800 text-zinc-400" />
                 </div>
               </div>
 

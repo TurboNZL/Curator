@@ -21,7 +21,7 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
   const albumTracks = tracks.filter(t => t.albumIds.includes(albumId));
   
   const [formData, setFormData] = useState({
-    title: '',
+    title: 'Streaming', // Default title 'Streaming'
     coverImage: '',
     releaseDate: '',
     selectedTrackIds: [] as string[]
@@ -34,6 +34,14 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
         ? prev.selectedTrackIds.filter(tid => tid !== id)
         : [...prev.selectedTrackIds, id]
     }));
+  };
+
+  const autofillTracks = () => {
+    setFormData(prev => ({
+      ...prev,
+      selectedTrackIds: albumTracks.map(t => t.id)
+    }));
+    toast.info("All album tracks added to release.");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +59,7 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
 
       toast.success(`Release "${formData.title}" indexed`);
       setOpen(false);
-      setFormData({ title: '', coverImage: '', releaseDate: '', selectedTrackIds: [] });
+      setFormData({ title: 'Streaming', coverImage: '', releaseDate: '', selectedTrackIds: [] });
     } catch (error) {
       toast.error("Failed to save release");
     }
@@ -106,7 +114,14 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Include Tracks</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Include Tracks</Label>
+                {albumTracks.length > 0 && (
+                  <Button type="button" variant="ghost" size="sm" onClick={autofillTracks} className="h-6 text-[10px] font-black uppercase text-blue-400 hover:text-blue-300">
+                    <Plus size={12} className="mr-1" /> Autofill
+                  </Button>
+                )}
+              </div>
               <ScrollArea className="h-[280px] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
                 <div className="space-y-1">
                   {albumTracks.map(track => (

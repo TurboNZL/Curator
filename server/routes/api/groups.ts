@@ -23,7 +23,7 @@ export default defineHandler(async (event) => {
         if (m.entityType === 'album') label = albumsList.find(a => a.id === m.entityId)?.title || label;
         if (m.entityType === 'track') label = tracksList.find(t => t.id === m.entityId)?.title || label;
         if (m.entityType === 'release') label = releasesList.find(r => r.id === m.entityId)?.title || label;
-        return { ...m, label };
+        return { ...m, label, showOnEntityPage: !!m.showOnEntityPage };
       });
       return { ...g, members };
     });
@@ -39,7 +39,7 @@ export default defineHandler(async (event) => {
       description: body.description,
       label: body.label,
       type: body.type || 'relationship',
-      isArtistOnly: body.isArtistOnly ? 1 : 0,
+      isArtistOnly: body.isArtistOnly ? 1 : 0, // Kept for DB compatibility, but will be ignored in UI
     };
 
     await db.insert(groups).values(newGroup);
@@ -49,11 +49,15 @@ export default defineHandler(async (event) => {
         await db.insert(groupMembers).values({
           groupId: id,
           entityType: member.entityType,
-          entityId: member.entityId
+          entityId: member.entityId,
+          showOnEntityPage: member.showOnEntityPage ? 1 : 0,
         });
       }
     }
 
-    return { ...newGroup, members: body.members || [] };
+    return { 
+      ...newGroup, 
+      members: body.members ? body.members.map((m: any) => ({ ...m, label: m.label || '', showOnEntityPage: !!m.showOnEntityPage })) : [] 
+    };
   }
 });

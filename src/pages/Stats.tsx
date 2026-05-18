@@ -21,8 +21,8 @@ const Stats = () => {
   const topTracks = useMemo(() => {
     const trackStats = tracks.map(track => {
       const logs = playbackLogs.filter(l => l.trackId === track.id);
-      let fullPlays = logs.filter(l => !l.isSkip && l.duration > 30).length;
-      let partialPlays = logs.filter(l => l.isSkip || (l.duration !== null && l.duration <= 30)).length;
+      let fullPlays = logs.filter(l => !l.isSkip && l.duration && l.duration > 30).length;
+      let partialPlays = logs.filter(l => l.isSkip || (l.duration && l.duration <= 30)).length;
       
       // Include current track if it's playing
       if (currentTrackId === track.id && isPlaying) {
@@ -35,6 +35,7 @@ const Stats = () => {
 
       return {
         name: track.title,
+        id: track.id, // Include ID for conditional styling
         fullPlays,
         partialPlays,
         total: fullPlays + partialPlays
@@ -118,8 +119,16 @@ const Stats = () => {
                   contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                 />
-                <Bar dataKey="fullPlays" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={20} />
-                <Bar dataKey="partialPlays" stackId="a" fill="#3b82f6" opacity={0.3} radius={[0, 4, 4, 0]} barSize={20} />
+                <Bar dataKey="fullPlays" stackId="a" radius={[0, 0, 0, 0]} barSize={20}>
+                  {topTracks.map((entry, index) => (
+                    <Cell key={`cell-full-${index}`} fill={entry.id === currentTrackId ? '#10B981' : '#3b82f6'} />
+                  ))}
+                </Bar>
+                <Bar dataKey="partialPlays" stackId="a" radius={[0, 4, 4, 0]} barSize={20}>
+                  {topTracks.map((entry, index) => (
+                    <Cell key={`cell-partial-${index}`} fill={entry.id === currentTrackId ? '#10B981' : '#3b82f6'} opacity={0.3} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

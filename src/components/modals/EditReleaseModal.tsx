@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, FileAudio, Check, Trash2, GripVertical, ArrowUp, ArrowDown, Plus, Layers, Link as LinkIcon, Edit3 } from 'lucide-react';
+import { Edit2, FileAudio, Check, Trash2, GripVertical, Plus, Layers, Link as LinkIcon, Edit3 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
@@ -27,7 +27,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
   const albumTracks = tracks.filter(t => t.albumIds.includes(albumId));
   
   const releaseGroups = groups.filter(g =>
-    g.members?.some(m => m.entityId === release.id && m.entityType === 'release')
+    g.members?.some(m => m.entityId === release.id && m.entityType === 'release' && m.showOnEntityPage)
   );
 
   const [formData, setFormData] = useState({
@@ -67,6 +67,14 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
         ? prev.selectedTrackIds.filter(tid => tid !== id)
         : [...prev.selectedTrackIds, id]
     }));
+  };
+
+  const autofillTracks = () => {
+    setFormData(prev => ({
+      ...prev,
+      selectedTrackIds: albumTracks.map(t => t.id)
+    }));
+    toast.info("All album tracks added to release.");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,7 +151,14 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
                 </div>
 
                 <div className="space-y-4 flex flex-col">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tracklist Order</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tracklist Order</Label>
+                    {albumTracks.length > 0 && (
+                      <Button type="button" variant="ghost" size="sm" onClick={autofillTracks} className="h-6 text-[10px] font-black uppercase text-blue-400 hover:text-blue-300">
+                        <Plus size={12} className="mr-1" /> Autofill
+                      </Button>
+                    )}
+                  </div>
                   <ScrollArea className="flex-1 h-[400px] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
                     <div className="space-y-1">
                       {formData.selectedTrackIds.map((tid, index) => {
@@ -228,7 +243,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
                   </Card>
                 ))}
                 {releaseGroups.length === 0 && (
-                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked.</p>
+                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked to show on this page.</p>
                 )}
               </div>
             </TabsContent>

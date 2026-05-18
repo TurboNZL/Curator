@@ -27,7 +27,8 @@ export default defineHandler(async (event) => {
           credits: parseJson(track.credits),
           queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
           isFavorite: !!track.isFavorite,
-          albumIds: relations.filter(r => r.trackId === track.id).map(r => r.albumId)
+          albumIds: relations.filter(r => r.trackId === track.id).map(r => r.albumId),
+          artistIds: parseJson(track.artistIds)
         };
       });
     } catch (error) {
@@ -44,6 +45,7 @@ export default defineHandler(async (event) => {
       id,
       title: body.title,
       artistId: body.artistId,
+      artistIds: JSON.stringify(body.artistIds || []),
       rating: body.rating || 0,
       initialRating: body.initialRating || 0,
       eloScore: body.eloScore || 1000,
@@ -51,7 +53,7 @@ export default defineHandler(async (event) => {
       localFilePath: body.localFilePath,
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
-      soundcloudUrl: body.soundcloudUrl,
+      // Removed soundcloudUrl: body.soundcloudUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
       genres: JSON.stringify(body.genres || []),
       producers: JSON.stringify(body.producers || []),
@@ -80,7 +82,8 @@ export default defineHandler(async (event) => {
       credits: body.credits || [],
       queueRules: body.queueRules || {},
       isFavorite: !!body.isFavorite,
-      albumIds: body.albumIds || []
+      albumIds: body.albumIds || [],
+      artistIds: body.artistIds || []
     };
   }
 });

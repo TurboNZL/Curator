@@ -16,6 +16,7 @@ export interface Profile {
     showUnbalancedFirst: boolean;
     defaultArtistImage?: string;
     defaultAlbumImage?: string;
+    applyRulesFromAlbum?: boolean; // New setting
   };
   playbackRules: PlaybackRule[];
 }
@@ -79,8 +80,7 @@ export interface Track {
   localFilePath?: string;
   spotifyUrl?: string;
   geniusUrl?: string;
-  soundcloudUrl?: string;
-  youtubeMusicUrl?: string;
+  youtubeMusicUrl?: string; // Removed soundcloudUrl
   genres: string[];
   producers: string[];
   writers: string[];
@@ -109,9 +109,9 @@ export interface Group {
   name: string;
   description?: string;
   label?: string;
-  type: 'collective' | 'thematic' | 'relationship';
-  isArtistOnly: boolean;
-  members?: { entityType: string, entityId: string, label?: string }[]; // Added for relational bios
+  type: 'collective' | 'thematic' | 'relationship' | 'era'; // Added 'era' type
+  // Removed isArtistOnly
+  members?: { entityType: string, entityId: string, label?: string, showOnEntityPage?: boolean }[]; // Added showOnEntityPage
 }
 
 export interface TimelineEntry {

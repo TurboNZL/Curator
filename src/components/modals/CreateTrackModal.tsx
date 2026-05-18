@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Plus, Music, RefreshCw, FileAudio } from 'lucide-react';
+import { Plus, Music, RefreshCw, FileAudio, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -25,16 +25,16 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   const [formData, setFormData] = useState({
     title: '',
     artistId: initialArtistId,
+    artistIds: [] as string[],
     albumId: initialAlbumId,
     rating: '',
     genres: '',
     producers: '',
-    bitrate: '320kbps',
+    bitrate: '320kbps', // Bitrate still stored, but not editable directly
     audioUrl: '',
     spotifyUrl: '',
     geniusUrl: '',
-    soundcloudUrl: '',
-    youtubeMusicUrl: ''
+    youtubeMusicUrl: '' // Removed soundcloudUrl
   });
 
   const selectedAlbum = useMemo(() => albums.find(a => a.id === formData.albumId), [albums, formData.albumId]);
@@ -54,12 +54,27 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Track title is required");
-    if (!formData.artistId) return toast.error("Artist is required");
+    if (!formData.artistId) return toast.error("Primary artist is required");
+
+    let finalPrimaryArtistId = formData.artistId;
+    let finalArtistIds = [...formData.artistIds];
+
+    const existingPrimaryArtist = artists.find(a => a.id === formData.artistId);
+    if (!existingPrimaryArtist) {
+      // If primary artist is a new name, create it
+      const res = await fetch('/api/artists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.artistId, groups: '[]' })
+      });
+      const newArtist = await res.json();
+      finalPrimaryArtistId = newArtist.id;
+    }
 
     const newTrack = {
       title: formData.title,
-      artistId: formData.artistId,
-      artistIds: [], // Multi-artist support
+      artistId: finalPrimaryArtistId,
+      artistIds: finalArtistIds,
       albumIds: formData.albumId && formData.albumId !== 'none' ? [formData.albumId] : [],
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
       initialRating: formData.rating ? parseFloat(formData.rating) : undefined,
@@ -71,7 +86,6 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
-      soundcloudUrl: formData.soundcloudUrl,
       youtubeMusicUrl: formData.youtubeMusicUrl,
       eloScore: 1000,
       comparisons: 0,
@@ -95,13 +109,80 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     }
     
     setFormData({ 
-      title: '', artistId: formData.artistId, albumId: formData.albumId, rating: '', genres: '', producers: '', bitrate: '320kbps', 
-      audioUrl: '', spotifyUrl: '', geniusUrl: '', soundcloudUrl: '', youtubeMusicUrl: '' 
+      title: '', 
+      artistId: formData.artistId, 
+      artistIds: [],
+      albumId: formData.albumId, 
+      rating: '', 
+      genres: '', 
+      producers: '', 
+      bitrate: '320kbps', 
+      audioUrl: '', 
+      spotifyUrl: '', 
+      geniusUrl: '', 
+      youtubeMusicUrl: '' 
     });
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
   const albumOptions = albums.filter(al => al.artistId === formData.artistId).map(al => ({ value: al.id, label: al.title }));
+
+  const addArtist = (id: string) => {
+    if (!formData.artistIds.includes(id)) {
+      setFormData(prev => ({ ...prev, artistIds: [...prev.artistIds, id] }));
+    }
+  };
+
+  const removeArtist = (id: string) => {
+    setFormData(prev => ({ ...prev, artistIds: prev.artistIds.filter(aid => aid !== id) }));
+  };
+
+  const autofillAllTracks = async () => {
+    if (!selectedAlbum || pendingFiles.length === 0) {
+      toast.error("No unassigned files or album selected.");
+      return;
+    }
+  
+    if (!formData.artistId) {
+      toast.error("Please select a primary artist for the album first.");
+      return;
+    }
+  
+    const tracksToCreate = pendingFiles.map(file => {
+      const cleanTitle = file.name.split('.')[0].replace(/_/g, ' ');
+      return {
+        title: cleanTitle,
+        artistId: formData.artistId,
+        artistIds: formData.artistIds,
+        albumIds: [selectedAlbum.id],
+        rating: undefined,
+        initialRating: undefined,
+        genres: [],
+        producers: [],
+        writers: [],
+        credits: [],
+        bitrate: '320kbps', // Default, would ideally be extracted
+        localFilePath: file.url,
+        spotifyUrl: '',
+        geniusUrl: '',
+        youtubeMusicUrl: '',
+        eloScore: 1000,
+        comparisons: 0,
+        memories: 0,
+        queueRules: {}
+      };
+    });
+  
+    try {
+      await addTracks(tracksToCreate);
+      await updateAlbum(selectedAlbum.id, { pendingFiles: [] }); // Clear pending files
+      toast.success(`Added ${tracksToCreate.length} tracks from pending files.`);
+      setOpen(false); // Close modal after autofill
+    } catch (error) {
+      console.error("Autofill failed:", error);
+      toast.error("Failed to autofill tracks.");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -145,10 +226,13 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2 py-2">
+                <div className="flex items-center justify-between py-2">
                   <div className="h-px flex-1 bg-zinc-900" />
-                  <span className="text-[8px] font-black uppercase text-zinc-700">OR UPLOAD NEW</span>
+                  <span className="text-[8px] font-black uppercase text-zinc-700">OR</span>
                   <div className="h-px flex-1 bg-zinc-900" />
+                  <Button type="button" variant="outline" className="ml-2 h-7 text-[10px] font-black uppercase tracking-widest" onClick={autofillAllTracks}>
+                    <Plus size={12} className="mr-1" /> Autofill All
+                  </Button>
                 </div>
               </div>
             )}
@@ -158,7 +242,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
               <SearchableSelect 
                 options={artistOptions} 
                 value={formData.artistId} 
@@ -177,6 +261,30 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 allowCustom
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Artists</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {formData.artistIds.map(aid => {
+                const a = artists.find(art => art.id === aid);
+                return (
+                  <div key={aid} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
+                    <span>{a?.name || aid}</span>
+                    <button type="button" onClick={() => removeArtist(aid)} className="text-zinc-600 hover:text-red-500">
+                      <X size={10} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <SearchableSelect
+              options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))}
+              value=""
+              onValueChange={addArtist}
+              placeholder="Add another artist..."
+              allowCustom
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

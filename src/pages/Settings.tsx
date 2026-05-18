@@ -10,6 +10,7 @@ import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch'; // Added Switch import
 
 const Settings = () => {
   const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase } = useMusicStore();
@@ -98,15 +99,17 @@ const Settings = () => {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Checkbox 
-              id="shuffle-rule" 
-              checked={newRule.playFirstOnShuffle} 
-              onCheckedChange={(val) => setNewRule({...newRule, playFirstOnShuffle: !!val})} 
-            />
-            <Label htmlFor="shuffle-rule" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
-              Play first when queue shuffled (replaces second song)
-            </Label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="shuffle-rule" 
+                checked={newRule.playFirstOnShuffle} 
+                onCheckedChange={(val) => setNewRule({...newRule, playFirstOnShuffle: !!val})} 
+              />
+              <Label htmlFor="shuffle-rule" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
+                Play first when queue shuffled (replaces second song)
+              </Label>
+            </div>
           </div>
           <Button onClick={handleAddRule} className="w-full bg-zinc-800 hover:bg-zinc-700 text-[10px] font-black uppercase tracking-widest h-10">
             <Plus size={14} className="mr-2" /> Add Playback Rule
@@ -114,6 +117,16 @@ const Settings = () => {
         </div>
 
         <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Switch
+              id="apply-rules-from-album"
+              checked={activeProfile.settings?.applyRulesFromAlbum || false}
+              onCheckedChange={(val) => updateSettings({ applyRulesFromAlbum: val })}
+            />
+            <Label htmlFor="apply-rules-from-album" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
+              Apply rules when playing from an album (otherwise only manual/shuffled queue)
+            </Label>
+          </div>
           {activeProfile.playbackRules.map((rule, i) => (
             <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl group">
               <div className="flex items-center gap-4">

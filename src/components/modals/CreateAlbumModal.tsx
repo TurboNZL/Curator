@@ -11,18 +11,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { artists, addAlbum, addRelease, releaseTypes, addReleaseType } = useMusicStore();
+  const { artists, addAlbum, addRelease } = useMusicStore(); // Removed addReleaseType as type is removed
   
   const [formData, setFormData] = useState({
     title: '',
     artistId: '',
-    releases: [] as { title: string; date: string; type: string }[]
+    releases: [] as { title: string; date: string }[] // Removed type
   });
 
   const handleAddReleaseRow = () => {
     setFormData(prev => ({
       ...prev,
-      releases: [...prev.releases, { title: 'Standard Edition', date: '', type: 'Full Album' }]
+      releases: [...prev.releases, { title: 'Streaming', date: '' }] // Default title is 'Streaming'
     }));
   };
 
@@ -48,7 +48,9 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
     try {
       let finalArtistId = formData.artistId;
       
-      if (!artists.find(a => a.id === formData.artistId)) {
+      const existingArtist = artists.find(a => a.id === formData.artistId);
+      if (!existingArtist) {
+        // If artist not found by ID, assume formData.artistId is a new name
         const res = await fetch('/api/artists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -58,24 +60,14 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
         finalArtistId = newArtist.id;
       }
 
-      const albumRes = await fetch('/api/albums', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.title,
-          artistId: finalArtistId,
-          artistIds: [], // Multi-artist support
-          covers: []
-        })
+      const newAlbum = await addAlbum({
+        title: formData.title,
+        artistId: finalArtistId,
+        artistIds: [], // Multi-artist support
+        covers: []
       });
-      const newAlbum = await albumRes.json();
 
       for (const rel of formData.releases) {
-        const standardTypes = ['Full Album', 'EP', 'Single', 'Deluxe'];
-        if (!standardTypes.includes(rel.type) && !releaseTypes.find(t => t.name === rel.type)) {
-          await addReleaseType(rel.type);
-        }
-
         await addRelease({
           albumId: newAlbum.id,
           title: rel.title,
@@ -95,13 +87,7 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const typeOptions = [
-    { value: 'Full Album', label: 'Full Album' },
-    { value: 'EP', label: 'EP' },
-    { value: 'Single', label: 'Single' },
-    { value: 'Deluxe', label: 'Deluxe' },
-    ...releaseTypes.map(t => ({ value: t.name, label: t.name }))
-  ];
+  // Removed typeOptions
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -186,13 +172,7 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
                         onChange={(e) => updateReleaseRow(i, 'date', e.target.value)}
                         className="h-7 text-[10px] bg-zinc-900 border-zinc-800"
                       />
-                      <SearchableSelect 
-                        options={typeOptions} 
-                        value={rel.type} 
-                        onValueChange={(val) => updateReleaseRow(i, 'type', val)}
-                        className="h-7 text-[10px]"
-                        allowCustom
-                      />
+                      {/* Removed Release Type Select */}
                     </div>
                   </div>
                 ))}

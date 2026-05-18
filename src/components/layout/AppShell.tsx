@@ -2,7 +2,6 @@ import React from 'react';
 import { Sidebar } from './Sidebar';
 import { TopToolbar } from './TopToolbar';
 import { BottomPlayer } from './BottomPlayer';
-import { SpeedDial } from '@/components/ui/SpeedDial';
 import { Outlet } from 'react-router-dom';
 
 export const AppShell = () => {
@@ -11,7 +10,8 @@ export const AppShell = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 relative">
         <TopToolbar />
-        <main className="flex-1 overflow-y-auto bg-zinc-950 p-8 pb-32 relative">
+        {/* Main content area, adjusted for player height */}
+        <main className="flex-1 overflow-y-auto bg-zinc-950 p-8 pb-[10rem] relative"> 
           <Outlet />
         </main>
         <BottomPlayer />

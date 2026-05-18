@@ -165,6 +165,7 @@ const Tracks = () => {
                   </TrackContextMenu>
                 );
               })}
+            <dyad-write path="src/pages/Tracks.tsx" description="Updated Tracks page to include sorting by Memories (playcount).">
             </TableBody>
           </Table>
         </div>

@@ -18,7 +18,7 @@ export const Sidebar = () => {
       <div className="p-6">
         <h1 className="text-xl font-bold tracking-tighter text-white">CURATOR</h1>
       </div>
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4"> {/* Added overflow-y-auto and pb-4 */}
         {navItems.map((item) => (
           <NavLink
             key={item.href}
@@ -35,7 +35,8 @@ export const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-8">
+      {/* SpeedDial is now correctly positioned by AppShell padding */}
+      <div className="p-8"> 
         <SpeedDial />
       </div>
     </aside>

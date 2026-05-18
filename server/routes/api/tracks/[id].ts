@@ -24,7 +24,7 @@ export default defineHandler(async (event) => {
       localFilePath: body.localFilePath,
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
-      soundcloudUrl: body.soundcloudUrl,
+      // Removed soundcloudUrl: body.soundcloudUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
       bitrate: body.bitrate,
       bpm: body.bpm,

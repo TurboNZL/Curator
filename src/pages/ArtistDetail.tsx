@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus } from 'lucide-react';
+import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
@@ -22,9 +22,12 @@ const ArtistDetail = () => {
   const artistTracks = tracks.filter(t => t.artistId === id).sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
   const artistGroups = groups.filter(g =>
-    (g.isArtistOnly && g.members?.some(m => m.entityId === id && m.entityType === 'artist')) ||
-    (!g.isArtistOnly && g.members?.some(m => m.entityId === id && m.entityType === 'artist'))
+    g.members?.some(m => m.entityId === id && m.entityType === 'artist' && m.showOnEntityPage)
   );
+  
+  const totalArtistRelatedGroups = groups.filter(g =>
+    g.members?.some(m => m.entityId === id && m.entityType === 'artist')
+  ).length;
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -40,7 +43,7 @@ const ArtistDetail = () => {
             <h1 className="text-6xl font-black tracking-tighter text-white uppercase">{artist.name}</h1>
             <div className="flex items-center gap-6 mt-4 text-zinc-400 text-sm font-medium">
               <span className="flex items-center gap-1.5"><Music2 size={16} className="text-zinc-600"/> {artistAlbums.length} Albums</span>
-              <span className="flex items-center gap-1.5"><Calendar size={16} className="text-zinc-600"/> {artist.eras.length} Eras</span>
+              <span className="flex items-center gap-1.5"><Users size={16} className="text-zinc-600"/> {totalArtistRelatedGroups} Bios</span>
               <div className="flex gap-2 ml-4">
                 <EditArtistModal artist={artist} />
               </div>
@@ -51,28 +54,7 @@ const ArtistDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
-          <section>
-            <div className="flex items-center justify-between mb-6 border-b border-zinc-900 pb-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Era Timeline</h2>
-              <CreateEraModal artistId={artist.id} />
-            </div>
-            <div className="space-y-4">
-              {artist.eras.length === 0 ? (
-                <p className="text-xs text-zinc-600 italic">No eras defined for this artist.</p>
-              ) : (
-                artist.eras.map((era) => (
-                  <div key={era.id} className="relative pl-8 group">
-                    <div className="absolute left-[3px] top-0 bottom-0 w-[2px] bg-zinc-900 group-last:bottom-auto group-last:h-4" />
-                    <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
-                    <div className="p-4 bg-zinc-900/30 rounded-xl border border-zinc-800/50 hover:bg-zinc-900/50 transition-colors">
-                      <h4 className="text-sm font-bold text-white">{era.name}</h4>
-                      <p className="text-xs text-zinc-500 mt-1">{era.description}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
+          {/* Era Timeline section removed as eras will be handled by relational bios */}
 
           <section>
             <div className="flex items-center justify-between mb-6">
@@ -138,7 +120,7 @@ const ArtistDetail = () => {
             </div>
             <div className="grid grid-cols-1 gap-4">
               {artistGroups.length === 0 ? (
-                <p className="text-xs text-zinc-600 italic">No relational bios for this artist.</p>
+                <p className="text-xs text-zinc-600 italic">No relational bios for this artist to show on this page.</p>
               ) : (
                 artistGroups.map(group => (
                   <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4 group/bio">
@@ -149,7 +131,7 @@ const ArtistDetail = () => {
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
                     <div className="flex flex-wrap gap-2 pt-2">
-                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                      {group.members?.filter(m => m.entityId !== id && m.showOnEntityPage).map((member, i) => (
                         <Link
                           key={i}
                           to={`/${member.entityType}s/${member.entityId}`}
@@ -158,7 +140,7 @@ const ArtistDetail = () => {
                           {member.entityType === 'artist' && <User size={10} />}
                           {member.entityType === 'album' && <Disc size={10} />}
                           {member.entityType === 'track' && <Music size={10} />}
-                          {member.entityType === 'release' && <Layers size={10} />}
+                          {/* Releases are not an option anymore */}
                           {member.label}
                         </Link>
                       ))}
