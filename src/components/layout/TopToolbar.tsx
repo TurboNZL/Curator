@@ -1,130 +1,42 @@
 "use client";
 
-import { Search, BookOpen, Trash2, BarChart3, ListOrdered, Settings, User, Download } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useState } from 'react';
-import { ImportAlbumModal } from '@/components/modals/ImportAlbumModal';
+import { Settings as SettingsIcon, Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { SearchInput } from '../ui/SearchInput'; // New component import
 
 export const TopToolbar = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { activeProfile, updateSettings } = useMusicStore();
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const { activeProfile } = useMusicStore();
 
   return (
-    <header className="h-16 border-b border-zinc-800 bg-zinc-950 flex items-center px-6 justify-between gap-4">
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-4 border-r border-zinc-800 pr-6">
-          <ToolbarTab
-            icon={BookOpen}
-            label="Journal"
-            active={location.pathname === '/'}
-            onClick={() => navigate('/')}
-          />
-          <ToolbarTab
-            icon={Trash2}
-            label="Cleanup"
-            active={location.pathname === '/cleanup'}
-            onClick={() => navigate('/cleanup')}
-          />
-          <ToolbarTab
-            icon={BarChart3}
-            label="Stats"
-            active={location.pathname === '/stats'}
-            onClick={() => navigate('/stats')}
-          />
-          <ToolbarTab
-            icon={ListOrdered}
-            label="Queue"
-            active={location.pathname === '/queue'}
-            onClick={() => navigate('/queue')}
-          />
-          <ToolbarTab
-            icon={Download}
-            label="Import"
-            onClick={() => setIsImportModalOpen(true)}
-          />
-        </div>
-        
-        <div className="relative w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
-          <Input
-            placeholder="Search catalog..."
-            className="pl-10 bg-zinc-900 border-zinc-800 text-zinc-200 h-9 rounded-full focus-visible:ring-blue-500"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                navigate(`/tracks?search=${(e.target as HTMLInputElement).value}`);
-              }
-            }}
-          />
-        </div>
+    <header className="flex items-center justify-between px-8 py-4 bg-zinc-950 border-b border-zinc-800 shrink-0">
+      <div className="flex items-center gap-4">
+        {/* Placeholder for future menu toggle */}
+        {/* <Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white">
+          <Menu size={18} />
+        </Button> */}
+        <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wide">
+          <Link to="/">Journal</Link>
+        </h2>
       </div>
 
       <div className="flex items-center gap-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border border-zinc-700 hover:ring-2 ring-blue-500/50 transition-all" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 bg-zinc-950 border-zinc-800 text-white">
-            <DropdownMenuLabel className="flex items-center gap-2">
-              <User size={14} />
-              <span className="uppercase tracking-widest text-[10px] font-black">{activeProfile.name}</span>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-zinc-800" />
-            <div className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-xs font-bold">Unbalanced First</Label>
-                  <p className="text-[10px] text-zinc-500">Show yellow stars as primary</p>
-                </div>
-                <Switch
-                  checked={activeProfile.settings?.showUnbalancedFirst}
-                  onCheckedChange={(val) => updateSettings({ showUnbalancedFirst: val })}
-                />
-              </div>
-            </div>
-            <DropdownMenuSeparator className="bg-zinc-800" />
-            <DropdownMenuItem
-              onClick={() => navigate('/settings')}
-              className="text-xs font-bold uppercase tracking-widest focus:bg-zinc-900 focus:text-blue-400 cursor-pointer"
-            >
-              <Settings size={14} className="mr-2" /> Profile Settings
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SearchInput /> {/* Integrated SearchInput */}
+        <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white">
+          <Link to="/settings">
+            <SettingsIcon size={18} />
+          </Link>
+        </Button>
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+            style={{ backgroundColor: activeProfile.accentColor }}
+          >
+            {activeProfile.name.charAt(0).toUpperCase()}
+          </div>
+        </div>
       </div>
-
-      <ImportAlbumModal 
-        isOpen={isImportModalOpen} 
-        onClose={() => setIsImportModalOpen(false)} 
-      />
     </header>
   );
 };
-
-const ToolbarTab = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
-  <button 
-    onClick={onClick}
-    className="flex flex-col items-center gap-1 group"
-  >
-    <Icon 
-      size={18} 
-      className={cn(
-        "transition-colors",
-        active ? "text-white" : "text-zinc-500 group-hover:text-white"
-      )} 
-    />
-    <span className={cn(
-      "text-[10px] uppercase tracking-wider font-bold transition-colors",
-      active ? "text-blue-500" : "text-zinc-600 group-hover:text-zinc-400"
-    )}>
-      {label}
-    </span>
-  </button>
-);

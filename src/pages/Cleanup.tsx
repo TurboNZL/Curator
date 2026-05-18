@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ImageUpload } from '@/components/ui/ImageUpload'; // Assuming ImageUpload is a UI component
+import { Switch } from '@/components/ui/switch'; // Ensure Switch is imported
 
 interface SpotifyUriGroupResolutionModalProps {
   isOpen: boolean;
@@ -133,14 +137,89 @@ const SpotifyUriGroupResolutionModal: React.FC<SpotifyUriGroupResolutionModalPro
   );
 };
 
+// Modal for Image Upload
+interface ImageUploadResolutionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  entity: any; // Artist or Album
+  onResolve: (id: string, imageUrl: string, type: 'artist' | 'album') => Promise<void>;
+  entityType: 'artist' | 'album';
+}
+
+const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({ isOpen, onClose, entity, onResolve, entityType }) => {
+  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.covers?.[0] || '');
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setImageUrl(entity?.image || entity?.covers?.[0] || '');
+    }
+  }, [isOpen, entity]);
+
+  const handleSave = async () => {
+    setIsUploading(true);
+    try {
+      await onResolve(entity.id, imageUrl, entityType);
+      toast.success(`${entityType === 'artist' ? 'Artist image' : 'Album cover'} updated.`);
+      onClose();
+    } catch (error) {
+      toast.error(`Failed to update ${entityType === 'artist' ? 'artist image' : 'album cover'}.`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+            <ImageIcon size={20} className="text-blue-500" />
+            Upload {entityType === 'artist' ? 'Artist Image' : 'Album Cover'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{entity.name || entity.title}</Label>
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={isUploading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isUploading || !imageUrl} className="bg-blue-600 hover:bg-blue-500 font-bold uppercase tracking-wider">
+            {isUploading ? "Saving..." : "Save Image"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, fetchData, playbackLogs } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, playbackLogs } = useMusicStore();
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isShufflePairing, setIsShufflePairing] = useState(false);
+  const [isShuffleTasks, setIsShuffleTasks] = useState(false); // New state for shuffling tasks
   const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
   const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
+
+  const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
+  const [imageUploadEntity, setImageUploadEntity] = useState<any>(null);
+  const [imageUploadEntityType, setImageUploadEntityType] = useState<'artist' | 'album' | null>(null);
+
+  const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
+    artist_image: true,
+    album_cover: true,
+    spotify_uri: true,
+    genius_uri: true,
+    youtube_music_uri: true,
+    producers: true,
+    release_date: true,
+    genres: true,
+    grouped_spotify_uri: true,
+  });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
@@ -159,7 +238,7 @@ const Cleanup = () => {
       ...albums.filter(al => !al.covers || al.covers.length === 0).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
       ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500' })),
       ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
-      ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Link, color: 'text-red-500' })),
+      ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' })),
       ...tracks.filter(t => t.producers.length === 0).map(t => ({ type: 'producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' })),
       ...releases.filter(r => !r.releaseDate).map(r => ({ type: 'release_date', entity: r, label: `Add date for ${r.title}`, icon: Calendar, color: 'text-orange-500' })),
       ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
@@ -228,6 +307,14 @@ const Cleanup = () => {
 
     return [...generatedTasks, ...groupedSpotifyTasks];
   }, [tracks, artists, albums, releases]);
+
+  const filteredTasks = useMemo(() => {
+    let tasks = allTasks.filter(task => activeFilters[task.type]);
+    if (isShuffleTasks) {
+      tasks = [...tasks].sort(() => Math.random() - 0.5); // Shuffle the filtered tasks
+    }
+    return tasks;
+  }, [allTasks, activeFilters, isShuffleTasks]);
 
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
@@ -331,11 +418,44 @@ const Cleanup = () => {
         toast.success("YouTube Music URL updated.");
         fetchData();
       }
-    } else if (task.type === 'grouped_spotify_uri') {
+    } else if (task.type === 'producers') {
+      const producers = prompt(`Enter producers for ${task.entity.title} (comma separated):`);
+      if (producers !== null) {
+        await updateTrack(task.entity.id, { producers: producers.split(',').map(s => s.trim()).filter(Boolean) });
+        toast.success("Producers updated.");
+        fetchData();
+      }
+    } else if (task.type === 'genres') {
+      const genres = prompt(`Enter genres for ${task.entity.title} (comma separated):`);
+      if (genres !== null) {
+        await updateTrack(task.entity.id, { genres: genres.split(',').map(s => s.trim()).filter(Boolean) });
+        toast.success("Genres updated.");
+        fetchData();
+      }
+    } else if (task.type === 'release_date') {
+      const releaseDate = prompt(`Enter release date for ${task.entity.title} (YYYY-MM-DD or YYYY-MM or YYYY):`);
+      if (releaseDate !== null) {
+        await fetch(`/api/releases/${task.entity.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ releaseDate })
+        });
+        toast.success("Release date updated.");
+        fetchData();
+      }
+    } else if (task.type === 'artist_image') {
+      setImageUploadEntity(task.entity);
+      setImageUploadEntityType('artist');
+      setIsImageUploadModalOpen(true);
+    } else if (task.type === 'album_cover') {
+      setImageUploadEntity(task.entity);
+      setImageUploadEntityType('album');
+      setIsImageUploadModalOpen(true);
+    }
+     else if (task.type === 'grouped_spotify_uri') {
       setSpotifyResolutionTracks(task.entity.tracks);
       setIsSpotifyResolutionModalOpen(true);
     }
-    // Add logic for other task types here
   };
 
   const handleSpotifyResolution = async (trackIds: string[], uris: string[]) => {
@@ -345,6 +465,22 @@ const Cleanup = () => {
     });
     await Promise.all(updatePromises);
     fetchData(); // Refresh data after updates
+  };
+
+  const handleImageUploadResolution = async (id: string, imageUrl: string, type: 'artist' | 'album') => {
+    if (type === 'artist') {
+      await updateArtist(id, { image: imageUrl });
+    } else if (type === 'album') {
+      await updateAlbum(id, { covers: [imageUrl] });
+    }
+    fetchData();
+  };
+
+  const handleFilterToggle = (type: string) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [type]: !prev[type],
+    }));
   };
 
 
@@ -483,17 +619,44 @@ const Cleanup = () => {
               <h2 className="text-sm font-black uppercase tracking-widest text-white">Task Queue</h2>
               <p className="text-[10px] text-zinc-500 font-bold uppercase">Missing or incomplete metadata</p>
             </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <Switch id="shuffle-tasks" checked={isShuffleTasks} onCheckedChange={setIsShuffleTasks} />
+              <Label htmlFor="shuffle-tasks" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1">
+                <Shuffle size={12}/> Shuffle Tasks
+              </Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
+                    Filter Tasks
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white">
+                  <DropdownMenuLabel>Filter Tasks</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-zinc-800" />
+                  {Object.keys(activeFilters).map(filterType => (
+                    <DropdownMenuCheckboxItem
+                      key={filterType}
+                      checked={activeFilters[filterType]}
+                      onCheckedChange={() => handleFilterToggle(filterType)}
+                      className="text-xs font-medium"
+                    >
+                      {filterType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
-              {allTasks.length === 0 ? (
+              {filteredTasks.length === 0 ? (
                 <div className="py-12 text-center border-2 border-dashed border-zinc-900 rounded-2xl">
                   <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3 opacity-20" />
                   <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No tasks for now.</p>
                 </div>
               ) : (
-                allTasks.map((task, i) => (
+                filteredTasks.map((task, i) => (
                   <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-2 rounded-lg bg-zinc-950 border border-zinc-800", task.color)}>
@@ -562,6 +725,16 @@ const Cleanup = () => {
         tracks={spotifyResolutionTracks}
         onResolve={handleSpotifyResolution}
       />
+
+      {imageUploadEntity && imageUploadEntityType && (
+        <ImageUploadResolutionModal
+          isOpen={isImageUploadModalModalOpen}
+          onClose={() => setIsImageUploadModalModalOpen(false)}
+          entity={imageUploadEntity}
+          entityType={imageUploadEntityType}
+          onResolve={handleImageUploadResolution}
+        />
+      )}
     </div>
   );
 };

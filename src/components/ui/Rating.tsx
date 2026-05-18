@@ -1,110 +1,113 @@
-import React, { useState } from 'react';
-import { Star, Edit2, Check, X } from 'lucide-react';
+"use client";
+
+import React, { useMemo } from 'react';
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { Input } from './input';
 
 interface RatingProps {
   trackId: string;
-  balanced?: number;
-  unbalanced?: number;
-  comparisons?: number;
-  className?: string;
+  balanced?: number | null;
+  unbalanced?: number | null;
+  comparisons: number;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export const Rating = ({ trackId, balanced, unbalanced, comparisons = 0, className, size = 'sm' }: RatingProps) => {
-  const { activeProfile, updateSettings, updateTrack } = useMusicStore();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(unbalanced?.toString() || '');
-  
-  const showUnbalancedFirst = activeProfile.settings?.showUnbalancedFirst;
+export const Rating = ({ trackId, balanced, unbalanced, comparisons, size = 'sm' }: RatingProps) => {
+  const { tracks } = useMusicStore();
 
-  const togglePreference = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateSettings({ showUnbalancedFirst: !showUnbalancedFirst });
-  };
+  const displayRating = balanced !== undefined && balanced !== null ? balanced : unbalanced;
 
-  const handleQuickEdit = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(true);
-  };
+  const top10Tracks = useMemo(() => {
+    // Filter for tracks rated 10, sort them by Elo or initialRating if available, then by title
+    return tracks
+      .filter(t => t.rating === 10 || t.initialRating === 10)
+      .sort((a, b) => {
+        // Higher ELO or initialRating means higher rank
+        if ((b.eloScore || b.initialRating || 0) !== (a.eloScore || a.initialRating || 0)) {
+          return (b.eloScore || b.initialRating || 0) - (a.eloScore || a.initialRating || 0);
+        }
+        // Fallback to title for consistent ordering
+        return a.title.localeCompare(b.title);
+      });
+  }, [tracks]);
 
-  const saveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const val = parseFloat(editValue);
-    if (!isNaN(val)) {
-      await updateTrack(trackId, { initialRating: val });
+  const rank = useMemo(() => {
+    if (displayRating === 10) {
+      const index = top10Tracks.findIndex(t => t.id === trackId);
+      if (index !== -1) {
+        return `#${index + 1}`;
+      }
     }
-    setIsEditing(false);
-  };
+    return null;
+  }, [displayRating, trackId, top10Tracks]);
 
-  const iconSize = size === 'sm' ? 12 : size === 'md' ? 16 : 24;
-  const primaryRating = showUnbalancedFirst ? unbalanced : balanced;
-  const secondaryRating = showUnbalancedFirst ? balanced : unbalanced;
-  
-  const isPrimaryUnrated = primaryRating === undefined || primaryRating === null || primaryRating === 0;
-  const isSecondaryUnrated = secondaryRating === undefined || secondaryRating === null || secondaryRating === 0;
+  const ratingClasses = useMemo(() => {
+    switch (size) {
+      case 'sm': return "text-[10px] h-5 px-1.5";
+      case 'md': return "text-xs h-6 px-2";
+      case 'lg': return "text-sm h-7 px-2.5";
+    }
+  }, [size]);
 
-  const primaryColor = showUnbalancedFirst ? 'text-yellow-500 fill-yellow-500' : 'text-blue-500 fill-blue-500';
-  const secondaryColor = showUnbalancedFirst ? 'text-blue-500/50 fill-blue-500/50' : 'text-yellow-500/50 fill-yellow-500/50';
+  const starSize = useMemo(() => {
+    switch (size) {
+      case 'sm': return 10;
+      case 'md': return 12;
+      case 'lg': return 14;
+    }
+  }, [size]);
 
-  if (isEditing) {
+  if (displayRating === undefined || displayRating === null) {
     return (
-      <form onSubmit={saveEdit} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-        <Input
-          autoFocus
-          className="h-6 w-12 text-[10px] p-1 bg-zinc-900 border-zinc-800"
-          value={editValue}
-          onChange={e => setEditValue(e.target.value)}
-        />
-        <button type="submit" className="text-emerald-500 hover:text-emerald-400"><Check size={12} /></button>
-        <button type="button" onClick={() => setIsEditing(false)} className="text-red-500 hover:text-red-400"><X size={12} /></button>
-      </form>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "flex items-center gap-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-600 font-bold",
+              ratingClasses
+            )}>
+              <Star size={starSize} />
+              <span>NR</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="bg-zinc-800 text-white border-zinc-700">
+            <p className="text-xs">Not rated yet</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
+
+  const ratingColor = displayRating >= 8 ? "text-emerald-500" :
+                      displayRating >= 6 ? "text-blue-500" :
+                      displayRating >= 4 ? "text-yellow-500" :
+                      "text-red-500";
+
+  const backgroundColor = displayRating >= 8 ? "bg-emerald-950/20 border-emerald-900/40" :
+                          displayRating >= 6 ? "bg-blue-950/20 border-blue-900/40" :
+                          displayRating >= 4 ? "bg-yellow-950/20 border-yellow-900/40" :
+                          "bg-red-950/20 border-red-900/40";
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div
-            className={cn("flex items-center gap-2 cursor-pointer group/rating", className)}
-            onClick={togglePreference}
-          >
-            <div className="flex items-center gap-1">
-              <Star size={iconSize} className={cn(primaryColor, isPrimaryUnrated && "opacity-20 fill-none")} />
-              <span className={cn(
-                "font-black tracking-tighter",
-                size === 'sm' ? "text-xs" : size === 'md' ? "text-lg" : "text-3xl",
-                isPrimaryUnrated && "text-zinc-700"
-              )}>
-                {!isPrimaryUnrated ? primaryRating!.toFixed(1) : '?'}
-              </span>
-            </div>
-            <div className="flex items-center gap-0.5 opacity-40 group-hover/rating:opacity-100 transition-opacity">
-              <Star size={iconSize * 0.7} className={cn(secondaryColor, isSecondaryUnrated && "opacity-20 fill-none")} />
-              <span className={cn(
-                "font-bold tracking-tighter",
-                size === 'sm' ? "text-[10px]" : size === 'md' ? "text-xs" : "text-sm",
-                isSecondaryUnrated && "text-zinc-800"
-              )}>
-                {!isSecondaryUnrated ? secondaryRating!.toFixed(1) : '?'}
-              </span>
-              <button
-                onClick={handleQuickEdit}
-                className="ml-1 p-0.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white opacity-0 group-hover/rating:opacity-100 transition-opacity"
-              >
-                <Edit2 size={10} />
-              </button>
-            </div>
+          <div className={cn(
+            "flex items-center gap-1 rounded-full font-bold",
+            ratingClasses,
+            backgroundColor
+          )}>
+            <Star size={starSize} className={ratingColor} fill="currentColor" />
+            <span className={ratingColor}>{rank || displayRating.toFixed(1)}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent className="bg-zinc-900 border-zinc-800 text-[10px] font-bold uppercase tracking-widest">
-          <p>{comparisons} Comparisons (Balance Factor)</p>
-          <p className="text-zinc-500 mt-1">Click to toggle primary display</p>
+        <TooltipContent className="bg-zinc-800 text-white border-zinc-700">
+          <p className="text-xs">Rating: {displayRating.toFixed(1)} ({comparisons} comparisons)</p>
+          {balanced !== undefined && balanced !== null && balanced !== unbalanced && (
+            <p className="text-xs text-zinc-400">Initial: {unbalanced?.toFixed(1)}</p>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

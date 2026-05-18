@@ -2,7 +2,7 @@ import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../../db';
 import { playlists, playlistTracks } from '../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
   const id = event.context.params?.id;
@@ -13,27 +13,27 @@ export default defineHandler(async (event) => {
   if (method === 'PUT') {
     const body = await readBody(event) as any;
     
-    await db.update(playlists)
-      .set({
-        name: body.name,
-        description: body.description,
-        coverImage: body.coverImage,
-      })
-      .where(eq(playlists.id, id));
+    // Update playlist metadata
+    const updateData: any = {
+      name: body.name,
+      description: body.description,
+      coverImage: body.coverImage,
+    };
 
-    if (body.trackIds && Array.isArray(body.trackIds)) {
-      // Delete existing tracks
-      await db.delete(playlistTracks).where(eq(playlistTracks.playlistId, id));
-      // Insert new tracks with order
+    await db.update(playlists).set(updateData).where(eq(playlists.id, id));
+
+    // Update tracks if provided
+    if (body.trackIds !== undefined && Array.isArray(body.trackIds)) {
+      await db.delete(playlistTracks).where(eq(playlistTracks.playlistId, id)); // Clear existing tracks
       for (let i = 0; i < body.trackIds.length; i++) {
         await db.insert(playlistTracks).values({
           playlistId: id,
           trackId: body.trackIds[i],
-          order: i
+          order: i,
         });
       }
     }
-    
+
     return { success: true };
   }
 

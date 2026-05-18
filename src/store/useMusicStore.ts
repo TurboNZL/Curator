@@ -64,6 +64,7 @@ interface MusicState {
   
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<Playlist>; 
   updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
+  deletePlaylist: (id: string) => Promise<void>; // Added deletePlaylist
   addRelease: (release: Omit<Release, 'id'>) => Promise<Release>; 
   updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
   addReleaseType: (name: string) => Promise<void>;
@@ -499,7 +500,23 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    await get().fetchData();
+    // Optimistic update
+    set(state => ({
+      playlists: state.playlists.map(p => p.id === id ? { ...p, ...data, trackIds: data.trackIds !== undefined ? data.trackIds : p.trackIds } : p)
+    }));
+    await get().fetchData(); // Full refetch to ensure consistent track ordering
+  },
+
+  deletePlaylist: async (id) => {
+    try {
+      const res = await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete playlist');
+      set(state => ({ playlists: state.playlists.filter(p => p.id !== id) }));
+      await get().fetchData(); 
+      toast.success("Playlist deleted");
+    } catch (err) {
+      toast.error("Failed to delete playlist");
+    }
   },
 
   addRelease: async (releaseData) => {
