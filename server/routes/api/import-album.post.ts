@@ -31,9 +31,11 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // *** CRITICAL FIX: Removed the explicit youtubedl.download() call. ***
-    // The youtube-dl-exec library auto-installs the yt-dlp binary on 'npm install'.
-    // Calling .download() on the main exported function is not the intended API and causes "download is not a function".
+    // CRITICAL FIX: Explicitly ensure the yt-dlp binary is installed.
+    // The library's auto-installation is proving unreliable in this environment.
+    console.log("Ensuring yt-dlp binary is present...");
+    await youtubedl.update(); 
+    console.log("yt-dlp binary is ready.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
