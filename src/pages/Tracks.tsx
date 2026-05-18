@@ -21,14 +21,15 @@ const Tracks = () => {
   }, []);
 
   const filteredTracks = useMemo(() => {
+    if (!tracks) return [];
     return tracks.filter(t => {
-      const artist = artists.find(a => a.id === t.artistId);
-      const album = albums.find(al => t.albumIds.includes(al.id));
+      const artist = artists?.find(a => a.id === t.artistId);
+      const album = albums?.find(al => t.albumIds?.includes(al.id));
       const searchLower = search.toLowerCase();
       return (
-        t.title.toLowerCase().includes(searchLower) ||
-        artist?.name.toLowerCase().includes(searchLower) ||
-        album?.title.toLowerCase().includes(searchLower)
+        t.title?.toLowerCase().includes(searchLower) ||
+        artist?.name?.toLowerCase().includes(searchLower) ||
+        album?.title?.toLowerCase().includes(searchLower)
       );
     });
   }, [tracks, search, artists, albums]);
@@ -37,7 +38,7 @@ const Tracks = () => {
     return [...filteredTracks].sort((a, b) => {
       let comparison = 0;
       if (sortConfig.field === 'title') {
-        comparison = a.title.localeCompare(b.title);
+        comparison = (a.title || '').localeCompare(b.title || '');
       } else if (sortConfig.field === 'memories') {
         comparison = (a.memories || 0) - (b.memories || 0);
       } else if (sortConfig.field === 'rating') {
@@ -86,6 +87,7 @@ const Tracks = () => {
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
+              {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
               {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -114,8 +116,8 @@ const Tracks = () => {
             </TableHeader>
             <TableBody>
               {sortedTracks.map((track, i) => {
-                const artist = artists.find(a => a.id === track.artistId);
-                const album = albums.find(al => track.albumIds.includes(al.id));
+                const artist = artists?.find(a => a.id === track.artistId);
+                const album = albums?.find(al => track.albumIds?.includes(al.id));
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
                   <TrackContextMenu key={track.id} track={track}>

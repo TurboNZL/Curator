@@ -3,13 +3,15 @@
 import { useMusicStore } from '@/store/useMusicStore';
 import { Settings as SettingsIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 export const TopToolbar = () => {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,12 +20,33 @@ export const TopToolbar = () => {
     }
   };
 
+  const navItems = [
+    { label: 'Journal', href: '/' },
+    { label: 'Artists', href: '/artists' },
+    { label: 'Albums', href: '/albums' },
+    { label: 'Tracks', href: '/tracks' },
+    { label: 'Playlists', href: '/playlists' },
+  ];
+
   return (
     <header className="flex items-center justify-between px-8 py-4 bg-zinc-950 border-b border-zinc-800 shrink-0">
-      <div className="flex items-center gap-6">
-        <Link to="/" className="text-sm font-black uppercase tracking-widest text-white hover:text-blue-500 transition-colors">
-          Journal
-        </Link>
+      <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "text-xs font-black uppercase tracking-widest transition-colors",
+                location.pathname === item.href 
+                  ? "text-white" 
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
