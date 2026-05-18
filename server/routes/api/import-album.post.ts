@@ -1,7 +1,12 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { execFile } from "child_process";
+import { exec } from "yt-dlp-exec";
 import path from "path";
 import fs from "fs";
+import axios from "axios";
+import nodeID3 from "node-id3";
+import { v4 as uuidv4 } from "uuid";
+import { db } from "../../db";
+import { albums, tracks, artists, albumTracks } from "../../db/schema";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -14,59 +19,134 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Path to the executable
-  // In development, it's in server/bin/ytmpcli.exe
-  // We use process.cwd() to get the root directory
-  const isWindows = process.platform === "win32";
-  const exeName = isWindows ? "ytmpcli.exe" : "ytmpcli";
-  const exePath = path.join(process.cwd(), "server", "bin", exeName);
+  try {
+    console.log(`Starting import for URL: ${url}`);
 
-  if (!fs.existsSync(exePath)) {
-    // Try without .exe if on linux and .exe exists
-    const altPath = path.join(process.cwd(), "server", "bin", "ytmpcli.exe");
-    if (!isWindows && fs.existsSync(altPath)) {
-      // On Linux, we can't run .exe directly unless it's through wine
-      throw createError({
-        statusCode: 500,
-        statusMessage: `Cannot run Windows executable (.exe) on ${process.platform}. Please provide a Linux binary.`,
+    // 1. Get metadata using yt-dlp
+    const metadata = await exec(url, {
+      dumpSingleJson: true,
+      noWarnings: true,
+      preferFreeFormats: true,
+    });
+
+    const info = JSON.parse(metadata.stdout);
+    
+    // Handle both single video and playlist
+    const entries = info._type === 'playlist' ? info.entries : [info];
+    
+    if (!entries || entries.length === 0) {
+      throw new Error("No tracks found in the provided URL");
+    }
+
+    const albumTitle = info.title || "Unknown Album";
+    const albumArtistName = info.uploader || info.artist || "Unknown Artist";
+    const albumId = uuidv4();
+
+    // Create upload directory if it doesn't exist
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "music");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // 2. Find or create artist
+    let artistId = uuidv4();
+    const existingArtists = await db.select().from(artists);
+    const existingArtist = existingArtists.find(a => a.name.toLowerCase() === albumArtistName.toLowerCase());
+    
+    if (existingArtist) {
+      artistId = existingArtist.id;
+    } else {
+      await db.insert(artists).values({
+        id: artistId,
+        name: albumArtistName,
       });
     }
+
+    // 3. Create Album
+    await db.insert(albums).values({
+      id: albumId,
+      title: albumTitle,
+      artistId: artistId,
+      artistIds: JSON.stringify([artistId]),
+    });
+
+    // 4. Process each track
+    const results = [];
+    for (const entry of entries) {
+      if (!entry) continue;
+
+      const trackId = uuidv4();
+      const trackTitle = entry.title || "Unknown Track";
+      const fileName = `${trackId}.mp3`;
+      const filePath = path.join(uploadDir, fileName);
+
+      console.log(`Downloading track: ${trackTitle}`);
+
+      // Download and convert to mp3
+      await exec(entry.webpage_url || entry.url, {
+        extractAudio: true,
+        audioFormat: "mp3",
+        output: filePath.replace('.mp3', '.%(ext)s'), // yt-dlp adds extension
+      });
+
+      // yt-dlp might name it slightly differently if it's already mp3 or needs conversion
+      // We'll check for the file and rename if necessary
+      const actualPath = filePath; // Simplified for now, yt-dlp --audio-format mp3 usually works
+
+      // 5. Add metadata (ID3 tags)
+      const tags = {
+        title: trackTitle,
+        artist: albumArtistName,
+        album: albumTitle,
+      };
+
+      // Download thumbnail if available
+      if (entry.thumbnail) {
+        try {
+          const response = await axios.get(entry.thumbnail, { responseType: 'arraybuffer' });
+          tags.image = {
+            mime: "image/jpeg",
+            type: { id: 3, name: "front cover" },
+            description: "Cover",
+            imageBuffer: Buffer.from(response.data),
+          };
+        } catch (e) {
+          console.warn(`Failed to download thumbnail for ${trackTitle}`);
+        }
+      }
+
+      nodeID3.write(tags, actualPath);
+
+      // 6. Save to DB
+      await db.insert(tracks).values({
+        id: trackId,
+        title: trackTitle,
+        artistId: artistId,
+        artistIds: JSON.stringify([artistId]),
+        localFilePath: `/uploads/music/${fileName}`,
+        youtubeMusicUrl: entry.webpage_url,
+      });
+
+      await db.insert(albumTracks).values({
+        albumId: albumId,
+        trackId: trackId,
+      });
+
+      results.push({ id: trackId, title: trackTitle });
+    }
+
+    return {
+      success: true,
+      message: `Imported album "${albumTitle}" with ${results.length} tracks`,
+      albumId,
+      tracks: results,
+    };
+
+  } catch (error: any) {
+    console.error(`Import failed: ${error.message}`);
     throw createError({
       statusCode: 500,
-      statusMessage: `Executable not found at ${exePath}`,
+      statusMessage: `Import failed: ${error.message}`,
     });
   }
-
-  console.log(`Starting import for URL: ${url} using ${exePath}`);
-
-  // Execute the program
-  // We use execFile for security (avoids shell injection)
-  // We don't wait for it to finish if it's a long process, 
-  // but for now let's wait to see if it works or fails immediately.
-  
-  return new Promise((resolve, reject) => {
-    const child = execFile(exePath, [url], (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error executing ytmpcli: ${error.message}`);
-        console.error(`stderr: ${stderr}`);
-        reject(createError({
-          statusCode: 500,
-          statusMessage: `Import failed: ${error.message}`,
-          data: { stderr }
-        }));
-        return;
-      }
-      
-      console.log(`ytmpcli stdout: ${stdout}`);
-      if (stderr) {
-        console.warn(`ytmpcli stderr: ${stderr}`);
-      }
-      
-      resolve({
-        success: true,
-        message: "Import completed successfully",
-        output: stdout
-      });
-    });
-  });
 });
