@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
 
 interface LowQualityTracksModalProps {
-  children: React.ReactNode;
+  children?: React.ReactNode; // Made optional
 }
 
 export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ children }) => {
@@ -110,7 +110,13 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger asChild>
+        {children || (
+          <Button variant="outline" className="w-full">
+            Open Low Quality Tracks
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
