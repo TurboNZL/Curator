@@ -5,7 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
 import { eq } from 'drizzle-orm';
-import youtubedl from 'youtube-dl-exec'; // Import the default export (the function itself)
+// Import the create function for specifying a custom binary path
+import { create as createYoutubeDl } from 'youtube-dl-exec'; 
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
@@ -16,6 +17,12 @@ if (ffmpegStatic) {
 } else {
   console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
 }
+
+// Define the path to the locally bundled yt-dlp binary
+const ytDlpBinaryPath = path.join(process.cwd(), 'server', 'bin', 'yt-dlp.exe');
+// Create a youtube-dl-exec instance that uses our custom binary
+const youtubedl = createYoutubeDl(ytDlpBinaryPath);
+
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
@@ -31,11 +38,8 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // CRITICAL FIX: Explicitly ensure the yt-dlp binary is installed.
-    // The library's auto-installation is proving unreliable in this environment.
-    console.log("Ensuring yt-dlp binary is present...");
-    await youtubedl.update(); 
-    console.log("yt-dlp binary is ready.");
+    // CRITICAL FIX: Removed explicit youtubedl.update(). We are now using a bundled binary.
+    console.log("Using locally bundled yt-dlp binary.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
@@ -81,6 +85,7 @@ export default defineEventHandler(async (event) => {
         id: artistId,
         name: albumArtistName,
       });
+      console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
       console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
     }
 
