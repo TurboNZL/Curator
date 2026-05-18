@@ -5,14 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
 import { eq } from 'drizzle-orm';
-import YoutubeDlWrapCjs from 'youtube-dl-exec'; // Import the default export (potential CJS interop issue)
+import youtubeDl from 'youtube-dl-exec'; // Correctly import the default export (the function itself)
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
-
-// Safely get the YoutubeDlWrap class constructor
-// This pattern handles cases where CJS default exports are wrapped in { default: ... }
-const YoutubeDlWrap = (YoutubeDlWrapCjs as any).default || YoutubeDlWrapCjs;
 
 // Set the path to the ffmpeg binary
 if (ffmpegStatic) {
@@ -21,8 +17,7 @@ if (ffmpegStatic) {
   console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
 }
 
-// Create an instance of YoutubeDlWrap for executing commands
-const ytdl = new YoutubeDlWrap();
+// Removed: const ytdl = new YoutubeDlWrap(); // This was the source of the "not a constructor" error.
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
@@ -38,8 +33,9 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // Ensure yt-dlp binary is downloaded and available by calling the static method on the class
-    await YoutubeDlWrap.download(); 
+    // Ensure yt-dlp binary is downloaded and available by calling the static method on the imported function
+    // Using 'as any' here to bypass potential TypeScript inference issues for static properties.
+    await (youtubeDl as any).download(); 
     console.log("yt-dlp binary ensured.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
@@ -47,8 +43,8 @@ export default defineEventHandler(async (event) => {
 
     await fs.mkdir(musicUploadDir, { recursive: true });
 
-    // 1. Get info about the URL using yt-dlp via the instance's exec method
-    const info: any = await ytdl.exec(url, { 
+    // 1. Get info about the URL using yt-dlp by calling the youtubeDl function directly
+    const info: any = await youtubeDl(url, { 
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
@@ -122,10 +118,11 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg via the instance's exec method
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg by calling the youtubeDl function directly
       try {
         await new Promise<void>((resolve, reject) => {
-          ytdl.exec(youtubeMusicUrl, { 
+          // Explicitly capture the ChildProcess object for chaining .on()
+          const childProcess = youtubeDl(youtubeMusicUrl, { 
             extractAudio: true,
             audioFormat: 'mp3',
             output: localFilepathFull,
@@ -133,8 +130,10 @@ export default defineEventHandler(async (event) => {
             preferFreeFormats: true,
             ffmpegLocation: ffmpegStatic || undefined,
             format: 'bestaudio',
-          }).on('error', (err: any) => reject(new Error(`Failed to download audio for ${trackTitle}: ${err.message}`)))
-            .on('close', () => resolve());
+          });
+
+          childProcess.on('error', (err: any) => reject(new Error(`Failed to download audio for ${trackTitle}: ${err.message}`)));
+          childProcess.on('close', () => resolve());
         });
         console.log(`Audio downloaded and converted for ${trackTitle}`);
       } catch (downloadError: any) {
