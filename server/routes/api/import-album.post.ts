@@ -10,7 +10,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
 
-// Set the path to the ffmpeg binary
+// Set the path to the ffmpeg binary for fluent-ffmpeg
 if (ffmpegStatic) {
   ffmpeg.setFfmpegPath(ffmpegStatic);
 } else {
@@ -131,7 +131,7 @@ export default defineEventHandler(async (event) => {
             output: localFilepathFull,
             noWarnings: true,
             preferFreeFormats: true,
-            ffmpegLocation: ffmpegStatic ? path.dirname(ffmpegStatic) : undefined, // Corrected: provide directory path
+            ffmpegLocation: ffmpegStatic, // Corrected: provide direct path to executable
             format: 'bestaudio', // Prioritize best audio quality
           });
 
