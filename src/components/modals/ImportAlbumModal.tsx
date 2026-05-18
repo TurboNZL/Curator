@@ -34,15 +34,17 @@ export const ImportAlbumModal: React.FC<ImportAlbumModalProps> = ({ isOpen, onCl
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to import album');
+        // Attempt to parse the error message from the response body
+        const errorData = await response.json();
+        throw new Error(errorData.statusMessage || 'Failed to import album due to a server error.');
       }
 
       toast.success('Album import started successfully');
       onClose();
       setUrl('');
     } catch (error: any) {
-      toast.error(error.message);
+      // Display the specific error message, or a generic one if none is available
+      toast.error(error.message || 'An unexpected error occurred during import.');
     } finally {
       setIsImporting(false);
     }

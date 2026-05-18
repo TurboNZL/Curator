@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (entries.length === 0) {
-      throw new Error("No video entries found for the given URL.");
+      throw createError({ statusCode: 404, statusMessage: "No video entries found for the given URL. Please check the URL and try again." });
     }
 
     // 2. Find or create artist
@@ -198,10 +198,11 @@ export default defineEventHandler(async (event) => {
     };
 
   } catch (error: any) {
-    console.error(`Import failed: ${error.message}`);
+    console.error("Full import error object:", error); // Log the entire error object
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw createError({
       statusCode: 500,
-      statusMessage: `Import failed: ${error.message}`,
+      statusMessage: `Import failed: ${errorMessage || 'An unexpected error occurred during import.'}`,
     });
   }
 });
