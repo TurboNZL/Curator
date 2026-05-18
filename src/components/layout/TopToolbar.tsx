@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, BookOpen, Trash2, BarChart3, ListOrdered, Settings, User } from 'lucide-react';
+import { Search, BookOpen, Trash2, BarChart3, ListOrdered, Settings, User, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -8,11 +8,14 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useState } from 'react';
+import { ImportAlbumModal } from '@/components/modals/ImportAlbumModal';
 
 export const TopToolbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { activeProfile, updateSettings } = useMusicStore();
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   return (
     <header className="h-16 border-b border-zinc-800 bg-zinc-950 flex items-center px-6 justify-between gap-4">
@@ -41,6 +44,11 @@ export const TopToolbar = () => {
             label="Queue"
             active={location.pathname === '/queue'}
             onClick={() => navigate('/queue')}
+          />
+          <ToolbarTab
+            icon={Download}
+            label="Import Album"
+            onClick={() => setIsImportModalOpen(true)}
           />
         </div>
         
@@ -91,6 +99,11 @@ export const TopToolbar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ImportAlbumModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+      />
     </header>
   );
 };
