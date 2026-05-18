@@ -10,13 +10,18 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
 
-// Safely extract the YoutubeDlWrap class constructor from the imported module.
-// This handles cases where the actual constructor might be the module itself,
-// or nested under a 'default' property (common in CJS/ESM interop).
-const YoutubeDlWrap: typeof YoutubeDlModule.default = 
-    (typeof YoutubeDlModule === 'function' && 'download' in YoutubeDlModule) 
-    ? YoutubeDlModule as typeof YoutubeDlModule.default
-    : (YoutubeDlModule as any).default;
+// Set the path to the ffmpeg binary
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+} else {
+  console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
+}
+
+// *** CRITICAL FIX: Explicitly unwrap the YoutubeDlWrap class constructor ***
+// In some environments, a CommonJS default export (like YoutubeDlWrap class)
+// consumed as ESM and processed by bundlers (Vite/Nitro) can be nested like this.
+const YoutubeDlWrap: (new (...args: any[]) => any) & { download: () => Promise<void> } = 
+  (YoutubeDlModule as any).default.default || (YoutubeDlModule as any).default || YoutubeDlModule;
 
 // Perform a runtime check to ensure we got a valid constructor
 if (typeof YoutubeDlWrap !== 'function') {
