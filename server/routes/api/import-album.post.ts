@@ -1,19 +1,14 @@
 import { defineEventHandler, readBody, createError } from "h3";
 import path from "path";
 import fs from "fs/promises";
-import { exec as execCb } from "child_process";
-import { promisify } from "util";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
 import { eq } from 'drizzle-orm';
-import YoutubeDlWrap from 'youtube-dl-exec'; // Import the class directly
+import youtubeDl from 'youtube-dl-exec'; // Import the default export (the function itself)
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
-
-// Promisify exec for async/await usage
-const exec = promisify(execCb);
 
 // Set the path to the ffmpeg binary
 if (ffmpegStatic) {
@@ -21,9 +16,6 @@ if (ffmpegStatic) {
 } else {
   console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
 }
-
-// Create an instance of YoutubeDlWrap for executing commands
-const ytdl = new YoutubeDlWrap();
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
@@ -39,8 +31,8 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // Ensure yt-dlp binary is downloaded and available by calling static method on the class
-    await YoutubeDlWrap.download(); 
+    // Ensure yt-dlp binary is downloaded and available by calling the static method on the imported function
+    await youtubeDl.download(); 
     console.log("yt-dlp binary ensured.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
@@ -48,8 +40,8 @@ export default defineEventHandler(async (event) => {
 
     await fs.mkdir(musicUploadDir, { recursive: true });
 
-    // 1. Get info about the URL using yt-dlp via the instance
-    const info: any = await ytdl.exec(url, { 
+    // 1. Get info about the URL using yt-dlp by calling the function directly
+    const info: any = await youtubeDl(url, { 
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
@@ -123,10 +115,10 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg via the instance
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg by calling the function directly
       try {
         await new Promise<void>((resolve, reject) => {
-          ytdl.exec(youtubeMusicUrl, { 
+          youtubeDl(youtubeMusicUrl, { 
             extractAudio: true,
             audioFormat: 'mp3',
             output: localFilepathFull,
