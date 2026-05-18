@@ -9,13 +9,14 @@ interface MusicState {
   tracks: Track[];
   releases: Release[];
   playlists: Playlist[];
-  groups: Group[];
+  groups: (Group & { members?: { entityType: string, entityId: string, label: string }[] })[];
   releaseTypes: ReleaseType[];
   timeline: TimelineEntry[];
   playbackLogs: any[];
   
-  userQueue: string[]; 
-  activeQueue: string[]; 
+  // Queue System
+  userQueue: string[]; // Manual queue
+  activeQueue: string[]; // Tracks from current album/playlist
   currentTrackId: string | null;
   isPlaying: boolean;
   isLoading: boolean;
@@ -47,11 +48,11 @@ interface MusicState {
   shuffleActiveQueue: () => void;
   shuffleUserQueue: () => void;
   
-  addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<Artist>;
+  addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<void>;
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
-  addAlbum: (album: Omit<Album, 'id'>) => Promise<Album>;
+  addAlbum: (album: Omit<Album, 'id'>) => Promise<void>;
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
@@ -63,16 +64,16 @@ interface MusicState {
   
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<void>;
   updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
-  deletePlaylist: (id: string) => Promise<void>;
-  
   addRelease: (release: Omit<Release, 'id'>) => Promise<void>;
   updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
   addReleaseType: (name: string) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
   
-  addGroup: (group: Omit<Group, 'id'> & { members?: any[] }) => Promise<void>;
-  updateGroup: (id: string, data: Partial<Group> & { members?: any[] }) => Promise<void>;
+  addGroup: (group: Omit<Group, 'id'> & { members?: { entityType: string, entityId: string }[] }) => Promise<void>;
+  updateGroup: (id: string, data: Partial<Group>) => Promise<void>;
   deleteGroup: (id: string) => Promise<void>;
+  addGroupMember: (groupId: string, entityType: string, entityId: string) => Promise<void>;
+  removeGroupMember: (groupId: string, entityType: string, entityId: string) => Promise<void>;
   
   vote: (data: { trackAId: string, trackBId: string, winnerId?: string, isEqual?: boolean }) => Promise<void>;
   updateSettings: (settings: Partial<Profile['settings']>) => Promise<void>;
@@ -141,11 +142,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           ...al,
           covers: JSON.parse(al.covers || '[]'),
           pendingFiles: JSON.parse(al.pendingFiles || '[]'),
-          artistIds: JSON.parse(al.artistIds || '[]'),
-          genres: JSON.parse(al.genres || '[]'),
-          producers: JSON.parse(al.producers || '[]'),
-          writers: JSON.parse(al.writers || '[]'),
-          credits: JSON.parse(al.credits || '[]'),
+          artistIds: JSON.parse(al.artistIds || '[]')
         })),
         tracks: tracks.map((t: any) => ({
           ...t,
@@ -155,20 +152,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           credits: typeof t.credits === 'string' ? JSON.parse(t.credits || '[]') : (t.credits || []),
           queueRules: typeof t.queueRules === 'string' ? JSON.parse(t.queueRules || '{}') : (t.queueRules || {}),
           artistIds: typeof t.artistIds === 'string' ? JSON.parse(t.artistIds || '[]') : (t.artistIds || []),
-          isFavorite: !!t.isFavorite,
-          syncWithAlbum: !!t.syncWithAlbum
+          isFavorite: !!t.isFavorite
         })),
         releases,
-        playlists: playlists.map((p: any) => ({
-          ...p,
-          entries: JSON.parse(p.entries || '[]'),
-          sortConfig: JSON.parse(p.sortConfig || '{"field": "order", "direction": "asc"}'),
-          createdAt: new Date(p.createdAt)
-        })),
+        playlists,
         groups: groups.map((g: any) => ({
           ...g,
           isArtistOnly: !!g.isArtistOnly,
-          isEra: !!g.isEra,
           members: g.members || []
         })),
         releaseTypes,
@@ -197,12 +187,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     if (trackId) {
       const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
       if (rule) {
-        const isAlbumSource = context?.type === 'album';
-        if (!(rule.disableOnAlbumPlayback && isAlbumSource)) {
-          const isAlreadyNext = state.userQueue[0] === rule.trackBId || state.activeQueue[0] === rule.trackBId;
-          if (!isAlreadyNext) {
-            set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
-          }
+        if (!state.userQueue.includes(rule.trackBId)) {
+          set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
         }
       }
     }
@@ -218,6 +204,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   setProgress: (progress) => set({ currentProgress: progress }),
   setDuration: (duration) => set({ currentDuration: duration }),
+    
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
   setVolume: (val) => set({ volume: val }),
   toggleShuffle: () => set((state) => ({ isShuffled: !state.isShuffled })),
@@ -227,7 +214,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { activeQueue, userQueue, currentTrackId, activeProfile } = state;
     
     const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
-    if (rule && !rule.disableOnAlbumPlayback) {
+    if (rule) {
       set({ currentTrackId: rule.trackBId, isPlaying: true });
       return;
     }
@@ -279,12 +266,42 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   shuffleActiveQueue: () => {
     const state = get();
     const shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
+    
+    const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
+    for (const rule of rules) {
+      const indexB = shuffled.indexOf(rule.trackBId);
+      if (indexB !== -1) {
+        shuffled.splice(indexB, 1);
+        const indexA = shuffled.indexOf(rule.trackAId);
+        if (indexA !== -1) {
+          shuffled.splice(indexA + 1, 0, rule.trackBId);
+        } else {
+          shuffled.splice(indexB, 0, rule.trackAId, rule.trackBId);
+        }
+      }
+    }
+
     set({ activeQueue: shuffled, isShuffled: true });
   },
 
   shuffleUserQueue: () => {
     const state = get();
     const shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
+    
+    const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
+    for (const rule of rules) {
+      const indexB = shuffled.indexOf(rule.trackBId);
+      if (indexB !== -1) {
+        shuffled.splice(indexB, 1);
+        const indexA = shuffled.indexOf(rule.trackAId);
+        if (indexA !== -1) {
+          shuffled.splice(indexA + 1, 0, rule.trackBId);
+        } else {
+          shuffled.splice(indexB, 0, rule.trackAId, rule.trackBId);
+        }
+      }
+    }
+
     set({ userQueue: shuffled, isShuffled: true });
   },
 
@@ -305,8 +322,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(artistData)
     });
     const newArtist = await res.json();
-    await get().fetchData();
-    return newArtist;
+    set(state => ({ artists: [...state.artists, { ...newArtist, eras: [], groups: JSON.parse(newArtist.groups) }] }));
   },
 
   updateArtist: async (id, data) => {
@@ -319,8 +335,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteArtist: async (id) => {
-    await fetch(`/api/artists/${id}`, { method: 'DELETE' });
-    await get().fetchData();
+    try {
+      const res = await fetch(`/api/artists/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete artist');
+      await get().fetchData();
+      toast.success("Artist deleted from database");
+    } catch (err) {
+      toast.error("Failed to delete artist");
+    }
   },
 
   addAlbum: async (albumData) => {
@@ -330,8 +352,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(albumData)
     });
     const newAlbum = await res.json();
-    await get().fetchData();
-    return newAlbum;
+    set(state => ({ albums: [...state.albums, { ...newAlbum, covers: JSON.parse(newAlbum.covers), pendingFiles: [], artistIds: JSON.parse(newAlbum.artistIds || '[]') }] }));
   },
 
   updateAlbum: async (id, data) => {
@@ -344,19 +365,26 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteAlbum: async (id) => {
-    await fetch(`/api/albums/${id}`, { method: 'DELETE' });
-    await get().fetchData();
+    try {
+      const res = await fetch(`/api/albums/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete album');
+      await get().fetchData();
+      toast.success("Album deleted from database");
+    } catch (err) {
+      toast.error("Failed to delete album");
+    }
   },
 
   addTracks: async (tracksData) => {
     for (const trackData of tracksData) {
-      await fetch('/api/tracks', {
+      const res = await fetch('/api/tracks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(trackData)
       });
+      const newTrack = await res.json();
+      set(state => ({ tracks: [...state.tracks, newTrack] }));
     }
-    await get().fetchData();
   },
 
   updateTrack: async (id, data) => {
@@ -369,8 +397,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteTrack: async (id) => {
-    await fetch(`/api/tracks/${id}`, { method: 'DELETE' });
-    await get().fetchData();
+    try {
+      const res = await fetch(`/api/tracks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete track');
+      await get().fetchData();
+      toast.success("Track deleted from database");
+    } catch (err) {
+      toast.error("Failed to delete track");
+    }
   },
 
   incrementMemories: async (id) => {
@@ -388,42 +422,43 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   addPlaylist: async (playlistData) => {
-    await fetch('/api/playlists', {
+    const res = await fetch('/api/playlists', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...playlistData,
-        entries: JSON.stringify(playlistData.entries || [])
-      })
+      body: JSON.stringify(playlistData)
     });
-    await get().fetchData();
+    const newPlaylist = await res.json();
+    set(state => ({ playlists: [...state.playlists, newPlaylist] }));
   },
 
   updatePlaylist: async (id, data) => {
-    const payload = { ...data };
-    if (data.entries) payload.entries = JSON.stringify(data.entries) as any;
-    if (data.sortConfig) payload.sortConfig = JSON.stringify(data.sortConfig) as any;
-
     await fetch(`/api/playlists/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(data)
     });
-    await get().fetchData();
-  },
-
-  deletePlaylist: async (id) => {
-    await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
     await get().fetchData();
   },
 
   addRelease: async (releaseData) => {
-    await fetch('/api/releases', {
+    const res = await fetch('/api/releases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(releaseData)
     });
-    await get().fetchData();
+    const newRelease = await res.json();
+    
+    const state = get();
+    const album = state.albums.find(a => a.id === releaseData.albumId);
+    if (album && releaseData.coverImage) {
+      const albumReleases = state.releases.filter(r => r.albumId === album.id);
+      // If this is the first release cover, or if there are no covers yet, set it as primary
+      if (album.covers.length === 0 || albumReleases.length === 0) {
+        await get().updateAlbum(album.id, { covers: [releaseData.coverImage] });
+      }
+    }
+
+    set(state => ({ releases: [...state.releases, newRelease] }));
   },
 
   updateRelease: async (id, data) => {
@@ -445,16 +480,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   addTimelineEntry: async (entry) => {
-    await fetch('/api/timeline', {
+    const res = await fetch('/api/timeline', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry)
     });
-    await get().fetchData();
+    const newEntry = await res.json();
+    set(state => ({
+      timeline: [{ ...newEntry, timestamp: new Date(newEntry.timestamp) }, ...state.timeline]
+    }));
   },
 
   addGroup: async (groupData) => {
-    await fetch('/api/groups', {
+    const res = await fetch('/api/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(groupData)
@@ -472,7 +510,31 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   deleteGroup: async (id) => {
-    await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+    try {
+      const res = await fetch(`/api/groups/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete bio');
+      await get().fetchData();
+      toast.success("Relational bio deleted");
+    } catch (err) {
+      toast.error("Failed to delete bio");
+    }
+  },
+
+  addGroupMember: async (groupId, entityType, entityId) => {
+    await fetch(`/api/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType, entityId })
+    });
+    await get().fetchData();
+  },
+
+  removeGroupMember: async (groupId, entityType, entityId) => {
+    await fetch(`/api/groups/${groupId}/members`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType, entityId })
+    });
     await get().fetchData();
   },
 
@@ -488,12 +550,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   updateSettings: async (newSettings) => {
     const profile = get().activeProfile;
     const updatedSettings = { ...profile.settings, ...newSettings };
+    
     await fetch(`/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ settings: JSON.stringify(updatedSettings) })
     });
-    await get().fetchData();
+    
+    set(state => ({
+      activeProfile: {
+        ...state.activeProfile,
+        settings: updatedSettings
+      }
+    }));
   },
 
   updatePlaybackRules: async (rules) => {
@@ -503,11 +572,11 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playbackRules: JSON.stringify(rules) })
     });
-    await get().fetchData();
+    set(state => ({ activeProfile: { ...state.activeProfile, playbackRules: rules } }));
   },
 
   resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
-    await get().fetchData();
+    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], groups: [] });
   }
 }));

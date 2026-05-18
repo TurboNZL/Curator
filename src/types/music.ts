@@ -4,7 +4,6 @@ export interface PlaybackRule {
   trackAId: string;
   trackBId: string;
   playFirstOnShuffle: boolean;
-  disableOnAlbumPlayback?: boolean;
 }
 
 export interface Profile {
@@ -26,7 +25,7 @@ export interface Artist {
   name: string;
   image?: string;
   eras: Era[];
-  groups: string[]; 
+  groups: string[]; // IDs of other artists/collectives
 }
 
 export interface Era {
@@ -49,11 +48,7 @@ export interface Album {
   eraId?: string;
   covers: string[];
   defaultReleaseId?: string;
-  pendingFiles?: PendingFile[];
-  genres?: string[];
-  producers?: string[];
-  writers?: string[];
-  credits?: string[];
+  pendingFiles?: PendingFile[]; // Uploaded but unassigned audio files
 }
 
 export interface ReleaseType {
@@ -64,7 +59,7 @@ export interface ReleaseType {
 export interface Release {
   id: string;
   albumId: string;
-  title: string; 
+  title: string; // e.g. "Deluxe Edition"
   coverImage: string;
   trackIds: string[];
   releaseDate?: string;
@@ -77,7 +72,7 @@ export interface Track {
   artistId: string;
   artistIds?: string[];
   albumIds: string[];
-  rating?: number;
+  rating?: number; // Balanced rating, nullable
   initialRating?: number;
   eloScore: number;
   comparisons: number;
@@ -98,26 +93,15 @@ export interface Track {
     nextTrackId?: string;
     forbiddenStandalone?: boolean;
   };
-  syncWithAlbum?: boolean;
 }
-
-export type PlaylistType = 'track' | 'album' | 'hybrid';
 
 export interface Playlist {
   id: string;
   name: string;
   description?: string;
   coverImage?: string;
-  type: PlaylistType;
-  entries: {
-    type: 'track' | 'album';
-    id: string;
-  }[];
+  trackIds: string[];
   createdAt: Date;
-  sortConfig?: {
-    field: string;
-    direction: 'asc' | 'desc';
-  };
 }
 
 export interface TimelineEntry {
@@ -129,13 +113,6 @@ export interface TimelineEntry {
   entityId?: string;
 }
 
-export interface GroupMember {
-  entityType: string;
-  entityId: string;
-  label: string;
-  isVisible?: boolean;
-}
-
 export interface Group {
   id: string;
   name: string;
@@ -143,8 +120,4 @@ export interface Group {
   label?: string;
   type: 'collective' | 'thematic' | 'relationship';
   isArtistOnly: boolean;
-  isEra?: boolean;
-  startDate?: string;
-  endDate?: string;
-  members?: GroupMember[];
 }

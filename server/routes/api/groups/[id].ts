@@ -20,9 +20,6 @@ export default defineHandler(async (event) => {
         label: body.label,
         type: body.type,
         isArtistOnly: body.isArtistOnly ? 1 : 0,
-        isEra: body.isEra ? 1 : 0,
-        startDate: body.startDate,
-        endDate: body.endDate,
       })
       .where(eq(groups.id, id));
 

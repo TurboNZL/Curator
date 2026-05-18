@@ -13,16 +13,13 @@ export default defineHandler(async (event) => {
   if (method === 'PUT') {
     const body = await readBody(event) as any;
     
-    const updateData: any = {};
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.coverImage !== undefined) updateData.coverImage = body.coverImage;
-
-    if (Object.keys(updateData).length > 0) {
-      await db.update(playlists)
-        .set(updateData)
-        .where(eq(playlists.id, id));
-    }
+    await db.update(playlists)
+      .set({
+        name: body.name,
+        description: body.description,
+        coverImage: body.coverImage,
+      })
+      .where(eq(playlists.id, id));
 
     if (body.trackIds && Array.isArray(body.trackIds)) {
       // Delete existing tracks

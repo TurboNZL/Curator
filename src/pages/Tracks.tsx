@@ -42,10 +42,6 @@ const Tracks = () => {
         comparison = (a.memories || 0) - (b.memories || 0);
       } else if (sortConfig.field === 'rating') {
         comparison = (a.rating || 0) - (b.rating || 0);
-      } else if (sortConfig.field === 'playcount') {
-        const aPlays = useMusicStore.getState().playbackLogs.filter(l => l.trackId === a.id).length;
-        const bPlays = useMusicStore.getState().playbackLogs.filter(l => l.trackId === b.id).length;
-        comparison = aPlays - bPlays;
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
@@ -87,9 +83,6 @@ const Tracks = () => {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'rating' })} className="text-xs font-bold gap-2">
               <Star size={14} /> Rating
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'playcount' })} className="text-xs font-bold gap-2">
-              <Play size={14} /> Play Count
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">

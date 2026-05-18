@@ -20,10 +20,6 @@ export default defineHandler(async (event) => {
       eraId: body.eraId,
       covers: JSON.stringify(body.covers || []),
       pendingFiles: JSON.stringify(body.pendingFiles || []),
-      genres: JSON.stringify(body.genres || []),
-      producers: JSON.stringify(body.producers || []),
-      writers: JSON.stringify(body.writers || []),
-      credits: JSON.stringify(body.credits || []),
     };
 
     await db.insert(albums).values(newAlbum);
