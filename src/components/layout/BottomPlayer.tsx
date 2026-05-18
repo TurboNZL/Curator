@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
@@ -68,16 +68,19 @@ export const BottomPlayer = () => {
         if (isPlaying) audioRef.current.play();
       } else {
         audioRef.current.pause();
+        audioRef.current.src = "";
+        setProgress(0);
+        setDuration(0);
       }
     }
   }, [currentTrackId]);
 
   useEffect(() => {
-    if (audioRef.current) {
+    if (audioRef.current && currentTrackId) {
       if (isPlaying) audioRef.current.play();
       else audioRef.current.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, currentTrackId]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -90,8 +93,6 @@ export const BottomPlayer = () => {
     const secs = Math.floor(time % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-  if (!currentTrackId) return null;
 
   const handleNext = () => {
     if (currentTrackId && audioRef.current) {
@@ -111,33 +112,56 @@ export const BottomPlayer = () => {
     <div className="fixed bottom-0 left-0 right-0 h-24 bg-zinc-950 border-t border-zinc-800 px-6 flex items-center justify-between z-50">
       {/* Track Info */}
       <div className="flex items-center gap-4 w-1/3">
-        <div className="w-14 h-14 rounded-lg overflow-hidden border border-zinc-800 shadow-lg">
-          <img src={album?.covers[0] || defaultImage} className="w-full h-full object-cover" alt="" />
+        <div className="w-14 h-14 rounded-lg overflow-hidden border border-zinc-800 shadow-lg bg-zinc-900 flex items-center justify-center">
+          {currentTrack ? (
+            <img src={album?.covers[0] || defaultImage} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <Music size={24} className="text-zinc-700" />
+          )}
         </div>
         <div className="min-w-0">
-          <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{currentTrack?.title}</h4>
-          <p className="text-xs font-bold text-zinc-500 truncate uppercase tracking-widest">{artist?.name}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[8px] font-black px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
-              {currentTrack?.bitrate || '320kbps'}
-            </span>
-          </div>
+          <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">
+            {currentTrack?.title || "No Track Selected"}
+          </h4>
+          <p className="text-xs font-bold text-zinc-500 truncate uppercase tracking-widest">
+            {artist?.name || "Select music to play"}
+          </p>
+          {currentTrack && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[8px] font-black px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
+                {currentTrack?.bitrate || '320kbps'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Controls */}
       <div className="flex flex-col items-center gap-2 w-1/3">
         <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={handlePrevious}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-zinc-300 disabled:opacity-30" 
+            onClick={handlePrevious}
+            disabled={!currentTrackId}
+          >
             <SkipBack size={20} fill="currentColor" />
           </Button>
           <Button
             onClick={togglePlay}
-            className="h-10 w-10 rounded-full bg-white text-black hover:bg-zinc-200 flex items-center justify-center"
+            disabled={!currentTrackId}
+            className="h-10 w-10 rounded-full bg-white text-black hover:bg-zinc-200 flex items-center justify-center disabled:opacity-30"
           >
             {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-300" onClick={handleNext}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-zinc-300 disabled:opacity-30" 
+            onClick={handleNext}
+            disabled={!currentTrackId && userQueue.length === 0 && activeQueue.length === 0}
+          >
             <SkipForward size={20} fill="currentColor" />
           </Button>
         </div>
@@ -147,6 +171,7 @@ export const BottomPlayer = () => {
             value={[progress]} 
             max={duration || 100} 
             step={1} 
+            disabled={!currentTrackId}
             onValueChange={([val]) => {
               if (audioRef.current) audioRef.current.currentTime = val;
             }}
@@ -236,7 +261,7 @@ export const BottomPlayer = () => {
         </div>
 
         <StatsForNerdsModal track={currentTrack} artist={artist} album={album}>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 disabled:opacity-30" disabled={!currentTrackId}>
             <Info size={18} />
           </Button>
         </StatsForNerdsModal>
