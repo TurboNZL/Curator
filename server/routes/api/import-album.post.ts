@@ -1,16 +1,29 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { exec } from "child_process";
 import path from "path";
-import fs from "fs";
-import axios from "axios";
-import nodeID3 from "node-id3";
+import fs from "fs/promises";
+import { exec as execCb } from "child_process";
+import { promisify } from "util";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
-import { eq } from 'drizzle-orm'; // Imported 'eq'
+import { eq } from 'drizzle-orm';
+import { youtubeDl } from 'youtube-dl-exec'; // Correct import
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
+import axios from 'axios';
+
+// Promisify exec for async/await usage
+const exec = promisify(execCb);
+
+// Set the path to the ffmpeg binary
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+} else {
+  console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
+}
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event) as any; // Cast body to any
+  const body = await readBody(event) as { url: string };
   const { url } = body;
 
   if (!url) {
@@ -23,50 +36,49 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
 
-    const pythonScriptPath = path.join(process.cwd(), "server", "import-tool", "ytmpcli_api_wrapper.py");
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
+    const musicUploadDir = path.join(uploadBaseDir, "music");
 
-    // Execute the Python script
-    const pythonCommand = `python ${pythonScriptPath} "${url}" "${uploadBaseDir}"`;
-    console.log(`Executing Python command: ${pythonCommand}`);
+    await fs.mkdir(musicUploadDir, { recursive: true });
 
-    const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-      exec(pythonCommand, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
-        if (error) {
-          reject(new Error(`Python script execution failed: ${error.message}\nStderr: ${stderr}`));
-        }
-        resolve({ stdout, stderr });
-      });
+    // 1. Get info about the URL using yt-dlp
+    // Using youtubeDl function directly, which returns parsed JSON object
+    const info: any = await youtubeDl(url, { // Cast to any to handle dynamic properties
+      dumpSingleJson: true,
+      noWarnings: true,
+      preferFreeFormats: true,
+      // Removed 'noPlaylistAsyTable' as it was causing a TypeScript error
     });
 
-    if (stderr) {
-      console.warn(`Python script stderr: ${stderr}`);
+    let albumTitle = info.title || "Unknown Album";
+    let albumArtistName = info.uploader || info.artist || "Unknown Artist";
+
+    let entries: any[] = [];
+    if (info._type === 'playlist' && info.entries) {
+      entries = info.entries;
+      // For playlists, use playlist title and uploader as album/artist
+      albumTitle = info.title;
+      albumArtistName = info.uploader;
+    } else {
+      entries = [info]; // Single video
     }
 
-    const pythonOutput = JSON.parse(stdout);
-
-    if (pythonOutput.error) {
-      throw new Error(pythonOutput.error);
+    if (entries.length === 0) {
+      throw new Error("No video entries found for the given URL.");
     }
 
-    const { albumTitle, albumArtistName, tracks: processedTracks } = pythonOutput;
-    
-    // Create upload directory if it doesn't exist
-    const musicUploadDir = path.join(uploadBaseDir, "music");
-    if (!fs.existsSync(musicUploadDir)) {
-      fs.mkdirSync(musicUploadDir, { recursive: true });
-    }
-
-    // 1. Find or create artist
+    // 2. Find or create artist
     console.log(`Finding or creating artist: ${albumArtistName}`);
-    let artistId = uuidv4();
-    const existingArtists = await db.select().from(artists);
-    const existingArtist = existingArtists.find(a => a.name.toLowerCase() === albumArtistName.toLowerCase());
+    let artistId: string;
+    const existingArtist = await db.query.artists.findFirst({
+      where: eq(artists.name, albumArtistName),
+    });
     
     if (existingArtist) {
       artistId = existingArtist.id;
       console.log(`Found existing artist: ${albumArtistName} with ID ${artistId}`);
     } else {
+      artistId = uuidv4();
       await db.insert(artists).values({
         id: artistId,
         name: albumArtistName,
@@ -74,7 +86,7 @@ export default defineEventHandler(async (event) => {
       console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
     }
 
-    // 2. Create Album
+    // 3. Create Album
     console.log(`Creating album: ${albumTitle}`);
     const albumId = uuidv4();
     await db.insert(albums).values({
@@ -83,51 +95,62 @@ export default defineEventHandler(async (event) => {
       artistId: artistId,
       artistIds: JSON.stringify([artistId]),
       covers: JSON.stringify([]), // Will update with first track thumbnail
+      pendingFiles: JSON.stringify([])
     });
     console.log(`Album created with ID: ${albumId}`);
 
-    // 3. Process each track from Python output
+    // 4. Process each track
     const results = [];
     let firstTrackCover = null;
 
-    for (const entry of processedTracks) {
-      const trackId = entry.id;
-      const trackTitle = entry.title;
-      const localFilePath = entry.localFilePath;
-      const youtubeMusicUrl = entry.youtubeMusicUrl;
+    for (const entry of entries) {
+      if (!entry || !entry.id) continue;
+
+      const trackId = uuidv4();
+      const trackTitle = entry.title || "Unknown Track";
+      const youtubeMusicUrl = entry.webpage_url || `https://www.youtube.com/watch?v=${entry.id}`;
       const thumbnail_url = entry.thumbnail;
 
       console.log(`Processing track: ${trackTitle}`);
 
-      // Add metadata (ID3 tags) and download thumbnail
-      const tags: any = {
-        title: trackTitle,
-        artist: albumArtistName,
-        album: albumTitle,
-      };
+      // Sanitize filename for local storage
+      const cleanTrackTitle = trackTitle.replace(/[^\w\s-]/g, '').trim().substring(0, 100);
+      const localFilename = `${cleanTrackTitle}_${uuidv4()}.mp3`;
+      const localFilepathFull = path.join(musicUploadDir, localFilename);
+      const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      if (thumbnail_url) {
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg
+      try {
+        await new Promise<void>((resolve, reject) => {
+          youtubeDl.exec(youtubeMusicUrl, { // Corrected function call
+            extractAudio: true,
+            audioFormat: 'mp3',
+            output: localFilepathFull,
+            noWarnings: true,
+            preferFreeFormats: true,
+            ffmpegLocation: ffmpegStatic || undefined,
+            format: 'bestaudio',
+          }).on('error', (err: any) => reject(new Error(`Failed to download audio for ${trackTitle}: ${err.message}`)))
+            .on('close', () => resolve());
+        });
+        console.log(`Audio downloaded and converted for ${trackTitle}`);
+      } catch (downloadError: any) {
+        console.warn(downloadError.message);
+        continue; // Skip this track if download fails
+      }
+      
+      // Download thumbnail if available and not yet set for the album
+      if (thumbnail_url && !firstTrackCover) {
         try {
           const response = await axios.get(thumbnail_url, { responseType: 'arraybuffer' });
-          tags.image = {
-            mime: "image/jpeg",
-            type: { id: 3, name: "front cover" },
-            description: "Cover",
-            imageBuffer: Buffer.from(response.data),
-          };
-          if (!firstTrackCover) {
-            firstTrackCover = thumbnail_url;
-          }
+          const coverFilePath = path.join(uploadBaseDir, "images", `${uuidv4()}.jpg`);
+          await fs.mkdir(path.dirname(coverFilePath), { recursive: true });
+          await fs.writeFile(coverFilePath, Buffer.from(response.data));
+          firstTrackCover = `/uploads/images/${path.basename(coverFilePath)}`;
           console.log(`Thumbnail downloaded for ${trackTitle}`);
         } catch (e) {
           console.warn(`Failed to download thumbnail for ${trackTitle}:`, e);
         }
-      }
-
-      const fullLocalFilePath = path.join(process.cwd(), "public", localFilePath);
-      if (fs.existsSync(fullLocalFilePath)) {
-        nodeID3.write(tags, fullLocalFilePath);
-        console.log(`ID3 tags written for ${trackTitle}`);
       }
 
       // Save to DB
@@ -137,12 +160,12 @@ export default defineEventHandler(async (event) => {
         title: trackTitle,
         artistId: artistId,
         artistIds: JSON.stringify([artistId]),
-        localFilePath: localFilePath,
+        localFilePath: relativeLocalFilePath,
         youtubeMusicUrl: youtubeMusicUrl,
-        genres: JSON.stringify([]), // Default empty
-        producers: JSON.stringify([]), // Default empty
-        writers: JSON.stringify([]), // Default empty
-        credits: JSON.stringify([]), // Default empty
+        genres: JSON.stringify([]),
+        producers: JSON.stringify([]),
+        writers: JSON.stringify([]),
+        credits: JSON.stringify([]),
         eloScore: 1000,
         comparisons: 0,
         memories: 0,
