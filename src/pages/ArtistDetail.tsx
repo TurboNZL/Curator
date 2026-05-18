@@ -13,7 +13,7 @@ const ArtistDetail = () => {
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteGroup } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile } = useMusicStore();
 
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';

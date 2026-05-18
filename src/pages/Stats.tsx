@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 const Stats = () => {
-  const { tracks, playbackLogs, fetchData, currentTrackId, isPlaying } = useMusicStore();
+  const { tracks, playbackLogs, fetchData, currentTrackId, isPlaying, currentProgress } = useMusicStore();
 
   useEffect(() => {
     fetchData();
@@ -20,8 +20,18 @@ const Stats = () => {
   const topTracks = useMemo(() => {
     const trackStats = tracks.map(track => {
       const logs = playbackLogs.filter(l => l.trackId === track.id);
-      const fullPlays = logs.filter(l => !l.isSkip && l.duration > 30).length;
-      const partialPlays = logs.filter(l => l.isSkip || (l.duration !== null && l.duration <= 30)).length;
+      let fullPlays = logs.filter(l => !l.isSkip && l.duration > 30).length;
+      let partialPlays = logs.filter(l => l.isSkip || (l.duration !== null && l.duration <= 30)).length;
+      
+      // Include current track if it's playing
+      if (currentTrackId === track.id && isPlaying) {
+        if (currentProgress > 30) {
+          fullPlays++;
+        } else {
+          partialPlays++;
+        }
+      }
+
       return {
         name: track.title,
         fullPlays,
@@ -30,7 +40,7 @@ const Stats = () => {
       };
     });
     return trackStats.sort((a, b) => b.fullPlays - a.fullPlays).slice(0, 10);
-  }, [tracks, playbackLogs]);
+  }, [tracks, playbackLogs, currentTrackId, isPlaying, currentProgress]);
 
   const totalSeconds = playbackLogs.reduce((a, b) => a + (b.duration || 0), 0);
   const formatTotalTime = (seconds: number) => {

@@ -15,7 +15,7 @@ export const BottomPlayer = () => {
     volume, setVolume, nextTrack, previousTrack, logPlayback,
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
-    isShuffled, toggleShuffle, activeProfile
+    isShuffled, toggleShuffle, activeProfile, setProgress: setStoreProgress, setDuration: setStoreDuration
   } = useMusicStore();
 
   const [progress, setProgress] = useState(0);
@@ -35,8 +35,14 @@ export const BottomPlayer = () => {
 
     const audio = audioRef.current;
 
-    const handleTimeUpdate = () => setProgress(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleTimeUpdate = () => {
+      setProgress(audio.currentTime);
+      setStoreProgress(audio.currentTime);
+    };
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+      setStoreDuration(audio.duration);
+    };
     const handleEnded = () => {
       if (currentTrackId && audio.duration) {
         logPlayback(currentTrackId, Math.floor(audio.duration));

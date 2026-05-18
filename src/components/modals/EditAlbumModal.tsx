@@ -67,7 +67,8 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
     const uploadPromises = Array.from(files).map(async file => {
       const url = await uploadFile(file, 'audio');
-      const cleanName = file.name.replace(/_/g, ' ');
+      // Remove extension and replace underscores with spaces
+      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, ' ');
       return { url, name: cleanName };
     });
 
@@ -110,9 +111,9 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] p-0 overflow-hidden">
-        <Tabs defaultValue="metadata" className="w-full">
-          <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4">
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <Tabs defaultValue="metadata" className="w-full flex flex-col overflow-hidden">
+          <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4 shrink-0">
             <div className="flex items-center gap-3">
               <Layers size={20} className="text-blue-500" />
               <h2 className="text-xl font-black uppercase tracking-tight">Edit Album</h2>

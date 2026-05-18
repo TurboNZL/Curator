@@ -21,7 +21,7 @@ import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 
 const AlbumDetail = () => {
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, deleteGroup } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);

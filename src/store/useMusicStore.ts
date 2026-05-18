@@ -22,9 +22,13 @@ interface MusicState {
   isLoading: boolean;
   volume: number;
   isShuffled: boolean;
+  currentProgress: number;
+  currentDuration: number;
   
   fetchData: () => Promise<void>;
   setCurrentTrack: (trackId: string | null, context?: { type: 'album' | 'playlist' | 'track', id: string, tracks?: string[] }) => void;
+  setProgress: (progress: number) => void;
+  setDuration: (duration: number) => void;
   togglePlay: () => void;
   setVolume: (val: number) => void;
   toggleShuffle: () => void;
@@ -105,6 +109,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   isLoading: false,
   volume: 0.8,
   isShuffled: false,
+  currentProgress: 0,
+  currentDuration: 0,
 
   fetchData: async () => {
     set({ isLoading: true });
@@ -189,9 +195,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     set({
       currentTrackId: trackId,
       isPlaying: !!trackId,
-      activeQueue: newActiveQueue
+      activeQueue: newActiveQueue,
+      currentProgress: 0,
+      currentDuration: 0
     });
   },
+
+  setProgress: (progress) => set({ currentProgress: progress }),
+  setDuration: (duration) => set({ currentDuration: duration }),
     
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
   setVolume: (val) => set({ volume: val }),
