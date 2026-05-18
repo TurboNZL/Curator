@@ -113,3 +113,12 @@ export interface Group {
   isArtistOnly: boolean;
   members?: { entityType: string, entityId: string, label?: string }[]; // Added for relational bios
 }
+
+export interface TimelineEntry {
+  id: string;
+  type: string;
+  timestamp: Date;
+  title: string;
+  description: string;
+  entityId?: string;
+}
