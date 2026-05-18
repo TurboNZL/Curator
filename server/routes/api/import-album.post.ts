@@ -31,18 +31,16 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // Ensure yt-dlp binary is downloaded and available by calling the download method on the imported function
-    // This aligns with the library's pattern for utility functions attached to the main export.
-    await youtubedl.download(); 
-    console.log("yt-dlp binary ensured.");
+    // *** CRITICAL FIX: Removed the explicit youtubedl.download() call. ***
+    // The youtube-dl-exec library auto-installs the yt-dlp binary on 'npm install'.
+    // Calling .download() on the main exported function is not the intended API and causes "download is not a function".
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
 
     await fs.mkdir(musicUploadDir, { recursive: true });
 
-    // 1. Get info about the URL using yt-dlp by calling the youtubedl function directly
-    // The documentation shows youtubedl(url, flags) returns a promise resolving with output.
+    // 1. Get info about the URL using yt-dlp by calling the youtubedl function directly (promise interface).
     const info: any = await youtubedl(url, { 
       dumpSingleJson: true,
       noWarnings: true,
@@ -117,10 +115,9 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg via youtubedl.exec
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg via youtubedl.exec (subprocess interface).
       try {
         await new Promise<void>((resolve, reject) => {
-          // As per documentation, use youtubedl.exec to get the ChildProcess object
           const childProcess = youtubedl.exec(youtubeMusicUrl, { 
             extractAudio: true,
             audioFormat: 'mp3',
