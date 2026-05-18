@@ -131,10 +131,10 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       setOpen(false);
     }
     
-    setFormData({ 
-      title: '', artistId: formData.artistId, albumId: formData.albumId, rating: '', genres: '', producers: '', bitrate: '320kbps', 
-      audioUrl: '', spotifyUrl: '', geniusUrl: '', soundcloudUrl: '', youtubeMusicUrl: '' 
-    });
+    setFormData({
+          title: '', artistId: formData.artistId, albumId: formData.albumId, rating: '', genres: '', producers: '', bitrate: '320kbps',
+          audioUrl: '', spotifyUrl: '', geniusUrl: '', soundcloudUrl: '', youtubeMusicUrl: '', syncWithAlbum: true
+        });
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
