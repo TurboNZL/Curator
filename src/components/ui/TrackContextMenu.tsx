@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Plus, Info, Play, ListMusic, Brain } from 'lucide-react';
+import { MoreVertical, Plus, Info, Play, ListMusic, Brain, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Track } from '@/types/music';
 import { useMusicStore } from '@/store/useMusicStore';
