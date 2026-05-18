@@ -9,7 +9,6 @@ import { Rating } from '@/components/ui/Rating';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 
 const ArtistDetail = () => {
-
   const { id } = useParams();
   const navigate = useNavigate();
   const { artists, albums, tracks, setCurrentTrack, groups, activeProfile } = useMusicStore();
@@ -17,8 +16,18 @@ const ArtistDetail = () => {
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
+  
   const artistAlbums = albums.filter(al => al.artistId === id);
-  const artistTracks = tracks.filter(t => t.artistId === id).sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  
+  // Sort by rating (star rating) then by eloScore (ranking)
+  const artistTracks = tracks
+    .filter(t => t.artistId === id)
+    .sort((a, b) => {
+      const ratingA = a.rating ?? 0;
+      const ratingB = b.rating ?? 0;
+      if (ratingB !== ratingA) return ratingB - ratingA;
+      return (b.eloScore ?? 0) - (a.eloScore ?? 0);
+    });
 
   const artistGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === id && m.entityType === 'artist' && m.showOnEntityPage)
@@ -53,8 +62,6 @@ const ArtistDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
-          {/* Era Timeline section removed as eras will be handled by relational bios */}
-
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
@@ -85,7 +92,7 @@ const ArtistDetail = () => {
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Top Rated Tracks</h2>
             </div>
             <div className="space-y-2">
-              {artistTracks.slice(0, 5).map((track, i) => (
+              {artistTracks.slice(0, 10).map((track, i) => (
                 <div key={track.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
@@ -99,7 +106,6 @@ const ArtistDetail = () => {
                       comparisons={track.comparisons}
                     />
                   </div>
-
                 </div>
               ))}
             </div>
@@ -139,7 +145,6 @@ const ArtistDetail = () => {
                           {member.entityType === 'artist' && <User size={10} />}
                           {member.entityType === 'album' && <Disc size={10} />}
                           {member.entityType === 'track' && <Music size={10} />}
-                          {/* Releases are not an option anymore */}
                           {member.label}
                         </Link>
                       ))}

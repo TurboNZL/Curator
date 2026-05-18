@@ -19,12 +19,20 @@ const Stats = () => {
   const currentTrack = useMemo(() => tracks.find(t => t.id === currentTrackId), [tracks, currentTrackId]);
 
   const topTracks = useMemo(() => {
-    // Sort by rating (star rating) then by eloScore (ranking)
+    // Sort by full plays then partial plays
     const sorted = [...tracks].sort((a, b) => {
-      const ratingA = a.rating ?? 0;
-      const ratingB = b.rating ?? 0;
-      if (ratingB !== ratingA) return ratingB - ratingA;
-      return (b.eloScore ?? 0) - (a.eloScore ?? 0);
+      const logsA = playbackLogs.filter(l => l.trackId === a.id);
+      const logsB = playbackLogs.filter(l => l.trackId === b.id);
+      
+      const fullA = logsA.filter(l => !l.isSkip && l.duration && l.duration > 30).length;
+      const fullB = logsB.filter(l => !l.isSkip && l.duration && l.duration > 30).length;
+      
+      if (fullB !== fullA) return fullB - fullA;
+      
+      const partialA = logsA.filter(l => l.isSkip || (l.duration && l.duration <= 30)).length;
+      const partialB = logsB.filter(l => l.isSkip || (l.duration && l.duration <= 30)).length;
+      
+      return partialB - partialA;
     });
 
     return sorted.slice(0, 10).map(track => {
@@ -40,8 +48,6 @@ const Stats = () => {
       return {
         name: track.title,
         id: track.id,
-        rating: track.rating ?? 0,
-        elo: track.eloScore ?? 0,
         fullPlays,
         partialPlays,
         total: fullPlays + partialPlays
@@ -105,7 +111,7 @@ const Stats = () => {
         <Card className="lg:col-span-2 bg-zinc-900/50 border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-6">
             <BarChart3 size={16} className="text-blue-500" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-white">Top Tracks (By Rating & Rank)</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-white">Top Tracks (By Engagement)</h3>
           </div>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -123,13 +129,8 @@ const Stats = () => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                  formatter={(value, name, props) => {
-                    if (name === 'rating') return [value.toFixed(2), 'Rating'];
-                    if (name === 'elo') return [Math.round(value), 'Rank'];
-                    return [value, name];
-                  }}
                 />
-                <Bar dataKey="rating" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
+                <Bar dataKey="fullPlays" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
                   {topTracks.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.id === currentTrackId ? '#10B981' : '#3b82f6'} />
                   ))}

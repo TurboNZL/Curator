@@ -22,12 +22,9 @@ export const TopToolbar = () => {
 
   const navItems = [
     { label: 'Journal', href: '/' },
-    { label: 'Artists', href: '/artists' },
-    { label: 'Albums', href: '/albums' },
-    { label: 'Tracks', href: '/tracks' },
-    { label: 'Playlists', href: '/playlists' },
-    { label: 'Stats', href: '/stats' },
     { label: 'Cleanup', href: '/cleanup' },
+    { label: 'Stats', href: '/stats' },
+    { label: 'Queue', href: '/queue' },
   ];
 
   return (

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Tracks = () => {
-  const { tracks, artists, albums, setCurrentTrack, fetchData } = useMusicStore();
+  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
 
@@ -21,15 +21,16 @@ const Tracks = () => {
   }, []);
 
   const filteredTracks = useMemo(() => {
-    if (!tracks) return [];
+    if (!Array.isArray(tracks)) return [];
     return tracks.filter(t => {
-      const artist = artists?.find(a => a.id === t.artistId);
-      const album = albums?.find(al => t.albumIds?.includes(al.id));
+      if (!t) return false;
+      const artist = artists.find(a => a.id === t.artistId);
+      const album = albums.find(al => t.albumIds?.includes(al.id));
       const searchLower = search.toLowerCase();
       return (
-        t.title?.toLowerCase().includes(searchLower) ||
-        artist?.name?.toLowerCase().includes(searchLower) ||
-        album?.title?.toLowerCase().includes(searchLower)
+        (t.title || '').toLowerCase().includes(searchLower) ||
+        (artist?.name || '').toLowerCase().includes(searchLower) ||
+        (album?.title || '').toLowerCase().includes(searchLower)
       );
     });
   }, [tracks, search, artists, albums]);
@@ -116,54 +117,53 @@ const Tracks = () => {
             </TableHeader>
             <TableBody>
               {sortedTracks.map((track, i) => {
-                const artist = artists?.find(a => a.id === track.artistId);
-                const album = albums?.find(al => track.albumIds?.includes(al.id));
+                const artist = artists.find(a => a.id === track.artistId);
+                const album = albums.find(al => track.albumIds?.includes(al.id));
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
-                  <TrackContextMenu key={track.id} track={track}>
-                    <TableRow
-                      className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
-                    >
-                      <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
-                            <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
-                            <button
-                              onClick={() => setCurrentTrack(track.id)}
-                              className="absolute inset-0 flex items-center justify-center text-zinc-500 hover:text-blue-400 transition-all"
-                            >
-                              <Play size={14} fill="currentColor" />
-                            </button>
-                          </div>
-                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                  <TableRow
+                    key={track.id}
+                    className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
+                  >
+                    <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
+                          <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
+                          <button
+                            onClick={() => setCurrentTrack(track.id)}
+                            className="absolute inset-0 flex items-center justify-center text-zinc-500 hover:text-blue-400 transition-all"
+                          >
+                            <Play size={14} fill="currentColor" />
+                          </button>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name}</TableCell>
-                      <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Brain size={12} className="text-purple-500" />
-                          <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Rating
-                          trackId={track.id}
-                          balanced={track.rating}
-                          unbalanced={track.initialRating}
-                          comparisons={track.comparisons}
-                          size="sm"
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <TrackContextMenu track={track} />
-                          <EditTrackModal track={track} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </TrackContextMenu>
+                        <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
+                    <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Brain size={12} className="text-purple-500" />
+                        <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Rating
+                        trackId={track.id}
+                        balanced={track.rating}
+                        unbalanced={track.initialRating}
+                        comparisons={track.comparisons}
+                        size="sm"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <TrackContextMenu track={track} />
+                        <EditTrackModal track={track} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
             </TableBody>
