@@ -24,11 +24,13 @@ export default defineEventHandler(async (event) => {
     console.log(`Starting import for URL: ${url}`);
 
     // 1. Get metadata using yt-dlp
+    console.log("Fetching metadata with yt-dlp...");
     const metadata = await exec(url, {
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
     });
+    console.log("Metadata fetched successfully.");
 
     const info = JSON.parse(metadata.stdout);
     
@@ -50,20 +52,24 @@ export default defineEventHandler(async (event) => {
     }
 
     // 2. Find or create artist
+    console.log(`Finding or creating artist: ${albumArtistName}`);
     let artistId = uuidv4();
     const existingArtists = await db.select().from(artists);
     const existingArtist = existingArtists.find(a => a.name.toLowerCase() === albumArtistName.toLowerCase());
     
     if (existingArtist) {
       artistId = existingArtist.id;
+      console.log(`Found existing artist: ${albumArtistName} with ID ${artistId}`);
     } else {
       await db.insert(artists).values({
         id: artistId,
         name: albumArtistName,
       });
+      console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
     }
 
     // 3. Create Album
+    console.log(`Creating album: ${albumTitle}`);
     await db.insert(albums).values({
       id: albumId,
       title: albumTitle,
@@ -71,6 +77,7 @@ export default defineEventHandler(async (event) => {
       artistIds: JSON.stringify([artistId]),
       covers: JSON.stringify([]),
     });
+    console.log(`Album created with ID: ${albumId}`);
 
     // 4. Process each track
     const results = [];
@@ -82,7 +89,7 @@ export default defineEventHandler(async (event) => {
       const fileName = `${trackId}.mp3`;
       const filePath = path.join(uploadDir, fileName);
 
-      console.log(`Downloading track: ${trackTitle}`);
+      console.log(`Downloading track: ${trackTitle} (${entry.webpage_url || entry.url}) to ${filePath}`);
 
       // Download and convert to mp3
       await exec(entry.webpage_url || entry.url, {
@@ -90,8 +97,10 @@ export default defineEventHandler(async (event) => {
         audioFormat: "mp3",
         output: filePath.replace('.mp3', '.%(ext)s'),
       });
+      console.log(`Track ${trackTitle} downloaded.`);
 
       // 5. Add metadata (ID3 tags)
+      console.log(`Adding ID3 tags to ${trackTitle}`);
       const tags: any = {
         title: trackTitle,
         artist: albumArtistName,
@@ -108,16 +117,19 @@ export default defineEventHandler(async (event) => {
             description: "Cover",
             imageBuffer: Buffer.from(response.data),
           };
+          console.log(`Thumbnail downloaded for ${trackTitle}`);
         } catch (e) {
-          console.warn(`Failed to download thumbnail for ${trackTitle}`);
+          console.warn(`Failed to download thumbnail for ${trackTitle}:`, e);
         }
       }
 
       if (fs.existsSync(filePath)) {
         nodeID3.write(tags, filePath);
+        console.log(`ID3 tags written for ${trackTitle}`);
       }
 
       // 6. Save to DB
+      console.log(`Saving track ${trackTitle} to database.`);
       await db.insert(tracks).values({
         id: trackId,
         title: trackTitle,
@@ -126,11 +138,13 @@ export default defineEventHandler(async (event) => {
         localFilePath: `/uploads/music/${fileName}`,
         youtubeMusicUrl: entry.webpage_url || entry.url,
       });
+      console.log(`Track ${trackTitle} saved to tracks table.`);
 
       await db.insert(albumTracks).values({
         albumId: albumId,
         trackId: trackId,
       });
+      console.log(`Track ${trackTitle} associated with album ${albumTitle}.`);
 
       results.push({ id: trackId, title: trackTitle });
     }
