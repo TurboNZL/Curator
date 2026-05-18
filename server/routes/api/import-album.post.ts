@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
 import { eq } from 'drizzle-orm';
-import { youtubeDl } from 'youtube-dl-exec'; // Correct import
+import YoutubeDlWrap from 'youtube-dl-exec'; // Import the class directly
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
@@ -22,6 +22,9 @@ if (ffmpegStatic) {
   console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
 }
 
+// Create an instance of YoutubeDlWrap for executing commands
+const ytdl = new YoutubeDlWrap();
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
   const { url } = body;
@@ -35,19 +38,21 @@ export default defineEventHandler(async (event) => {
 
   try {
     console.log(`Starting import for URL: ${url}`);
+    
+    // Ensure yt-dlp binary is downloaded and available by calling static method on the class
+    await YoutubeDlWrap.download(); 
+    console.log("yt-dlp binary ensured.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
 
     await fs.mkdir(musicUploadDir, { recursive: true });
 
-    // 1. Get info about the URL using yt-dlp
-    // Using youtubeDl function directly, which returns parsed JSON object
-    const info: any = await youtubeDl(url, { // Cast to any to handle dynamic properties
+    // 1. Get info about the URL using yt-dlp via the instance
+    const info: any = await ytdl.exec(url, { 
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
-      // Removed 'noPlaylistAsyTable' as it was causing a TypeScript error
     });
 
     let albumTitle = info.title || "Unknown Album";
@@ -56,11 +61,10 @@ export default defineEventHandler(async (event) => {
     let entries: any[] = [];
     if (info._type === 'playlist' && info.entries) {
       entries = info.entries;
-      // For playlists, use playlist title and uploader as album/artist
       albumTitle = info.title;
       albumArtistName = info.uploader;
     } else {
-      entries = [info]; // Single video
+      entries = [info]; 
     }
 
     if (entries.length === 0) {
@@ -94,7 +98,7 @@ export default defineEventHandler(async (event) => {
       title: albumTitle,
       artistId: artistId,
       artistIds: JSON.stringify([artistId]),
-      covers: JSON.stringify([]), // Will update with first track thumbnail
+      covers: JSON.stringify([]),
       pendingFiles: JSON.stringify([])
     });
     console.log(`Album created with ID: ${albumId}`);
@@ -119,10 +123,10 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg via the instance
       try {
         await new Promise<void>((resolve, reject) => {
-          youtubeDl.exec(youtubeMusicUrl, { // Corrected function call
+          ytdl.exec(youtubeMusicUrl, { 
             extractAudio: true,
             audioFormat: 'mp3',
             output: localFilepathFull,
@@ -136,7 +140,7 @@ export default defineEventHandler(async (event) => {
         console.log(`Audio downloaded and converted for ${trackTitle}`);
       } catch (downloadError: any) {
         console.warn(downloadError.message);
-        continue; // Skip this track if download fails
+        continue; 
       }
       
       // Download thumbnail if available and not yet set for the album
@@ -198,7 +202,7 @@ export default defineEventHandler(async (event) => {
     };
 
   } catch (error: any) {
-    console.error("Full import error object:", error); // Log the entire error object
+    console.error("Full import error object:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw createError({
       statusCode: 500,
