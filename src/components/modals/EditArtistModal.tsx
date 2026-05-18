@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 
-export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactNode }) => {
+export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const { updateArtist, deleteArtist, groups, deleteGroup } = useMusicStore();
   
@@ -49,7 +49,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">
             <Edit2 size={14}/>
           </Button>

@@ -10,12 +10,12 @@ interface StatsForNerdsModalProps {
   track?: Track;
   album?: Album;
   artist?: Artist;
-  children: React.ReactNode;
+  children: React.ReactElement; // Enforce single React element
 }
 
 export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForNerdsModalProps) => {
   const { playbackLogs } = useMusicStore();
-  if (!track) return <>{children}</>;
+  if (!track) return children; // Return children directly if no track, as it's just a trigger
 
   const trackLogs = playbackLogs.filter(l => l.trackId === track.id);
   const playCount = trackLogs.length;
@@ -61,8 +61,8 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
           <div className="pt-4 border-t border-zinc-900">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Rating Metrics</h4>
             <div className="grid grid-cols-1 gap-3">
-              <StatRow icon={Star} label="Initial Rating" value={track.initialRating.toFixed(2)} />
-              <StatRow icon={Star} label="Balanced Rating" value={track.rating.toFixed(2)} className="text-blue-400" />
+              <StatRow icon={Star} label="Initial Rating" value={track.initialRating?.toFixed(2) || 'N/A'} />
+              <StatRow icon={Star} label="Balanced Rating" value={track.rating?.toFixed(2) || 'N/A'} className="text-blue-400" />
               <StatRow icon={Swords} label="Comparisons" value={track.comparisons.toString()} />
               <StatRow icon={Activity} label="Elo Score" value={track.eloScore.toFixed(0)} />
             </div>

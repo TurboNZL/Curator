@@ -11,7 +11,7 @@ import { ListMusic, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-export const CreatePlaylistModal = ({ children }: { children?: React.ReactNode }) => {
+export const CreatePlaylistModal = ({ children }: { children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const addPlaylist = useMusicStore((state) => state.addPlaylist);
   
@@ -40,7 +40,7 @@ export const CreatePlaylistModal = ({ children }: { children?: React.ReactNode }
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-2 rounded-full">
             <Plus size={18} />
             New Playlist

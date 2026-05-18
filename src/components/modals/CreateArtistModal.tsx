@@ -8,7 +8,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) => {
+export const CreateArtistModal = ({ children }: { children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const addArtist = useMusicStore((state) => state.addArtist);
   
@@ -35,7 +35,7 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactNode }) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-full">
             <Plus size={18} />
             Quick Add

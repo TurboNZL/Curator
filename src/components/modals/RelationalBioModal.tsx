@@ -21,7 +21,7 @@ import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface RelationalBioModalProps {
-  children?: React.ReactNode;
+  children?: React.ReactElement; // Enforce single React element
   initialEntity?: { type: string, id: string, label: string };
   groupId?: string; // If editing
 }
@@ -144,7 +144,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || <Button variant="outline">Relational Bio</Button>}
+        {children ? children : <Button variant="outline">Relational Bio</Button>}
       </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-900 text-white max-w-md">
         <DialogHeader>

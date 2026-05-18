@@ -18,7 +18,7 @@ import { Card } from '../ui/card';
 interface EditReleaseModalProps {
   release: Release;
   albumId: string;
-  children?: React.ReactNode;
+  children?: React.ReactElement; // Enforce single React element
 }
 
 export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModalProps) => {
@@ -99,7 +99,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white">
             <Edit2 size={12} />
           </Button>

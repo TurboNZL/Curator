@@ -16,7 +16,7 @@ import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactNode }) => {
+export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup } = useMusicStore();
   const albumReleases = releases.filter(r => r.albumId === album.id);
@@ -115,7 +115,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">
             <Edit2 size={14}/>
           </Button>

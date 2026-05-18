@@ -10,7 +10,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { BookOpen, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const CreateJournalEntryModal = ({ children }: { children?: React.ReactNode }) => {
+export const CreateJournalEntryModal = ({ children }: { children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const addTimelineEntry = useMusicStore((state) => state.addTimelineEntry);
   
@@ -37,7 +37,7 @@ export const CreateJournalEntryModal = ({ children }: { children?: React.ReactNo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="outline" className="gap-2 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white">
             <Plus size={16} /> New Entry
           </Button>

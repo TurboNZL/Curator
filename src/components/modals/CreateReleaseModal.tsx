@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 interface CreateReleaseModalProps {
   albumId: string;
-  children?: React.ReactNode;
+  children?: React.ReactElement; // Enforce single React element
 }
 
 export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProps) => {
@@ -68,7 +68,7 @@ export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="link" className="text-xs text-blue-500 font-bold p-0 h-auto uppercase tracking-wider flex items-center gap-1">
             <Plus size={12} /> Add Release
           </Button>

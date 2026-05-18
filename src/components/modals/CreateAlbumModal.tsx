@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) => {
+export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const { artists, addAlbum, addRelease } = useMusicStore(); // Removed addReleaseType as type is removed
   
@@ -92,7 +92,7 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactNode }) =
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 rounded-full">
             <Plus size={18} />
             New Album

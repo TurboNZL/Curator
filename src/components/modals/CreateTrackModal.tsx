@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 interface CreateTrackModalProps {
   albumId?: string;
   artistId?: string;
-  children?: React.ReactNode;
+  children?: React.ReactElement; // Enforce single React element
 }
 
 export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', children }: CreateTrackModalProps) => {
@@ -187,7 +187,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="outline" size="sm" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">
             <Plus size={14} /> Add Track
           </Button>

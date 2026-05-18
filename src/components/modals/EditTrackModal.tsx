@@ -14,7 +14,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 
-export const EditTrackModal = ({ track, children }: { track: Track, children?: React.ReactNode }) => {
+export const EditTrackModal = ({ track, children }: { track: Track, children?: React.ReactElement }) => {
   const [open, setOpen] = useState(false);
   const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
   
@@ -123,7 +123,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {children || (
+        {children ? children : (
           <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
             <Edit2 size={14}/>
           </Button>
