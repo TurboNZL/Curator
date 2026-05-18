@@ -3,9 +3,8 @@ import path from "path";
 import fs from "fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
-import { albums, tracks, artists, albumTracks } from "../../db/schema";
+import { artists } from "../../db/schema"; // Only artists schema for lookup, not insertion
 import { eq } from 'drizzle-orm';
-// Import the create function for specifying a custom binary path
 import { create as createYoutubeDl } from 'youtube-dl-exec'; 
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
@@ -23,7 +22,6 @@ const ytDlpBinaryPath = path.join(process.cwd(), 'server', 'bin', 'yt-dlp.exe');
 // Create a youtube-dl-exec instance that uses our custom binary
 const youtubedl = createYoutubeDl(ytDlpBinaryPath);
 
-
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
   const { url } = body;
@@ -36,31 +34,50 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    console.log(`Starting import for URL: ${url}`);
+    console.log(`Starting import process for URL: ${url}`);
     
-    // CRITICAL FIX: Removed explicit youtubedl.update(). We are now using a bundled binary.
-    console.log("Using locally bundled yt-dlp binary.");
+    // Ensure yt-dlp binary exists at the specified path before attempting to use it.
+    try {
+      await fs.access(ytDlpBinaryPath);
+      console.log(`Using yt-dlp binary found at: ${ytDlpBinaryPath}`);
+    } catch (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: `yt-dlp executable not found at ${ytDlpBinaryPath}. Please download it from https://github.com/yt-dlp/yt-dlp/releases (get the 'yt-dlp.exe' for Windows) and place it in the 'server/bin/' folder.`,
+      });
+    }
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
+    const imagesUploadDir = path.join(uploadBaseDir, "images");
 
     await fs.mkdir(musicUploadDir, { recursive: true });
+    await fs.mkdir(imagesUploadDir, { recursive: true });
 
-    // 1. Get info about the URL using yt-dlp by calling the youtubedl function directly (promise interface).
+    // 1. Get info about the URL using yt-dlp
     const info: any = await youtubedl(url, { 
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
+      noPlaylistAsChannel: true, // Prevents treating playlist URLs as channel URLs
     });
 
-    let albumTitle = info.title || "Unknown Album";
-    let albumArtistName = info.uploader || info.artist || "Unknown Artist";
+    let suggestedAlbumTitle = (info.title || "Untitled Album").trim();
+    let suggestedArtistName = (info.uploader || info.artist || "Unknown Artist").trim();
+
+    if (!suggestedAlbumTitle) {
+      throw createError({ statusCode: 400, statusMessage: "Could not determine album title from the provided URL." });
+    }
+    if (!suggestedArtistName) {
+      throw createError({ statusCode: 400, statusMessage: "Could not determine artist name from the provided URL." });
+    }
 
     let entries: any[] = [];
-    if (info._type === 'playlist' && info.entries) {
+    if (info._type === 'playlist' && info.entries && info.entries.length > 0) {
       entries = info.entries;
-      albumTitle = info.title;
-      albumArtistName = info.uploader;
+      // For playlists, often the playlist title is the album title and uploader is the artist
+      suggestedAlbumTitle = (info.title || suggestedAlbumTitle).trim();
+      suggestedArtistName = (info.uploader || suggestedArtistName).trim();
     } else {
       entries = [info]; 
     }
@@ -69,52 +86,36 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: "No video entries found for the given URL. Please check the URL and try again." });
     }
 
-    // 2. Find or create artist
-    console.log(`Finding or creating artist: ${albumArtistName}`);
-    let artistId: string;
+    // Attempt to find existing artist for pre-selection in the UI
     const existingArtist = await db.query.artists.findFirst({
-      where: eq(artists.name, albumArtistName),
+      where: eq(artists.name, suggestedArtistName),
     });
-    
-    if (existingArtist) {
-      artistId = existingArtist.id;
-      console.log(`Found existing artist: ${albumArtistName} with ID ${artistId}`);
-    } else {
-      artistId = uuidv4();
-      await db.insert(artists).values({
-        id: artistId,
-        name: albumArtistName,
-      });
-      console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
-      console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
+    const suggestedArtistId = existingArtist ? existingArtist.id : undefined;
+
+    let suggestedAlbumCover = '';
+    const suggestedTracks: { title: string; youtubeMusicUrl: string; localFilePath: string; thumbnailUrl?: string; }[] = [];
+
+    // Download album cover from the first entry's thumbnail if available
+    if (entries[0] && entries[0].thumbnail) {
+      try {
+        const response = await axios.get(entries[0].thumbnail, { responseType: 'arraybuffer' });
+        const coverFileName = `${uuidv4()}.jpg`;
+        const coverFilePath = path.join(imagesUploadDir, coverFileName);
+        await fs.writeFile(coverFilePath, Buffer.from(response.data));
+        suggestedAlbumCover = `/uploads/images/${coverFileName}`;
+        console.log(`Album cover downloaded: ${suggestedAlbumCover}`);
+      } catch (e) {
+        console.warn(`Failed to download album cover:`, e);
+      }
     }
 
-    // 3. Create Album
-    console.log(`Creating album: ${albumTitle}`);
-    const albumId = uuidv4();
-    await db.insert(albums).values({
-      id: albumId,
-      title: albumTitle,
-      artistId: artistId,
-      artistIds: JSON.stringify([artistId]),
-      covers: JSON.stringify([]),
-      pendingFiles: JSON.stringify([])
-    });
-    console.log(`Album created with ID: ${albumId}`);
-
-    // 4. Process each track
-    const results = [];
-    let firstTrackCover = null;
 
     for (const entry of entries) {
       if (!entry || !entry.id) continue;
 
-      const trackId = uuidv4();
-      const trackTitle = entry.title || "Unknown Track";
+      const trackTitle = (entry.title || "Unknown Track").trim();
       const youtubeMusicUrl = entry.webpage_url || `https://www.youtube.com/watch?v=${entry.id}`;
-      const thumbnail_url = entry.thumbnail;
-
-      console.log(`Processing track: ${trackTitle}`);
+      const thumbnailUrl = entry.thumbnail;
 
       // Sanitize filename for local storage
       const cleanTrackTitle = trackTitle.replace(/[^\w\s-]/g, '').trim().substring(0, 100);
@@ -122,7 +123,7 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg via youtubedl.exec (subprocess interface).
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg
       try {
         await new Promise<void>((resolve, reject) => {
           const childProcess = youtubedl.exec(youtubeMusicUrl, { 
@@ -132,74 +133,40 @@ export default defineEventHandler(async (event) => {
             noWarnings: true,
             preferFreeFormats: true,
             ffmpegLocation: ffmpegStatic || undefined,
-            format: 'bestaudio',
+            format: 'bestaudio', // Prioritize best audio quality
           });
 
           childProcess.on('error', (err: any) => reject(new Error(`Failed to download audio for ${trackTitle}: ${err.message}`)));
-          childProcess.on('close', () => resolve());
+          childProcess.on('close', (code: number) => {
+            if (code === 0) resolve();
+            else reject(new Error(`yt-dlp exited with code ${code} for ${trackTitle}`));
+          });
         });
-        console.log(`Audio downloaded and converted for ${trackTitle}`);
+        console.log(`Audio downloaded and converted for ${trackTitle}: ${relativeLocalFilePath}`);
       } catch (downloadError: any) {
-        console.warn(downloadError.message);
-        continue; 
+        console.warn(`Skipping track "${trackTitle}" due to download error: ${downloadError.message}`);
+        continue; // Skip this track if download fails
       }
       
-      // Download thumbnail if available and not yet set for the album
-      if (thumbnail_url && !firstTrackCover) {
-        try {
-          const response = await axios.get(thumbnail_url, { responseType: 'arraybuffer' });
-          const coverFilePath = path.join(uploadBaseDir, "images", `${uuidv4()}.jpg`);
-          await fs.mkdir(path.dirname(coverFilePath), { recursive: true });
-          await fs.writeFile(coverFilePath, Buffer.from(response.data));
-          firstTrackCover = `/uploads/images/${path.basename(coverFilePath)}`;
-          console.log(`Thumbnail downloaded for ${trackTitle}`);
-        } catch (e) {
-          console.warn(`Failed to download thumbnail for ${trackTitle}:`, e);
-        }
-      }
-
-      // 6. Save to DB
-      console.log(`Saving track ${trackTitle} to database.`);
-      await db.insert(tracks).values({
-        id: trackId,
+      suggestedTracks.push({
         title: trackTitle,
-        artistId: artistId,
-        artistIds: JSON.stringify([artistId]),
+        youtubeMusicUrl,
         localFilePath: relativeLocalFilePath,
-        youtubeMusicUrl: youtubeMusicUrl,
-        genres: JSON.stringify([]),
-        producers: JSON.stringify([]),
-        writers: JSON.stringify([]),
-        credits: JSON.stringify([]),
-        eloScore: 1000,
-        comparisons: 0,
-        memories: 0,
-        queueRules: JSON.stringify({})
+        thumbnailUrl: thumbnailUrl
       });
-      console.log(`Track ${trackTitle} saved to tracks table.`);
-
-      await db.insert(albumTracks).values({
-        albumId: albumId,
-        trackId: trackId,
-      });
-      console.log(`Track ${trackTitle} associated with album ${albumTitle}.`);
-
-      results.push({ id: trackId, title: trackTitle });
     }
 
-    // 7. Update album with the first track's cover image if available
-    if (firstTrackCover) {
-      await db.update(albums)
-        .set({ covers: JSON.stringify([firstTrackCover]) })
-        .where(eq(albums.id, albumId));
-      console.log(`Album ${albumTitle} cover updated with first track thumbnail.`);
+    if (suggestedTracks.length === 0) {
+      throw createError({ statusCode: 500, statusMessage: "No tracks could be downloaded from the provided URL." });
     }
 
     return {
       success: true,
-      message: `Imported album "${albumTitle}" with ${results.length} tracks`,
-      albumId,
-      tracks: results,
+      suggestedAlbumTitle,
+      suggestedArtistName,
+      suggestedArtistId, // For pre-selecting if artist exists
+      suggestedAlbumCover,
+      suggestedTracks,
     };
 
   } catch (error: any) {

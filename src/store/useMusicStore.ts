@@ -48,28 +48,28 @@ interface MusicState {
   shuffleActiveQueue: () => void;
   shuffleUserQueue: () => void;
   
-  addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<void>;
+  addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<Artist>; // Changed to return Artist
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
-  addAlbum: (album: Omit<Album, 'id'>) => Promise<void>;
+  addAlbum: (album: Omit<Album, 'id'>) => Promise<Album>; // Changed to return Album
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id'>[]) => Promise<void>;
+  addTracks: (tracks: Omit<Track, 'id'>[]) => Promise<Track[]>; // Changed to return Track[]
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
   decrementMemories: (id: string) => Promise<void>;
   
-  addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<void>;
+  addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<Playlist>; // Changed to return Playlist
   updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
-  addRelease: (release: Omit<Release, 'id'>) => Promise<void>;
+  addRelease: (release: Omit<Release, 'id'>) => Promise<Release>; // Changed to return Release
   updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
   addReleaseType: (name: string) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
   
-  addGroup: (group: Omit<Group, 'id'> & { members?: { entityType: string, entityId: string }[] }) => Promise<void>;
+  addGroup: (group: Omit<Group, 'id'> & { members?: { entityType: string, entityId: string }[] }) => Promise<Group>; // Changed to return Group
   updateGroup: (id: string, data: Partial<Group>) => Promise<void>;
   deleteGroup: (id: string) => Promise<void>;
   addGroupMember: (groupId: string, entityType: string, entityId: string) => Promise<void>;
@@ -323,6 +323,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     });
     const newArtist = await res.json();
     set(state => ({ artists: [...state.artists, { ...newArtist, eras: [], groups: JSON.parse(newArtist.groups) }] }));
+    return { ...newArtist, eras: [], groups: JSON.parse(newArtist.groups) };
   },
 
   updateArtist: async (id, data) => {
@@ -353,6 +354,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     });
     const newAlbum = await res.json();
     set(state => ({ albums: [...state.albums, { ...newAlbum, covers: JSON.parse(newAlbum.covers), pendingFiles: [], artistIds: JSON.parse(newAlbum.artistIds || '[]') }] }));
+    return { ...newAlbum, covers: JSON.parse(newAlbum.covers), pendingFiles: [], artistIds: JSON.parse(newAlbum.artistIds || '[]') };
   },
 
   updateAlbum: async (id, data) => {
@@ -376,6 +378,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   addTracks: async (tracksData) => {
+    const createdTracks: Track[] = [];
     for (const trackData of tracksData) {
       const res = await fetch('/api/tracks', {
         method: 'POST',
@@ -384,7 +387,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       });
       const newTrack = await res.json();
       set(state => ({ tracks: [...state.tracks, newTrack] }));
+      createdTracks.push(newTrack);
     }
+    return createdTracks;
   },
 
   updateTrack: async (id, data) => {
@@ -429,6 +434,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     });
     const newPlaylist = await res.json();
     set(state => ({ playlists: [...state.playlists, newPlaylist] }));
+    return newPlaylist;
   },
 
   updatePlaylist: async (id, data) => {
@@ -459,6 +465,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
 
     set(state => ({ releases: [...state.releases, newRelease] }));
+    return newRelease;
   },
 
   updateRelease: async (id, data) => {
@@ -497,7 +504,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(groupData)
     });
-    await get().fetchData();
+    const newGroup = await res.json();
+    await get().fetchData(); // Refetch to get updated members with labels
+    return newGroup;
   },
 
   updateGroup: async (id, data) => {
