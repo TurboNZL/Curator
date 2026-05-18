@@ -3,24 +3,18 @@ import path from "path";
 import fs from "fs/promises";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
-import { artists } from "../../db/schema"; // Only artists schema for lookup, not insertion
+import { artists } from "../../db/schema";
 import { eq } from 'drizzle-orm';
 import { create as createYoutubeDl } from 'youtube-dl-exec'; 
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
-
-// Set the path to the ffmpeg binary for fluent-ffmpeg
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
-} else {
-  console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
-}
 
 // Define the path to the locally bundled yt-dlp binary
 const ytDlpBinaryPath = path.join(process.cwd(), 'server', 'bin', 'yt-dlp.exe');
 // Create a youtube-dl-exec instance that uses our custom binary
 const youtubedl = createYoutubeDl(ytDlpBinaryPath);
+
+// Define the directory where ffmpeg and ffprobe executables should reside
+const ffmpegAndFfprobeBinDir = path.join(process.cwd(), 'server', 'bin');
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
@@ -46,6 +40,20 @@ export default defineEventHandler(async (event) => {
         statusMessage: `yt-dlp executable not found at ${ytDlpBinaryPath}. Please download it from https://github.com/yt-dlp/yt-dlp/releases (get the 'yt-dlp.exe' for Windows) and place it in the 'server/bin/' folder.`,
       });
     }
+
+    // Ensure ffmpeg and ffprobe binaries exist in the designated directory
+    // This is a basic check. The actual copying is expected to be done manually or via a separate script.
+    try {
+      await fs.access(path.join(ffmpegAndFfprobeBinDir, 'ffmpeg.exe')); // Assuming Windows executables
+      await fs.access(path.join(ffmpegAndFfprobeBinDir, 'ffprobe.exe')); // Assuming Windows executables
+      console.log(`ffmpeg and ffprobe binaries found in: ${ffmpegAndFfprobeBinDir}`);
+    } catch (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: `ffmpeg or ffprobe executables not found in ${ffmpegAndFfprobeBinDir}. Please ensure they are copied there as per instructions.`,
+      });
+    }
+
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
@@ -131,7 +139,7 @@ export default defineEventHandler(async (event) => {
             output: localFilepathFull,
             noWarnings: true,
             preferFreeFormats: true,
-            ffmpegLocation: ffmpegStatic, // Corrected: provide direct path to executable
+            ffmpegLocation: ffmpegAndFfprobeBinDir, // Corrected: provide directory path to ffmpeg/ffprobe
             format: 'bestaudio', // Prioritize best audio quality
           });
 
