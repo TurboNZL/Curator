@@ -5,17 +5,26 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
 import { eq } from 'drizzle-orm';
-import youtubeDl from 'youtube-dl-exec'; // Import the default export (the function itself)
+import * as YoutubeDlModule from 'youtube-dl-exec'; // Import the entire module object
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
 
-// Set the path to the ffmpeg binary
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
-} else {
-  console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
+// Safely extract the YoutubeDlWrap class constructor from the imported module.
+// This handles cases where the actual constructor might be the module itself,
+// or nested under a 'default' property (common in CJS/ESM interop).
+const YoutubeDlWrap: typeof YoutubeDlModule.default = 
+    (typeof YoutubeDlModule === 'function' && 'download' in YoutubeDlModule) 
+    ? YoutubeDlModule as typeof YoutubeDlModule.default
+    : (YoutubeDlModule as any).default;
+
+// Perform a runtime check to ensure we got a valid constructor
+if (typeof YoutubeDlWrap !== 'function') {
+  throw new Error("Failed to correctly import YoutubeDlWrap class constructor. The 'youtube-dl-exec' package might be misconfigured or incompatible with this environment.");
 }
+
+// Create an instance of YoutubeDlWrap for executing commands
+const ytdl = new YoutubeDlWrap();
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
@@ -31,8 +40,8 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // 1. Fix: Call youtubeDl.download() directly on the imported function
-    await youtubeDl.download(); 
+    // Ensure yt-dlp binary is downloaded and available by calling the static method on the correctly extracted class
+    await YoutubeDlWrap.download(); 
     console.log("yt-dlp binary ensured.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
@@ -40,8 +49,8 @@ export default defineEventHandler(async (event) => {
 
     await fs.mkdir(musicUploadDir, { recursive: true });
 
-    // 2. Get info about the URL using yt-dlp by calling the youtubeDl function directly
-    const info: any = await youtubeDl(url, { 
+    // 1. Get info about the URL using yt-dlp via the instance's exec method
+    const info: any = await ytdl.exec(url, { 
       dumpSingleJson: true,
       noWarnings: true,
       preferFreeFormats: true,
@@ -63,7 +72,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: "No video entries found for the given URL. Please check the URL and try again." });
     }
 
-    // 3. Find or create artist
+    // 2. Find or create artist
     console.log(`Finding or creating artist: ${albumArtistName}`);
     let artistId: string;
     const existingArtist = await db.query.artists.findFirst({
@@ -82,7 +91,7 @@ export default defineEventHandler(async (event) => {
       console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
     }
 
-    // 4. Create Album
+    // 3. Create Album
     console.log(`Creating album: ${albumTitle}`);
     const albumId = uuidv4();
     await db.insert(albums).values({
@@ -95,7 +104,7 @@ export default defineEventHandler(async (event) => {
     });
     console.log(`Album created with ID: ${albumId}`);
 
-    // 5. Process each track
+    // 4. Process each track
     const results = [];
     let firstTrackCover = null;
 
@@ -115,11 +124,11 @@ export default defineEventHandler(async (event) => {
       const localFilepathFull = path.join(musicUploadDir, localFilename);
       const relativeLocalFilePath = `/uploads/music/${localFilename}`;
 
-      // Download audio using yt-dlp and convert to MP3 with ffmpeg by calling the youtubeDl function directly
+      // Download audio using yt-dlp and convert to MP3 with ffmpeg via the instance's exec method
       try {
         await new Promise<void>((resolve, reject) => {
           // Fix: Capture the ChildProcess object without awaiting, then attach listeners
-          const childProcess = youtubeDl(youtubeMusicUrl, { 
+          const childProcess = ytdl.exec(youtubeMusicUrl, { 
             extractAudio: true,
             audioFormat: 'mp3',
             output: localFilepathFull,
