@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, FileAudio, Check, Trash2, GripVertical, ArrowUp, ArrowDown, Plus, Layers } from 'lucide-react';
+import { Edit2, FileAudio, Check, Trash2, GripVertical, ArrowUp, ArrowDown, Plus, Layers, Link as LinkIcon, Edit3 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
@@ -12,7 +12,8 @@ import { Release } from '@/types/music';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
+import { RelationalBioModal } from './RelationalBioModal';
+import { Card } from '../ui/card';
 
 interface EditReleaseModalProps {
   release: Release;
@@ -22,9 +23,13 @@ interface EditReleaseModalProps {
 
 export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModalProps) => {
   const [open, setOpen] = useState(false);
-  const { updateRelease, tracks } = useMusicStore();
+  const { updateRelease, tracks, groups, deleteGroup } = useMusicStore();
   const albumTracks = tracks.filter(t => t.albumIds.includes(albumId));
   
+  const releaseGroups = groups.filter(g =>
+    g.members?.some(m => m.entityId === release.id && m.entityType === 'release')
+  );
+
   const [formData, setFormData] = useState({
     title: release.title,
     coverImage: release.coverImage || '',
@@ -64,15 +69,6 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
     }));
   };
 
-  const moveTrack = (index: number, direction: 'up' | 'down') => {
-    const newIds = [...formData.selectedTrackIds];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newIds.length) return;
-    
-    [newIds[index], newIds[targetIndex]] = [newIds[targetIndex], newIds[index]];
-    setFormData({ ...formData, selectedTrackIds: newIds });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Release title is required");
@@ -110,7 +106,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational</TabsTrigger>
+              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
 
@@ -193,8 +189,48 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
               </div>
             </TabsContent>
 
-            <TabsContent value="relational" className="p-6 space-y-6 mt-0">
-              <RelationalBioSection entityType="release" entityId={release.id} />
+            <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
+                <RelationalBioModal initialEntity={{ type: 'release', id: release.id, label: release.title }}>
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
+                    <Plus size={12} className="mr-1" /> New Bio
+                  </Button>
+                </RelationalBioModal>
+              </div>
+              <div className="space-y-3">
+                {releaseGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/50 border-zinc-800 p-4 flex items-center justify-between group/item">
+                    <div className="flex items-center gap-3">
+                      <LinkIcon size={14} className="text-blue-500" />
+                      <span className="text-xs font-bold text-white">{group.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      <RelationalBioModal groupId={group.id}>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
+                          <Edit3 size={14} />
+                        </Button>
+                      </RelationalBioModal>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-500 hover:text-red-500"
+                        onClick={() => {
+                          if (confirm("Delete this relational bio?")) {
+                            deleteGroup(group.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                {releaseGroups.length === 0 && (
+                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked.</p>
+                )}
+              </div>
             </TabsContent>
 
             <div className="p-6 border-t border-zinc-900">

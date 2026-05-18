@@ -19,7 +19,7 @@ export const db = drizzle(client, { schema });
 export async function initDb() {
   const tables = [
     `CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, theme TEXT NOT NULL DEFAULT 'dark', accent_color TEXT NOT NULL DEFAULT '#3b82f6', playback_mode TEXT NOT NULL DEFAULT 'local', settings TEXT, playback_rules TEXT)`,
-    `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT, bio TEXT, groups TEXT)`,
+    `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT, groups TEXT)`,
     `CREATE TABLE IF NOT EXISTS eras (id TEXT PRIMARY KEY, name TEXT NOT NULL, artist_id TEXT NOT NULL, description TEXT)`,
     `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, era_id TEXT, covers TEXT, default_release_id TEXT, pending_files TEXT)`,
 
@@ -33,7 +33,6 @@ export async function initDb() {
     `CREATE TABLE IF NOT EXISTS timeline (id TEXT PRIMARY KEY, type TEXT NOT NULL, timestamp INTEGER NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, entity_id TEXT)`,
     `CREATE TABLE IF NOT EXISTS playback_logs (id TEXT PRIMARY KEY, track_id TEXT NOT NULL, timestamp INTEGER NOT NULL, duration INTEGER, source_type TEXT, source_id TEXT, is_skip INTEGER NOT NULL DEFAULT 0)`,
     `CREATE TABLE IF NOT EXISTS votes (id TEXT PRIMARY KEY, winner_id TEXT, loser_id TEXT, track_a_id TEXT NOT NULL, track_b_id TEXT NOT NULL, is_equal INTEGER NOT NULL DEFAULT 0, timestamp INTEGER NOT NULL)`,
-    `CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, label TEXT, content TEXT NOT NULL, is_linked INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS groups (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, label TEXT, type TEXT NOT NULL DEFAULT 'thematic', is_artist_only INTEGER NOT NULL DEFAULT 0)`,
     `CREATE TABLE IF NOT EXISTS group_members (group_id TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, PRIMARY KEY(group_id, entity_type, entity_id))`
 

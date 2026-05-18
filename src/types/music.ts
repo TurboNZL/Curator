@@ -24,7 +24,6 @@ export interface Artist {
   id: string;
   name: string;
   image?: string;
-  bio?: string;
   eras: Era[];
   groups: string[]; // IDs of other artists/collectives
 }
@@ -110,16 +109,6 @@ export interface TimelineEntry {
   title: string;
   description: string;
   entityId?: string;
-}
-
-export interface Note {
-  id: string;
-  entityType: 'artist' | 'album' | 'track';
-  entityId: string;
-  label?: string;
-  content: string;
-  isLinked: boolean;
-  createdAt: Date;
 }
 
 export interface Group {

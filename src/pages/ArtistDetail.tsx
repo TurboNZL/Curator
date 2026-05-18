@@ -2,18 +2,19 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Music2, Calendar, Share2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers } from 'lucide-react';
+import { Music2, Calendar, Share2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateEraModal } from '@/components/modals/CreateEraModal';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
 import { Rating } from '@/components/ui/Rating';
+import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 
 const ArtistDetail = () => {
 
   const { id } = useParams();
   const navigate = useNavigate();
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteGroup } = useMusicStore();
 
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
@@ -102,43 +103,6 @@ const ArtistDetail = () => {
         </div>
 
         <div className="space-y-8">
-          {artistGroups.length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
-                <LinkIcon size={14} className="text-blue-500" />
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {artistGroups.map(group => (
-                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
-                        {group.name}
-                      </h3>
-                      {group.isArtistOnly && <Badge variant="outline" className="text-[8px] border-zinc-800 text-zinc-500">Artist Only</Badge>}
-                    </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
-                        <Link
-                          key={i}
-                          to={`/${member.entityType}s/${member.entityId}`}
-                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors flex items-center gap-1.5"
-                        >
-                          {member.entityType === 'artist' && <User size={10} />}
-                          {member.entityType === 'album' && <Disc size={10} />}
-                          {member.entityType === 'track' && <Music size={10} />}
-                          {member.entityType === 'release' && <Layers size={10} />}
-                          {member.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          )}
-
           <section>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={14} className="text-blue-500" />
@@ -165,9 +129,69 @@ const ArtistDetail = () => {
             </div>
           </section>
 
-          <section>
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Biography</h2>
-            <p className="text-sm text-zinc-400 leading-relaxed italic">{artist.bio ? `"${artist.bio}"` : "No biography provided."}</p>
+          <section className="space-y-6">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+              <div className="flex items-center gap-2">
+                <LinkIcon size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
+              </div>
+              <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white">
+                  <Plus size={14} />
+                </Button>
+              </RelationalBioModal>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {artistGroups.length === 0 ? (
+                <p className="text-xs text-zinc-600 italic">No relational bios for this artist.</p>
+              ) : (
+                artistGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4 group/bio">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                        {group.name}
+                      </h3>
+                      <div className="flex items-center gap-1 opacity-0 group-hover/bio:opacity-100 transition-opacity">
+                        <RelationalBioModal groupId={group.id}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-blue-400">
+                            <Edit2 size={12} />
+                          </Button>
+                        </RelationalBioModal>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-zinc-500 hover:text-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Delete this relational bio?")) {
+                              deleteGroup(group.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                        <Link
+                          key={i}
+                          to={`/${member.entityType}s/${member.entityId}`}
+                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors flex items-center gap-1.5"
+                        >
+                          {member.entityType === 'artist' && <User size={10} />}
+                          {member.entityType === 'album' && <Disc size={10} />}
+                          {member.entityType === 'track' && <Music size={10} />}
+                          {member.entityType === 'release' && <Layers size={10} />}
+                          {member.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
           </section>
         </div>
       </div>

@@ -76,7 +76,7 @@ export const Rating = ({ trackId, balanced, unbalanced, comparisons = 0, classNa
                 "font-black tracking-tighter",
                 size === 'sm' ? "text-xs" : size === 'md' ? "text-lg" : "text-3xl"
               )}>
-                {primaryRating !== undefined ? primaryRating.toFixed(1) : '—'}
+                {primaryRating !== undefined && primaryRating !== null ? primaryRating.toFixed(1) : '?'}
               </span>
             </div>
             <div className="flex items-center gap-0.5 opacity-40 group-hover/rating:opacity-100 transition-opacity">
@@ -85,7 +85,7 @@ export const Rating = ({ trackId, balanced, unbalanced, comparisons = 0, classNa
                 "font-bold tracking-tighter",
                 size === 'sm' ? "text-[10px]" : size === 'md' ? "text-xs" : "text-sm"
               )}>
-                {secondaryRating !== undefined ? secondaryRating.toFixed(1) : '—'}
+                {secondaryRating !== undefined && secondaryRating !== null ? secondaryRating.toFixed(1) : '?'}
               </span>
               <button 
                 onClick={handleQuickEdit}

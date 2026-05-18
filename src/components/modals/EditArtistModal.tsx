@@ -3,25 +3,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, User, Trash2 } from 'lucide-react';
+import { Edit2, User, Trash2, Plus, Link as LinkIcon, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Artist } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { NotesSection } from '@/components/ui/NotesSection';
-import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
+import { RelationalBioModal } from './RelationalBioModal';
+import { Card } from '../ui/card';
 
 export const EditArtistModal = ({ artist, children }: { artist: Artist, children?: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const { updateArtist, deleteArtist, notes } = useMusicStore();
-  const artistNotes = notes.filter(n => n.entityType === 'artist' && n.entityId === artist.id);
+  const { updateArtist, deleteArtist, groups, deleteGroup } = useMusicStore();
   
+  const artistGroups = groups.filter(g =>
+    g.members?.some(m => m.entityId === artist.id && m.entityType === 'artist')
+  );
+
   const [formData, setFormData] = useState({
     name: artist.name,
     image: artist.image || '',
-    bio: artist.bio || ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +32,6 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
     await updateArtist(artist.id, {
       name: formData.name,
       image: formData.image || undefined,
-      bio: formData.bio || undefined
     });
 
     toast.success(`Updated ${formData.name}`);
@@ -64,8 +64,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="notes" className="text-[10px] font-black uppercase tracking-widest">Notes</TabsTrigger>
-              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational</TabsTrigger>
+              <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
 
@@ -87,23 +86,50 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
                   className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Short Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
-                />
+            </TabsContent>
+
+            <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
+                <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }}>
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
+                    <Plus size={12} className="mr-1" /> New Bio
+                  </Button>
+                </RelationalBioModal>
               </div>
-            </TabsContent>
-
-            <TabsContent value="notes" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
-              <NotesSection entityType="artist" entityId={artist.id} />
-            </TabsContent>
-
-            <TabsContent value="relational" className="p-6 space-y-6 mt-0">
-              <RelationalBioSection entityType="artist" entityId={artist.id} />
+              <div className="space-y-3">
+                {artistGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/50 border-zinc-800 p-4 flex items-center justify-between group/item">
+                    <div className="flex items-center gap-3">
+                      <LinkIcon size={14} className="text-blue-500" />
+                      <span className="text-xs font-bold text-white">{group.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      <RelationalBioModal groupId={group.id}>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
+                          <Edit3 size={14} />
+                        </Button>
+                      </RelationalBioModal>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-zinc-500 hover:text-red-500"
+                        onClick={() => {
+                          if (confirm("Delete this relational bio?")) {
+                            deleteGroup(group.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+                {artistGroups.length === 0 && (
+                  <p className="text-xs text-zinc-600 italic text-center py-8">No relational bios linked.</p>
+                )}
+              </div>
             </TabsContent>
 
             <div className="p-6 border-t border-zinc-900 flex items-center gap-4">

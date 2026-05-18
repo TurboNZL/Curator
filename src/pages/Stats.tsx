@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 const Stats = () => {
   const { tracks, playbackLogs, fetchData } = useMusicStore();
@@ -26,26 +28,6 @@ const Stats = () => {
     return trackStats.sort((a, b) => b.fullPlays - a.fullPlays).slice(0, 10);
   }, [tracks, playbackLogs]);
 
-  const ratingDistribution = useMemo(() => {
-    const ranges = [
-      { range: '0-2', count: 0 },
-      { range: '2-4', count: 0 },
-      { range: '4-6', count: 0 },
-      { range: '6-8', count: 0 },
-      { range: '8-10', count: 0 },
-      { range: 'Unrated', count: 0 },
-    ];
-    tracks.forEach(t => {
-      if (t.rating === undefined) ranges[5].count++;
-      else if (t.rating < 2) ranges[0].count++;
-      else if (t.rating < 4) ranges[1].count++;
-      else if (t.rating < 6) ranges[2].count++;
-      else if (t.rating < 8) ranges[3].count++;
-      else ranges[4].count++;
-    });
-    return ranges;
-  }, [tracks]);
-
   const totalSeconds = playbackLogs.reduce((a, b) => a + (b.duration || 0), 0);
   const formatTotalTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -53,27 +35,33 @@ const Stats = () => {
     return `${h}h ${m}m`;
   };
 
+  const skipRate = useMemo(() => {
+    if (playbackLogs.length === 0) return '0%';
+    const skips = playbackLogs.filter(l => l.isSkip).length;
+    return `${((skips / playbackLogs.length) * 100).toFixed(1)}%`;
+  }, [playbackLogs]);
+
   return (
     <div className="space-y-8 pb-20">
       <div>
-        <h1 className="text-3xl font-black tracking-tight text-white uppercase">Curation Analytics</h1>
-        <p className="text-zinc-500 text-sm mt-1">Deep insights into your listening habits and library health.</p>
+        <h1 className="text-3xl font-black tracking-tight text-white uppercase">Playback Analytics</h1>
+        <p className="text-zinc-500 text-sm mt-1">Insights into your listening patterns and engagement.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard icon={Play} label="Total Plays" value={playbackLogs.length.toString()} color="text-blue-500" />
-        <StatCard icon={TrendingUp} label="Avg. Rating" value={(tracks.filter(t => t.rating !== undefined).reduce((a, b) => a + (b.rating || 0), 0) / (tracks.filter(t => t.rating !== undefined).length || 1)).toFixed(2)} color="text-yellow-500" />
         <StatCard icon={Clock} label="Time Listened" value={formatTotalTime(totalSeconds)} color="text-emerald-500" />
-        <StatCard icon={Activity} label="Library Size" value={tracks.length.toString()} color="text-purple-500" />
+        <StatCard icon={SkipForward} label="Skip Rate" value={skipRate} color="text-red-500" />
+        <StatCard icon={Activity} label="Active Tracks" value={new Set(playbackLogs.map(l => l.trackId)).size.toString()} color="text-purple-500" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="bg-zinc-900/50 border-zinc-800 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2 bg-zinc-900/50 border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-6">
             <BarChart3 size={16} className="text-blue-500" />
             <h3 className="text-xs font-black uppercase tracking-widest text-white">Top Tracks (Full vs Partial)</h3>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topTracks} layout="vertical" margin={{ left: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
@@ -99,31 +87,22 @@ const Stats = () => {
 
         <Card className="bg-zinc-900/50 border-zinc-800 p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Activity size={16} className="text-yellow-500" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-white">Rating Distribution</h3>
+            <History size={16} className="text-zinc-500" />
+            <h3 className="text-xs font-black uppercase tracking-widest text-white">Recent Activity</h3>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ratingDistribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                <XAxis 
-                  dataKey="range" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 'bold' }} 
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
-                <Tooltip 
-                  cursor={{ fill: '#18181b' }}
-                  contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
-                />
-                <Bar dataKey="count" fill="#eab308" radius={[4, 4, 0, 0]} barSize={40}>
-                  {ratingDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.range === 'Unrated' ? '#3f3f46' : '#eab308'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="space-y-4">
+            {playbackLogs.slice(0, 10).map((log, i) => {
+              const track = tracks.find(t => t.id === log.trackId);
+              return (
+                <div key={i} className="flex items-center justify-between group">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate group-hover:text-blue-400 transition-colors">{track?.title || 'Unknown Track'}</p>
+                    <p className="text-[10px] text-zinc-500 font-medium">{format(new Date(log.timestamp), 'MMM d, HH:mm')}</p>
+                  </div>
+                  {log.isSkip && <Badge variant="outline" className="text-[8px] border-red-900/50 text-red-500 bg-red-500/5">Skip</Badge>}
+                </div>
+              );
+            })}
           </div>
         </Card>
       </div>

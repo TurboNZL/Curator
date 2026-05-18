@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Note, Group, ReleaseType, PlaybackRule } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule } from '../types/music';
+import { toast } from 'sonner';
 
 interface MusicState {
   activeProfile: Profile;
@@ -8,7 +9,6 @@ interface MusicState {
   tracks: Track[];
   releases: Release[];
   playlists: Playlist[];
-  notes: Note[];
   groups: (Group & { members?: { entityType: string, entityId: string, label: string }[] })[];
   releaseTypes: ReleaseType[];
   timeline: TimelineEntry[];
@@ -64,10 +64,6 @@ interface MusicState {
   addReleaseType: (name: string) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
   
-  addNote: (note: Omit<Note, 'id' | 'createdAt'>) => Promise<void>;
-  updateNote: (id: string, data: Partial<Note>) => Promise<void>;
-  deleteNote: (id: string) => Promise<void>;
-  
   addGroup: (group: Omit<Group, 'id'> & { members?: { entityType: string, entityId: string }[] }) => Promise<void>;
   updateGroup: (id: string, data: Partial<Group>) => Promise<void>;
   deleteGroup: (id: string) => Promise<void>;
@@ -98,7 +94,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   tracks: [],
   releases: [],
   playlists: [],
-  notes: [],
   groups: [],
   releaseTypes: [],
   timeline: [],
@@ -114,7 +109,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   fetchData: async () => {
     set({ isLoading: true });
     try {
-      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, notes, groups, releaseTypes] = await Promise.all([
+      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, groups, releaseTypes] = await Promise.all([
         fetch('/api/artists').then(res => res.json()),
         fetch('/api/albums').then(res => res.json()),
         fetch('/api/tracks').then(res => res.json()),
@@ -123,7 +118,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         fetch('/api/playlists').then(res => res.json()).catch(() => []),
         fetch('/api/playback-stats').then(res => res.json()).catch(() => []),
         fetch('/api/profiles').then(res => res.json()).catch(() => []),
-        fetch('/api/notes').then(res => res.json()).catch(() => []),
         fetch('/api/groups').then(res => res.json()).catch(() => []),
         fetch('/api/release-types').then(res => res.json()).catch(() => []),
       ]);
@@ -153,7 +147,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         })),
         releases,
         playlists,
-        notes: notes.map((n: any) => ({ ...n, createdAt: new Date(n.createdAt) })),
         groups: groups.map((g: any) => ({
           ...g,
           isArtistOnly: !!g.isArtistOnly,
@@ -176,18 +169,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
     if (context) {
       if (context.type === 'album' || context.type === 'playlist') {
-        // If playing from album/playlist, set active queue to tracks below this one
         const allTracks = context.tracks || [];
         const index = allTracks.indexOf(trackId || '');
         newActiveQueue = index !== -1 ? allTracks.slice(index + 1) : [];
       }
     }
 
-    // Back-to-back rules
     if (trackId) {
       const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
       if (rule) {
-        // Add followup to user queue if not already there
         if (!state.userQueue.includes(rule.trackBId)) {
           set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
         }
@@ -209,16 +199,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const state = get();
     const { activeQueue, userQueue, currentTrackId, activeProfile } = state;
     
-    // Log partial playback if skipping
-    // Note: We don't have easy access to current time here,
-    // but we can assume if nextTrack is called manually, it's a skip.
-    // However, nextTrack is also called on end.
-    // Let's handle logging in the component instead.
-
-    // Check playback rules for current track
     const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
     if (rule) {
-      // If there's a rule, trackB is next
       set({ currentTrackId: rule.trackBId, isPlaying: true });
       return;
     }
@@ -242,10 +224,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
-  previousTrack: () => {
-    // Simple implementation: just restart current track or do nothing for now
-    // Real implementation would need a history stack
-  },
+  previousTrack: () => {},
 
   logPlayback: async (trackId, duration, source, isSkip) => {
     await fetch('/api/playback', {
@@ -274,20 +253,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const state = get();
     const shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
     
-    // Apply shuffle rules
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
     for (const rule of rules) {
       const indexB = shuffled.indexOf(rule.trackBId);
       if (indexB !== -1) {
-        // Remove B
         shuffled.splice(indexB, 1);
-        // Find A or insert A at indexB
         const indexA = shuffled.indexOf(rule.trackAId);
         if (indexA !== -1) {
-          // Move B after A
           shuffled.splice(indexA + 1, 0, rule.trackBId);
         } else {
-          // Replace B with A and add B after
           shuffled.splice(indexB, 0, rule.trackAId, rule.trackBId);
         }
       }
@@ -300,7 +274,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const state = get();
     const shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
     
-    // Apply shuffle rules
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
     for (const rule of rules) {
       const indexB = shuffled.indexOf(rule.trackBId);
@@ -491,30 +464,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }));
   },
 
-  addNote: async (noteData) => {
-    const res = await fetch('/api/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(noteData)
-    });
-    const newNote = await res.json();
-    set(state => ({ notes: [...state.notes, { ...newNote, createdAt: new Date(newNote.createdAt) }] }));
-  },
-
-  updateNote: async (id, data) => {
-    await fetch(`/api/notes/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    await get().fetchData();
-  },
-
-  deleteNote: async (id) => {
-    await fetch(`/api/notes/${id}`, { method: 'DELETE' });
-    set(state => ({ notes: state.notes.filter(n => n.id !== id) }));
-  },
-
   addGroup: async (groupData) => {
     const res = await fetch('/api/groups', {
       method: 'POST',
@@ -545,7 +494,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   addGroupMember: async (groupId, entityType, entityId) => {
-    console.log('Store: addGroupMember', { groupId, entityType, entityId });
     await fetch(`/api/groups/${groupId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -602,6 +550,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
-    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], notes: [], groups: [] });
+    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], groups: [] });
   }
 }));

@@ -205,14 +205,14 @@ const Cleanup = () => {
                 className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2"
                 onClick={() => handleVote(undefined, true)}
               >
-                <Equal size={14} /> Equal / Skip
+                <Equal size={14} /> Equal
               </Button>
               <Button 
                 variant="ghost" 
                 className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2"
                 onClick={pickNewPair}
               >
-                <SkipForward size={14} /> New Pair
+                <SkipForward size={14} /> Skip Pairing
               </Button>
             </div>
           </div>

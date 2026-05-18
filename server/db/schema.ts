@@ -14,7 +14,6 @@ export const artists = sqliteTable('artists', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   image: text('image'),
-  bio: text('bio'),
   groups: text('groups'), // JSON string array
 });
 
@@ -78,16 +77,6 @@ export const tracks = sqliteTable('tracks', {
   key: text('key'),
   memories: integer('memories').notNull().default(0),
   queueRules: text('queue_rules'), // JSON: { nextTrackId?: string, forbiddenStandalone?: boolean }
-});
-
-export const notes = sqliteTable('notes', {
-  id: text('id').primaryKey(),
-  entityType: text('entity_type').notNull(), // 'artist', 'album', 'track'
-  entityId: text('entity_id').notNull(),
-  label: text('label'),
-  content: text('content').notNull(),
-  isLinked: integer('is_linked', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const groups = sqliteTable('groups', {

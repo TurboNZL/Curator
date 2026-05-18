@@ -1,4 +1,4 @@
-import { defineHandler, getMethod } from "nitro";
+import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
 import { groups, groupMembers } from '../../db/schema';
@@ -8,7 +8,7 @@ export default defineHandler(async (event) => {
   const id = event.context.params?.id;
   if (!id) return { error: 'Missing ID' };
 
-  const method = getMethod(event);
+  const method = event.method;
   console.log(`Group route hit: ${method} ${id}`);
 
   if (method === 'PUT') {
@@ -17,6 +17,8 @@ export default defineHandler(async (event) => {
       .set({
         name: body.name,
         description: body.description,
+        label: body.label,
+        type: body.type,
         isArtistOnly: body.isArtistOnly ? 1 : 0,
       })
       .where(eq(groups.id, id));

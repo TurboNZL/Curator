@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -17,12 +17,11 @@ import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-import { RelationalBioSection } from '@/components/ui/RelationalBioSection';
+import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 
 const AlbumDetail = () => {
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, deleteGroup } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
@@ -124,38 +123,6 @@ const AlbumDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pt-8">
         <div className="lg:col-span-3 space-y-8">
-          {albumGroups.length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
-                <Layers size={14} className="text-blue-500" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Relational Bios</h2>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {albumGroups.map(group => (
-                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
-                        {group.label || group.name}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
-                        <Link
-                          key={i}
-                          to={`/${member.entityType}s/${member.entityId}`}
-                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
-                        >
-                          {member.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          )}
-
           <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
               <ListMusic size={14} /> {showAllTracks ? 'All Project Tracks' : 'Tracklist'}
@@ -220,16 +187,16 @@ const AlbumDetail = () => {
                 </h3>
                 <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     className={cn(
-                      "h-6 px-2 text-[8px] font-black uppercase tracking-widest gap-1.5",
-                      showAllTracks ? "bg-blue-600 text-white border-blue-500" : "border-zinc-800 text-zinc-500"
+                      "h-6 w-6",
+                      showAllTracks ? "text-blue-500" : "text-zinc-500"
                     )}
                     onClick={() => setShowAllTracks(!showAllTracks)}
+                    title={showAllTracks ? "Show Release Tracks" : "Show All Tracks"}
                   >
-                    <List size={10} />
-                    {showAllTracks ? "All" : "Show All"}
+                    <List size={12} />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -291,6 +258,67 @@ const AlbumDetail = () => {
               </div>
             </div>
           </Card>
+
+          <section className="space-y-6">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+              <div className="flex items-center gap-2">
+                <LinkIcon size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Relational Bios</h2>
+              </div>
+              <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white">
+                  <Plus size={14} />
+                </Button>
+              </RelationalBioModal>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {albumGroups.length === 0 ? (
+                <p className="text-xs text-zinc-600 italic">No relational bios for this album.</p>
+              ) : (
+                albumGroups.map(group => (
+                  <Card key={group.id} className="bg-zinc-900/30 border-zinc-800 p-6 space-y-4 group/bio">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                        {group.name}
+                      </h3>
+                      <div className="flex items-center gap-1 opacity-0 group-hover/bio:opacity-100 transition-opacity">
+                        <RelationalBioModal groupId={group.id}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-blue-400">
+                            <Edit2 size={12} />
+                          </Button>
+                        </RelationalBioModal>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-zinc-500 hover:text-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Delete this relational bio?")) {
+                              deleteGroup(group.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{group.description}</p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {group.members?.filter(m => m.entityId !== id).map((member, i) => (
+                        <Link
+                          key={i}
+                          to={`/${member.entityType}s/${member.entityId}`}
+                          className="px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-500 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
+                        >
+                          {member.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>
