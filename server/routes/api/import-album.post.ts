@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
         statusCode: 500,
         statusMessage: `yt-dlp executable not found at ${ytDlpBinaryPath}. Please download it from https://github.com/yt-dlp/yt-dlp/releases (get the 'yt-dlp.exe' for Windows) and place it in the 'server/bin/' folder.`,
       });
-    });
+    }
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
     const musicUploadDir = path.join(uploadBaseDir, "music");
