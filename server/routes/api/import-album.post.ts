@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { db } from "../../db";
 import { albums, tracks, artists, albumTracks } from "../../db/schema";
 import { eq } from 'drizzle-orm';
-import youtubeDl from 'youtube-dl-exec'; // Correctly import the default export (the function itself)
+import youtubeDl from 'youtube-dl-exec'; // Import the default export (the function itself)
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import axios from 'axios';
@@ -16,8 +16,6 @@ if (ffmpegStatic) {
 } else {
   console.error("FFmpeg static path not found. Ensure ffmpeg-static is correctly installed.");
 }
-
-// Removed: const ytdl = new YoutubeDlWrap(); // This was the source of the "not a constructor" error.
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event) as { url: string };
@@ -33,9 +31,8 @@ export default defineEventHandler(async (event) => {
   try {
     console.log(`Starting import for URL: ${url}`);
     
-    // Ensure yt-dlp binary is downloaded and available by calling the static method on the imported function
-    // Using 'as any' here to bypass potential TypeScript inference issues for static properties.
-    await (youtubeDl as any).download(); 
+    // 1. Fix: Call youtubeDl.download() directly on the imported function
+    await youtubeDl.download(); 
     console.log("yt-dlp binary ensured.");
 
     const uploadBaseDir = path.join(process.cwd(), "public", "uploads");
@@ -43,7 +40,7 @@ export default defineEventHandler(async (event) => {
 
     await fs.mkdir(musicUploadDir, { recursive: true });
 
-    // 1. Get info about the URL using yt-dlp by calling the youtubeDl function directly
+    // 2. Get info about the URL using yt-dlp by calling the youtubeDl function directly
     const info: any = await youtubeDl(url, { 
       dumpSingleJson: true,
       noWarnings: true,
@@ -66,7 +63,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, statusMessage: "No video entries found for the given URL. Please check the URL and try again." });
     }
 
-    // 2. Find or create artist
+    // 3. Find or create artist
     console.log(`Finding or creating artist: ${albumArtistName}`);
     let artistId: string;
     const existingArtist = await db.query.artists.findFirst({
@@ -85,7 +82,7 @@ export default defineEventHandler(async (event) => {
       console.log(`Created new artist: ${albumArtistName} with ID ${artistId}`);
     }
 
-    // 3. Create Album
+    // 4. Create Album
     console.log(`Creating album: ${albumTitle}`);
     const albumId = uuidv4();
     await db.insert(albums).values({
@@ -98,7 +95,7 @@ export default defineEventHandler(async (event) => {
     });
     console.log(`Album created with ID: ${albumId}`);
 
-    // 4. Process each track
+    // 5. Process each track
     const results = [];
     let firstTrackCover = null;
 
@@ -121,7 +118,7 @@ export default defineEventHandler(async (event) => {
       // Download audio using yt-dlp and convert to MP3 with ffmpeg by calling the youtubeDl function directly
       try {
         await new Promise<void>((resolve, reject) => {
-          // Explicitly capture the ChildProcess object for chaining .on()
+          // Fix: Capture the ChildProcess object without awaiting, then attach listeners
           const childProcess = youtubeDl(youtubeMusicUrl, { 
             extractAudio: true,
             audioFormat: 'mp3',
@@ -155,7 +152,7 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // Save to DB
+      // 6. Save to DB
       console.log(`Saving track ${trackTitle} to database.`);
       await db.insert(tracks).values({
         id: trackId,
@@ -184,7 +181,7 @@ export default defineEventHandler(async (event) => {
       results.push({ id: trackId, title: trackTitle });
     }
 
-    // Update album with the first track's cover image if available
+    // 7. Update album with the first track's cover image if available
     if (firstTrackCover) {
       await db.update(albums)
         .set({ covers: JSON.stringify([firstTrackCover]) })
