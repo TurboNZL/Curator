@@ -5,6 +5,7 @@ import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History, Mus
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { PlaybackHistoryModal } from '@/components/modals/PlaybackHistoryModal';
 
 const Stats = () => {
   const { tracks, playbackLogs, fetchData, currentTrackId, isPlaying, currentProgress } = useMusicStore();
@@ -125,9 +126,12 @@ const Stats = () => {
         </Card>
 
         <Card className="bg-zinc-900/50 border-zinc-800 p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <History size={16} className="text-zinc-500" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-white">Recent Activity</h3>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <History size={16} className="text-zinc-500" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">Recent Activity</h3>
+            </div>
+            <PlaybackHistoryModal />
           </div>
           <div className="space-y-4">
             {playbackLogs.slice(0, 10).map((log, i) => {

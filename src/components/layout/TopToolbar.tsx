@@ -47,7 +47,7 @@ export const TopToolbar = () => {
           />
           <ToolbarTab
             icon={Download}
-            label="Import Album"
+            label="Import"
             onClick={() => setIsImportModalOpen(true)}
           />
         </div>

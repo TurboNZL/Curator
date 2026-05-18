@@ -65,12 +65,17 @@ export const BottomPlayer = () => {
     if (audioRef.current) {
       if (currentTrack?.localFilePath) {
         audioRef.current.src = currentTrack.localFilePath;
+        audioRef.current.currentTime = 0; // Reset progress to 0:00
+        setProgress(0);
+        setStoreProgress(0);
         if (isPlaying) audioRef.current.play();
       } else {
         audioRef.current.pause();
         audioRef.current.src = "";
         setProgress(0);
+        setStoreProgress(0);
         setDuration(0);
+        setStoreDuration(0);
       }
     }
   }, [currentTrackId]);

@@ -54,10 +54,10 @@ export const ImportAlbumModal: React.FC<ImportAlbumModalProps> = ({ isOpen, onCl
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
             <Download className="text-blue-500" size={20} />
-            Import Album
+            Import
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Enter a YouTube or Spotify URL to import the album into your catalog.
+            Enter a YouTube URL to import the album into your catalog.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

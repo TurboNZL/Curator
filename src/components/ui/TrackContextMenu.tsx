@@ -8,7 +8,8 @@ import {
   Disc,
   Plus,
   Minus,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ListMusic
 } from 'lucide-react';
 import {
   ContextMenu,
@@ -17,6 +18,9 @@ import {
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 import {
   DropdownMenu,
@@ -25,12 +29,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Track } from '@/types/music';
 import { toast } from 'sonner';
 import { useMusicStore } from '@/store/useMusicStore';
 import { useNavigate } from 'react-router-dom';
 import { RelationalBioModal } from '../modals/RelationalBioModal';
+import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
 
 interface TrackContextMenuProps {
   track: Track;
@@ -38,7 +46,7 @@ interface TrackContextMenuProps {
 }
 
 export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => {
-  const { addToUserQueue, incrementMemories, decrementMemories, albums, groups } = useMusicStore();
+  const { addToUserQueue, incrementMemories, decrementMemories, albums, groups, playlists, updatePlaylist } = useMusicStore();
   const navigate = useNavigate();
 
   const album = albums.find(al => track.albumIds.includes(al.id));
@@ -48,6 +56,23 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
     const Item = isContext ? ContextMenuItem : DropdownMenuItem;
     const Label = isContext ? ContextMenuLabel : DropdownMenuLabel;
     const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
+    const Sub = isContext ? ContextMenuSub : DropdownMenuSub;
+    const SubTrigger = isContext ? ContextMenuSubTrigger : DropdownMenuSubTrigger;
+    const SubContent = isContext ? ContextMenuSubContent : DropdownMenuSubContent;
+
+    const handleAddToPlaylist = async (playlistId: string) => {
+      const playlist = playlists.find(p => p.id === playlistId);
+      if (playlist) {
+        if (playlist.trackIds.includes(track.id)) {
+          toast.error("Track already in playlist");
+          return;
+        }
+        await updatePlaylist(playlistId, {
+          trackIds: [...playlist.trackIds, track.id]
+        });
+        toast.success(`Added to ${playlist.name}`);
+      }
+    };
 
     return (
       <>
@@ -65,6 +90,39 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
         >
           <ListPlus size={14} /> Add to Queue
         </Item>
+
+        <Sub>
+          <SubTrigger className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer">
+            <ListMusic size={14} /> Add to Playlist
+          </SubTrigger>
+          <SubContent className="bg-zinc-950 border-zinc-800 text-white w-48">
+            {playlists.length === 0 ? (
+              <div className="p-2 text-[10px] font-bold text-zinc-500 uppercase text-center">No playlists</div>
+            ) : (
+              playlists.map(p => (
+                <Item
+                  key={p.id}
+                  className="text-xs font-bold focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddToPlaylist(p.id);
+                  }}
+                >
+                  {p.name}
+                </Item>
+              ))
+            )}
+            <Separator className="bg-zinc-800" />
+            <CreatePlaylistModal>
+              <Item
+                className="text-xs font-bold gap-2 focus:bg-zinc-900 focus:text-emerald-400 cursor-pointer"
+                onSelect={(e) => e.preventDefault()}
+              >
+                <Plus size={14} /> New Playlist
+              </Item>
+            </CreatePlaylistModal>
+          </SubContent>
+        </Sub>
 
         <Separator className="bg-zinc-800" />
 

@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, createError } from "h3";
-import { exec } from "yt-dlp-exec";
+import pkg from "yt-dlp-exec";
+const { exec } = pkg;
 import path from "path";
 import fs from "fs";
 import axios from "axios";
@@ -68,6 +69,7 @@ export default defineEventHandler(async (event) => {
       title: albumTitle,
       artistId: artistId,
       artistIds: JSON.stringify([artistId]),
+      covers: JSON.stringify([]),
     });
 
     // 4. Process each track
@@ -86,15 +88,11 @@ export default defineEventHandler(async (event) => {
       await exec(entry.webpage_url || entry.url, {
         extractAudio: true,
         audioFormat: "mp3",
-        output: filePath.replace('.mp3', '.%(ext)s'), // yt-dlp adds extension
+        output: filePath.replace('.mp3', '.%(ext)s'),
       });
 
-      // yt-dlp might name it slightly differently if it's already mp3 or needs conversion
-      // We'll check for the file and rename if necessary
-      const actualPath = filePath; // Simplified for now, yt-dlp --audio-format mp3 usually works
-
       // 5. Add metadata (ID3 tags)
-      const tags = {
+      const tags: any = {
         title: trackTitle,
         artist: albumArtistName,
         album: albumTitle,
@@ -115,7 +113,9 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      nodeID3.write(tags, actualPath);
+      if (fs.existsSync(filePath)) {
+        nodeID3.write(tags, filePath);
+      }
 
       // 6. Save to DB
       await db.insert(tracks).values({
@@ -124,7 +124,7 @@ export default defineEventHandler(async (event) => {
         artistId: artistId,
         artistIds: JSON.stringify([artistId]),
         localFilePath: `/uploads/music/${fileName}`,
-        youtubeMusicUrl: entry.webpage_url,
+        youtubeMusicUrl: entry.webpage_url || entry.url,
       });
 
       await db.insert(albumTracks).values({

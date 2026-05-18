@@ -63,6 +63,7 @@ interface MusicState {
   decrementMemories: (id: string) => Promise<void>;
   
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<void>;
+  updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
   addRelease: (release: Omit<Release, 'id'>) => Promise<void>;
   updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
   addReleaseType: (name: string) => Promise<void>;
@@ -428,6 +429,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     });
     const newPlaylist = await res.json();
     set(state => ({ playlists: [...state.playlists, newPlaylist] }));
+  },
+
+  updatePlaylist: async (id, data) => {
+    await fetch(`/api/playlists/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    await get().fetchData();
   },
 
   addRelease: async (releaseData) => {

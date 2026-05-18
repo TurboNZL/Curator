@@ -22,6 +22,20 @@ export default defineHandler(async (event) => {
         isArtistOnly: body.isArtistOnly ? 1 : 0,
       })
       .where(eq(groups.id, id));
+
+    // Update members if provided
+    if (body.members && Array.isArray(body.members)) {
+      // Delete existing members
+      await db.delete(groupMembers).where(eq(groupMembers.groupId, id));
+      // Insert new members
+      for (const member of body.members) {
+        await db.insert(groupMembers).values({
+          groupId: id,
+          entityType: member.entityType,
+          entityId: member.entityId
+        });
+      }
+    }
     return { success: true };
   }
 

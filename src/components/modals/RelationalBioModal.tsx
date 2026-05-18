@@ -73,6 +73,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
         name: formData.name,
         description: formData.description,
         isArtistOnly: formData.isArtistOnly,
+        members: formData.members
       });
       toast.success("Relational bio updated");
     } else {

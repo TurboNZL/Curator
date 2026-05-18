@@ -44,15 +44,19 @@ export const Rating = ({ trackId, balanced, unbalanced, comparisons = 0, classNa
   const iconSize = size === 'sm' ? 12 : size === 'md' ? 16 : 24;
   const primaryRating = showUnbalancedFirst ? unbalanced : balanced;
   const secondaryRating = showUnbalancedFirst ? balanced : unbalanced;
+  
+  const isPrimaryUnrated = primaryRating === undefined || primaryRating === null || primaryRating === 0;
+  const isSecondaryUnrated = secondaryRating === undefined || secondaryRating === null || secondaryRating === 0;
+
   const primaryColor = showUnbalancedFirst ? 'text-yellow-500 fill-yellow-500' : 'text-blue-500 fill-blue-500';
   const secondaryColor = showUnbalancedFirst ? 'text-blue-500/50 fill-blue-500/50' : 'text-yellow-500/50 fill-yellow-500/50';
 
   if (isEditing) {
     return (
       <form onSubmit={saveEdit} className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-        <Input 
+        <Input
           autoFocus
-          className="h-6 w-12 text-[10px] p-1 bg-zinc-900 border-zinc-800" 
+          className="h-6 w-12 text-[10px] p-1 bg-zinc-900 border-zinc-800"
           value={editValue}
           onChange={e => setEditValue(e.target.value)}
         />
@@ -66,28 +70,30 @@ export const Rating = ({ trackId, balanced, unbalanced, comparisons = 0, classNa
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div 
+          <div
             className={cn("flex items-center gap-2 cursor-pointer group/rating", className)}
             onClick={togglePreference}
           >
             <div className="flex items-center gap-1">
-              <Star size={iconSize} className={primaryColor} />
+              <Star size={iconSize} className={cn(primaryColor, isPrimaryUnrated && "opacity-20 fill-none")} />
               <span className={cn(
                 "font-black tracking-tighter",
-                size === 'sm' ? "text-xs" : size === 'md' ? "text-lg" : "text-3xl"
+                size === 'sm' ? "text-xs" : size === 'md' ? "text-lg" : "text-3xl",
+                isPrimaryUnrated && "text-zinc-700"
               )}>
-                {primaryRating !== undefined && primaryRating !== null ? primaryRating.toFixed(1) : '?'}
+                {!isPrimaryUnrated ? primaryRating!.toFixed(1) : '?'}
               </span>
             </div>
             <div className="flex items-center gap-0.5 opacity-40 group-hover/rating:opacity-100 transition-opacity">
-              <Star size={iconSize * 0.7} className={secondaryColor} />
+              <Star size={iconSize * 0.7} className={cn(secondaryColor, isSecondaryUnrated && "opacity-20 fill-none")} />
               <span className={cn(
                 "font-bold tracking-tighter",
-                size === 'sm' ? "text-[10px]" : size === 'md' ? "text-xs" : "text-sm"
+                size === 'sm' ? "text-[10px]" : size === 'md' ? "text-xs" : "text-sm",
+                isSecondaryUnrated && "text-zinc-800"
               )}>
-                {secondaryRating !== undefined && secondaryRating !== null ? secondaryRating.toFixed(1) : '?'}
+                {!isSecondaryUnrated ? secondaryRating!.toFixed(1) : '?'}
               </span>
-              <button 
+              <button
                 onClick={handleQuickEdit}
                 className="ml-1 p-0.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white opacity-0 group-hover/rating:opacity-100 transition-opacity"
               >

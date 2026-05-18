@@ -117,20 +117,24 @@ const Tracks = () => {
               {sortedTracks.map((track, i) => {
                 const artist = artists.find(a => a.id === track.artistId);
                 const album = albums.find(al => track.albumIds.includes(al.id));
+                const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
                   <TrackContextMenu key={track.id} track={track}>
-                    <TableRow 
+                    <TableRow
                       className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                     >
                       <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <button 
-                            onClick={() => setCurrentTrack(track.id)}
-                            className="w-8 h-8 rounded bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-blue-400 hover:border-blue-500/50 transition-all"
-                          >
-                            <Play size={14} fill="currentColor" />
-                          </button>
+                          <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
+                            <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
+                            <button
+                              onClick={() => setCurrentTrack(track.id)}
+                              className="absolute inset-0 flex items-center justify-center text-zinc-500 hover:text-blue-400 transition-all"
+                            >
+                              <Play size={14} fill="currentColor" />
+                            </button>
+                          </div>
                           <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
                         </div>
                       </TableCell>
