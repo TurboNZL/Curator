@@ -38,6 +38,8 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
   });
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
+
 
   const onDragStart = (index: number) => {
     setDragIndex(index);
@@ -155,7 +157,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
                     <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tracklist Order</Label>
                     {albumTracks.length > 0 && (
                       <Button type="button" variant="ghost" size="sm" onClick={autofillTracks} className="h-6 text-[10px] font-black uppercase text-blue-400 hover:text-blue-300">
-                        <Plus size={12} className="mr-1" /> Autofill
+                        <Plus size={12} className="mr-1" /> <span>Autofill</span>
                       </Button>
                     )}
                   </div>
@@ -207,11 +209,10 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
             <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
-                <RelationalBioModal initialEntity={{ type: 'release', id: release.id, label: release.title }}>
-                  <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
-                    <Plus size={12} className="mr-1" /> New Bio
-                  </Button>
-                </RelationalBioModal>
+                {/* Modified RelationalBioModal usage */}
+                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => setIsRelationalBioModalOpen(true)}>
+                  <Plus size={12} className="mr-1" /> <span>New Bio</span>
+                </Button>
               </div>
               <div className="space-y-3">
                 {releaseGroups.map(group => (
@@ -221,7 +222,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
                       <span className="text-xs font-bold text-white">{group.name}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <RelationalBioModal groupId={group.id}>
+                      <RelationalBioModal groupId={group.id} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen}>
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
                           <Edit3 size={14} />
                         </Button>
@@ -255,6 +256,8 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
             </div>
           </form>
         </Tabs>
+        {/* Render controlled RelationalBioModal as a sibling */}
+        <RelationalBioModal initialEntity={{ type: 'release', id: release.id, label: release.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
       </DialogContent>
     </Dialog>
   );

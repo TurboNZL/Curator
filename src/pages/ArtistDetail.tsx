@@ -7,6 +7,7 @@ import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
 import { Rating } from '@/components/ui/Rating';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
+import { useState } from 'react'; // Import useState
 
 const ArtistDetail = () => {
   const { id } = useParams();
@@ -36,6 +37,8 @@ const ArtistDetail = () => {
   const totalArtistRelatedGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === id && m.entityType === 'artist')
   ).length;
+
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false); // Add state for modal
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -117,11 +120,10 @@ const ArtistDetail = () => {
                 <LinkIcon size={14} className="text-blue-500" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
               </div>
-              <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }}>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white">
-                  <Plus size={14} />
-                </Button>
-              </RelationalBioModal>
+              {/* Updated RelationalBioModal usage */}
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => setIsRelationalBioModalOpen(true)}>
+                <Plus size={14} />
+              </Button>
             </div>
             <div className="grid grid-cols-1 gap-4">
               {artistGroups.length === 0 ? (
@@ -156,6 +158,8 @@ const ArtistDetail = () => {
           </section>
         </div>
       </div>
+      {/* Render controlled RelationalBioModal as a sibling */}
+      <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
     </div>
   );
 };

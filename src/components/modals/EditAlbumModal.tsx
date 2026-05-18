@@ -38,6 +38,8 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     pendingFiles: album.pendingFiles || [],
     releaseDate: albumReleases.length > 0 ? albumReleases.sort((a,b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime())[0].releaseDate : '',
   });
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,11 +292,10 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
             <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
-                <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }}>
-                  <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
-                    <Plus size={12} className="mr-1" /> New Bio
-                  </Button>
-                </RelationalBioModal>
+                {/* Modified RelationalBioModal usage */}
+                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => setIsRelationalBioModalOpen(true)}>
+                  <Plus size={12} className="mr-1" /> New Bio
+                </Button>
               </div>
               <div className="space-y-3">
                 {albumGroups.map(group => (
@@ -304,7 +305,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
                       <span className="text-xs font-bold text-white">{group.name}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <RelationalBioModal groupId={group.id}>
+                      <RelationalBioModal groupId={group.id} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen}>
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
                           <Edit3 size={14} />
                         </Button>
@@ -346,6 +347,8 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
             </div>
           </form>
         </Tabs>
+        {/* Render controlled RelationalBioModal as a sibling */}
+        <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
       </DialogContent>
     </Dialog>
   );

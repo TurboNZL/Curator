@@ -6,7 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger, // Keep DialogTrigger for default case
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +21,16 @@ import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface RelationalBioModalProps {
-  children?: React.ReactElement; // Enforce single React element
+  children?: React.ReactElement; // Still accepts children for trigger
   initialEntity?: { type: string, id: string, label: string };
   groupId?: string; // If editing
+  open: boolean; // Add open prop
+  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
 }
 
-export const RelationalBioModal = ({ children, initialEntity, groupId }: RelationalBioModalProps) => {
+export const RelationalBioModal = ({ children, initialEntity, groupId, open, onOpenChange }: RelationalBioModalProps) => { // Destructure open, onOpenChange
   const { groups, artists, albums, tracks, addGroup, updateGroup, addGroupMember, removeGroupMember, fetchData } = useMusicStore();
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false); // Removed internal state, now controlled externally
 
   const group = groupId ? groups.find(g => g.id === groupId) : null;
 
@@ -41,7 +43,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
   });
 
   useEffect(() => {
-    if (open) {
+    if (open) { // Only run when modal opens or initialData changes
       if (group) {
         setFormData({
           name: group.name,
@@ -58,7 +60,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
         });
       }
     }
-  }, [open, group, initialEntity]);
+  }, [open, group, initialEntity]); // Added open to dependency array
 
   const entityOptions = [
     ...artists.map(a => ({ value: `artist:${a.id}`, label: `Artist: ${a.name}`, type: 'artist', name: a.name })),
@@ -92,7 +94,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
       });
       toast.success("Relational bio created");
     }
-    setOpen(false);
+    onOpenChange(false); // Close modal
     fetchData(); // Ensures local state is fully synchronized after add/update
   };
 
@@ -142,7 +144,7 @@ export const RelationalBioModal = ({ children, initialEntity, groupId }: Relatio
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
       <DialogTrigger asChild>
         {children ? children : <Button variant="outline">Relational Bio</Button>}
       </DialogTrigger>

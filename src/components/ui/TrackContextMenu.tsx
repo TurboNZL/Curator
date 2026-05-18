@@ -17,6 +17,9 @@ interface TrackContextMenuProps {
 
 export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, children }) => {
   const { setCurrentTrack, addToUserQueue, deleteTrack } = useMusicStore();
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = React.useState(false);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = React.useState(false);
+
 
   const handlePlayNext = () => {
     addToUserQueue(track.id);
@@ -49,30 +52,35 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, child
         <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{track.title}</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-zinc-800" />
         <DropdownMenuItem onClick={() => setCurrentTrack(track.id)} className="text-xs font-medium">
-          <Play size={14} className="mr-2" /> Play Now
+          <Play size={14} className="mr-2" /> <span>Play Now</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handlePlayNext} className="text-xs font-medium">
-          <Plus size={14} className="mr-2" /> Play Next
+          <Plus size={14} className="mr-2" /> <span>Play Next</span>
         </DropdownMenuItem>
-        <CreatePlaylistAddModal trackToAdd={track}>
-          <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-xs font-medium">
-             {/* The actual trigger will be inside the modal */}
-            <Plus size={14} className="mr-2" /> Add to Playlist
-          </DropdownMenuItem>
-        </CreatePlaylistAddModal>
+        
+        {/* Changed to open modal directly, making the DropdownMenuItem its trigger */}
+        <DropdownMenuItem onSelect={() => setIsCreatePlaylistAddModalOpen(true)} className="text-xs font-medium">
+          <Plus size={14} className="mr-2" /> <span>Add to Playlist</span>
+        </DropdownMenuItem>
+        
         <DropdownMenuSeparator className="bg-zinc-800" />
         <DropdownMenuItem onClick={handleShare} className="text-xs font-medium">
-          <Share size={14} className="mr-2" /> Share
+          <Share size={14} className="mr-2" /> <span>Share</span>
         </DropdownMenuItem>
-        <EditTrackModal track={track}>
-          <DropdownMenuItem onSelect={e => e.preventDefault()} className="text-xs font-medium">
-            <Edit2 size={14} className="mr-2" /> Edit Track
-          </DropdownMenuItem>
-        </EditTrackModal>
+        
+        {/* Changed to open modal directly, making the DropdownMenuItem its trigger */}
+        <DropdownMenuItem onSelect={() => setIsEditTrackModalOpen(true)} className="text-xs font-medium">
+          <Edit2 size={14} className="mr-2" /> <span>Edit Track</span>
+        </DropdownMenuItem>
+        
         <DropdownMenuItem onClick={handleDelete} className="text-xs font-medium text-red-500">
-          <Trash2 size={14} className="mr-2" /> Delete Track
+          <Trash2 size={14} className="mr-2" /> <span>Delete Track</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      {/* Modals are now siblings and controlled externally */}
+      <EditTrackModal track={track} open={isEditTrackModalOpen} onOpenChange={setIsEditTrackModalOpen} />
+      <CreatePlaylistAddModal trackToAdd={track} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
     </DropdownMenu>
   );
 };

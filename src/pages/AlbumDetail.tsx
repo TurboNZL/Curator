@@ -44,6 +44,10 @@ const AlbumDetail = () => {
     return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
   });
 
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false); // State for CreatePlaylistAddModal
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false); // State for RelationalBioModal
+
+
   useEffect(() => {
     sessionStorage.setItem(`album_sort_${id}`, JSON.stringify(sortConfig));
   }, [sortConfig, id]);
@@ -126,11 +130,10 @@ const AlbumDetail = () => {
                 Edit Project
               </Button>
             </EditAlbumModal>
-            <CreatePlaylistAddModal albumToAdd={album}>
-              <Button variant="outline" className="border-emerald-800 bg-emerald-900/50 hover:bg-emerald-900 text-emerald-400 rounded-full font-bold">
-                <Plus size={18} className="mr-2"/>Add to Playlist
-              </Button>
-            </CreatePlaylistAddModal>
+            {/* Updated CreatePlaylistAddModal usage */}
+            <Button variant="outline" className="border-emerald-800 bg-emerald-900/50 hover:bg-emerald-900 text-emerald-400 rounded-full font-bold" onClick={() => setIsCreatePlaylistAddModalOpen(true)}>
+              <Plus size={18} className="mr-2"/>Add to Playlist
+            </Button>
           </div>
         </div>
       </div>
@@ -225,10 +228,10 @@ const AlbumDetail = () => {
                     <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
                       <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sort By</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'date' })} className="text-xs font-bold gap-2">
-                        <Calendar size={14} /> Release Date
+                        <Calendar size={14} /> <span>Release Date</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'name' })} className="text-xs font-bold gap-2">
-                        <SortAsc size={14} /> Name
+                        <SortAsc size={14} /> <span>Name</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-zinc-800" />
                       <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
@@ -280,13 +283,12 @@ const AlbumDetail = () => {
             <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
               <div className="flex items-center gap-2">
                 <LinkIcon size={14} className="text-blue-500" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Relational Bios</h2>
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
               </div>
-              <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }}>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white">
-                  <Plus size={14} />
-                </Button>
-              </RelationalBioModal>
+              {/* Updated RelationalBioModal usage */}
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => setIsRelationalBioModalOpen(true)}>
+                <Plus size={14} />
+              </Button>
             </div>
             <div className="grid grid-cols-1 gap-4">
               {albumGroups.length === 0 ? (
@@ -322,6 +324,9 @@ const AlbumDetail = () => {
           </section>
         </div>
       </div>
+      {/* Render controlled modals as siblings */}
+      <CreatePlaylistAddModal albumToAdd={album} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
     </div>
   );
 };

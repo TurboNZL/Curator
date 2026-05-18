@@ -216,13 +216,13 @@ const Playlists = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
                   <DropdownMenuItem onClick={() => openEditModal(playlist)} className="text-xs font-medium">
-                    <Edit2 size={14} className="mr-2" /> Edit Playlist
+                    <Edit2 size={14} className="mr-2" /> <span>Edit Playlist</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSharePlaylist(playlist)} className="text-xs font-medium">
-                    <Share size={14} className="mr-2" /> Share
+                    <Share size={14} className="mr-2" /> <span>Share</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDeletePlaylist(playlist.id)} className="text-xs font-medium text-red-500">
-                    <Trash2 size={14} className="mr-2" /> Delete Playlist
+                    <Trash2 size={14} className="mr-2" /> <span>Delete Playlist</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -73,6 +73,7 @@ export async function initDb() {
     `ALTER TABLE groups ADD COLUMN label TEXT`,
     `ALTER TABLE albums ADD COLUMN artist_ids TEXT`,
     `ALTER TABLE tracks ADD COLUMN artist_ids TEXT`,
+    `ALTER TABLE group_members ADD COLUMN show_on_entity_page INTEGER NOT NULL DEFAULT 0`,
   ];
 
   for (const migration of migrations) {

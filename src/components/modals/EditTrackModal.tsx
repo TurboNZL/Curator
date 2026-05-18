@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Removed DialogTrigger
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,8 +14,14 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 
-export const EditTrackModal = ({ track, children }: { track: Track, children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface EditTrackModalProps {
+  track: Track;
+  children?: React.ReactElement; // Still accepts children for trigger, but now external controlled
+  open: boolean; // Add open prop
+  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
+}
+
+export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => { // Destructure open, onOpenChange
   const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
   
   const trackGroups = groups.filter(g =>
@@ -40,6 +46,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
   });
 
   const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
+
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -74,7 +82,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     });
 
     toast.success(`Updated ${formData.title}`);
-    setOpen(false);
+    onOpenChange(false); // Close modal
   };
 
   const addArtist = (id: string) => {
@@ -93,7 +101,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
     if (confirm("Are you sure you want to delete this track?")) {
       await deleteTrack(track.id);
       toast.success("Track deleted");
-      setOpen(false);
+      onOpenChange(false); // Close modal
     }
   };
 
@@ -121,14 +129,8 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-            <Edit2 size={14}/>
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
+      {children} {/* Children (trigger) is passed directly to Dialog */}
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         <Tabs defaultValue="metadata" className="w-full flex flex-col overflow-hidden">
           <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4 shrink-0">
@@ -249,11 +251,10 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
             <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
-                <RelationalBioModal initialEntity={{ type: 'track', id: track.id, label: track.title }}>
-                  <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
-                    <Plus size={12} className="mr-1" /> New Bio
-                  </Button>
-                </RelationalBioModal>
+                {/* Changed to open modal directly, making the Button its trigger */}
+                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => setIsRelationalBioModalOpen(true)}>
+                  <Plus size={12} className="mr-1" /> New Bio
+                </Button>
               </div>
               <div className="space-y-3">
                 {trackGroups.map(group => (
@@ -303,6 +304,7 @@ export const EditTrackModal = ({ track, children }: { track: Track, children?: R
             </div>
           </form>
         </Tabs>
+        <RelationalBioModal initialEntity={{ type: 'track', id: track.id, label: track.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
       </DialogContent>
     </Dialog>
   );

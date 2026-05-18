@@ -87,7 +87,7 @@ const Queue = () => {
             }}
             disabled={userQueue.length === 0 && activeQueue.length === 0}
           >
-            <Play fill="currentColor" size={18} /> Play Queue
+            <Play fill="currentColor" size={18} /> <span>Play Queue</span>
           </Button>
           <Button
             variant="outline"
@@ -97,7 +97,7 @@ const Queue = () => {
               clearActiveQueue();
             }}
           >
-            <Trash2 size={14} /> Clear All
+            <Trash2 size={14} /> <span>Clear All</span>
           </Button>
         </div>
       </div>
@@ -133,10 +133,10 @@ const Queue = () => {
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Next in Queue</h2>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={shuffleUserQueue}>
-              <Shuffle size={12} className="mr-1" /> Shuffle
+              <Shuffle size={12} className="mr-1" /> <span>Shuffle</span>
             </Button>
             <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={clearUserQueue}>
-              <Trash2 size={12} className="mr-1" /> Clear
+              <Trash2 size={12} className="mr-1" /> <span>Clear</span>
             </Button>
           </div>
         </div>
@@ -182,13 +182,13 @@ const Queue = () => {
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Playing From Source</h2>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={mergeActiveToUserQueue}>
-              Merge to Queue
+              <span>Merge to Queue</span>
             </Button>
             <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={shuffleActiveQueue}>
-              <Shuffle size={12} className="mr-1" /> Shuffle
+              <Shuffle size={12} className="mr-1" /> <span>Shuffle</span>
             </Button>
             <Button variant="ghost" size="sm" className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white" onClick={clearActiveQueue}>
-              <Trash2 size={12} className="mr-1" /> Clear
+              <Trash2 size={12} className="mr-1" /> <span>Clear</span>
             </Button>
           </div>
         </div>

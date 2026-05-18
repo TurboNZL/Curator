@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Removed DialogTrigger
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,13 +13,14 @@ import { cn } from '@/lib/utils';
 import { Album, Track } from '@/types/music';
 
 interface CreatePlaylistAddModalProps {
-  children?: React.ReactElement; // Enforce single React element
+  children?: React.ReactElement; // Still accepts children for trigger
   trackToAdd?: Track;
   albumToAdd?: Album;
+  open: boolean; // Add open prop
+  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
 }
 
-export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd }: CreatePlaylistAddModalProps) => {
-  const [open, setOpen] = useState(false);
+export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd, open, onOpenChange }: CreatePlaylistAddModalProps) => { // Destructure open, onOpenChange
   const { playlists, updatePlaylist, addPlaylist } = useMusicStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -86,7 +87,7 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd }: Cre
 
     if (tracksToAdd.length === 0) {
       toast.info("No new tracks to add.");
-      setOpen(false);
+      onOpenChange(false); // Close modal
       return;
     }
 
@@ -95,7 +96,7 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd }: Cre
     try {
       await updatePlaylist(selectedPlaylistId, { trackIds: updatedTrackIds });
       toast.success(`${tracksToAdd.length} track(s) added to "${playlist.name}".`);
-      setOpen(false);
+      onOpenChange(false); // Close modal
       setSelectedPlaylistId(null);
       setSearchTerm('');
     } catch (error) {
@@ -105,14 +106,8 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd }: Cre
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button variant="outline" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">
-            <Plus size={14} /> Add to Playlist
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
+      {children} {/* Children (trigger) is passed directly to Dialog */}
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -180,7 +175,7 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd }: Cre
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white hover:bg-zinc-900 font-bold uppercase tracking-widest text-[10px]">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-zinc-400 hover:text-white hover:bg-zinc-900 font-bold uppercase tracking-widest text-[10px]">
             Cancel
           </Button>
           <Button

@@ -21,6 +21,10 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
+
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -150,11 +154,15 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={() => playSnippet(track)}>
                         {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
                       </Button>
-                      <EditTrackModal track={track}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400">
-                          <Edit2 size={14} />
-                        </Button>
-                      </EditTrackModal>
+                      {/* Use external state to control EditTrackModal */}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400"
+                        onClick={() => {
+                          setSelectedTrackForEdit(track);
+                          setIsEditTrackModalOpen(true);
+                        }}
+                      >
+                        <Edit2 size={14} />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={() => handleDeleteTrack(track.id)}>
                         <Trash2 size={14} />
                       </Button>
@@ -176,9 +184,16 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
               onClick={handleDeleteAllLowQuality}
               className="bg-red-600 hover:bg-red-500 font-bold uppercase tracking-wider"
             >
-              <Trash2 size={16} className="mr-2" /> Delete All {lowQualityTracks.length} Low Quality Tracks
+              <Trash2 size={16} className="mr-2" /> <span>Delete All {lowQualityTracks.length} Low Quality Tracks</span>
             </Button>
           </DialogFooter>
+        )}
+        {selectedTrackForEdit && (
+          <EditTrackModal
+            track={selectedTrackForEdit}
+            open={isEditTrackModalOpen}
+            onOpenChange={setIsEditTrackModalOpen}
+          />
         )}
       </DialogContent>
     </Dialog>

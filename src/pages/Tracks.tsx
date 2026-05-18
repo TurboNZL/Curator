@@ -15,6 +15,9 @@ const Tracks = () => {
   const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
+
 
   useEffect(() => {
     fetchData();
@@ -81,23 +84,22 @@ const Tracks = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 text-xs font-bold gap-2">
-              <ArrowUpDown size={14} /> Sort: {sortConfig.field}
+              <ArrowUpDown size={14} /> <span>Sort: {sortConfig.field}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
             <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sort By</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'title' })} className="text-xs font-bold gap-2">
-              <Music size={14} /> Title
+              <Music size={14} /> <span>Title</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'memories' })} className="text-xs font-bold gap-2">
-              <Brain size={14} /> Memories
+              <Brain size={14} /> <span>Memories</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'rating' })} className="text-xs font-bold gap-2">
-              <Star size={14} /> Rating
+              <Star size={14} /> <span>Rating</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
-              {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
               {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -174,7 +176,15 @@ const Tracks = () => {
                             <ListMusic size={14} />
                           </Button>
                         </TrackContextMenu>
-                        <EditTrackModal track={track} />
+                        {/* Use external state to control EditTrackModal */}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
+                          onClick={() => {
+                            setSelectedTrackForEdit(track);
+                            setIsEditTrackModalOpen(true);
+                          }}
+                        >
+                          <Edit2 size={14}/>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -183,6 +193,13 @@ const Tracks = () => {
             </TableBody>
           </Table>
         </div>
+      )}
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
       )}
     </div>
   );
