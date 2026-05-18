@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, Calendar, SortAsc, SortDesc, Play, Music, Star } from 'lucide-react';
+import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData } = useMusicStore();
+  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
 
@@ -24,8 +24,8 @@ const Tracks = () => {
     if (!Array.isArray(tracks)) return [];
     return tracks.filter(t => {
       if (!t) return false;
-      const artist = artists.find(a => a.id === t.artistId);
-      const album = albums.find(al => t.albumIds?.includes(al.id));
+      const artist = artists?.find(a => a.id === t.artistId);
+      const album = albums?.find(al => t.albumIds?.includes(al.id));
       const searchLower = search.toLowerCase();
       return (
         (t.title || '').toLowerCase().includes(searchLower) ||
@@ -48,6 +48,15 @@ const Tracks = () => {
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
   }, [filteredTracks, sortConfig]);
+
+  if (isLoading && tracks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading Catalog...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20">
@@ -117,8 +126,9 @@ const Tracks = () => {
             </TableHeader>
             <TableBody>
               {sortedTracks.map((track, i) => {
-                const artist = artists.find(a => a.id === track.artistId);
-                const album = albums.find(al => track.albumIds?.includes(al.id));
+                if (!track) return null;
+                const artist = artists?.find(a => a.id === track.artistId);
+                const album = albums?.find(al => track.albumIds?.includes(al.id));
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
                   <TableRow
@@ -159,7 +169,11 @@ const Tracks = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <TrackContextMenu track={track} />
+                        <TrackContextMenu track={track}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
+                            <ListMusic size={14} />
+                          </Button>
+                        </TrackContextMenu>
                         <EditTrackModal track={track} />
                       </div>
                     </TableCell>

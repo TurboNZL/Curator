@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { ListMusic, Trash2, Shuffle, Play, GripVertical, Disc, User } from 'lucide-react';
+import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 
 const Queue = () => {
   const {
-    userQueue,
-    activeQueue,
-    tracks,
-    artists,
-    albums,
+    userQueue = [],
+    activeQueue = [],
+    tracks = [],
+    artists = [],
+    albums = [],
     currentTrackId,
     setCurrentTrack,
     removeFromUserQueue,
@@ -23,10 +23,16 @@ const Queue = () => {
     shuffleActiveQueue,
     mergeActiveToUserQueue,
     clearActiveQueue,
-    reorderUserQueue
+    reorderUserQueue,
+    fetchData,
+    isLoading
   } = useMusicStore();
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const onDragStart = (index: number) => {
     setDragIndex(index);
@@ -47,11 +53,20 @@ const Queue = () => {
   const getTrackData = (id: string) => {
     const track = tracks.find(t => t.id === id);
     const artist = artists.find(a => a.id === track?.artistId);
-    const album = albums.find(al => track?.albumIds.includes(al.id));
+    const album = albums.find(al => track?.albumIds?.includes(al.id));
     return { track, artist, album };
   };
 
   const currentTrackData = currentTrackId ? getTrackData(currentTrackId) : null;
+
+  if (isLoading && tracks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading Queue...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20">
@@ -64,12 +79,13 @@ const Queue = () => {
           <Button
             className="bg-white text-black hover:bg-zinc-200 font-bold gap-2"
             onClick={() => {
-              if (activeQueue.length > 0) {
-                setCurrentTrack(activeQueue[0]);
-              } else if (userQueue.length > 0) {
+              if (userQueue.length > 0) {
                 setCurrentTrack(userQueue[0]);
+              } else if (activeQueue.length > 0) {
+                setCurrentTrack(activeQueue[0]);
               }
             }}
+            disabled={userQueue.length === 0 && activeQueue.length === 0}
           >
             <Play fill="currentColor" size={18} /> Play Queue
           </Button>
@@ -91,15 +107,19 @@ const Queue = () => {
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Now Playing</h2>
         {currentTrackData?.track ? (
           <Card className="bg-blue-600/10 border-blue-500/30 p-4 flex items-center gap-4">
-            <div className="w-16 h-16 rounded-lg overflow-hidden border border-blue-500/20">
-              <img src={currentTrackData.album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+            <div className="w-16 h-16 rounded-lg overflow-hidden border border-blue-500/20 bg-zinc-900">
+              <img src={currentTrackData.album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-black text-white uppercase truncate">{currentTrackData.track.title}</h3>
-              <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name}</p>
+              <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name || 'Unknown Artist'}</p>
             </div>
             <div className="flex items-center gap-2">
-              <TrackContextMenu track={currentTrackData.track} />
+              <TrackContextMenu track={currentTrackData.track}>
+                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
+                  <ListMusic size={20} />
+                </Button>
+              </TrackContextMenu>
             </div>
           </Card>
         ) : (
@@ -185,10 +205,7 @@ const Queue = () => {
                   track={track}
                   artist={artist}
                   album={album}
-                  onRemove={() => {
-                    // For active queue, we just clear it or merge it, individual removal not explicitly requested but good to have
-                    // Let's just use a placeholder or implement it in store if needed
-                  }}
+                  onRemove={() => {}}
                   onPlay={() => {
                     setCurrentTrack(id);
                   }}
@@ -208,17 +225,21 @@ const QueueItem = ({ track, artist, album, onRemove, onPlay }: any) => (
       <GripVertical size={14} />
     </div>
     <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden">
-      <img src={album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+      <img src={album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
     </div>
     <div className="flex-1 min-w-0">
       <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
-      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name}</p>
+      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name || 'Unknown Artist'}</p>
     </div>
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={onPlay}>
         <Play size={14} fill="currentColor" />
       </Button>
-      <TrackContextMenu track={track} />
+      <TrackContextMenu track={track}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
+          <ListMusic size={14} />
+        </Button>
+      </TrackContextMenu>
       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={onRemove}>
         <Trash2 size={14} />
       </Button>
