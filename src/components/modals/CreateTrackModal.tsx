@@ -9,7 +9,15 @@ import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+
+const cleanSpotifyUrl = (url: string) => {
+  if (!url) return '';
+  const spotifyRegex = /https?:\/\/(?:open\.spotify\.com\/track\/|spotify:track:)([a-zA-Z0-9]{22})/;
+  const match = url.match(spotifyRegex);
+  return match ? `https://open.spotify.com/track/${match[1]}` : url;
+};
 
 interface CreateTrackModalProps {
   albumId?: string;
