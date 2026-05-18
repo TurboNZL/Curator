@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ImageUpload } from '@/components/ui/ImageUpload'; // Assuming ImageUpload is a UI component
 import { Switch } from '@/components/ui/switch'; // Ensure Switch is imported
+import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Import EditTrackModal
 
 interface SpotifyUriGroupResolutionModalProps {
   isOpen: boolean;
@@ -497,6 +498,11 @@ const Cleanup = () => {
     return album?.covers[0] || '/placeholder.svg';
   };
 
+  const getArtistName = (track: any) => {
+    const artist = artists.find(a => a.id === track.artistId);
+    return artist?.name || 'Unknown Artist';
+  };
+
   return (
     <div className="space-y-12 pb-20">
       <div className="flex items-end justify-between">
@@ -604,6 +610,7 @@ const Cleanup = () => {
           </div>
         ) : (
           <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
+            <Swords size={32} className="text-blue-500 mx-auto mb-3 opacity-20" />
             <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Add more tracks to enable comparisons</p>
           </div>
         )}
@@ -653,7 +660,7 @@ const Cleanup = () => {
               {filteredTasks.length === 0 ? (
                 <div className="py-12 text-center border-2 border-dashed border-zinc-900 rounded-2xl">
                   <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3 opacity-20" />
-                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No tasks for now.</p>
+                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">All tasks completed. Your library is in top shape!</p>
                 </div>
               ) : (
                 filteredTasks.map((task, i) => (
@@ -687,6 +694,27 @@ const Cleanup = () => {
             </div>
             <p className="text-4xl font-black text-white">{lowQualityTracks.length}</p>
             <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Tracks below 192kbps detected in library</p>
+            
+            {lowQualityTracks.length > 0 && (
+              <ScrollArea className="h-[150px] pr-4">
+                <div className="space-y-2">
+                  {lowQualityTracks.map(track => (
+                    <div key={track.id} className="flex items-center justify-between p-2 bg-zinc-950 border border-zinc-800 rounded-lg group/track">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-white truncate">{track.title}</p>
+                        <p className="text-[10px] text-zinc-500 truncate">{getArtistName(track)} - {track.bitrate}</p>
+                      </div>
+                      <EditTrackModal track={track}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400 opacity-0 group-hover/track:opacity-100">
+                          <Edit2 size={12} />
+                        </Button>
+                      </EditTrackModal>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+
             <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors">Review Files</Button>
           </Card>
 
@@ -728,8 +756,8 @@ const Cleanup = () => {
 
       {imageUploadEntity && imageUploadEntityType && (
         <ImageUploadResolutionModal
-          isOpen={isImageUploadModalModalOpen}
-          onClose={() => setIsImageUploadModalModalOpen(false)}
+          isOpen={isImageUploadModalOpen}
+          onClose={() => setIsImageUploadModalOpen(false)}
           entity={imageUploadEntity}
           entityType={imageUploadEntityType}
           onResolve={handleImageUploadResolution}
