@@ -24,7 +24,7 @@ export const TopToolbar = () => {
     { label: 'Journal', href: '/' },
     { label: 'Cleanup', href: '/cleanup' },
     { label: 'Stats', href: '/stats' },
-    { label: 'Queue', href: '/queue' },
+    { label: 'Queue', href: '/queue' }, // Added Queue link
   ];
 
   return (

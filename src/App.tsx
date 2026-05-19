@@ -11,6 +11,7 @@ import Index from './pages/Index';
 import Stats from './pages/Stats';
 import Playlists from './pages/Playlists';
 import SearchResults from './pages/SearchResults'; // Import SearchResults page
+import Queue from './pages/Queue'; // Import the new Queue page
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="settings" element={<Settings />} />
         <Route path="stats" element={<Stats />} />
         <Route path="search" element={<SearchResults />} /> {/* New Search Results route */}
+        <Route path="queue" element={<Queue />} /> {/* New Queue route */}
       </Route>
     </Routes>
   );

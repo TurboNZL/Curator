@@ -9,7 +9,8 @@ const navItems = [
   { icon: Mic2, label: 'Artists', href: '/artists' },
   { icon: Disc, label: 'Albums', href: '/albums' },
   { icon: ListMusic, label: 'Tracks', href: '/tracks' },
-  { icon: ListMusic, label: 'Playlists', href: '/playlists' }, // Added Playlists link
+  { icon: ListMusic, label: 'Playlists', href: '/playlists' },
+  { icon: ListMusic, label: 'Queue', href: '/queue' }, // Added Queue link
 ];
 
 export const Sidebar = () => {
