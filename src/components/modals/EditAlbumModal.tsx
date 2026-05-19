@@ -41,8 +41,9 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
       const initialCover = album.covers[0] || '';
       let resolvedCover = initialCover;
       if (!initialCover && albumReleases.length > 0) {
@@ -61,7 +62,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
         releaseDate: albumReleases.length > 0 ? albumReleases.sort((a,b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime())[0].releaseDate : '',
       });
     }
-  }, [open, album, albumReleases]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +147,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   }, [albumReleases]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,16 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      setFormData({
+        name: artist.name,
+        image: artist.image || '',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) return toast.error("Artist name is required");
@@ -49,7 +59,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">
