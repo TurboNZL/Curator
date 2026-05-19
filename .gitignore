@@ -83,3 +83,4 @@ data/
 # Uploaded files (music, images, etc.)
 public/uploads/
 server/bin/
+.dyad/
