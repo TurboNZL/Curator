@@ -259,7 +259,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
             ) : (
               'Confirm & Add to Catalog'
             )}
-          )}
+          )
           </Button>
         </DialogFooter>
       </DialogContent>
