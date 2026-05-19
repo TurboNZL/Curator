@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react';
@@ -582,7 +582,7 @@ const Cleanup = () => {
 
         {pair ? (
           <>
-            <div className="grid grid-cols-2 gap-8 relative"> {/* Changed md:grid-cols-2 to grid-cols-2 */}
+            <div className="grid grid-cols-2 gap-8 relative">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-4">
                 <div className="w-12 h-12 rounded-full bg-zinc-950 border-4 border-zinc-900 flex items-center justify-center text-zinc-500 font-black italic text-xl shadow-2xl">
                   VS
@@ -612,7 +612,7 @@ const Cleanup = () => {
                         </div>
                       </div>
 
-                      <div className="absolute bottom-0 left-0 right-0 p-6 z-20"> {/* Changed z-index to 20 */}
+                      <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                         <div className="flex items-end justify-between gap-4">
                           <div className="min-w-0">
                             <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
