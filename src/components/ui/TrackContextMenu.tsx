@@ -3,7 +3,7 @@
 import React from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { ListMusic, Play, Heart, Plus, Share, Edit2, Trash2 } from 'lucide-react';
+import { ListMusic, Play, Heart, Plus, Share, Edit2, Trash2, Brain } from 'lucide-react';
 import { Track } from '@/types/music';
 import { useMusicStore } from '@/store/useMusicStore';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
@@ -16,7 +16,7 @@ interface TrackContextMenuProps {
 }
 
 export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, children }) => {
-  const { setCurrentTrack, addToUserQueue, deleteTrack } = useMusicStore();
+  const { setCurrentTrack, addToUserQueue, deleteTrack, incrementMemories } = useMusicStore();
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = React.useState(false);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = React.useState(false);
 
@@ -61,6 +61,10 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, child
         {/* Changed to open modal directly, making the DropdownMenuItem its trigger */}
         <DropdownMenuItem onSelect={() => setIsCreatePlaylistAddModalOpen(true)} className="text-xs font-medium">
           <Plus size={14} className="mr-2" /> <span>Add to Playlist</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem onClick={() => incrementMemories(track.id)} className="text-xs font-medium">
+          <Brain size={14} className="mr-2" /> <span>Add Memory</span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator className="bg-zinc-800" />

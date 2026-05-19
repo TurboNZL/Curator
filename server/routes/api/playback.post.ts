@@ -20,12 +20,6 @@ export default defineHandler(async (event) => {
 
   await db.insert(playbackLogs).values(log);
 
-  // Removed automatic memory increment on track playback
-  // if (!body.isSkip) {
-  //   await db.update(tracks)
-  //     .set({ memories: sql`${tracks.memories} + 1` })
-  //     .where(eq(tracks.id, body.trackId));
-  // }
 
   return log;
 });

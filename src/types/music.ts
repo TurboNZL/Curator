@@ -4,6 +4,7 @@ export interface PlaybackRule {
   trackAId: string;
   trackBId: string;
   playFirstOnShuffle: boolean;
+  applyToAlbumSource?: boolean;
 }
 
 export interface Profile {
@@ -16,7 +17,6 @@ export interface Profile {
     showUnbalancedFirst: boolean;
     defaultArtistImage?: string;
     defaultAlbumImage?: string;
-    applyRulesFromAlbum?: boolean; // New setting
   };
   playbackRules: PlaybackRule[];
 }

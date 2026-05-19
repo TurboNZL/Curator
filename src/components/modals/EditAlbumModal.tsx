@@ -49,7 +49,7 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
       title: formData.title,
       artistId: formData.artistId,
       artistIds: formData.artistIds,
-      covers: formData.cover ? [formData.cover] : [],
+      covers: formData.cover ? [formData.cover] : album.covers,
       pendingFiles: formData.pendingFiles
     });
 

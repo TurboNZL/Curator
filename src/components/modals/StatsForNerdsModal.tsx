@@ -33,7 +33,6 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
   const links = [
     { label: 'Spotify', url: track.spotifyUrl, color: 'text-green-500' },
     { label: 'Genius', url: track.geniusUrl, color: 'text-yellow-500' },
-    { label: 'SoundCloud', url: track.soundcloudUrl, color: 'text-orange-500' },
     { label: 'YouTube Music', url: track.youtubeMusicUrl, color: 'text-red-500' },
   ].filter(l => l.url);
 

@@ -17,6 +17,7 @@ interface MusicState {
   userQueue: string[];
   activeQueue: string[];
   currentTrackId: string | null;
+  currentTrackContext?: { type: 'album' | 'playlist' | 'track', id: string } | null;
   isPlaying: boolean;
   isLoading: boolean;
   volume: number;
@@ -141,7 +142,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       
       const activeProfile = profiles && profiles[0] ? {
         ...profiles[0],
-        settings: JSON.parse(profiles[0].settings || '{"showUnbalancedFirst": false, "applyRulesFromAlbum": true}'),
+        settings: JSON.parse(profiles[0].settings || '{"showUnbalancedFirst": false}'),
         playbackRules: JSON.parse(profiles[0].playbackRules || '[]')
       } : DEFAULT_PROFILE;
 
@@ -197,8 +198,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     if (trackId) {
       const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
       if (rule) {
-        const shouldApply = !context || context.type !== 'album' || state.activeProfile.settings?.applyRulesFromAlbum;
-        if (shouldApply) {
+        const shouldApplyRule = rule.applyToAlbumSource === true
+          ? (context?.type === 'album')
+          : true;
+        if (shouldApplyRule) {
           const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === rule.trackBId;
           const isNextInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === rule.trackBId;
           if (!isNextInUserQueue && !isNextInActiveQueue) {
@@ -213,7 +216,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       isPlaying: !!trackId,
       activeQueue: newActiveQueue,
       currentProgress: 0,
-      currentDuration: 0
+      currentDuration: 0,
+      currentTrackContext: trackId && context ? { type: context.type, id: context.id } : null
     });
   },
 
@@ -225,9 +229,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   nextTrack: () => {
     const state = get();
-    const { activeQueue, userQueue, currentTrackId, activeProfile } = state;
+    const { activeQueue, userQueue, currentTrackId, activeProfile, currentTrackContext } = state;
     const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
     if (rule) {
+      const shouldApplyRule = rule.applyToAlbumSource === true
+        ? (currentTrackContext?.type === 'album')
+        : true;
+
+      if (shouldApplyRule) {
       const nextIdFromRule = rule.trackBId;
       const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
       const isNextInActiveQueue = activeQueue.length > 0 && activeQueue[0] === nextIdFromRule;
