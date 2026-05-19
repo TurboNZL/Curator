@@ -21,6 +21,7 @@ export const BottomPlayer = () => {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showQueue, setShowQueue] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for StatsForNerdsModal
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
@@ -261,7 +262,7 @@ export const BottomPlayer = () => {
           )}
         </div>
 
-        <StatsForNerdsModal track={currentTrack} artist={artist} album={album}>
+        <StatsForNerdsModal track={currentTrack} artist={artist} album={album} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen}>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 disabled:opacity-30" disabled={!currentTrackId}>
             <Info size={18} />
           </Button>

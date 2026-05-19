@@ -11,9 +11,11 @@ interface StatsForNerdsModalProps {
   album?: Album;
   artist?: Artist;
   children: React.ReactElement; // Enforce single React element
+  open: boolean; // Added
+  onOpenChange: (open: boolean) => void; // Added
 }
 
-export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForNerdsModalProps) => {
+export const StatsForNerdsModal = ({ track, album, artist, children, open, onOpenChange }: StatsForNerdsModalProps) => {
   const { playbackLogs } = useMusicStore();
   if (!track) return children; // Return children directly if no track, as it's just a trigger
 
@@ -37,7 +39,7 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
   ].filter(l => l.url);
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
