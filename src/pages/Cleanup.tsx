@@ -587,56 +587,58 @@ const Cleanup = () => {
         </div>
 
         {pair ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-full bg-zinc-950 border-4 border-zinc-900 flex items-center justify-center text-zinc-500 font-black italic text-xl shadow-2xl">
-                VS
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-4">
+                <div className="w-12 h-12 rounded-full bg-zinc-950 border-4 border-zinc-900 flex items-center justify-center text-zinc-500 font-black italic text-xl shadow-2xl">
+                  VS
+                </div>
               </div>
+
+              {pair.map((track, idx) => (
+                <TrackContextMenu key={track.id} track={track}>
+                  <div className="space-y-4 min-w-0">
+                    <Card 
+                      className={cn(
+                        "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
+                      )}
+                      onClick={() => playSnippet(track)}
+                    >
+                      <div className="aspect-square relative overflow-hidden">
+                        <img 
+                          src={getAlbumArt(track)} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
+                          alt="" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
+                            {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                          <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                          <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                            {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
+                          </p>
+                          <div className="mt-2">
+                            <Rating trackId={track.id} size="md" />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    <Button 
+                      onClick={() => handleVote(track.id)}
+                      className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
+                    >
+                      <ThumbsUp size={16} /> Vote for this
+                    </Button>
+                  </div>
+                </TrackContextMenu>
+              ))}
             </div>
 
-            {pair.map((track, idx) => (
-              <TrackContextMenu key={track.id} track={track} className="contents">
-                <div className="space-y-4 min-w-0">
-                  <Card 
-                    className={cn(
-                      "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                    )}
-                    onClick={() => playSnippet(track)}
-                  >
-                    <div className="aspect-square relative overflow-hidden">
-                      <img 
-                        src={getAlbumArt(track)} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
-                        alt="" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
-                          {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
-                        </div>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
-                        <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                        <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                          {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
-                        </p>
-                        <div className="mt-2">
-                          <Rating trackId={track.id} size="md" />
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                  <Button 
-                    onClick={() => handleVote(track.id)}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
-                  >
-                    <ThumbsUp size={16} /> Vote for this
-                  </Button>
-                </div>
-              </TrackContextMenu>
-            ))}
-            {/* Moved Equal and Skip buttons inside the grid, spanning two columns */}
-            <div className="md:col-span-2 flex justify-center gap-4 pt-4">
+            <div className="flex justify-center gap-4 pt-4">
               <Button 
                 variant="outline" 
                 className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2"
@@ -651,8 +653,9 @@ const Cleanup = () => {
               >
                 <SkipForward size={14} /> Skip Pairing
               </Button>
+              {/* Removed Shuffle Pairings Button */}
             </div>
-          </div>
+          </>
         ) : (
           <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
             <Swords size={32} className="text-blue-500 mx-auto mb-3 opacity-20" />
