@@ -27,6 +27,13 @@ export const ImportAlbumModal: React.FC<ImportAlbumModalProps> = ({ isOpen, onCl
     }
 
     setIsImporting(true);
+    // Close the current modal immediately
+    onClose(); 
+    setUrl(''); // Clear URL input right away
+
+    // Show a loading toast that will be dismissed or updated later
+    const loadingToastId = toast.loading('Fetching album data for review...');
+
     try {
       const response = await fetch('/api/import-album', {
         method: 'POST',
@@ -44,10 +51,10 @@ export const ImportAlbumModal: React.FC<ImportAlbumModalProps> = ({ isOpen, onCl
       const data = await response.json();
       setReviewData(data);
       setIsReviewModalOpen(true); // Open the review modal
-      onClose(); // Close the current modal
-      setUrl('');
+      toast.dismiss(loadingToastId); // Dismiss loading toast
       toast.success('Album data fetched for review.');
     } catch (error: any) {
+      toast.dismiss(loadingToastId); // Dismiss loading toast on error
       toast.error(error.message || 'An unexpected error occurred during import.');
     } finally {
       setIsImporting(false);

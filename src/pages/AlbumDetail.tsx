@@ -95,7 +95,21 @@ const AlbumDetail = () => {
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
-  const displayCover = currentRelease?.coverImage || album.covers[0] || defaultImage;
+  const displayCover = useMemo(() => {
+    if (currentRelease?.coverImage) return currentRelease.coverImage;
+    if (album.defaultReleaseId) {
+        const defaultRel = albumReleases.find(r => r.id === album.defaultReleaseId);
+        if (defaultRel?.coverImage) return defaultRel.coverImage;
+    }
+    if (album.covers && album.covers.length > 0) return album.covers[0];
+    
+    // If no album cover and only one release with a cover, use that
+    const releasesWithCovers = albumReleases.filter(r => r.coverImage);
+    if (releasesWithCovers.length === 1) {
+        return releasesWithCovers[0].coverImage;
+    }
+    return defaultImage;
+}, [currentRelease, album, albumReleases, defaultImage]);
 
   return (
     <div className="space-y-8 pb-12">

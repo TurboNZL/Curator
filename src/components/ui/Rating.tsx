@@ -1,115 +1,113 @@
-"use client";
-
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from './button';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import { Input } from './input';
+import { Label } from './label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface RatingProps {
   trackId: string;
-  balanced?: number | null;
-  unbalanced?: number | null;
-  comparisons: number;
+  balanced?: number;
+  unbalanced?: number;
+  comparisons?: number;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export const Rating = ({ trackId, balanced, unbalanced, comparisons, size = 'sm' }: RatingProps) => {
-  const { tracks } = useMusicStore();
+const Rating: React.FC<RatingProps> = ({ trackId, balanced, unbalanced, comparisons = 0, size = 'sm' }) => {
+  const { updateTrack } = useMusicStore();
+  const [editRating, setEditRating] = React.useState<string>(
+    (balanced !== undefined && balanced !== null) ? balanced.toFixed(1) : ''
+  );
+  const [popoverOpen, setPopoverOpen] = React.useState(false);
 
-  const displayRating = balanced !== undefined && balanced !== null ? balanced : unbalanced;
+  React.useEffect(() => {
+    setEditRating((balanced !== undefined && balanced !== null) ? balanced.toFixed(1) : '');
+  }, [balanced, popoverOpen]); // Update editRating when balanced changes or popover opens
 
-  const top10Tracks = useMemo(() => {
-    // Filter for tracks rated 10, sort them by Elo or initialRating if available, then by title
-    return tracks
-      .filter(t => t.rating === 10 || t.initialRating === 10)
-      .sort((a, b) => {
-        // Higher ELO or initialRating means higher rank
-        if ((b.eloScore || b.initialRating || 0) !== (a.eloScore || a.initialRating || 0)) {
-          return (b.eloScore || b.initialRating || 0) - (a.eloScore || a.initialRating || 0);
-        }
-        // Fallback to title for consistent ordering
-        return a.title.localeCompare(b.title);
-      });
-  }, [tracks]);
+  const displayBalanced = balanced !== undefined && balanced !== null && balanced > 0 ? balanced.toFixed(1) : '?';
+  const displayUnbalanced = unbalanced !== undefined && unbalanced !== null && unbalanced > 0 ? unbalanced.toFixed(1) : '?';
 
-  const rank = useMemo(() => {
-    if (displayRating === 10) {
-      const index = top10Tracks.findIndex(t => t.id === trackId);
-      if (index !== -1) {
-        return `#${index + 1}`;
-      }
+  const iconSize = size === 'sm' ? 14 : size === 'md' ? 16 : 18;
+  const textSize = size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-md';
+  // const detailTextSize = size === 'sm' ? 'text-[9px]' : size === 'md' ? 'text-[10px]' : 'text-xs'; // Not used
+
+  const handleRatingChange = async () => {
+    const newRatingVal = parseFloat(editRating);
+    if (isNaN(newRatingVal) || newRatingVal < 0 || newRatingVal > 10) {
+      toast.error("Rating must be between 0 and 10.");
+      return;
     }
-    return null;
-  }, [displayRating, trackId, top10Tracks]);
-
-  const ratingClasses = useMemo(() => {
-    switch (size) {
-      case 'sm': return "text-[10px] h-5 px-1.5";
-      case 'md': return "text-xs h-6 px-2";
-      case 'lg': return "text-sm h-7 px-2.5";
-    }
-  }, [size]);
-
-  const starSize = useMemo(() => {
-    switch (size) {
-      case 'sm': return 10;
-      case 'md': return 12;
-      case 'lg': return 14;
-    }
-  }, [size]);
-
-  if (displayRating === undefined || displayRating === null) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className={cn(
-              "flex items-center gap-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-600 font-bold",
-              ratingClasses
-            )}>
-              <Star size={starSize} />
-              <span>NR</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent className="bg-zinc-800 text-white border-zinc-700">
-            <p className="text-xs">Not rated yet</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  const ratingColor = displayRating >= 8 ? "text-emerald-500" :
-                      displayRating >= 6 ? "text-blue-500" :
-                      displayRating >= 4 ? "text-yellow-500" :
-                      "text-red-500";
-
-  const backgroundColor = displayRating >= 8 ? "bg-emerald-950/20 border-emerald-900/40" :
-                          displayRating >= 6 ? "bg-blue-950/20 border-blue-900/40" :
-                          displayRating >= 4 ? "bg-yellow-950/20 border-yellow-900/40" :
-                          "bg-red-950/20 border-red-900/40";
+    await updateTrack(trackId, { initialRating: newRatingVal });
+    toast.success("Rating updated.");
+    setPopoverOpen(false);
+  };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className={cn(
-            "flex items-center gap-1 rounded-full font-bold",
-            ratingClasses,
-            backgroundColor
-          )}>
-            <Star size={starSize} className={ratingColor} fill="currentColor" />
-            <span className={ratingColor}>{rank || displayRating.toFixed(1)}</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent className="bg-zinc-800 text-white border-zinc-700">
-          <p className="text-xs">Rating: {displayRating.toFixed(1)} ({comparisons} comparisons)</p>
-          {balanced !== undefined && balanced !== null && balanced !== unbalanced && (
-            <p className="text-xs text-zinc-400">Initial: {unbalanced?.toFixed(1)}</p>
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "group flex items-center gap-1 rounded-full px-2 h-7",
+            "bg-zinc-800/50 border border-zinc-700 hover:bg-zinc-800",
+            balanced === undefined || balanced === null || balanced <= 0
+              ? "text-zinc-500 hover:text-zinc-300"
+              : "text-yellow-400 hover:text-yellow-300"
           )}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        >
+          <Star size={iconSize} fill="currentColor" />
+          <span className={cn("font-bold font-mono", textSize)}>
+            {displayBalanced}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="bg-zinc-950 border-zinc-800 text-white w-64 p-4 space-y-4">
+        <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400">Rating Details</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-zinc-400 font-bold">Balanced:</span>
+            <span className="font-mono text-white flex items-center gap-1">
+              <Star size={14} fill="currentColor" className="text-yellow-400" /> {displayBalanced}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-zinc-400 font-bold">Unbalanced:</span>
+            <span className="font-mono text-white flex items-center gap-1">
+              <Star size={14} fill="currentColor" className="text-zinc-500" /> {displayUnbalanced}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-zinc-400 font-bold">Comparisons:</span>
+            <span className="font-mono text-white">{comparisons}</span>
+          </div>
+        </div>
+        <div className="space-y-2 pt-2 border-t border-zinc-900">
+          <Label htmlFor="edit-rating" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Set Initial Rating (0-10)</Label>
+          <Input
+            id="edit-rating"
+            type="number"
+            step="0.1"
+            min="0"
+            max="10"
+            value={editRating}
+            onChange={(e) => setEditRating(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleRatingChange();
+              }
+            }}
+            className="bg-zinc-900 border-zinc-800 focus-visible:ring-yellow-500"
+          />
+          <Button onClick={handleRatingChange} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white text-[10px] font-black uppercase">Save Rating</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
+
+export { Rating };

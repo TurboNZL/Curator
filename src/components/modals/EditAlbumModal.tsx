@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,21 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (open) {
+      // Auto-select cover if album.covers is empty and there's a single release with a cover
+      if ((!album.covers || album.covers.length === 0) && albumReleases.length > 0) {
+        const releasesWithCovers = albumReleases.filter(r => r.coverImage);
+        if (releasesWithCovers.length === 1 && releasesWithCovers[0].coverImage) {
+          setFormData(prev => ({ ...prev, cover: releasesWithCovers[0].coverImage }));
+          if (album.defaultReleaseId !== releasesWithCovers[0].id) {
+            updateAlbum(album.id, { defaultReleaseId: releasesWithCovers[0].id });
+          }
+        }
+      }
+    }
+  }, [open, album, albumReleases, updateAlbum]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {

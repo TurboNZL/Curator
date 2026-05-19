@@ -28,10 +28,10 @@ const Index = () => {
       { range: '4-6', count: 0 },
       { range: '6-8', count: 0 },
       { range: '8-10', count: 0 },
-      { range: 'Unrated', count: 0 },
     ];
     tracks.forEach(t => {
-      if (t.rating === undefined || t.rating === null) ranges[5].count++;
+      // Treat 0.0 or null/undefined ratings as falling into the lowest (0-2) category
+      if (t.rating === undefined || t.rating === null || t.rating < 0.001) ranges[0].count++;
       else if (t.rating < 2) ranges[0].count++;
       else if (t.rating < 4) ranges[1].count++;
       else if (t.rating < 6) ranges[2].count++;
@@ -104,7 +104,7 @@ const Index = () => {
         <StatCard icon={Activity} label="Library Size" value={tracksCount.toString()} color="text-purple-500" />
         <StatCard icon={TrendingUp} label="Avg. Rating" value={avgRating} color="text-yellow-500" />
         <StatCard icon={Users} label="Relational Bios" value={groupsCount.toString()} color="text-blue-500" />
-        <StatCard icon={CheckCircle2} label="Completion" value={`${((tracks.filter(t => t.rating !== undefined && t.rating !== null).length / (tracksCount || 1)) * 100).toFixed(0)}%`} color="text-emerald-500" />
+        <StatCard icon={CheckCircle2} label="Completion" value={`${((tracks.filter(t => t.rating !== undefined && t.rating !== null && t.rating > 0).length / (tracksCount || 1)) * 100).toFixed(0)}%`} color="text-emerald-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -185,7 +185,7 @@ const Index = () => {
                   />
                   <Bar dataKey="count" fill="#eab308" radius={[4, 4, 0, 0]} barSize={40}>
                     {ratingDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.range === 'Unrated' ? '#3f3f46' : '#eab308'} />
+                      <Cell key={`cell-${index}`} fill={'#eab308'} />
                     ))}
                   </Bar>
                 </BarChart>

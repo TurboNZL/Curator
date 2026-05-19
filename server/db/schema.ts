@@ -53,6 +53,7 @@ export const releases = sqliteTable('releases', {
 export const releaseTracks = sqliteTable('release_tracks', {
   releaseId: text('release_id').notNull(),
   trackId: text('track_id').notNull(),
+  order: integer('order').notNull().default(0), // Added order column
 }, (table) => ({
   pk: primaryKey({ columns: [table.releaseId, table.trackId] }),
 }));

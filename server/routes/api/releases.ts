@@ -2,6 +2,7 @@ import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
 import { releases, releaseTracks } from '../../db/schema';
+import { desc } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
   const method = event.method;
@@ -14,6 +15,7 @@ export default defineHandler(async (event) => {
       ...r,
       trackIds: allReleaseTracks
         .filter(rt => rt.releaseId === r.id)
+        .sort((a, b) => a.order - b.order) // Sort by order
         .map(rt => rt.trackId)
     }));
   }
@@ -34,10 +36,11 @@ export default defineHandler(async (event) => {
     await db.insert(releases).values(newRelease);
 
     if (body.trackIds && Array.isArray(body.trackIds)) {
-      for (const trackId of body.trackIds) {
+      for (let i = 0; i < body.trackIds.length; i++) {
         await db.insert(releaseTracks).values({
           releaseId: id,
-          trackId
+          trackId: body.trackIds[i],
+          order: i // Use index as order
         });
       }
     }

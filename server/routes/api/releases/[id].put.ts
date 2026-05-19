@@ -19,12 +19,13 @@ export default defineHandler(async (event) => {
     })
     .where(eq(releases.id, id));
 
-  if (body.trackIds && Array.isArray(body.trackIds)) {
+  if (body.trackIds !== undefined && Array.isArray(body.trackIds)) {
     await db.delete(releaseTracks).where(eq(releaseTracks.releaseId, id));
-    for (const trackId of body.trackIds) {
+    for (let i = 0; i < body.trackIds.length; i++) {
       await db.insert(releaseTracks).values({
         releaseId: id,
-        trackId
+        trackId: body.trackIds[i],
+        order: i
       });
     }
   }
