@@ -207,7 +207,7 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
               ))}
             </div>
             <SearchableSelect 
-              options={entityOptions.filter(opt => !formData.members.some(m => `${m.entityType}:${m.id}` === opt.value))}
+              options={entityOptions.filter(opt => !formData.members.some(m => `${m.entityType}:${m.entityId}` === opt.value))}
               value=""
               onValueChange={addMember}
               placeholder="Link another entity..."

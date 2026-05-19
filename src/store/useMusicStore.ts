@@ -94,16 +94,18 @@ const DEFAULT_PROFILE: Profile = {
   settings: {"showUnbalancedFirst": false}
 };
 
-const parseJsonOrDefault = (jsonString: string | null | undefined, defaultValue: any) => {
-  if (typeof jsonString === 'string' && jsonString) {
-    try {
-      return JSON.parse(jsonString);
-    } catch (e) {
-      console.error("Error parsing JSON:", e, jsonString);
-      return defaultValue;
-    }
+const parseJsonOrDefault = (value: any, defaultValue: any) => {
+  if (value == null) return defaultValue;
+
+  // If already an object/array, return it directly
+  if (typeof value !== 'string') return value;
+
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    console.error("Error parsing JSON:", e, value);
+    return defaultValue;
   }
-  return defaultValue;
 };
 
 export const useMusicStore = create<MusicState>((set, get) => ({
