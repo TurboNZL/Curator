@@ -230,6 +230,10 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                   <Input value={formData.geniusUrl} onChange={(e) => setFormData({...formData, geniusUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">YouTube Music Link</Label>
+                <Input value={formData.youtubeMusicUrl} onChange={(e) => setFormData({...formData, youtubeMusicUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+              </div>
             </TabsContent>
 
             <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">

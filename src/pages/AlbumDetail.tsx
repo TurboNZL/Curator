@@ -246,10 +246,10 @@ const AlbumDetail = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
                       <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sort By</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'date' })} className="text-xs font-bold gap-2">
+                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'date', direction: 'asc' })} className="text-xs font-bold gap-2">
                         <Calendar size={14} /> <span>Release Date</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'name' })} className="text-xs font-bold gap-2">
+                      <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, field: 'name', direction: 'asc' })} className="text-xs font-bold gap-2">
                         <SortAsc size={14} /> <span>Name</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-zinc-800" />

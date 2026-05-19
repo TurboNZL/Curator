@@ -142,7 +142,7 @@ const Tracks = () => {
                       className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                     >
                       <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }} className="cursor-pointer">
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
                             <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
