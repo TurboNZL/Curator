@@ -27,7 +27,7 @@ export async function initDb() {
     `CREATE TABLE IF NOT EXISTS releases (id TEXT PRIMARY KEY, album_id TEXT NOT NULL, title TEXT NOT NULL, cover_image TEXT, release_date TEXT, spotify_uri TEXT)`,
     `CREATE TABLE IF NOT EXISTS release_tracks (release_id TEXT NOT NULL, track_id TEXT NOT NULL, PRIMARY KEY(release_id, track_id))`,
     `CREATE TABLE IF NOT EXISTS tracks (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, artist_ids TEXT, rating REAL, initial_rating REAL, elo_score REAL NOT NULL DEFAULT 1000, comparisons INTEGER NOT NULL DEFAULT 0, local_file_path TEXT, spotify_url TEXT, genius_url TEXT, soundcloud_url TEXT, youtube_music_url TEXT, genres TEXT, producers TEXT, writers TEXT, credits TEXT, bitrate TEXT, bpm INTEGER, key TEXT, memories INTEGER NOT NULL DEFAULT 0, queue_rules TEXT)`,
-    `CREATE TABLE IF NOT EXISTS album_tracks (album_id TEXT NOT NULL, track_id TEXT NOT NULL, PRIMARY KEY(album_id, track_id))`,
+    `CREATE TABLE IF NOT EXISTS album_tracks (album_id TEXT NOT NULL, track_id TEXT NOT NULL, "order" INTEGER NOT NULL, PRIMARY KEY(album_id, track_id))`,
     `CREATE TABLE IF NOT EXISTS playlists (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, cover_image TEXT, created_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS playlist_tracks (playlist_id TEXT NOT NULL, track_id TEXT NOT NULL, "order" INTEGER NOT NULL, PRIMARY KEY(playlist_id, track_id))`,
     `CREATE TABLE IF NOT EXISTS timeline (id TEXT PRIMARY KEY, type TEXT NOT NULL, timestamp INTEGER NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, entity_id TEXT)`,
@@ -75,6 +75,7 @@ export async function initDb() {
     `ALTER TABLE tracks ADD COLUMN artist_ids TEXT`,
     `ALTER TABLE group_members ADD COLUMN show_on_entity_page INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE albums ADD COLUMN credits TEXT`,
+    `ALTER TABLE album_tracks ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0`,
   ];
 
   for (const migration of migrations) {
