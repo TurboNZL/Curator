@@ -202,10 +202,11 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, updateRelease } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData } = useMusicStore();
+  
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [isShufflePairing, setIsShufflePairing] = useState(false); // Kept state but removed button
+  const [isShufflePairing, setIsShufflePairing] = useState(false);
   const [isShuffleTasks, setIsShuffleTasks] = useState(false);
   const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
   const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
@@ -264,6 +265,16 @@ const Cleanup = () => {
     };
   }, [volume, pair]); // Add pair to dependencies to trigger cleanup when pair changes
 
+
+  const getAlbumArt = (track: any) => {
+    const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
+    return album?.covers[0] || '/placeholder.svg';
+  };
+
+  const getArtistName = (track: any) => {
+    const artist = artists.find(a => a.id === track.artistId);
+    return artist?.name || 'Unknown Artist';
+  };
 
   const allTasks = useMemo(() => {
     const generatedTasks = [
@@ -362,8 +373,8 @@ const Cleanup = () => {
 
     if (sortConfig.field !== 'none') {
       tasks.sort((a, b) => {
-        const aValue = (a as any)[sortConfig.field]?.toLowerCase() || '';
-        const bValue = (b as any)[sortConfig.field]?.toLowerCase() || '';
+        const aValue = (a as any).label?.toLowerCase() || ''; // Use label for sorting
+        const bValue = (b as any).label?.toLowerCase() || '';
         
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -503,9 +514,15 @@ const Cleanup = () => {
     } else if (task.type === 'release_date') {
       const releaseDate = prompt(`Enter release date for ${task.entity.title} (YYYY-MM-DD or YYYY-MM or YYYY):`);
       if (releaseDate !== null) {
-        await updateRelease(task.entity.id, { releaseDate }); // Using store function
-        toast.success("Release date updated.");
-        fetchData();
+        // Find the release and update it
+        const releaseToUpdate = releases.find(r => r.id === task.entity.id);
+        if (releaseToUpdate) {
+          await updateRelease(task.entity.id, { releaseDate });
+          toast.success("Release date updated.");
+          fetchData();
+        } else {
+          toast.error("Release not found.");
+        }
       }
     } else if (task.type === 'artist_image') {
       setImageUploadEntity(task.entity);
@@ -546,17 +563,6 @@ const Cleanup = () => {
     }));
   };
 
-
-  const getAlbumArt = (track: any) => {
-    const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
-    return album?.covers[0] || '/placeholder.svg';
-  };
-
-  const getArtistName = (track: any) => {
-    const artist = artists.find(a => a.id === track.artistId);
-    return artist?.name || 'Unknown Artist';
-  };
-
   return (
     <div className="space-y-12 pb-20">
       <div className="flex items-end justify-between">
@@ -582,7 +588,7 @@ const Cleanup = () => {
 
         {pair ? (
           <>
-            <div className="grid grid-cols-2 gap-8 relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-4">
                 <div className="w-12 h-12 rounded-full bg-zinc-950 border-4 border-zinc-900 flex items-center justify-center text-zinc-500 font-black italic text-xl shadow-2xl">
                   VS
@@ -591,26 +597,25 @@ const Cleanup = () => {
 
               {pair.map((track, idx) => (
                 <TrackContextMenu key={track.id} track={track}>
-                  <div className="space-y-4 min-w-0">  {/* add min-w-0 here */}
+                  <div className="space-y-4 min-w-0">
                     <Card 
                       className={cn(
                         "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
                       )}
                       onClick={() => playSnippet(track)}
                     >
-                      <div className="aspect-square relative overflow-hidden">  {/* changed 16/9 to square */}
+                      <div className="aspect-square relative overflow-hidden">
                         <img 
                           src={getAlbumArt(track)} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
                           alt="" 
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" /> {/* Adjusted opacity for better visibility of text */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                           <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
                             {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
                           </div>
                         </div>
-                        {/* Move text inside the image div so it overlays properly */}
                         <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
                           <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
                           <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
