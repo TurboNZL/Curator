@@ -124,7 +124,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   currentTrackId: null,
   isPlaying: false,
   isLoading: false,
-  volume: 0.8,
+  volume: 0.4, // Changed default volume from 0.8 to 0.4
   isShuffled: false,
   currentProgress: 0,
   currentDuration: 0,

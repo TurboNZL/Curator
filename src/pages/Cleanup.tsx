@@ -233,10 +233,37 @@ const Cleanup = () => {
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
     }
-  }, [volume]);
+
+    const audio = audioRef.current;
+
+    const handleTimeUpdate = () => { /* ... */ };
+    const handleLoadedMetadata = () => { /* ... */ };
+    const handleEnded = () => { /* ... */ };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    // Cleanup function: pause audio and clear timer when component unmounts or dependencies change
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+      if (audio) {
+        audio.pause(); // Pause when component unmounts or dependencies change
+        audio.removeAttribute('src'); // Clear src
+      }
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      setPlayingId(null); // Reset playing ID
+    };
+  }, [volume, pair]); // Add pair to dependencies to trigger cleanup when pair changes
+
 
   const allTasks = useMemo(() => {
     const generatedTasks = [
@@ -354,6 +381,18 @@ const Cleanup = () => {
 
   const pickNewPair = () => {
     if (tracks.length < 2) return;
+    
+    // Pause any currently playing audio before picking a new pair
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.removeAttribute('src');
+    }
+    setPlayingId(null);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
     const availableTracks = isShufflePairing ? [...tracks].sort(() => Math.random() - 0.5) : tracks;
     
     let t1 = null;
@@ -366,10 +405,6 @@ const Cleanup = () => {
       } while (t2.id === t1.id);
     }
     setPair(t1 && t2 ? [t1, t2] : null);
-    setPlayingId(null);
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
   };
 
   useEffect(() => {
@@ -389,7 +424,7 @@ const Cleanup = () => {
         isEqual
       });
       toast.success(isEqual ? "Marked as equal" : "Vote recorded");
-      pickNewPair();
+      pickNewPair(); // This will also stop current audio
     } catch (error) {
       toast.error("Failed to record vote");
     }
@@ -547,7 +582,7 @@ const Cleanup = () => {
 
         {pair ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+            <div className="grid grid-cols-2 gap-8 relative"> {/* Changed md:grid-cols-2 to grid-cols-2 */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col gap-4">
                 <div className="w-12 h-12 rounded-full bg-zinc-950 border-4 border-zinc-900 flex items-center justify-center text-zinc-500 font-black italic text-xl shadow-2xl">
                   VS
