@@ -604,7 +604,7 @@ const Cleanup = () => {
                     )}
                     onClick={() => playSnippet(track)}
                   >
-                    <div className="aspect-square relative overflow-hidden">
+                    <div className="aspect-[16/9] relative overflow-hidden">
                       <img 
                         src={getAlbumArt(track)} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
