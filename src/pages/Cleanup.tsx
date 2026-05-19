@@ -596,7 +596,8 @@ const Cleanup = () => {
               </div>
 
               {pair.map((track, idx) => (
-                <TrackContextMenu key={track.id} track={track}>
+                <div key={track.id} className="space-y-4 min-w-0">
+                  {/* TrackContextMenu removed from here */}
                   <Card 
                     className={cn(
                       "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
@@ -632,7 +633,7 @@ const Cleanup = () => {
                   >
                     <ThumbsUp size={16} /> Vote for this
                   </Button>
-                </TrackContextMenu>
+                </div>
               ))}
             </div>
 
