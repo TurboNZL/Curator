@@ -195,9 +195,6 @@ const AlbumDetail = () => {
                       <TableCell>
                         <Rating
                           trackId={track.id}
-                          balanced={track.rating}
-                          unbalanced={track.initialRating}
-                          comparisons={track.comparisons}
                         />
                       </TableCell>
                       <TableCell className="text-right">

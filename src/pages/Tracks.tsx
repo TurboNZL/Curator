@@ -47,7 +47,10 @@ const Tracks = () => {
       } else if (sortConfig.field === 'memories') {
         comparison = (a.memories || 0) - (b.memories || 0);
       } else if (sortConfig.field === 'rating') {
-        comparison = (a.rating || 0) - (b.rating || 0);
+        // Sort by actual balanced rating for consistency
+        const ratingA = a.rating ?? 0;
+        const ratingB = b.rating ?? 0;
+        comparison = ratingA - ratingB;
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
@@ -164,9 +167,6 @@ const Tracks = () => {
                       <TableCell>
                         <Rating
                           trackId={track.id}
-                          balanced={track.rating}
-                          unbalanced={track.initialRating}
-                          comparisons={track.comparisons}
                           size="sm"
                         />
                       </TableCell>

@@ -24,6 +24,14 @@ const ArtistDetail = () => {
   const artistTracks = tracks
     .filter(t => t.artistId === id)
     .sort((a, b) => {
+      // Prioritize tracks with valid ratings first
+      const hasRatingA = (a.rating !== undefined && a.rating !== null && a.comparisons >= 3) || (a.initialRating !== undefined && a.initialRating !== null);
+      const hasRatingB = (b.rating !== undefined && b.rating !== null && b.comparisons >= 3) || (b.initialRating !== undefined && b.initialRating !== null);
+
+      if (hasRatingA && !hasRatingB) return -1;
+      if (!hasRatingA && hasRatingB) return 1;
+
+      // If both have ratings or neither, then sort by rating, then eloScore
       const ratingA = a.rating ?? 0;
       const ratingB = b.rating ?? 0;
       if (ratingB !== ratingA) return ratingB - ratingA;
@@ -105,9 +113,6 @@ const ArtistDetail = () => {
                   <div className="flex items-center gap-1 ml-2">
                     <Rating
                       trackId={track.id}
-                      balanced={track.rating}
-                      unbalanced={track.initialRating}
-                      comparisons={track.comparisons}
                     />
                   </div>
                 </div>

@@ -117,9 +117,6 @@ const SearchResults = () => {
                         <div className="flex items-center gap-4">
                           <Rating
                             trackId={track.id}
-                            balanced={track.rating}
-                            unbalanced={track.initialRating}
-                            comparisons={track.comparisons}
                             size="sm"
                           />
                         </div>
