@@ -5,14 +5,6 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-<dyad-write path="src/components/layout/BottomPlayer.tsx" description="Fixing BottomPlayer to pass the `open` prop to StatsForNerdsModal, and making it externally controlled.">
-"use client";
-
-import React, { useEffect, useRef, useState } from 'react';
-import { useMusicStore } from '@/store/useMusicStore';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
@@ -30,8 +22,6 @@ export const BottomPlayer = () => {
   const [duration, setDuration] = useState(0);
   const [showQueue, setShowQueue] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isStatsForNerdsModalOpen, setIsStatsForNerdsModalOpen] = useState(false); // Add state for StatsForNerdsModal
-
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
@@ -271,9 +261,11 @@ export const BottomPlayer = () => {
           )}
         </div>
 
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 disabled:opacity-30" disabled={!currentTrackId} onClick={() => setIsStatsForNerdsModalOpen(true)}>
-          <Info size={18} />
-        </Button>
+        <StatsForNerdsModal track={currentTrack} artist={artist} album={album}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 disabled:opacity-30" disabled={!currentTrackId}>
+            <Info size={18} />
+          </Button>
+        </StatsForNerdsModal>
         
         <div className="flex items-center gap-3 w-32">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500" onClick={() => setVolume(volume === 0 ? 0.8 : 0)}>
@@ -288,7 +280,6 @@ export const BottomPlayer = () => {
           />
         </div>
       </div>
-      <StatsForNerdsModal track={currentTrack} artist={artist} album={album} open={isStatsForNerdsModalOpen} onOpenChange={setIsStatsForNerdsModalOpen} />
     </div>
   );
 };

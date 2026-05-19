@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History, Music } from 'lucide-react';
@@ -9,7 +9,6 @@ import { PlaybackHistoryModal } from '@/components/modals/PlaybackHistoryModal';
 
 const Stats = () => {
   const { tracks, playbackLogs, fetchData, currentTrackId, isPlaying, currentProgress } = useMusicStore();
-  const [isPlaybackHistoryModalOpen, setIsPlaybackHistoryModalOpen] = useState(false); // State for PlaybackHistoryModal
 
   useEffect(() => {
     fetchData();
@@ -147,9 +146,7 @@ const Stats = () => {
               <History size={16} className="text-zinc-500" />
               <h3 className="text-xs font-black uppercase tracking-widest text-white">Recent Activity</h3>
             </div>
-            <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 p-0 h-auto" onClick={() => setIsPlaybackHistoryModalOpen(true)}>
-              Show All
-            </Button>
+            <PlaybackHistoryModal />
           </div>
           <div className="space-y-4">
             {playbackLogs.slice(0, 10).map((log, i) => {
@@ -167,7 +164,6 @@ const Stats = () => {
           </div>
         </Card>
       </div>
-      <PlaybackHistoryModal open={isPlaybackHistoryModalOpen} onOpenChange={setIsPlaybackHistoryModalOpen} />
     </div>
   );
 };
