@@ -209,6 +209,8 @@ const Cleanup = () => {
   const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
   const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
 
+  const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: 'none', direction: 'asc' });
+
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
   const [imageUploadEntity, setImageUploadEntity] = useState<any>(null);
   const [imageUploadEntityType, setImageUploadEntityType] = useState<'artist' | 'album' | null>(null);
@@ -247,20 +249,38 @@ const Cleanup = () => {
       ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
     ];
 
+    const sortedTracks = [...tracks].sort((a, b) => {
+      const albumA = a.albumIds.length > 0 ? a.albumIds[0].albumId : '';
+      const orderA = a.albumIds.length > 0 ? a.albumIds[0].order : 0;
+      const albumB = b.albumIds.length > 0 ? b.albumIds[0].albumId : '';
+      const orderB = b.albumIds.length > 0 ? b.albumIds[0].order : 0;
+
+      if (albumA < albumB) return -1;
+      if (albumA > albumB) return 1;
+      return orderA - orderB;
+    });
+
     const groupedSpotifyTasks: any[] = [];
     let currentGroup: any[] = [];
 
-    tracks.forEach((track, index) => {
-      if (!track.spotifyUrl && track.albumIds.length > 0) {
-        const prevTrack = tracks[index - 1];
-        if (currentGroup.length === 0 || (prevTrack && track.albumIds[0] === prevTrack.albumIds[0] && !prevTrack.spotifyUrl)) {
+    sortedTracks.forEach((track, index) => {
+      const albumInfo = track.albumIds.length > 0 ? track.albumIds[0] : null;
+      if (!track.spotifyUrl && albumInfo) {
+        const prevTrack = sortedTracks[index - 1];
+        const prevAlbumInfo = prevTrack?.albumIds.length > 0 ? prevTrack.albumIds[0] : null;
+
+        if (currentGroup.length === 0 ||
+            (prevTrack &&
+             albumInfo.albumId === prevAlbumInfo?.albumId &&
+             albumInfo.order === (prevAlbumInfo?.order || 0) + 1 &&
+             !prevTrack.spotifyUrl)) {
           currentGroup.push(track);
         } else {
           if (currentGroup.length > 1) {
             groupedSpotifyTasks.push({
               type: 'grouped_spotify_uri',
-              entity: { albumId: currentGroup[0].albumIds[0], tracks: currentGroup },
-              label: `Add Spotify links for ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
+              entity: { albumId: currentGroup[0].albumIds[0].albumId, tracks: currentGroup },
+              label: `Add Spotify links for ${albums.find(al => al.id === currentGroup[0].albumIds[0].albumId)?.title || 'Unknown Album'}: ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
               icon: Link,
               color: 'text-green-500',
               isGrouped: true,
@@ -276,8 +296,8 @@ const Cleanup = () => {
         if (currentGroup.length > 1) {
           groupedSpotifyTasks.push({
             type: 'grouped_spotify_uri',
-            entity: { albumId: currentGroup[0].albumIds[0], tracks: currentGroup },
-            label: `Add Spotify links for ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
+            entity: { albumId: currentGroup[0].albumIds[0].albumId, tracks: currentGroup },
+            label: `Add Spotify links for ${albums.find(al => al.id === currentGroup[0].albumIds[0].albumId)?.title || 'Unknown Album'}: ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
             icon: Link,
             color: 'text-green-500',
             isGrouped: true,
@@ -294,8 +314,8 @@ const Cleanup = () => {
     if (currentGroup.length > 1) {
       groupedSpotifyTasks.push({
         type: 'grouped_spotify_uri',
-        entity: { albumId: currentGroup[0].albumIds[0], tracks: currentGroup },
-        label: `Add Spotify links for ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
+        entity: { albumId: currentGroup[0].albumIds[0].albumId, tracks: currentGroup },
+        label: `Add Spotify links for ${albums.find(al => al.id === currentGroup[0].albumIds[0].albumId)?.title || 'Unknown Album'}: ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
         icon: Link,
         color: 'text-green-500',
         isGrouped: true,
@@ -311,11 +331,23 @@ const Cleanup = () => {
 
   const filteredTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
+
+    if (sortConfig.field !== 'none') {
+      tasks.sort((a, b) => {
+        const aValue = a[sortConfig.field]?.toLowerCase() || '';
+        const bValue = b[sortConfig.field]?.toLowerCase() || '';
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     if (isShuffleTasks) {
       tasks = [...tasks].sort(() => Math.random() - 0.5);
     }
     return tasks;
-  }, [allTasks, activeFilters, isShuffleTasks]);
+  }, [allTasks, activeFilters, isShuffleTasks, sortConfig]);
 
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
@@ -625,6 +657,27 @@ const Cleanup = () => {
               <Label htmlFor="shuffle-tasks" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1">
                 <Shuffle size={12}/> Shuffle Tasks
               </Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
+                    Sort By: {sortConfig.field !== 'none' ? sortConfig.field.replace(/\b\w/g, c => c.toUpperCase()) : 'None'} {sortConfig.direction === 'asc' ? '(Asc)' : '(Desc)'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white">
+                  <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-zinc-800" />
+                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'label', direction: 'asc' })} className="text-xs font-medium">Label (Asc)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'label', direction: 'desc' })} className="text-xs font-medium">Label (Desc)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'type', direction: 'asc' })} className="text-xs font-medium">Type (Asc)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'type', direction: 'desc' })} className="text-xs font-medium">Type (Desc)</DropdownMenuItem>
+                  {sortConfig.field !== 'none' && (
+                    <>
+                      <DropdownMenuSeparator className="bg-zinc-800" />
+                      <DropdownMenuItem onClick={() => setSortConfig({ field: 'none', direction: 'asc' })} className="text-xs font-medium">Remove Sort</DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">

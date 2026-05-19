@@ -27,7 +27,7 @@ export default defineHandler(async (event) => {
           credits: parseJson(track.credits),
           queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
           isFavorite: !!track.isFavorite,
-          albumIds: relations.filter(r => r.trackId === track.id).map(r => r.albumId),
+          albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
           artistIds: parseJson(track.artistIds)
         };
       });
@@ -68,9 +68,13 @@ export default defineHandler(async (event) => {
 
     await db.insert(tracks).values(newTrack);
 
-    if (body.albumIds && Array.isArray(body.albumIds)) {
+    if (body.albumTracks && Array.isArray(body.albumTracks)) {
+      for (const albumTrack of body.albumTracks) {
+        await db.insert(albumTracks).values({ albumId: albumTrack.albumId, trackId: id, order: albumTrack.order || 0 });
+      }
+    } else if (body.albumIds && Array.isArray(body.albumIds)) {
       for (const albumId of body.albumIds) {
-        await db.insert(albumTracks).values({ albumId, trackId: id });
+        await db.insert(albumTracks).values({ albumId, trackId: id, order: 0 }); // Default order for legacy albumIds
       }
     }
 

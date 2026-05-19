@@ -163,6 +163,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           credits: typeof t.credits === 'string' ? JSON.parse(t.credits || '[]') : (t.credits || []),
           queueRules: typeof t.queueRules === 'string' ? JSON.parse(t.queueRules || '{}') : (t.queueRules || {}),
           artistIds: typeof t.artistIds === 'string' ? JSON.parse(t.artistIds || '[]') : (t.artistIds || []),
+          albumIds: typeof t.albumIds === 'string' ? JSON.parse(t.albumIds || '[]') : (t.albumIds || []),
           isFavorite: !!t.isFavorite
         })),
         releases: releases || [],

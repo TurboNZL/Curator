@@ -50,6 +50,7 @@ export interface Album {
   covers: string[];
   defaultReleaseId?: string;
   pendingFiles?: PendingFile[]; // Uploaded but unassigned audio files
+  credits?: string[]; // Album-level credits
 }
 
 export interface ReleaseType {
@@ -72,7 +73,7 @@ export interface Track {
   title: string;
   artistId: string;
   artistIds?: string[];
-  albumIds: string[];
+  albumIds: Array<{ albumId: string, order: number }>;
   rating?: number; // Balanced rating, nullable
   initialRating?: number;
   eloScore: number;
@@ -93,6 +94,7 @@ export interface Track {
     nextTrackId?: string;
     forbiddenStandalone?: boolean;
   };
+  syncWithAlbumCredits?: boolean;
 }
 
 export interface Playlist {

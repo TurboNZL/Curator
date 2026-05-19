@@ -33,6 +33,7 @@ export const albums = sqliteTable('albums', {
   covers: text('covers'), // JSON string array
   defaultReleaseId: text('default_release_id'),
   pendingFiles: text('pending_files'), // JSON string array
+  credits: text('credits'), // JSON string array for album-level credits
 });
 
 export const releaseTypes = sqliteTable('release_types', {
@@ -79,6 +80,7 @@ export const tracks = sqliteTable('tracks', {
   key: text('key'),
   memories: integer('memories').notNull().default(0),
   queueRules: text('queue_rules'), // JSON: { nextTrackId?: string, forbiddenStandalone?: boolean }
+  syncWithAlbumCredits: integer('sync_with_album_credits', { mode: 'boolean' }).notNull().default(true),
 });
 
 export const groups = sqliteTable('groups', {
@@ -102,6 +104,7 @@ export const groupMembers = sqliteTable('group_members', {
 export const albumTracks = sqliteTable('album_tracks', {
   albumId: text('album_id').notNull(),
   trackId: text('track_id').notNull(),
+  order: integer('order').notNull().default(0),
 }, (table) => ({
   pk: primaryKey({ columns: [table.albumId, table.trackId] }),
 }));
