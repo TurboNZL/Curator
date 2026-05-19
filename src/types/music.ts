@@ -96,6 +96,7 @@ export interface Track {
     forbiddenStandalone?: boolean;
   };
   syncWithAlbumCredits?: boolean;
+  isFavorite?: boolean; // Added this property
 }
 
 export interface Playlist {

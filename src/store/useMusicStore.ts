@@ -404,9 +404,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(trackData)
       });
-      const newTrack = await res.json();
-      set(state => ({ tracks: [...state.tracks, newTrack] }));
-      createdTracks.push(newTrack);
+      if (res.ok) { // Only process if the response is OK
+        const newTrack = await res.json();
+        set(state => ({ tracks: [...state.tracks, newTrack] }));
+        createdTracks.push(newTrack);
+      } else {
+        console.error(`Failed to add track: ${trackData.title}`, await res.text());
+        // Optionally toast an error for individual track failure, or aggregate for a single toast at the end
+      }
     }
     return createdTracks;
   },
@@ -464,7 +469,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       if (!res.ok) throw new Error('Failed to delete playlist');
       await get().fetchData(); 
       toast.success("Playlist deleted");
-    } catch (err) {
+    }
+
+    catch (err) {
       toast.error("Failed to delete playlist");
     }
   },

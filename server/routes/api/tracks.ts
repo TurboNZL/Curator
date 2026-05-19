@@ -2,6 +2,7 @@ import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
 import { tracks, albumTracks } from '../../db/schema';
+import type { InferSelectModel } from 'drizzle-orm'; // Import InferSelectModel
 
 export default defineHandler(async (event) => {
   const method = event.method;
@@ -11,7 +12,9 @@ export default defineHandler(async (event) => {
       const allTracks = await db.select().from(tracks);
       const relations = await db.select().from(albumTracks);
       
-      return allTracks.map(track => {
+      type TrackSelect = InferSelectModel<typeof tracks>; // Define an alias for clarity
+
+      return allTracks.map((track: TrackSelect) => { // Use the alias here
         const parseJson = (val: any) => {
           if (typeof val === 'string') {
             try { return JSON.parse(val || '[]'); } catch (e) { return []; }
@@ -26,7 +29,7 @@ export default defineHandler(async (event) => {
           writers: parseJson(track.writers),
           credits: parseJson(track.credits),
           queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
-          isFavorite: !!track.isFavorite,
+          isFavorite: !!track.isFavorite, // This should now be fine as isFavorite exists
           albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
           artistIds: parseJson(track.artistIds)
         };
@@ -73,8 +76,8 @@ export default defineHandler(async (event) => {
         await db.insert(albumTracks).values({ albumId: albumTrack.albumId, trackId: id, order: albumTrack.order || 0 });
       }
     } else if (body.albumIds && Array.isArray(body.albumIds)) {
-      for (const albumId of body.albumIds) {
-        await db.insert(albumTracks).values({ albumId, trackId: id, order: 0 }); // Default order for legacy albumIds
+      for (const albumRelation of body.albumIds) { 
+        await db.insert(albumTracks).values({ albumId: albumRelation.albumId, trackId: id, order: albumRelation.order || 0 });
       }
     }
 
