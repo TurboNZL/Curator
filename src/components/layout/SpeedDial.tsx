@@ -15,13 +15,22 @@ import { CreateTrackModal } from '../modals/CreateTrackModal';
 import { CreateJournalEntryModal } from '../modals/CreateJournalEntryModal';
 import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
 import { ImportAlbumModal } from '../modals/ImportAlbumModal';
-import { RelationalBioModal } from '../modals/RelationalBioModal'; // Import RelationalBioModal
+import { RelationalBioModal } from '../modals/RelationalBioModal';
+
+// Define a type for modals that can be passed as 'children' to a trigger
+type ChildTriggerModal = React.ComponentType<{ children: React.ReactElement }>;
+
+type ActionItem = { 
+  icon: React.ComponentType<{ size: number }>, 
+  label: string, 
+  modal: ChildTriggerModal 
+};
 
 export const SpeedDial = () => {
   const [isBioModalOpen, setIsBioModalOpen] = useState(false); // State for RelationalBioModal
   const [isImportAlbumModalOpen, setIsImportAlbumModalOpen] = useState(false); // State for ImportAlbumModal
 
-  const actions = [
+  const actions: ActionItem[] = [
     { icon: Mic2, label: "New Artist", modal: CreateArtistModal },
     { icon: Disc, label: "New Album", modal: CreateAlbumModal },
     { icon: FileAudio, label: "New Track", modal: CreateTrackModal },

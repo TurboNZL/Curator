@@ -21,7 +21,7 @@ export async function initDb() {
     `CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, theme TEXT NOT NULL DEFAULT 'dark', accent_color TEXT NOT NULL DEFAULT '#3b82f6', playback_mode TEXT NOT NULL DEFAULT 'local', settings TEXT, playback_rules TEXT)`,
     `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT, groups TEXT)`,
     `CREATE TABLE IF NOT EXISTS eras (id TEXT PRIMARY KEY, name TEXT NOT NULL, artist_id TEXT NOT NULL, description TEXT)`,
-    `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, artist_ids TEXT, era_id TEXT, covers TEXT, default_release_id TEXT, pending_files TEXT)`,
+    `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, artist_ids TEXT, era_id TEXT, covers TEXT, default_release_id TEXT, pending_files TEXT, credits TEXT)`,
 
     `CREATE TABLE IF NOT EXISTS release_types (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE)`,
     `CREATE TABLE IF NOT EXISTS releases (id TEXT PRIMARY KEY, album_id TEXT NOT NULL, title TEXT NOT NULL, cover_image TEXT, release_date TEXT, spotify_uri TEXT)`,
@@ -74,6 +74,7 @@ export async function initDb() {
     `ALTER TABLE albums ADD COLUMN artist_ids TEXT`,
     `ALTER TABLE tracks ADD COLUMN artist_ids TEXT`,
     `ALTER TABLE group_members ADD COLUMN show_on_entity_page INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE albums ADD COLUMN credits TEXT`,
   ];
 
   for (const migration of migrations) {
