@@ -69,7 +69,6 @@ export const tracks = sqliteTable('tracks', {
   localFilePath: text('local_file_path'),
   spotifyUrl: text('spotify_url'),
   geniusUrl: text('genius_url'),
-  // Removed soundcloudUrl: text('soundcloud_url'),
   youtubeMusicUrl: text('youtube_music_url'),
   genres: text('genres'), // JSON string array
   producers: text('producers'), // JSON string array
