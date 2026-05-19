@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History, Music } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, StackedBarChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { PlaybackHistoryModal } from '@/components/modals/PlaybackHistoryModal';
@@ -133,7 +133,7 @@ const Stats = () => {
           </div>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <StackedBarChart data={topTracks} layout="vertical" margin={{ left: 40, right: 20 }}>
+              <BarChart data={topTracks} layout="vertical" margin={{ left: 40, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis 
@@ -159,7 +159,7 @@ const Stats = () => {
                     <Cell key={`partial-cell-${index}`} fill={entry.id === currentTrackId ? '#10B98140' : '#3b82f640'} />
                   ))}
                 </Bar>
-              </StackedBarChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
