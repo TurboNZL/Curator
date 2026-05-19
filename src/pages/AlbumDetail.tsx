@@ -183,40 +183,38 @@ const AlbumDetail = () => {
               </TableHeader>
               <TableBody>
                 {albumTracks.map((track, index) => (
-                  <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
-                    <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                    <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                        <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Rating
-                        trackId={track.id}
-                        balanced={track.rating}
-                        unbalanced={track.initialRating}
-                        comparisons={track.comparisons}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <TrackContextMenu track={track}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
-                            <ListMusic size={14} />
-                          </Button>
-                        </TrackContextMenu>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
-                          onClick={() => {
-                            setSelectedTrackForEdit(track);
-                            setIsEditTrackModalOpen(true);
-                          }}
-                        >
-                          <Edit2 size={14}/>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TrackContextMenu key={track.id} track={track}>
+                    <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
+                      <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
+                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                          <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Rating
+                          trackId={track.id}
+                          balanced={track.rating}
+                          unbalanced={track.initialRating}
+                          comparisons={track.comparisons}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent context menu from re-opening if this button is within trigger
+                                setSelectedTrackForEdit(track);
+                                setIsEditTrackModalOpen(true);
+                              }}
+                            >
+                              <Edit2 size={14}/>
+                            </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TrackContextMenu>
                 ))}
               </TableBody>
             </Table>

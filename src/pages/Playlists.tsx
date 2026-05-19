@@ -340,28 +340,31 @@ const Playlists = () => {
                         onDragOver={(e) => onDragOver(e, index)}
                         onDragEnd={onDragEnd}
                         className={cn(
-                          "flex items-center gap-2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg group cursor-grab transition-all",
+                          "transition-all",
                           draggedTrackIndex === index && "opacity-50 scale-[0.98] border-emerald-500/50"
                         )}
                       >
-                        <div className="text-zinc-600 group-hover:text-zinc-400">
-                          <GripVertical size={14} />
-                        </div>
-                        {album?.covers?.[0] ? (
-                          <img src={album.covers[0]} alt="" className="w-6 h-6 object-cover rounded" />
-                        ) : (
-                          <div className="w-6 h-6 flex items-center justify-center bg-zinc-800 rounded text-zinc-500">
-                            <MusicIcon size={12} />
+                        <TrackContextMenu track={track}>
+                          <div className="flex items-center gap-2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg group cursor-grab transition-all">
+                            <div className="text-zinc-600 group-hover:text-zinc-400">
+                              <GripVertical size={14} />
+                            </div>
+                            {album?.covers?.[0] ? (
+                              <img src={album.covers[0]} alt="" className="w-6 h-6 object-cover rounded" />
+                            ) : (
+                              <div className="w-6 h-6 flex items-center justify-center bg-zinc-800 rounded text-zinc-500">
+                                <MusicIcon size={12} />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{track.title}</p>
+                              <p className="text-[10px] text-zinc-500 truncate">{artist?.name}</p>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500" onClick={() => removeTrackFromEditingPlaylist(track.id)}>
+                              <Trash2 size={12} />
+                            </Button>
                           </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{track.title}</p>
-                          <p className="text-[10px] text-zinc-500 truncate">{artist?.name}</p>
-                        </div>
-                        <TrackContextMenu track={track} />
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500" onClick={() => removeTrackFromEditingPlaylist(track.id)}>
-                          <Trash2 size={12} />
-                        </Button>
+                        </TrackContextMenu>
                       </div>
                     );
                   })}

@@ -92,6 +92,18 @@ const DEFAULT_PROFILE: Profile = {
   playbackRules: [],
 };
 
+const parseJsonOrDefault = (jsonString: string | null | undefined, defaultValue: any) => {
+  if (typeof jsonString === 'string' && jsonString) {
+    try {
+      return JSON.parse(jsonString);
+    } catch (e) {
+      console.error("Error parsing JSON:", e, jsonString);
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 export const useMusicStore = create<MusicState>((set, get) => ({
   activeProfile: DEFAULT_PROFILE,
   artists: [],
@@ -119,7 +131,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       const fetchJson = async (url: string) => {
         try {
           const res = await fetch(url);
-          if (!res.ok) return [];
+          if (!res.ok) {
+            console.error(`Fetch failed for ${url}: ${res.status} ${res.statusText}`);
+            return [];
+          }
           return await res.json();
         } catch (e) {
           console.error(`Fetch failed for ${url}:`, e);
@@ -142,28 +157,28 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       
       const activeProfile = profiles && profiles[0] ? {
         ...profiles[0],
-        settings: JSON.parse(profiles[0].settings || '{"showUnbalancedFirst": false}'),
-        playbackRules: JSON.parse(profiles[0].playbackRules || '[]')
+        settings: parseJsonOrDefault(profiles[0].settings, {"showUnbalancedFirst": false}),
+        playbackRules: parseJsonOrDefault(profiles[0].playbackRules, [])
       } : DEFAULT_PROFILE;
 
       set({
         activeProfile,
-        artists: (artists || []).map((a: any) => ({ ...a, groups: JSON.parse(a.groups || '[]'), eras: [] })),
+        artists: (artists || []).map((a: any) => ({ ...a, groups: parseJsonOrDefault(a.groups, []), eras: [] })),
         albums: (albums || []).map((al: any) => ({
           ...al,
-          covers: JSON.parse(al.covers || '[]'),
-          pendingFiles: JSON.parse(al.pendingFiles || '[]'),
-          artistIds: JSON.parse(al.artistIds || '[]')
+          covers: parseJsonOrDefault(al.covers, []),
+          pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
+          artistIds: parseJsonOrDefault(al.artistIds, [])
         })),
         tracks: (tracks || []).map((t: any) => ({
           ...t,
-          genres: typeof t.genres === 'string' ? JSON.parse(t.genres || '[]') : (t.genres || []),
-          producers: typeof t.producers === 'string' ? JSON.parse(t.producers || '[]') : (t.producers || []),
-          writers: typeof t.writers === 'string' ? JSON.parse(t.writers || '[]') : (t.writers || []),
-          credits: typeof t.credits === 'string' ? JSON.parse(t.credits || '[]') : (t.credits || []),
-          queueRules: typeof t.queueRules === 'string' ? JSON.parse(t.queueRules || '{}') : (t.queueRules || {}),
-          artistIds: typeof t.artistIds === 'string' ? JSON.parse(t.artistIds || '[]') : (t.artistIds || []),
-          albumIds: typeof t.albumIds === 'string' ? JSON.parse(t.albumIds || '[]') : (t.albumIds || []),
+          genres: parseJsonOrDefault(t.genres, []),
+          producers: parseJsonOrDefault(t.producers, []),
+          writers: parseJsonOrDefault(t.writers, []),
+          credits: parseJsonOrDefault(t.credits, []),
+          queueRules: parseJsonOrDefault(t.queueRules, {}),
+          artistIds: parseJsonOrDefault(t.artistIds, []),
+          albumIds: parseJsonOrDefault(t.albumIds, []),
           isFavorite: !!t.isFavorite
         })),
         releases: releases || [],
@@ -187,6 +202,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   setCurrentTrack: (trackId, context) => {
     const state = get();
     let newActiveQueue = state.activeQueue;
+    let newPlayingState = !!trackId;
 
     if (context) {
       if (context.type === 'album' || context.type === 'playlist') {
@@ -196,18 +212,24 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }
     }
 
+    let finalUserQueue = [...state.userQueue];
+
+    // Apply rule if current track is trackA
     if (trackId) {
       const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
       if (rule) {
         const shouldApplyRule = rule.applyToAlbumSource === true
           ? (context?.type === 'album')
-          : true;
+          : true; // Apply if not specifically for album or if it is for album and matches context
+        
         if (shouldApplyRule) {
           const nextIdFromRule = rule.trackBId;
-          const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
-          const isNextInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === nextIdFromRule;
-          if (!isNextInUserQueue && !isNextInActiveQueue) {
-            set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
+          const isNextDirectlyInUserQueue = finalUserQueue.length > 0 && finalUserQueue[0] === nextIdFromRule;
+          const isNextDirectlyInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === nextIdFromRule;
+
+          // If trackB is not already directly next, insert it at the beginning of the user queue
+          if (!isNextDirectlyInUserQueue && !isNextDirectlyInActiveQueue) {
+            finalUserQueue.unshift(nextIdFromRule);
           }
         }
       } 
@@ -215,8 +237,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
     set({
       currentTrackId: trackId,
-      isPlaying: !!trackId,
+      isPlaying: newPlayingState,
       activeQueue: newActiveQueue,
+      userQueue: finalUserQueue,
       currentProgress: 0,
       currentDuration: 0,
       currentTrackContext: trackId && context ? { type: context.type, id: context.id } : null
@@ -232,26 +255,27 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   nextTrack: () => {
     const state = get();
     const { activeQueue, userQueue, currentTrackId, activeProfile, currentTrackContext } = state;
-    const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
-    if (rule) {
-      const shouldApplyRule = rule.applyToAlbumSource === true
-        ? (currentTrackContext?.type === 'album')
-        : true;
+    
+    // Check for rule application from the *current* track first
+    if (currentTrackId) {
+      const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
+      if (rule) {
+        const shouldApplyRule = rule.applyToAlbumSource === true
+          ? (currentTrackContext?.type === 'album')
+          : true;
 
-      if (shouldApplyRule) {
-        const nextIdFromRule = rule.trackBId;
-        const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
-        const isNextInActiveQueue = activeQueue.length > 0 && activeQueue[0] === nextIdFromRule;
-        if (!isNextInUserQueue && !isNextInActiveQueue) {
-          set({ currentTrackId: nextIdFromRule, isPlaying: true });
-          set(s => ({
-            userQueue: s.userQueue.filter(id => id !== nextIdFromRule),
-            activeQueue: s.activeQueue.filter(id => id !== nextIdFromRule)
-          }));
-          return;
+        if (shouldApplyRule) {
+          const nextIdFromRule = rule.trackBId;
+          // If the rule's trackB is at the very front of the user queue, play it and remove it
+          if (userQueue.length > 0 && userQueue[0] === nextIdFromRule) {
+            set({ currentTrackId: nextIdFromRule, userQueue: userQueue.slice(1), isPlaying: true });
+            return;
+          }
         }
       }
     }
+
+    // Fallback to regular queue logic if no rule applied or rule already handled
     if (userQueue.length > 0) {
       const nextId = userQueue[0];
       set({ currentTrackId: nextId, userQueue: userQueue.slice(1), isPlaying: true });
@@ -286,15 +310,23 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   clearActiveQueue: () => set({ activeQueue: [] }),
   shuffleActiveQueue: () => {
     const state = get();
-    const shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
+    let shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
+    
+    // Apply shuffle rules: ensure trackB follows trackA if both are present
     for (const rule of rules) {
+      const indexA = shuffled.indexOf(rule.trackAId);
       const indexB = shuffled.indexOf(rule.trackBId);
-      if (indexB !== -1) {
+
+      if (indexA !== -1 && indexB !== -1) {
+        // Remove B from its current position
         shuffled.splice(indexB, 1);
-        const indexA = shuffled.indexOf(rule.trackAId);
-        if (indexA !== -1) shuffled.splice(indexA + 1, 0, rule.trackBId);
-        else { shuffled.unshift(rule.trackBId); shuffled.unshift(rule.trackAId); }
+        // Insert B right after A
+        shuffled.splice(indexA + 1, 0, rule.trackBId);
+      } else if (indexA !== -1 && indexB === -1) {
+        // If A is present but B is not, we can't apply the rule fully.
+        // Or if we want to ensure B is always added when A is shuffled... depends on rule interpretation.
+        // For now, only apply if both are present.
       }
     }
     set({ activeQueue: shuffled, isShuffled: true });
@@ -302,15 +334,19 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   shuffleUserQueue: () => {
     const state = get();
-    const shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
+    let shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
+
+    // Apply shuffle rules: ensure trackB follows trackA if both are present
     for (const rule of rules) {
+      const indexA = shuffled.indexOf(rule.trackAId);
       const indexB = shuffled.indexOf(rule.trackBId);
-      if (indexB !== -1) {
+
+      if (indexA !== -1 && indexB !== -1) {
+        // Remove B from its current position
         shuffled.splice(indexB, 1);
-        const indexA = shuffled.indexOf(rule.trackAId);
-        if (indexA !== -1) shuffled.splice(indexA + 1, 0, rule.trackBId);
-        else { shuffled.unshift(rule.trackBId); shuffled.unshift(rule.trackAId); }
+        // Insert B right after A
+        shuffled.splice(indexA + 1, 0, rule.trackBId);
       }
     }
     set({ userQueue: shuffled, isShuffled: true });
@@ -333,7 +369,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(artistData)
     });
     const newArtist = await res.json();
-    const parsedNewArtist = { ...newArtist, eras: [], groups: JSON.parse(newArtist.groups || '[]') };
+    const parsedNewArtist = { ...newArtist, eras: [], groups: parseJsonOrDefault(newArtist.groups, []) };
     set(state => ({ artists: [...state.artists, parsedNewArtist] }));
     return parsedNewArtist;
   },
@@ -367,9 +403,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const newAlbum = await res.json();
     const parsedNewAlbum = { 
       ...newAlbum, 
-      covers: JSON.parse(newAlbum.covers || '[]'), 
-      pendingFiles: JSON.parse(newAlbum.pendingFiles || '[]'), 
-      artistIds: JSON.parse(newAlbum.artistIds || '[]') 
+      covers: parseJsonOrDefault(newAlbum.covers, []), 
+      pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []), 
+      artistIds: parseJsonOrDefault(newAlbum.artistIds, []) 
     };
     set(state => ({ albums: [...state.albums, parsedNewAlbum] }));
     return parsedNewAlbum;

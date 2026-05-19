@@ -47,6 +47,15 @@ const Index = () => {
     return (ratedTracks.reduce((a, b) => a + (b.rating || 0), 0) / ratedTracks.length).toFixed(2);
   }, [tracks]);
 
+  const completionPercentage = useMemo(() => {
+    if (tracks.length === 0) return '0%';
+    const completedTracks = tracks.filter(t => 
+      (t.comparisons && t.comparisons >= 3) || 
+      (t.initialRating !== undefined && t.initialRating !== null && t.initialRating > 0)
+    );
+    return `${((completedTracks.length / tracks.length) * 100).toFixed(0)}%`;
+  }, [tracks]);
+
   const allEdits = useMemo(() => {
     // For simplicity, consider any timeline entry that isn't a direct rating update or simple playback log as an "edit"
     // In a real app, you'd have specific timeline types for 'track_updated', 'album_created', etc.
@@ -104,7 +113,7 @@ const Index = () => {
         <StatCard icon={Activity} label="Library Size" value={tracksCount.toString()} color="text-purple-500" />
         <StatCard icon={TrendingUp} label="Avg. Rating" value={avgRating} color="text-yellow-500" />
         <StatCard icon={Users} label="Relational Bios" value={groupsCount.toString()} color="text-blue-500" />
-        <StatCard icon={CheckCircle2} label="Completion" value={`${((tracks.filter(t => t.rating !== undefined && t.rating !== null && t.rating > 0).length / (tracksCount || 1)) * 100).toFixed(0)}%`} color="text-emerald-500" />
+        <StatCard icon={CheckCircle2} label="Completion" value={completionPercentage} color="text-emerald-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -1,11 +1,13 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { History, Music, Clock, SkipForward } from 'lucide-react';
+import { History, Music, Clock, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useMusicStore } from '@/store/useMusicStore';
+
+const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
 
 export const PlaybackHistoryModal = () => {
   const { playbackLogs, tracks, artists } = useMusicStore();
@@ -25,11 +27,21 @@ export const PlaybackHistoryModal = () => {
           </DialogTitle>
         </DialogHeader>
         
+        <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-xl mb-4 text-xs text-zinc-400 flex items-start gap-2">
+          <Info size={16} className="text-blue-500 shrink-0" />
+          <span>
+            A <strong className="text-white">Full Play</strong> is recorded when a track is listened to for more than {PARTIAL_PLAY_THRESHOLD_SECONDS} seconds. 
+            A <strong className="text-white">Partial Play (P)</strong> is recorded for shorter listens or if the track was explicitly skipped.
+          </span>
+        </div>
+
         <ScrollArea className="flex-1 pr-4 mt-4">
           <div className="space-y-2">
             {playbackLogs.map((log, i) => {
               const track = tracks.find(t => t.id === log.trackId);
               const artist = artists.find(a => a.id === track?.artistId);
+              const isPartialPlay = log.isSkip || (log.duration && log.duration <= PARTIAL_PLAY_THRESHOLD_SECONDS);
+
               return (
                 <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-900/50 hover:bg-zinc-900/50 transition-colors group">
                   <div className="flex items-center gap-4 min-w-0">
@@ -51,9 +63,9 @@ export const PlaybackHistoryModal = () => {
                     </div>
                     <div className="w-24">
                       <p className="text-[10px] font-bold text-zinc-400">{format(new Date(log.timestamp), 'MMM d, HH:mm')}</p>
-                      {log.isSkip && (
-                        <Badge variant="outline" className="text-[8px] border-red-900/50 text-red-500 bg-red-500/5 mt-1">
-                          <SkipForward size={8} className="mr-1" /> Skip
+                      {isPartialPlay && (
+                        <Badge variant="outline" className="text-[8px] border-zinc-700/50 text-zinc-500 bg-zinc-500/5 mt-1">
+                          P
                         </Badge>
                       )}
                     </div>

@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Music, Disc, User, Search, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/components/ui/Rating';
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -17,8 +18,8 @@ const SearchResults = () => {
     if (!query) return { tracks: [], albums: [], artists: [] };
 
     return {
-      tracks: tracks.filter(t => t.title.toLowerCase().includes(query)),
-      albums: albums.filter(a => a.title.toLowerCase().includes(query)),
+      tracks: tracks.filter(t => t.title.toLowerCase().includes(query) || artists.find(a => a.id === t.artistId)?.name.toLowerCase().includes(query) || albums.find(al => t.albumIds.some(aId => aId.albumId === al.id))?.title.toLowerCase().includes(query)),
+      albums: albums.filter(a => a.title.toLowerCase().includes(query) || artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(query)),
       artists: artists.filter(a => a.name.toLowerCase().includes(query))
     };
   }, [query, tracks, albums, artists]);
@@ -89,35 +90,36 @@ const SearchResults = () => {
                   const artist = artists.find(a => a.id === track.artistId);
                   const album = albums.find(al => track.albumIds.some(aId => aId.albumId === al.id));
                   return (
-                    <div 
-                      key={track.id} 
-                      className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-900/50 hover:bg-zinc-900/50 transition-colors group"
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden relative group/play">
-                          <img src={album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover opacity-60" alt="" />
-                          <button 
-                            onClick={() => setCurrentTrack(track.id)}
-                            className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover/play:opacity-100 transition-opacity"
-                          >
-                            <Play size={16} fill="currentColor" />
-                          </button>
+                    <TrackContextMenu key={track.id} track={track}>
+                      <div 
+                        className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-900/50 hover:bg-zinc-900/50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden relative group/play">
+                            <img src={album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover opacity-60" alt="" />
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
+                              className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover/play:opacity-100 transition-opacity"
+                            >
+                              <Play size={16} fill="currentColor" />
+                            </button>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white truncate">{track.title}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{artist?.name}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-white truncate">{track.title}</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{artist?.name}</p>
+                        <div className="flex items-center gap-4">
+                          <Rating
+                            trackId={track.id}
+                            balanced={track.rating}
+                            unbalanced={track.initialRating}
+                            comparisons={track.comparisons}
+                            size="sm"
+                          />
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <Rating
-                          trackId={track.id}
-                          balanced={track.rating}
-                          unbalanced={track.initialRating}
-                          comparisons={track.comparisons}
-                          size="sm"
-                        />
-                      </div>
-                    </div>
+                    </TrackContextMenu>
                   );
                 })}
               </div>

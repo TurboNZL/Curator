@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,11 +18,12 @@ import { Card } from '../ui/card';
 
 interface EditTrackModalProps {
   track: Track;
+  children?: React.ReactElement; // Allow children for trigger, but modal is controlled
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProps) => {
+export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => {
   const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
   
   const trackGroups = groups.filter(g =>
@@ -132,6 +133,7 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         <Tabs defaultValue="metadata" className="w-full flex flex-col overflow-hidden">
           <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4 shrink-0">

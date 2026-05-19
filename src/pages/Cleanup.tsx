@@ -18,6 +18,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal'; // Import the new modal
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 
 interface SpotifyUriGroupResolutionModalProps {
   isOpen: boolean;
@@ -561,52 +562,54 @@ const Cleanup = () => {
             </div>
 
             {pair.map((track, idx) => (
-              <div key={track.id} className="space-y-4">
-                <Card 
-                  className={cn(
-                    "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                  )}
-                  onClick={() => playSnippet(track)}
-                >
-                  <div className="aspect-[16/9] relative overflow-hidden">
-                    <img 
-                      src={getAlbumArt(track)} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                      alt="" 
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                      <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
-                        {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
-                    <div className="flex items-end justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                        <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                          {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
-                        </p>
-                      </div>
-                      <Rating
-                        trackId={track.id}
-                        balanced={track.rating}
-                        unbalanced={track.initialRating}
-                        comparisons={track.comparisons}
-                        size="md"
+              <TrackContextMenu key={track.id} track={track}>
+                <div className="space-y-4">
+                  <Card 
+                    className={cn(
+                      "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
+                    )}
+                    onClick={() => playSnippet(track)}
+                  >
+                    <div className="aspect-[16/9] relative overflow-hidden">
+                      <img 
+                        src={getAlbumArt(track)} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                        alt="" 
                       />
+                      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
+                          {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-                <Button 
-                  onClick={() => handleVote(track.id)}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
-                >
-                  <ThumbsUp size={16} /> Vote for this
-                </Button>
-              </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                      <div className="flex items-end justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                          <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                            {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
+                          </p>
+                        </div>
+                        <Rating
+                          trackId={track.id}
+                          balanced={track.rating}
+                          unbalanced={track.initialRating}
+                          comparisons={track.comparisons}
+                          size="md"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                  <Button 
+                    onClick={() => handleVote(track.id)}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
+                  >
+                    <ThumbsUp size={16} /> Vote for this
+                  </Button>
+                </div>
+              </TrackContextMenu>
             ))}
 
             <div className="md:col-span-2 flex justify-center gap-4 pt-4">

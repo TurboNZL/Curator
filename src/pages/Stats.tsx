@@ -2,10 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Clock, Play, SkipForward, Activity, History, Music } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, StackedBarChart } from 'recharts';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { PlaybackHistoryModal } from '@/components/modals/PlaybackHistoryModal';
+
+const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
 
 const Stats = () => {
   const { tracks, playbackLogs, fetchData, currentTrackId, isPlaying, currentProgress } = useMusicStore();
@@ -19,41 +21,57 @@ const Stats = () => {
   const currentTrack = useMemo(() => tracks.find(t => t.id === currentTrackId), [tracks, currentTrackId]);
 
   const topTracks = useMemo(() => {
+    // Calculate plays for each track
+    const trackPlayCounts: { [key: string]: { fullPlays: number, partialPlays: number, total: number } } = {};
+    
+    tracks.forEach(track => {
+      trackPlayCounts[track.id] = { fullPlays: 0, partialPlays: 0, total: 0 };
+    });
+
+    playbackLogs.forEach(log => {
+      if (trackPlayCounts[log.trackId]) {
+        if (!log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS) {
+          trackPlayCounts[log.trackId].fullPlays++;
+        } else {
+          trackPlayCounts[log.trackId].partialPlays++;
+        }
+        trackPlayCounts[log.trackId].total++;
+      }
+    });
+
+    // Account for currently playing track in real-time
+    if (currentTrackId && trackPlayCounts[currentTrackId]) {
+      if (isPlaying) {
+        if (currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS) {
+          trackPlayCounts[currentTrackId].fullPlays++;
+        } else {
+          trackPlayCounts[currentTrackId].partialPlays++;
+        }
+        trackPlayCounts[currentTrackId].total++;
+      }
+    }
+
     // Sort by full plays then partial plays
     const sorted = [...tracks].sort((a, b) => {
-      const logsA = playbackLogs.filter(l => l.trackId === a.id);
-      const logsB = playbackLogs.filter(l => l.trackId === b.id);
+      const countsA = trackPlayCounts[a.id] || { fullPlays: 0, partialPlays: 0, total: 0 };
+      const countsB = trackPlayCounts[b.id] || { fullPlays: 0, partialPlays: 0, total: 0 };
       
-      const fullA = logsA.filter(l => !l.isSkip && l.duration && l.duration > 30).length;
-      const fullB = logsB.filter(l => !l.isSkip && l.duration && l.duration > 30).length;
-      
-      if (fullB !== fullA) return fullB - fullA;
-      
-      const partialA = logsA.filter(l => l.isSkip || (l.duration && l.duration <= 30)).length;
-      const partialB = logsB.filter(l => l.isSkip || (l.duration && l.duration <= 30)).length;
-      
-      return partialB - partialA;
+      if (countsB.fullPlays !== countsA.fullPlays) return countsB.fullPlays - countsA.fullPlays;
+      return countsB.partialPlays - countsA.partialPlays;
     });
 
-    return sorted.slice(0, 10).map(track => {
-      const logs = playbackLogs.filter(l => l.trackId === track.id);
-      let fullPlays = logs.filter(l => !l.isSkip && l.duration && l.duration > 30).length;
-      let partialPlays = logs.filter(l => l.isSkip || (l.duration && l.duration <= 30)).length;
-      
-      if (currentTrackId === track.id && isPlaying) {
-        if (currentProgress > 30) fullPlays++;
-        else partialPlays++;
-      }
-
-      return {
-        name: track.title,
-        id: track.id,
-        fullPlays,
-        partialPlays,
-        total: fullPlays + partialPlays
-      };
-    });
+    return sorted.slice(0, 10).map(track => ({
+      name: track.title,
+      id: track.id,
+      fullPlays: trackPlayCounts[track.id]?.fullPlays || 0,
+      partialPlays: trackPlayCounts[track.id]?.partialPlays || 0,
+      total: trackPlayCounts[track.id]?.total || 0,
+    }));
   }, [tracks, playbackLogs, currentTrackId, isPlaying, currentProgress]);
+
+  const totalFullPlays = playbackLogs.filter(log => !log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS).length;
+  const totalPartialPlays = playbackLogs.filter(log => log.isSkip || (log.duration && log.duration <= PARTIAL_PLAY_THRESHOLD_SECONDS)).length;
+  const totalPlays = totalFullPlays + totalPartialPlays;
 
   const totalSeconds = playbackLogs.reduce((a, b) => a + (b.duration || 0), 0);
   const formatTotalTime = (seconds: number) => {
@@ -63,10 +81,10 @@ const Stats = () => {
   };
 
   const skipRate = useMemo(() => {
-    if (playbackLogs.length === 0) return '0%';
+    if (totalPlays === 0) return '0%';
     const skips = playbackLogs.filter(l => l.isSkip).length;
-    return `${((skips / playbackLogs.length) * 100).toFixed(1)}%`;
-  }, [playbackLogs]);
+    return `${((skips / totalPlays) * 100).toFixed(1)}%`;
+  }, [playbackLogs, totalPlays]);
 
   return (
     <div className="space-y-8 pb-20">
@@ -76,7 +94,7 @@ const Stats = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard icon={Play} label="Total Plays" value={playbackLogs.length.toString()} color="text-blue-500" />
+        <StatCard icon={Play} label="Total Plays" value={totalPlays.toString()} color="text-blue-500" />
         <StatCard icon={Clock} label="Time Listened" value={formatTotalTime(totalSeconds)} color="text-emerald-500" />
         <StatCard icon={SkipForward} label="Skip Rate" value={skipRate} color="text-red-500" />
         <StatCard icon={Activity} label="Active Tracks" value={new Set(playbackLogs.map(l => l.trackId)).size.toString()} color="text-purple-500" />
@@ -115,7 +133,7 @@ const Stats = () => {
           </div>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTracks} layout="vertical" margin={{ left: 40 }}>
+              <StackedBarChart data={topTracks} layout="vertical" margin={{ left: 40, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis 
@@ -129,13 +147,19 @@ const Stats = () => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                  formatter={(value, name) => [`${value} ${name === 'fullPlays' ? 'Full' : 'Partial'}`, 'Plays']}
                 />
                 <Bar dataKey="fullPlays" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
                   {topTracks.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.id === currentTrackId ? '#10B981' : '#3b82f6'} />
+                    <Cell key={`full-cell-${index}`} fill={entry.id === currentTrackId ? '#10B981' : '#3b82f6'} />
                   ))}
                 </Bar>
-              </BarChart>
+                <Bar dataKey="partialPlays" fill="#3b82f640" radius={[0, 4, 4, 0]} barSize={20}> {/* Dimmed color for partial plays */}
+                  {topTracks.map((entry, index) => (
+                    <Cell key={`partial-cell-${index}`} fill={entry.id === currentTrackId ? '#10B98140' : '#3b82f640'} />
+                  ))}
+                </Bar>
+              </StackedBarChart>
             </ResponsiveContainer>
           </div>
         </Card>
@@ -151,13 +175,14 @@ const Stats = () => {
           <div className="space-y-4">
             {playbackLogs.slice(0, 10).map((log, i) => {
               const track = tracks.find(t => t.id === log.trackId);
+              const isPartialPlay = log.isSkip || (log.duration && log.duration <= PARTIAL_PLAY_THRESHOLD_SECONDS);
               return (
                 <div key={i} className="flex items-center justify-between group">
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-white truncate group-hover:text-blue-400 transition-colors">{track?.title || 'Unknown Track'}</p>
                     <p className="text-[10px] text-zinc-500 font-medium">{format(new Date(log.timestamp), 'MMM d, HH:mm')}</p>
                   </div>
-                  {log.isSkip && <Badge variant="outline" className="text-[8px] border-red-900/50 text-red-500 bg-red-500/5">Skip</Badge>}
+                  {isPartialPlay && <Badge variant="outline" className="text-[8px] border-zinc-700/50 text-zinc-500 bg-zinc-500/5">P</Badge>}
                 </div>
               );
             })}

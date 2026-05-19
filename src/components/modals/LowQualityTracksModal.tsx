@@ -9,6 +9,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
+import { TrackContextMenu } from '../ui/TrackContextMenu';
 
 interface LowQualityTracksModalProps {
   open: boolean;
@@ -132,35 +133,37 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
             <ScrollArea className="flex-1 h-[calc(90vh-250px)] pr-4">
               <div className="space-y-3">
                 {lowQualityTracks.map((track) => (
-                  <div key={track.id} className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800">
-                        <img src={getAlbumArt(track)} alt="" className="w-full h-full object-cover" />
+                  <TrackContextMenu key={track.id} track={track}>
+                    <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800">
+                          <img src={getAlbumArt(track)} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-white truncate">{track.title}</p>
+                          <p className="text-[10px] text-zinc-500 truncate">{getArtistName(track)}</p>
+                        </div>
+                        <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-white truncate">{track.title}</p>
-                        <p className="text-[10px] text-zinc-500 truncate">{getArtistName(track)}</p>
+                      <div className="flex items-center gap-1 ml-4 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); playSnippet(track); }}>
+                          {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent context menu from re-opening
+                            setSelectedTrackForEdit(track);
+                            setIsEditTrackModalOpen(true);
+                          }}
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); handleDeleteTrack(track.id); }}>
+                          <Trash2 size={14} />
+                        </Button>
                       </div>
-                      <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                     </div>
-                    <div className="flex items-center gap-1 ml-4 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={() => playSnippet(track)}>
-                        {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-                      </Button>
-                      {/* Use external state to control EditTrackModal */}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400"
-                        onClick={() => {
-                          setSelectedTrackForEdit(track);
-                          setIsEditTrackModalOpen(true);
-                        }}
-                      >
-                        <Edit2 size={14} />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={() => handleDeleteTrack(track.id)}>
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
+                  </TrackContextMenu>
                 ))}
               </div>
             </ScrollArea>

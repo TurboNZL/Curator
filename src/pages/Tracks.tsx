@@ -133,61 +133,57 @@ const Tracks = () => {
                 const album = albums?.find(al => track.albumIds?.some(aId => aId.albumId === al.id));
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
-                  <TableRow
-                    key={track.id}
-                    className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
-                  >
-                    <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
-                          <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
-                          <button
-                            onClick={() => setCurrentTrack(track.id)}
-                            className="absolute inset-0 flex items-center justify-center text-zinc-500 hover:text-blue-400 transition-all"
-                          >
-                            <Play size={14} fill="currentColor" />
-                          </button>
+                  <TrackContextMenu key={track.id} track={track}>
+                    <TableRow
+                      className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
+                    >
+                      <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
+                            <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
+                              className="absolute inset-0 flex items-center justify-center text-zinc-500 hover:text-blue-400 transition-all"
+                            >
+                              <Play size={14} fill="currentColor" />
+                            </button>
+                          </div>
+                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
                         </div>
-                        <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
-                    <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Brain size={12} className="text-purple-500" />
-                        <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Rating
-                        trackId={track.id}
-                        balanced={track.rating}
-                        unbalanced={track.initialRating}
-                        comparisons={track.comparisons}
-                        size="sm"
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <TrackContextMenu track={track}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
-                            <ListMusic size={14} />
-                          </Button>
-                        </TrackContextMenu>
-                        {/* Use external state to control EditTrackModal */}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
-                          onClick={() => {
-                            setSelectedTrackForEdit(track);
-                            setIsEditTrackModalOpen(true);
-                          }}
-                        >
-                          <Edit2 size={14}/>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
+                      <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Brain size={12} className="text-purple-500" />
+                          <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Rating
+                          trackId={track.id}
+                          balanced={track.rating}
+                          unbalanced={track.initialRating}
+                          comparisons={track.comparisons}
+                          size="sm"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent context menu from re-opening if this button is within trigger
+                                setSelectedTrackForEdit(track);
+                                setIsEditTrackModalOpen(true);
+                              }}
+                            >
+                              <Edit2 size={14}/>
+                            </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TrackContextMenu>
                 );
               })}
             </TableBody>

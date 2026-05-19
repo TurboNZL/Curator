@@ -7,6 +7,7 @@ import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from '
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { Track } from '@/types/music';
 
 const Queue = () => {
   const {
@@ -106,22 +107,22 @@ const Queue = () => {
       <section className="space-y-4">
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Now Playing</h2>
         {currentTrackData?.track ? (
-          <Card className="bg-blue-600/10 border-blue-500/30 p-4 flex items-center gap-4">
-            <div className="w-16 h-16 rounded-lg overflow-hidden border border-blue-500/20 bg-zinc-900">
-              <img src={currentTrackData.album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-black text-white uppercase truncate">{currentTrackData.track.title}</h3>
-              <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name || 'Unknown Artist'}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrackContextMenu track={currentTrackData.track}>
-                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
+          <TrackContextMenu track={currentTrackData.track}>
+            <Card className="bg-blue-600/10 border-blue-500/30 p-4 flex items-center gap-4">
+              <div className="w-16 h-16 rounded-lg overflow-hidden border border-blue-500/20 bg-zinc-900">
+                <img src={currentTrackData.album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-black text-white uppercase truncate">{currentTrackData.track.title}</h3>
+                <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name || 'Unknown Artist'}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white" onClick={(e) => e.stopPropagation()}>
                   <ListMusic size={20} />
                 </Button>
-              </TrackContextMenu>
-            </div>
-          </Card>
+              </div>
+            </Card>
+          </TrackContextMenu>
         ) : (
           <p className="text-xs text-zinc-600 italic">Nothing currently playing.</p>
         )}
@@ -219,32 +220,29 @@ const Queue = () => {
   );
 };
 
-const QueueItem = ({ track, artist, album, onRemove, onPlay }: any) => (
-  <div className="group flex items-center gap-4 p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-lg hover:bg-zinc-900 transition-colors">
-    <div className="text-zinc-700 group-hover:text-zinc-500 cursor-grab">
-      <GripVertical size={14} />
-    </div>
-    <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden">
-      <img src={album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
-      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name || 'Unknown Artist'}</p>
-    </div>
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={onPlay}>
-        <Play size={14} fill="currentColor" />
-      </Button>
-      <TrackContextMenu track={track}>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
-          <ListMusic size={14} />
+const QueueItem = ({ track, artist, album, onRemove, onPlay }: {track: Track, artist: any, album: any, onRemove: () => void, onPlay: () => void}) => (
+  <TrackContextMenu track={track}>
+    <div className="group flex items-center gap-4 p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-lg hover:bg-zinc-900 transition-colors">
+      <div className="text-zinc-700 group-hover:text-zinc-500 cursor-grab">
+        <GripVertical size={14} />
+      </div>
+      <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden">
+        <img src={album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
+        <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name || 'Unknown Artist'}</p>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); onPlay(); }}>
+          <Play size={14} fill="currentColor" />
         </Button>
-      </TrackContextMenu>
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={onRemove}>
-        <Trash2 size={14} />
-      </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+          <Trash2 size={14} />
+        </Button>
+      </div>
     </div>
-  </div>
+  </TrackContextMenu>
 );
 
 export default Queue;

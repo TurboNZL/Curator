@@ -13,14 +13,13 @@ import { cn } from '@/lib/utils';
 import { Album, Track } from '@/types/music';
 
 interface CreatePlaylistAddModalProps {
-  children?: React.ReactElement; // Still accepts children for trigger
   trackToAdd?: Track;
   albumToAdd?: Album;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenChange }: CreatePlaylistAddModalProps) => { // Removed 'children' from destructuring here
+export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenChange }: CreatePlaylistAddModalProps) => {
   const { playlists, updatePlaylist, addPlaylist } = useMusicStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -68,6 +67,7 @@ export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenCha
     if (trackToAdd) {
       if (playlist.trackIds.includes(trackToAdd.id)) {
         toast.info(`Track "${trackToAdd.title}" is already in this playlist.`);
+        onOpenChange(false); // Close modal even if already present
         return;
       }
       tracksToAdd.push(trackToAdd.id);
@@ -80,6 +80,7 @@ export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenCha
       
       if (newAlbumTrackIds.length === 0) {
         toast.info(`All tracks from "${albumToAdd.title}" are already in this playlist.`);
+        onOpenChange(false); // Close modal even if already present
         return;
       }
       tracksToAdd.push(...newAlbumTrackIds);
@@ -180,7 +181,7 @@ export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenCha
           </Button>
           <Button
             onClick={handleAddEntityToPlaylist}
-            disabled={!selectedPlaylistId}
+            disabled={!selectedPlaylistId && !newPlaylistName} // Allow adding if a playlist is selected OR if a new name is provided
             className="bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest text-[10px] px-8"
           >
             Add to Playlist
