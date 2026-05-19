@@ -21,9 +21,9 @@ export default defineHandler(async (event) => {
   let finalUploadDir;
 
   if (type === 'audio') {
-    finalUploadDir = join(baseUploadDir, 'data', 'music');
+    finalUploadDir = join(baseUploadDir, 'music');
   } else if (type === 'image') {
-    finalUploadDir = join(baseUploadDir, 'data', 'images');
+    finalUploadDir = join(baseUploadDir, 'images');
   } else {
     // Fallback for other types, though the prompt only specifies music and images
     finalUploadDir = join(baseUploadDir, 'uploads', type);
@@ -40,7 +40,7 @@ export default defineHandler(async (event) => {
   writeFileSync(filePath, file.data);
 
   return {
-    url: `/data/${type === 'audio' ? 'music' : type === 'image' ? 'images' : `uploads/${type}`}/${fileName}`,
+    url: `/${type === 'audio' ? 'music' : type === 'image' ? 'images' : `uploads/${type}`}/${fileName}`,
     fileName: file.filename
   };
 });
