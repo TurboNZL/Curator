@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog } from '../types/music';
 import { toast } from 'sonner';
 
 interface MusicState {
@@ -12,7 +12,7 @@ interface MusicState {
   groups: (Group & { members?: { entityType: string, entityId: string, label: string, showOnEntityPage?: boolean }[] })[];
   releaseTypes: ReleaseType[];
   timeline: TimelineEntry[];
-  playbackLogs: any[];
+  playbackLogs: PlaybackLog[]; // Correctly typed
   
   userQueue: string[];
   activeQueue: string[];
@@ -48,7 +48,7 @@ interface MusicState {
   shuffleActiveQueue: () => void;
   shuffleUserQueue: () => void;
   
-  addArtist: (artist: Omit<Artist, 'id' | 'eras' | 'groups'>) => Promise<Artist>; 
+  addArtist: (artist: Omit<Artist, 'id' | 'eras' | 'groups' | 'bio'>) => Promise<Artist>; 
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
@@ -56,10 +56,11 @@ interface MusicState {
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id'>[]) => Promise<Track[]>; 
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'queueRules' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>; 
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
+  decrementMemories: (id: string) => Promise<void>; // Added
   
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<Playlist>; 
   updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
@@ -90,6 +91,7 @@ const DEFAULT_PROFILE: Profile = {
   accentColor: '#3b82f6',
   playbackMode: 'local',
   playbackRules: [],
+  settings: {"showUnbalancedFirst": false}
 };
 
 const parseJsonOrDefault = (jsonString: string | null | undefined, defaultValue: any) => {
@@ -190,7 +192,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         })),
         releaseTypes: releaseTypes || [],
         timeline: (timeline || []).map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
-        playbackLogs: logs || [],
+        playbackLogs: (logs || []).map((log: any) => ({ ...log, timestamp: new Date(log.timestamp), isSkip: !!log.isSkip })),
         isLoading: false
       });
     } catch (error) {
@@ -479,7 +481,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
-  decrementMemories: async (id) => {
+  decrementMemories: async (id) => { // Implementation for decrementMemories
     const track = get().tracks.find(t => t.id === id);
     if (track && (track.memories || 0) > 0) {
       await get().updateTrack(id, { memories: (track.memories || 0) - 1 });

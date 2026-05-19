@@ -64,7 +64,9 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
         title: formData.title,
         artistId: finalArtistId,
         artistIds: [], // Multi-artist support
-        covers: []
+        covers: [],
+        pendingFiles: [], // Added
+        credits: [] // Added
       });
 
       for (const rel of formData.releases) {

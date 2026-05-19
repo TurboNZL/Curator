@@ -105,12 +105,14 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         artistIds: [finalArtistId],
         covers: albumFormData.coverImage ? [albumFormData.coverImage] : [],
         pendingFiles: [], 
+        credits: [] // Added credits
       });
       toast.success(`Album "${albumFormData.title}" created.`);
 
       const tracksToCreate = tracksFormData.map(track => ({
         ...track,
         artistId: finalArtistId,
+        artistIds: [finalArtistId], // Added artistIds
         albumIds: [{ albumId: newAlbum.id, order: 0 }],
         genres: [], producers: [], writers: [], credits: [],
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {}
@@ -257,6 +259,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
             ) : (
               'Confirm & Add to Catalog'
             )}
+          )}
           </Button>
         </DialogFooter>
       </DialogContent>

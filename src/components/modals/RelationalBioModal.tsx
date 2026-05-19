@@ -70,15 +70,18 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
     if (!formData.name) return toast.error("Bio name is required");
     if (formData.members.length === 0) return toast.error("At least one entity must be linked");
 
-    // Filter out `label` before sending to API for members
-    const membersWithoutLabel = formData.members.map(({ label, ...rest }) => rest);
+    // Filter out `label` before sending to API for members -- the API route handles this.
+    // For the local store, we pass the full members data.
+    const membersForApi = formData.members.map(({ label, ...rest }) => rest);
+
 
     if (groupId) {
       await updateGroup(groupId, {
         name: formData.name,
         description: formData.description,
         type: formData.type,
-        members: membersWithoutLabel
+        isArtistOnly: false, // Default value for isArtistOnly
+        members: membersForApi, // For API call, without 'label'
       });
       toast.success("Relational bio updated");
     } else {
@@ -87,7 +90,8 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
         description: formData.description,
         type: formData.type,
         label: formData.name, // Using name as default label
-        members: membersWithoutLabel
+        isArtistOnly: false, // Default value for isArtistOnly
+        members: membersForApi, // For API call, without 'label'
       });
       toast.success("Relational bio created");
     }
