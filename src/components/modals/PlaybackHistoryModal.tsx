@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { History, Music, Clock, SkipForward } from 'lucide-react';
 import { format } from 'date-fns';
@@ -7,16 +7,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useMusicStore } from '@/store/useMusicStore';
 
-export const PlaybackHistoryModal = () => {
+interface PlaybackHistoryModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const PlaybackHistoryModal = ({ open, onOpenChange }: PlaybackHistoryModalProps) => {
   const { playbackLogs, tracks, artists } = useMusicStore();
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-400 p-0 h-auto">
-          Show All
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-2xl h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">

@@ -145,7 +145,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                     </div>
                     <div className="flex items-center gap-1 ml-4 shrink-0">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={() => playSnippet(track)}>
-                        {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
+                        {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-1" />}
                       </Button>
                       {/* Use external state to control EditTrackModal */}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400"

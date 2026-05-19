@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock } from 'lucide-react';
 import { Track, Album, Artist } from '@/types/music';
@@ -10,10 +10,12 @@ interface StatsForNerdsModalProps {
   track?: Track;
   album?: Album;
   artist?: Artist;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   children: React.ReactElement; // Enforce single React element
 }
 
-export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForNerdsModalProps) => {
+export const StatsForNerdsModal = ({ track, album, artist, open, onOpenChange, children }: StatsForNerdsModalProps) => {
   const { playbackLogs } = useMusicStore();
   if (!track) return children; // Return children directly if no track, as it's just a trigger
 
@@ -38,10 +40,10 @@ export const StatsForNerdsModal = ({ track, album, artist, children }: StatsForN
   ].filter(l => l.url);
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <div className="absolute top-0 left-0 w-full h-full"> {/* This div replaces DialogTrigger */}
         {children}
-      </DialogTrigger>
+      </div>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
