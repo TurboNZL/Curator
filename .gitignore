@@ -26,5 +26,6 @@ dist-ssr
 ytmpcli-master.zip
 
 #db
+data/curator.db
 data/**
 public/uploads/**
