@@ -14,13 +14,13 @@ import { Switch } from '@/components/ui/switch'; // Added Switch import
 
 const Settings = () => {
   const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase } = useMusicStore();
-  const [newRule, setNewRule] = useState({ trackAId: '', trackBId: '', playFirstOnShuffle: false });
+  const [newRule, setNewRule] = useState({ trackAId: '', trackBId: '', playFirstOnShuffle: false, applyToAlbumSource: false });
 
   const handleAddRule = async () => {
     if (!newRule.trackAId || !newRule.trackBId) return toast.error("Both tracks are required for a rule");
     const updatedRules = [...activeProfile.playbackRules, newRule];
     await updatePlaybackRules(updatedRules);
-    setNewRule({ trackAId: '', trackBId: '', playFirstOnShuffle: false });
+    setNewRule({ trackAId: '', trackBId: '', playFirstOnShuffle: false, applyToAlbumSource: false });
     toast.success("Playback rule added");
   };
 
@@ -100,15 +100,27 @@ const Settings = () => {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="shuffle-rule" 
-                checked={newRule.playFirstOnShuffle} 
-                onCheckedChange={(val) => setNewRule({...newRule, playFirstOnShuffle: !!val})} 
-              />
-              <Label htmlFor="shuffle-rule" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
-                Play first when queue shuffled (replaces second song)
-              </Label>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="shuffle-rule" 
+                  checked={newRule.playFirstOnShuffle} 
+                  onCheckedChange={(val) => setNewRule({...newRule, playFirstOnShuffle: !!val})} 
+                />
+                <Label htmlFor="shuffle-rule" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
+                  Play first when queue shuffled (replaces second song)
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="apply-to-album-source-rule" 
+                  checked={newRule.applyToAlbumSource} 
+                  onCheckedChange={(val) => setNewRule({...newRule, applyToAlbumSource: !!val})} 
+                />
+                <Label htmlFor="apply-to-album-source-rule" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
+                  Apply when playing from album
+                </Label>
+              </div>
             </div>
           </div>
           <Button onClick={handleAddRule} className="w-full bg-zinc-800 hover:bg-zinc-700 text-[10px] font-black uppercase tracking-widest h-10">
@@ -117,16 +129,6 @@ const Settings = () => {
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <Switch
-              id="apply-rules-from-album"
-              checked={activeProfile.settings?.applyRulesFromAlbum || false}
-              onCheckedChange={(val) => updateSettings({ applyRulesFromAlbum: val })}
-            />
-            <Label htmlFor="apply-rules-from-album" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">
-              Apply rules when playing from an album (otherwise only manual/shuffled queue)
-            </Label>
-          </div>
           {activeProfile.playbackRules.map((rule, i) => (
             <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl group">
               <div className="flex items-center gap-4">
@@ -137,6 +139,9 @@ const Settings = () => {
                 </div>
                 {rule.playFirstOnShuffle && (
                   <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/20 text-[8px] font-black uppercase">Shuffle Priority</Badge>
+                )}
+                {rule.applyToAlbumSource && (
+                  <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 text-[8px] font-black uppercase">Album Source</Badge>
                 )}
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveRule(i)}>

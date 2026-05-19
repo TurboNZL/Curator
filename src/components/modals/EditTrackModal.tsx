@@ -33,7 +33,7 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
     title: track.title,
     artistId: track.artistId,
     artistIds: track.artistIds || [],
-    albumId: track.albumIds[0] || '',
+    albumId: track.albumIds[0]?.albumId || '',
     initialRating: track.initialRating?.toString() || '',
     genres: track.genres.join(', '),
     producers: track.producers.join(', '),
@@ -48,6 +48,7 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
 
   const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
 
   const cleanSpotifyUrl = (url: string) => {
@@ -69,7 +70,7 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
       title: formData.title,
       artistId: formData.artistId,
       artistIds: formData.artistIds,
-      albumIds: formData.albumId ? [formData.albumId] : [],
+      albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [], // Corrected albumIds structure
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
       producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
@@ -251,8 +252,7 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
             <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
-                {/* Changed to open modal directly, making the Button its trigger */}
-                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => setIsRelationalBioModalOpen(true)}>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => {setSelectedGroupId(undefined); setIsRelationalBioModalOpen(true);}}>
                   <Plus size={12} className="mr-1" /> New Bio
                 </Button>
               </div>
@@ -264,11 +264,9 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
                       <span className="text-xs font-bold text-white">{group.name}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <RelationalBioModal groupId={group.id} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen}>
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400" onClick={() => {setSelectedGroupId(group.id); setIsRelationalBioModalOpen(true);}}>
                           <Edit3 size={14} />
-                        </Button>
-                      </RelationalBioModal>
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -304,7 +302,7 @@ export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProp
             </div>
           </form>
         </Tabs>
-        <RelationalBioModal initialEntity={{ type: 'track', id: track.id, label: track.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
+        <RelationalBioModal initialEntity={{ type: 'track', id: track.id, label: track.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
       </DialogContent>
     </Dialog>
   );

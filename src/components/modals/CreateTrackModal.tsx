@@ -75,7 +75,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       title: formData.title,
       artistId: finalPrimaryArtistId,
       artistIds: finalArtistIds,
-      albumIds: formData.albumId && formData.albumId !== 'none' ? [formData.albumId] : [],
+      albumIds: formData.albumId && formData.albumId !== 'none' ? [{ albumId: formData.albumId, order: 0 }] : [], // Corrected albumIds structure
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
       initialRating: formData.rating ? parseFloat(formData.rating) : undefined,
       genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
@@ -154,7 +154,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         title: cleanTitle,
         artistId: formData.artistId,
         artistIds: formData.artistIds,
-        albumIds: [selectedAlbum.id],
+        albumIds: [{ albumId: selectedAlbum.id, order: 0 }], // Corrected albumIds structure
         rating: undefined,
         initialRating: undefined,
         genres: [],

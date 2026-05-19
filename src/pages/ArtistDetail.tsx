@@ -39,6 +39,7 @@ const ArtistDetail = () => {
   ).length;
 
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false); // Add state for modal
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined); // State for RelationalBioModal
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -120,8 +121,7 @@ const ArtistDetail = () => {
                 <LinkIcon size={14} className="text-blue-500" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
               </div>
-              {/* Updated RelationalBioModal usage */}
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => setIsRelationalBioModalOpen(true)}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => {setSelectedGroupId(undefined); setIsRelationalBioModalOpen(true);}}>
                 <Plus size={14} />
               </Button>
             </div>
@@ -158,8 +158,7 @@ const ArtistDetail = () => {
           </section>
         </div>
       </div>
-      {/* Render controlled RelationalBioModal as a sibling */}
-      <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
+      <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
     </div>
   );
 };

@@ -24,7 +24,7 @@ interface EditReleaseModalProps {
 export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModalProps) => {
   const [open, setOpen] = useState(false);
   const { updateRelease, tracks, groups, deleteGroup } = useMusicStore();
-  const albumTracks = tracks.filter(t => t.albumIds.includes(albumId));
+  const albumTracks = tracks.filter(t => t.albumIds.some(aId => aId.albumId === albumId));
   
   const releaseGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === release.id && m.entityType === 'release' && m.showOnEntityPage)
@@ -39,6 +39,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
 
   const onDragStart = (index: number) => {
@@ -209,8 +210,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
             <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
-                {/* Modified RelationalBioModal usage */}
-                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => setIsRelationalBioModalOpen(true)}>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => {setSelectedGroupId(undefined); setIsRelationalBioModalOpen(true);}}>
                   <Plus size={12} className="mr-1" /> <span>New Bio</span>
                 </Button>
               </div>
@@ -222,11 +222,9 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
                       <span className="text-xs font-bold text-white">{group.name}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <RelationalBioModal groupId={group.id} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen}>
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400" onClick={() => {setSelectedGroupId(group.id); setIsRelationalBioModalOpen(true);}}>
                           <Edit3 size={14} />
-                        </Button>
-                      </RelationalBioModal>
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -256,8 +254,7 @@ export const EditReleaseModal = ({ release, albumId, children }: EditReleaseModa
             </div>
           </form>
         </Tabs>
-        {/* Render controlled RelationalBioModal as a sibling */}
-        <RelationalBioModal initialEntity={{ type: 'release', id: release.id, label: release.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
+        <RelationalBioModal initialEntity={{ type: 'release', id: release.id, label: release.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
       </DialogContent>
     </Dialog>
   );

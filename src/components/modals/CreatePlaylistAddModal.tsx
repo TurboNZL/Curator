@@ -72,7 +72,7 @@ export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenCha
       }
       tracksToAdd.push(trackToAdd.id);
     } else if (albumToAdd) {
-      const albumTracks = useMusicStore.getState().tracks.filter(t => t.albumIds.includes(albumToAdd.id));
+      const albumTracks = useMusicStore.getState().tracks.filter(t => t.albumIds.some(aId => aId.albumId === albumToAdd.id));
       const existingTrackIds = new Set(playlist.trackIds);
       const newAlbumTrackIds = albumTracks
         .map(t => t.id)

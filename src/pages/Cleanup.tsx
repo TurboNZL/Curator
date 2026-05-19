@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
@@ -201,7 +201,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, playbackLogs, updateRelease } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, updateRelease } = useMusicStore();
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isShufflePairing, setIsShufflePairing] = useState(false);
@@ -214,7 +214,7 @@ const Cleanup = () => {
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
   const [imageUploadEntity, setImageUploadEntity] = useState<any>(null);
   const [imageUploadEntityType, setImageUploadEntityType] = useState<'artist' | 'album' | null>(null);
-  const [isLowQualityOpen, setIsLowQualityOpen] = useState(false); // State for LowQualityTracksModal
+  const [isLowQualityOpen, setIsLowQualityOpen] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
@@ -334,8 +334,8 @@ const Cleanup = () => {
 
     if (sortConfig.field !== 'none') {
       tasks.sort((a, b) => {
-        const aValue = a[sortConfig.field]?.toLowerCase() || '';
-        const bValue = b[sortConfig.field]?.toLowerCase() || '';
+        const aValue = (a as any)[sortConfig.field]?.toLowerCase() || '';
+        const bValue = (b as any)[sortConfig.field]?.toLowerCase() || '';
         
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -406,7 +406,6 @@ const Cleanup = () => {
       return;
     }
 
-    setPlayingId(track.id);
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
@@ -480,8 +479,7 @@ const Cleanup = () => {
       setImageUploadEntity(task.entity);
       setImageUploadEntityType('album');
       setIsImageUploadModalOpen(true);
-    }
-     else if (task.type === 'grouped_spotify_uri') {
+    } else if (task.type === 'grouped_spotify_uri') {
       setSpotifyResolutionTracks(task.entity.tracks);
       setIsSpotifyResolutionModalOpen(true);
     }
@@ -522,7 +520,7 @@ const Cleanup = () => {
   };
 
   const getAlbumArt = (track: any) => {
-    const album = albums.find(a => track.albumIds?.includes(a.id));
+    const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
     return album?.covers[0] || '/placeholder.svg';
   };
 
@@ -589,7 +587,7 @@ const Cleanup = () => {
                       <div className="min-w-0">
                         <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
                         <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                          {albums.find(a => track.albumIds?.includes(a.id))?.title || 'Unknown Album'}
+                          {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
                       </div>
                       <Rating
@@ -791,7 +789,6 @@ const Cleanup = () => {
         />
       )}
 
-      {/* Render the controlled LowQualityTracksModal */}
       <LowQualityTracksModal open={isLowQualityOpen} onOpenChange={setIsLowQualityOpen} />
     </div>
   );

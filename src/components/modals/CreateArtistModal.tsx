@@ -24,7 +24,6 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactElement 
     addArtist({
       name: formData.name,
       image: formData.image || undefined,
-      groups: []
     });
 
     toast.success(`${formData.name} added to catalog`);

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -46,6 +46,10 @@ const AlbumDetail = () => {
 
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false); // State for CreatePlaylistAddModal
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false); // State for RelationalBioModal
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined); // State for RelationalBioModal
+
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
 
 
   useEffect(() => {
@@ -76,12 +80,12 @@ const AlbumDetail = () => {
   
   const albumTracks = useMemo(() => {
     if (showAllTracks) {
-      return tracks.filter(t => t.albumIds.includes(id || ''));
+      return tracks.filter(t => t.albumIds.some(aId => aId.albumId === (id || '')));
     }
     if (currentRelease) {
       return tracks.filter(t => currentRelease.trackIds.includes(t.id));
     }
-    return tracks.filter(t => t.albumIds.includes(id || ''));
+    return tracks.filter(t => t.albumIds.some(aId => aId.albumId === (id || '')));
   }, [showAllTracks, currentRelease, tracks, id]);
 
   const handleSetDefault = async (releaseId: string) => {
@@ -130,7 +134,6 @@ const AlbumDetail = () => {
                 Edit Project
               </Button>
             </EditAlbumModal>
-            {/* Updated CreatePlaylistAddModal usage */}
             <Button variant="outline" className="border-emerald-800 bg-emerald-900/50 hover:bg-emerald-900 text-emerald-400 rounded-full font-bold" onClick={() => setIsCreatePlaylistAddModalOpen(true)}>
               <Plus size={18} className="mr-2"/>Add to Playlist
             </Button>
@@ -189,7 +192,14 @@ const AlbumDetail = () => {
                             <ListMusic size={14} />
                           </Button>
                         </TrackContextMenu>
-                        <EditTrackModal track={track} />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
+                          onClick={() => {
+                            setSelectedTrackForEdit(track);
+                            setIsEditTrackModalOpen(true);
+                          }}
+                        >
+                          <Edit2 size={14}/>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -285,8 +295,7 @@ const AlbumDetail = () => {
                 <LinkIcon size={14} className="text-blue-500" />
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Relational Bios</h2>
               </div>
-              {/* Updated RelationalBioModal usage */}
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => setIsRelationalBioModalOpen(true)}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => {setSelectedGroupId(undefined); setIsRelationalBioModalOpen(true);}}>
                 <Plus size={14} />
               </Button>
             </div>
@@ -324,9 +333,15 @@ const AlbumDetail = () => {
           </section>
         </div>
       </div>
-      {/* Render controlled modals as siblings */}
       <CreatePlaylistAddModal albumToAdd={album} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
-      <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
+      <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
     </div>
   );
 };

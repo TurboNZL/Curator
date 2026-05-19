@@ -26,10 +26,9 @@ interface RelationalBioModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange }: RelationalBioModalProps) => { // Removed 'children' from destructuring here
+export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange }: RelationalBioModalProps) => {
   const { groups, artists, albums, tracks, addGroup, updateGroup, addGroupMember, removeGroupMember, fetchData } = useMusicStore();
-  // const [open, setOpen] = useState(false); // Removed internal state, now controlled externally
-
+  
   const group = groupId ? groups.find(g => g.id === groupId) : null;
 
   const [formData, setFormData] = useState({
@@ -58,7 +57,7 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
         });
       }
     }
-  }, [open, group, initialEntity]); // Added open to dependency array
+  }, [open, group, initialEntity]);
 
   const entityOptions = [
     ...artists.map(a => ({ value: `artist:${a.id}`, label: `Artist: ${a.name}`, type: 'artist', name: a.name })),

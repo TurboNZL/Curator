@@ -25,7 +25,7 @@ export const BottomPlayer = () => {
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
-  const album = albums.find(al => currentTrack?.albumIds.includes(al.id));
+  const album = albums.find(al => currentTrack?.albumIds.some(aId => aId.albumId === al.id));
   const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   useEffect(() => {

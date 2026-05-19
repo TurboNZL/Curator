@@ -203,13 +203,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           ? (context?.type === 'album')
           : true;
         if (shouldApplyRule) {
-          const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === rule.trackBId;
-          const isNextInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === rule.trackBId;
+          const nextIdFromRule = rule.trackBId;
+          const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
+          const isNextInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === nextIdFromRule;
           if (!isNextInUserQueue && !isNextInActiveQueue) {
             set(s => ({ userQueue: [rule.trackBId, ...s.userQueue] }));
           }
         }
-      }
+      } 
     }
 
     set({
@@ -238,16 +239,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         : true;
 
       if (shouldApplyRule) {
-      const nextIdFromRule = rule.trackBId;
-      const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
-      const isNextInActiveQueue = activeQueue.length > 0 && activeQueue[0] === nextIdFromRule;
-      if (!isNextInUserQueue && !isNextInActiveQueue) {
-        set({ currentTrackId: nextIdFromRule, isPlaying: true });
-        set(s => ({
-          userQueue: s.userQueue.filter(id => id !== nextIdFromRule),
-          activeQueue: s.activeQueue.filter(id => id !== nextIdFromRule)
-        }));
-        return;
+        const nextIdFromRule = rule.trackBId;
+        const isNextInUserQueue = state.userQueue.length > 0 && state.userQueue[0] === nextIdFromRule;
+        const isNextInActiveQueue = activeQueue.length > 0 && activeQueue[0] === nextIdFromRule;
+        if (!isNextInUserQueue && !isNextInActiveQueue) {
+          set({ currentTrackId: nextIdFromRule, isPlaying: true });
+          set(s => ({
+            userQueue: s.userQueue.filter(id => id !== nextIdFromRule),
+            activeQueue: s.activeQueue.filter(id => id !== nextIdFromRule)
+          }));
+          return;
+        }
       }
     }
     if (userQueue.length > 0) {

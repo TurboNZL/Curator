@@ -17,6 +17,7 @@ export interface Profile {
     showUnbalancedFirst: boolean;
     defaultArtistImage?: string;
     defaultAlbumImage?: string;
+    applyRulesFromAlbum?: boolean;
   };
   playbackRules: PlaybackRule[];
 }
@@ -73,7 +74,7 @@ export interface Track {
   title: string;
   artistId: string;
   artistIds?: string[];
-  albumIds: Array<{ albumId: string, order: number }>;
+  albumIds: Array<{ albumId: string, order: number }>; // Updated type
   rating?: number; // Balanced rating, nullable
   initialRating?: number;
   eloScore: number;
@@ -102,8 +103,8 @@ export interface Playlist {
   name: string;
   description?: string;
   coverImage?: string;
-  trackIds: string[];
   createdAt: Date;
+  trackIds: string[];
 }
 
 export interface Group {

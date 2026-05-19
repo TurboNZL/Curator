@@ -28,7 +28,7 @@ const Tracks = () => {
     return tracks.filter(t => {
       if (!t) return false;
       const artist = artists?.find(a => a.id === t.artistId);
-      const album = albums?.find(al => t.albumIds?.includes(al.id));
+      const album = albums?.find(al => t.albumIds?.some(aId => aId.albumId === al.id));
       const searchLower = search.toLowerCase();
       return (
         (t.title || '').toLowerCase().includes(searchLower) ||
@@ -130,7 +130,7 @@ const Tracks = () => {
               {sortedTracks.map((track, i) => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
-                const album = albums?.find(al => track.albumIds?.includes(al.id));
+                const album = albums?.find(al => track.albumIds?.some(aId => aId.albumId === al.id));
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
                   <TableRow

@@ -113,7 +113,7 @@ const Playlists = () => {
     return tracks.filter(t => 
       t.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
       artists.some(a => a.id === t.artistId && a.name.toLowerCase().includes(trackSearchTerm.toLowerCase())) ||
-      albums.some(al => t.albumIds.includes(al.id) && al.title.toLowerCase().includes(trackSearchTerm.toLowerCase()))
+      albums.some(al => t.albumIds.some(aId => aId.albumId === al.id) && al.title.toLowerCase().includes(trackSearchTerm.toLowerCase()))
     );
   }, [tracks, artists, albums, trackSearchTerm]);
 
@@ -157,7 +157,7 @@ const Playlists = () => {
   const getTrackDetails = (trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
     const artist = artists.find(a => a.id === track?.artistId);
-    const album = albums.find(al => track?.albumIds.includes(al.id));
+    const album = albums.find(al => track?.albumIds.some(aId => aId.albumId === al.id));
     return { track, artist, album };
   };
 

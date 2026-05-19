@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { Layers, Disc, Music, User, Plus, Loader2, Link as LinkIcon, Edit } from 'lucide-react';
+import { Disc, Music, User, Plus, Loader2, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMusicStore } from '@/store/useMusicStore';
 import { cn } from '@/lib/utils';
@@ -34,22 +34,21 @@ interface ImportReviewModalProps {
 }
 
 export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, onClose, initialData }) => {
-  const { artists, albums, addArtist, addAlbum, addRelease, addTracks, fetchData } = useMusicStore();
+  const { artists, addArtist, addAlbum, addRelease, addTracks, fetchData } = useMusicStore();
   const [isSaving, setIsSaving] = useState(false);
 
   const [albumFormData, setAlbumFormData] = useState({
     title: initialData.suggestedAlbumTitle,
-    artistId: initialData.suggestedArtistId || '', // Use suggestedArtistId if available
-    artistNameInput: initialData.suggestedArtistName, // Use for custom input if ID is empty
+    artistId: initialData.suggestedArtistId || '',
+    artistNameInput: initialData.suggestedArtistName,
     coverImage: initialData.suggestedAlbumCover,
-    releaseDate: '' // User can fill this in
+    releaseDate: ''
   });
 
   const [tracksFormData, setTracksFormData] = useState<ImportedTrackData[]>(initialData.suggestedTracks);
 
-  // If initial artist ID is not found, try to find by name, or suggest creation
   useEffect(() => {
-    if (isOpen) { // Only run when modal opens or initialData changes
+    if (isOpen) {
       if (initialData.suggestedArtistId) {
         setAlbumFormData(prev => ({ ...prev, artistId: initialData.suggestedArtistId, artistNameInput: initialData.suggestedArtistName }));
       } else if (initialData.suggestedArtistName) {
@@ -78,8 +77,6 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
       let finalArtistId = albumFormData.artistId;
       let artistNameForToast = albumFormData.artistNameInput;
 
-      // 1. Create or get Artist
-      // If artistId is empty or a non-existent ID, try to find by name or create a new one
       if (!finalArtistId || !artists.some(a => a.id === finalArtistId)) {
         const nameToUse = albumFormData.artistNameInput;
         const existingArtistByName = artists.find(a => a.name.toLowerCase() === nameToUse.toLowerCase());
@@ -89,7 +86,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
           artistNameForToast = existingArtistByName.name;
         } else {
           if (!nameToUse) throw new Error("Artist name is required to create a new artist.");
-          const newArtist = await addArtist({ name: nameToUse }); // groups is now optional
+          const newArtist = await addArtist({ name: nameToUse });
           finalArtistId = newArtist.id;
           artistNameForToast = newArtist.name;
           toast.success(`Artist "${artistNameForToast}" created.`);
@@ -102,39 +99,36 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         throw new Error("Artist could not be created or identified.");
       }
 
-      // 2. Create Album
       const newAlbum = await addAlbum({
         title: albumFormData.title,
         artistId: finalArtistId,
-        artistIds: [finalArtistId], // For multi-artist support
+        artistIds: [finalArtistId],
         covers: albumFormData.coverImage ? [albumFormData.coverImage] : [],
         pendingFiles: [], 
       });
       toast.success(`Album "${albumFormData.title}" created.`);
 
-      // 3. Create Tracks
       const tracksToCreate = tracksFormData.map(track => ({
         ...track,
         artistId: finalArtistId,
-        albumIds: [newAlbum.id],
-        genres: [], producers: [], writers: [], credits: [], // Defaults, user can edit later
+        albumIds: [{ albumId: newAlbum.id, order: 0 }],
+        genres: [], producers: [], writers: [], credits: [],
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {}
       }));
       const createdTracks = await addTracks(tracksToCreate);
       toast.success(`Added ${tracksToCreate.length} tracks to "${newAlbum.title}".`);
 
-      // 4. Create a default release for the album
       await addRelease({
         albumId: newAlbum.id,
-        title: 'Streaming', // Default title for the release
+        title: 'Streaming',
         releaseDate: albumFormData.releaseDate,
         coverImage: albumFormData.coverImage,
-        trackIds: createdTracks.map(t => t.id) // Ensure we use IDs from newly created tracks
+        trackIds: createdTracks.map(t => t.id)
       });
       toast.success(`Default release for "${newAlbum.title}" created.`);
 
-      await fetchData(); // Refresh global data
-      onClose(); // Close the modal
+      await fetchData();
+      onClose();
     } catch (error: any) {
       console.error('Failed to save imported album:', error);
       toast.error(`Failed to complete import: ${error.message || 'An unexpected error occurred.'}`);
@@ -145,10 +139,6 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
 
   const handleArtistSelectChange = (value: string) => {
     setAlbumFormData(prev => ({ ...prev, artistId: value, artistNameInput: artists.find(a => a.id === value)?.name || '' }));
-  };
-
-  const handleArtistNameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAlbumFormData(prev => ({ ...prev, artistNameInput: e.target.value, artistId: '' })); // Clear ID if custom name is typed
   };
 
   return (
@@ -196,12 +186,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
                   <SearchableSelect
                     options={artistOptions}
-                    value={albumFormData.artistId} // Now bound to artistId
-                    onValueChange={handleArtistSelectChange} // New handler
+                    value={albumFormData.artistId}
+                    onValueChange={handleArtistSelectChange}
                     placeholder="Search or type artist..."
                     allowCustom
-                    customValue={albumFormData.artistNameInput} // Display custom input value
-                    onCustomValueChange={handleArtistNameInputChange} // Handle custom input changes
                   />
                 </div>
                 <div className="space-y-2">

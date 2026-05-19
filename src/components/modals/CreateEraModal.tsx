@@ -1,1 +1,0 @@
-<dyad-delete path="src/components/modals/CreateEraModal.tsx"></dyad-delete>

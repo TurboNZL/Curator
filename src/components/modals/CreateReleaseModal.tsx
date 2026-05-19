@@ -18,7 +18,7 @@ interface CreateReleaseModalProps {
 export const CreateReleaseModal = ({ albumId, children }: CreateReleaseModalProps) => {
   const [open, setOpen] = useState(false);
   const { addRelease, tracks } = useMusicStore();
-  const albumTracks = tracks.filter(t => t.albumIds.includes(albumId));
+  const albumTracks = tracks.filter(t => t.albumIds.some(aId => aId.albumId === albumId));
   
   const [formData, setFormData] = useState({
     title: 'Streaming', // Default title 'Streaming'

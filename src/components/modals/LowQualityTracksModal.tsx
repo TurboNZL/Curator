@@ -34,7 +34,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
   const getAlbumArt = (track: any) => {
-    const album = albums.find(a => track.albumIds?.includes(a.id));
+    const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
     return album?.covers[0] || '/placeholder.svg';
   };
 

@@ -53,7 +53,7 @@ const Queue = () => {
   const getTrackData = (id: string) => {
     const track = tracks.find(t => t.id === id);
     const artist = artists.find(a => a.id === track?.artistId);
-    const album = albums.find(al => track?.albumIds?.includes(al.id));
+    const album = albums.find(al => track?.albumIds?.some(aId => aId.albumId === al.id));
     return { track, artist, album };
   };
 

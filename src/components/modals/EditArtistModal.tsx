@@ -25,6 +25,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
     image: artist.image || '',
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +93,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
             <TabsContent value="relational" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Linked Bios</h3>
-                {/* Modified RelationalBioModal usage */}
-                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => setIsRelationalBioModalOpen(true)}>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50" onClick={() => {setSelectedGroupId(undefined); setIsRelationalBioModalOpen(true);}}>
                   <Plus size={12} className="mr-1" /> New Bio
                 </Button>
               </div>
@@ -105,11 +105,9 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
                       <span className="text-xs font-bold text-white">{group.name}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <RelationalBioModal groupId={group.id} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen}>
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400" onClick={() => {setSelectedGroupId(group.id); setIsRelationalBioModalOpen(true);}}>
                           <Edit3 size={14} />
-                        </Button>
-                      </RelationalBioModal>
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -147,8 +145,7 @@ export const EditArtistModal = ({ artist, children }: { artist: Artist, children
             </div>
           </form>
         </Tabs>
-        {/* Render controlled RelationalBioModal as a sibling */}
-        <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
+        <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
       </DialogContent>
     </Dialog>
   );

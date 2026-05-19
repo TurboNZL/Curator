@@ -87,7 +87,7 @@ const SearchResults = () => {
               <div className="space-y-2">
                 {results.tracks.map(track => {
                   const artist = artists.find(a => a.id === track.artistId);
-                  const album = albums.find(al => track.albumIds.includes(al.id));
+                  const album = albums.find(al => track.albumIds.some(aId => aId.albumId === al.id));
                   return (
                     <div 
                       key={track.id} 
