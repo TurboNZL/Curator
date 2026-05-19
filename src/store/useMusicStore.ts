@@ -70,8 +70,8 @@ interface MusicState {
   addReleaseType: (name: string) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
   
-  addGroup: (group: Omit<Group, 'id' | 'members'> & { members?: { entityType: string, entityId: string, showOnEntityPage?: boolean }[] }) => Promise<Group>; 
-  updateGroup: (id: string, data: Partial<Group>) => Promise<void>;
+  addGroup: (group: Omit<Group, 'id'>) => Promise<Group>; 
+  updateGroup: (id: string, data: Partial<Omit<Group, 'id'>>) => Promise<void>;
   deleteGroup: (id: string) => Promise<void>;
   addGroupMember: (groupId: string, entityType: string, entityId: string, showOnEntityPage?: boolean) => Promise<void>;
   removeGroupMember: (groupId: string, entityType: string, entityId: string) => Promise<void>;
