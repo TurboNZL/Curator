@@ -596,8 +596,8 @@ const Cleanup = () => {
               </div>
 
               {pair.map((track, idx) => (
-                <TrackContextMenu key={track.id} track={track}>
-                  <div className="space-y-4 min-w-0">
+                <div key={track.id} className="space-y-4 min-w-0">
+                  <TrackContextMenu track={track}>
                     <Card 
                       className={cn(
                         "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
@@ -627,14 +627,14 @@ const Cleanup = () => {
                         </div>
                       </div>
                     </Card>
-                    <Button 
-                      onClick={() => handleVote(track.id)}
-                      className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
-                    >
-                      <ThumbsUp size={16} /> Vote for this
-                    </Button>
-                  </div>
-                </TrackContextMenu>
+                  </TrackContextMenu>
+                  <Button 
+                    onClick={() => handleVote(track.id)}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
+                  >
+                    <ThumbsUp size={16} /> Vote for this
+                  </Button>
+                </div>
               ))}
             </div>
 

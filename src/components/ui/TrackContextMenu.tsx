@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,8 +12,7 @@ import { toast } from 'sonner';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Plus, ListMusic, Brain, Play, Link, Share } from 'lucide-react';
 import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
-import { useState } from 'react';
-import { Slot } from '@radix-ui/react-slot'; // Import Slot from Radix UI
+// Removed Slot import
 
 interface TrackContextMenuProps {
   track: any; // Assuming 'any' for now, should be 'Track' type
@@ -41,10 +40,8 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, child
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        {/* Use Slot to pass props to its child, effectively making it a wrapper for grid layout */}
-        <Slot className="contents">
-          {children}
-        </Slot>
+        {/* Render children directly with asChild */}
+        {children}
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white p-2">
         <DropdownMenuItem onClick={() => setCurrentTrack(track.id)} className="flex items-center gap-3 text-xs font-medium">
