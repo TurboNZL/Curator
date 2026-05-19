@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger, // Keep DialogTrigger for default case
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +20,13 @@ import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface RelationalBioModalProps {
-  children?: React.ReactElement; // Still accepts children for trigger
   initialEntity?: { type: string, id: string, label: string };
   groupId?: string; // If editing
-  open: boolean; // Add open prop
-  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const RelationalBioModal = ({ children, initialEntity, groupId, open, onOpenChange }: RelationalBioModalProps) => { // Destructure open, onOpenChange
+export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange }: RelationalBioModalProps) => { // Removed 'children' from destructuring here
   const { groups, artists, albums, tracks, addGroup, updateGroup, addGroupMember, removeGroupMember, fetchData } = useMusicStore();
   // const [open, setOpen] = useState(false); // Removed internal state, now controlled externally
 
@@ -144,10 +142,8 @@ export const RelationalBioModal = ({ children, initialEntity, groupId, open, onO
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
-      <DialogTrigger asChild>
-        {children ? children : <Button variant="outline">Relational Bio</Button>}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      
       <DialogContent className="bg-zinc-950 border-zinc-900 text-white max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tighter">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,11 +16,11 @@ interface CreatePlaylistAddModalProps {
   children?: React.ReactElement; // Still accepts children for trigger
   trackToAdd?: Track;
   albumToAdd?: Album;
-  open: boolean; // Add open prop
-  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd, open, onOpenChange }: CreatePlaylistAddModalProps) => { // Destructure open, onOpenChange
+export const CreatePlaylistAddModal = ({ trackToAdd, albumToAdd, open, onOpenChange }: CreatePlaylistAddModalProps) => { // Removed 'children' from destructuring here
   const { playlists, updatePlaylist, addPlaylist } = useMusicStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -106,10 +106,8 @@ export const CreatePlaylistAddModal = ({ children, trackToAdd, albumToAdd, open,
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
-      <DialogTrigger asChild>
-        {children || <div className="sr-only" />} {/* Render children as trigger, or an invisible div if none */}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
