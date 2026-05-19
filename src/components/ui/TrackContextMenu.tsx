@@ -2,80 +2,109 @@
 
 import React, { useState } from 'react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from 'sonner';
-import { useMusicStore } from '@/store/useMusicStore';
-import { Plus, ListMusic, Brain, Play, Link, Share } from 'lucide-react';
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
+import { Play, ListMusic, Brain, Info, Link as LinkIcon, Edit2, Trash2 } from 'lucide-react';
+import { Track } from '@/types/music';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
-// Removed Slot import
+import { EditTrackModal } from '../modals/EditTrackModal';
+import { useMusicStore } from '@/store/useMusicStore';
+import { toast } from 'sonner';
 
 interface TrackContextMenuProps {
-  track: any; // Assuming 'any' for now, should be 'Track' type
+  track: Track;
   children: React.ReactNode;
 }
 
-export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ track, children }) => {
-  const { setCurrentTrack, incrementMemories, decrementMemories, addToUserQueue } = useMusicStore();
-  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => {
+  const { incrementMemories, decrementMemories, deleteTrack, setCurrentTrack } = useMusicStore();
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isPlaylistAddModalOpen, setIsPlaylistAddModalOpen] = useState(false);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
 
-  const handlePlayNext = () => {
-    addToUserQueue(track.id);
-    toast.success(`${track.title} added to queue.`);
-  };
+  // Determine if track has specific URLs to show copy options
+  const hasSpotify = !!track.spotifyUrl;
+  const hasGenius = !!track.geniusUrl;
+  const hasYoutubeMusic = !!track.youtubeMusicUrl;
 
-  const handleCopyLink = (url: string | undefined, type: string) => {
+  const handleCopyLink = (url?: string) => {
     if (url) {
       navigator.clipboard.writeText(url);
-      toast.success(`${type} link copied to clipboard!`);
+      toast.success("Link copied to clipboard!");
     } else {
-      toast.error(`No ${type} link available.`);
+      toast.error("No link available for this item.");
+    }
+  };
+
+  const handleEditTrack = () => {
+    setIsEditTrackModalOpen(true);
+  };
+
+  const handleDeleteTrack = async () => {
+    if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
+      await deleteTrack(track.id);
+      toast.success("Track deleted.");
     }
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {/* Render children directly with asChild */}
-        {children}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white p-2">
-        <DropdownMenuItem onClick={() => setCurrentTrack(track.id)} className="flex items-center gap-3 text-xs font-medium">
-          <Play size={14} className="text-blue-400" /> Play Now
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handlePlayNext} className="flex items-center gap-3 text-xs font-medium">
-          <ListMusic size={14} className="text-blue-400" /> Add to Queue
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setIsPlaylistModalOpen(true)} className="flex items-center gap-3 text-xs font-medium">
-          <Plus size={14} className="text-emerald-400" /> Add to Playlist
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-zinc-800" />
-        <DropdownMenuItem onClick={() => incrementMemories(track.id)} className="flex items-center gap-3 text-xs font-medium">
-          <Brain size={14} className="text-purple-400" /> Add Memory
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => decrementMemories(track.id)} className="flex items-center gap-3 text-xs font-medium">
-          <Brain size={14} className="text-purple-400" /> Remove Memory
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-zinc-800" />
-        <DropdownMenuItem onClick={() => handleCopyLink(track.spotifyUrl, 'Spotify')} className="flex items-center gap-3 text-xs font-medium">
-          <Link size={14} className="text-green-500" /> Copy Spotify Link
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleCopyLink(track.geniusUrl, 'Genius')} className="flex items-center gap-3 text-xs font-medium">
-          <Link size={14} className="text-yellow-500" /> Copy Genius Link
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleCopyLink(track.youtubeMusicUrl, 'YouTube Music')} className="flex items-center gap-3 text-xs font-medium">
-          <Link size={14} className="text-red-500" /> Copy YouTube Music Link
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-      <CreatePlaylistAddModal 
-        trackToAdd={track} 
-        open={isPlaylistModalOpen} 
-        onOpenChange={setIsPlaylistModalOpen} 
-      />
-    </DropdownMenu>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white p-2">
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id)}>
+            <Play size={14} /> Play Track
+          </ContextMenuItem>
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsPlaylistAddModalOpen(true)}>
+            <ListMusic size={14} /> Add to Playlist
+          </ContextMenuItem>
+          <ContextMenuSeparator className="bg-zinc-800" />
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
+            <Brain size={14} /> Add Memory (+1) ({track.memories || 0})
+          </ContextMenuItem>
+          {track.memories && track.memories > 0 && (
+            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
+              <Brain size={14} /> Remove Memory (-1) ({track.memories || 0})
+            </ContextMenuItem>
+          )}
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsStatsModalOpen(true)}>
+            <Info size={14} /> Stats for Nerds
+          </ContextMenuItem>
+          <ContextMenuSeparator className="bg-zinc-800" />
+          {hasSpotify && (
+            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
+              <LinkIcon size={14} /> Copy Spotify Link
+            </ContextMenuItem>
+          )}
+          {hasGenius && (
+            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
+              <LinkIcon size={14} /> Copy Genius Link
+            </ContextMenuItem>
+          )}
+          {hasYoutubeMusic && (
+            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
+              <LinkIcon size={14} /> Copy YouTube Music Link
+            </ContextMenuItem>
+          )}
+          <ContextMenuSeparator className="bg-zinc-800" />
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={handleEditTrack}>
+            <Edit2 size={14} /> Edit Track
+          </ContextMenuItem>
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={handleDeleteTrack}>
+            <Trash2 size={14} /> Delete Track
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <StatsForNerdsModal track={track} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen} />
+      <CreatePlaylistAddModal trackToAdd={track} open={isPlaylistAddModalOpen} onOpenChange={setIsPlaylistAddModalOpen} />
+      <EditTrackModal track={track} open={isEditTrackModalOpen} onOpenChange={setIsEditTrackModalOpen} />
+    </>
   );
 };

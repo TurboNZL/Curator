@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,14 +12,14 @@ interface StatsForNerdsModalProps {
   track?: Track;
   album?: Album;
   artist?: Artist;
-  children: React.ReactElement; // Enforce single React element
-  open: boolean; // Added
-  onOpenChange: (open: boolean) => void; // Added
+  children?: React.ReactElement; // Made optional
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export const StatsForNerdsModal = ({ track, album, artist, children, open, onOpenChange }: StatsForNerdsModalProps) => {
   const { playbackLogs } = useMusicStore();
-  if (!track) return children; // Return children directly if no track, as it's just a trigger
+  if (!track) return null; // Render nothing if no track is provided. The trigger should handle opening this based on track context.
 
   const trackLogs = playbackLogs.filter(l => l.trackId === track.id);
   const playCount = trackLogs.length;
@@ -40,9 +42,7 @@ export const StatsForNerdsModal = ({ track, album, artist, children, open, onOpe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">

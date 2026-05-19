@@ -435,6 +435,10 @@ const Cleanup = () => {
         isEqual
       });
       toast.success(isEqual ? "Marked as equal" : "Vote recorded");
+      if (audioRef.current) { // Pause audio after voting
+        audioRef.current.pause();
+        setPlayingId(null);
+      }
       pickNewPair(); // This will also stop current audio
     } catch (error) {
       toast.error("Failed to record vote");
@@ -597,7 +601,6 @@ const Cleanup = () => {
 
               {pair.map((track, idx) => (
                 <div key={track.id} className="space-y-4 min-w-0">
-                  {/* TrackContextMenu removed from here */}
                   <Card 
                     className={cn(
                       "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
@@ -625,8 +628,8 @@ const Cleanup = () => {
                           <Rating trackId={track.id} size="md" />
                         </div>
                       </div>
-                    </div>
-                  </Card>
+                    </div> {/* Closing div for aspect-[16/9] */}
+                  </Card> {/* Closing Card component */}
                   <Button 
                     onClick={() => handleVote(track.id)}
                     className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
