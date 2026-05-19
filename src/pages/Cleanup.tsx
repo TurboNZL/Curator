@@ -591,39 +591,34 @@ const Cleanup = () => {
 
               {pair.map((track, idx) => (
                 <TrackContextMenu key={track.id} track={track}>
-                  <div className="space-y-4">
+                  <div className="space-y-4 min-w-0">  {/* add min-w-0 here */}
                     <Card 
                       className={cn(
                         "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
                       )}
                       onClick={() => playSnippet(track)}
                     >
-                      <div className="aspect-[16/9] relative overflow-hidden">
+                      <div className="aspect-square relative overflow-hidden">  {/* changed 16/9 to square */}
                         <img 
                           src={getAlbumArt(track)} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
                           alt="" 
                         />
-                        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" /> {/* Adjusted opacity for better visibility of text */}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl scale-90 group-hover:scale-100 transition-transform">
+                          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
                             {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
                           </div>
                         </div>
-                      </div>
-
-                      <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
-                        <div className="flex items-end justify-between gap-4">
-                          <div className="min-w-0">
-                            <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                            <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                              {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
-                            </p>
+                        {/* Move text inside the image div so it overlays properly */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                          <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                          <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                            {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
+                          </p>
+                          <div className="mt-2">
+                            <Rating trackId={track.id} size="md" />
                           </div>
-                          <Rating
-                            trackId={track.id}
-                            size="md"
-                          />
                         </div>
                       </div>
                     </Card>
