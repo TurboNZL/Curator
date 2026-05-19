@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Music, Play, Pause, Trash2, Edit2, Zap, AlertTriangle } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { EditTrackModal } from './EditTrackModal';
 import { TrackContextMenu } from '../ui/TrackContextMenu';
 
@@ -35,7 +35,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
   const getAlbumArt = (track: any) => {
-    const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
+    const album = albums.find(a => trackHasAlbum(track, a.id)); // Use trackHasAlbum
     return album?.covers[0] || '/placeholder.svg';
   };
 

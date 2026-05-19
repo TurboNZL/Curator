@@ -8,6 +8,7 @@ import { Music, Disc, User, Search, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { trackHasAlbum } from '@/lib/utils'; // Import the helper
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -18,7 +19,11 @@ const SearchResults = () => {
     if (!query) return { tracks: [], albums: [], artists: [] };
 
     return {
-      tracks: tracks.filter(t => t.title.toLowerCase().includes(query) || artists.find(a => a.id === t.artistId)?.name.toLowerCase().includes(query) || albums.find(al => t.albumIds.some(aId => aId.albumId === al.id))?.title.toLowerCase().includes(query)),
+      tracks: tracks.filter(t => 
+        t.title.toLowerCase().includes(query) || 
+        artists.find(a => a.id === t.artistId)?.name.toLowerCase().includes(query) || 
+        albums.find(al => trackHasAlbum(t, al.id))?.title.toLowerCase().includes(query) // Use trackHasAlbum
+      ),
       albums: albums.filter(a => a.title.toLowerCase().includes(query) || artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(query)),
       artists: artists.filter(a => a.name.toLowerCase().includes(query))
     };
@@ -88,7 +93,7 @@ const SearchResults = () => {
               <div className="space-y-2">
                 {results.tracks.map(track => {
                   const artist = artists.find(a => a.id === track.artistId);
-                  const album = albums.find(al => track.albumIds.some(aId => aId.albumId === al.id));
+                  const album = albums.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
                   return (
                     <TrackContextMenu key={track.id} track={track}>
                       <div 

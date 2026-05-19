@@ -15,7 +15,7 @@ import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
 import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
@@ -80,12 +80,12 @@ const AlbumDetail = () => {
   
   const albumTracks = useMemo(() => {
     if (showAllTracks) {
-      return tracks.filter(t => t.albumIds.some(aId => aId.albumId === (id || '')));
+      return tracks.filter(t => trackHasAlbum(t, (id || ''))); // Use trackHasAlbum
     }
     if (currentRelease) {
       return tracks.filter(t => currentRelease.trackIds.includes(t.id));
     }
-    return tracks.filter(t => t.albumIds.some(aId => aId.albumId === (id || '')));
+    return tracks.filter(t => trackHasAlbum(t, (id || ''))); // Use trackHasAlbum
   }, [showAllTracks, currentRelease, tracks, id]);
 
   const handleSetDefault = async (releaseId: string) => {

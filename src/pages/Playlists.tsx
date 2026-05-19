@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -113,7 +113,7 @@ const Playlists = () => {
     return tracks.filter(t => 
       t.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
       artists.some(a => a.id === t.artistId && a.name.toLowerCase().includes(trackSearchTerm.toLowerCase())) ||
-      albums.some(al => t.albumIds.some(aId => aId.albumId === al.id) && al.title.toLowerCase().includes(trackSearchTerm.toLowerCase()))
+      albums.some(al => trackHasAlbum(t, al.id)) // Use trackHasAlbum
     );
   }, [tracks, artists, albums, trackSearchTerm]);
 
@@ -157,7 +157,7 @@ const Playlists = () => {
   const getTrackDetails = (trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
     const artist = artists.find(a => a.id === track?.artistId);
-    const album = albums.find(al => track?.albumIds.some(aId => aId.albumId === al.id));
+    const album = albums.find(al => track && trackHasAlbum(track, al.id)); // Use trackHasAlbum
     return { track, artist, album };
   };
 

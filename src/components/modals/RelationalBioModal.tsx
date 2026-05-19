@@ -18,6 +18,7 @@ import { SearchableSelect } from '../ui/SearchableSelect';
 import { X, User, Disc, Music, Layers, Link as LinkIcon, Check } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
+import { GroupMember } from '@/types/music'; // Import GroupMember type
 
 interface RelationalBioModalProps {
   initialEntity?: { type: string, id: string, label: string };
@@ -35,7 +36,7 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
     name: '',
     description: '',
     type: 'relationship' as 'collective' | 'thematic' | 'relationship' | 'era',
-    members: [] as { entityType: string, entityId: string, label: string, showOnEntityPage?: boolean }[],
+    members: [] as GroupMember[], // Use GroupMember type
     // For era type, we would add startDate/endDate here
   });
 
@@ -53,16 +54,16 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
           name: '',
           description: '',
           type: 'relationship',
-          members: initialEntity ? [{ entityType: initialEntity.type, entityId: initialEntity.id, label: initialEntity.label, showOnEntityPage: (initialEntity.type !== 'track' && initialEntity.type !== 'release') }] : []
+          members: initialEntity ? [{ entityType: initialEntity.type as GroupMember['entityType'], entityId: initialEntity.id, label: initialEntity.label, showOnEntityPage: (initialEntity.type !== 'track' && initialEntity.type !== 'release') }] : []
         });
       }
     }
   }, [open, group, initialEntity]);
 
   const entityOptions = [
-    ...artists.map(a => ({ value: `artist:${a.id}`, label: `Artist: ${a.name}`, type: 'artist', name: a.name })),
-    ...albums.map(a => ({ value: `album:${a.id}`, label: `Album: ${a.title}`, type: 'album', name: a.title })),
-    ...tracks.map(t => ({ value: `track:${t.id}`, label: `Track: ${t.title}`, type: 'track', name: t.title })),
+    ...artists.map(a => ({ value: `artist:${a.id}`, label: `Artist: ${a.name}`, type: 'artist' as const, name: a.name, id: a.id })),
+    ...albums.map(a => ({ value: `album:${a.id}`, label: `Album: ${a.title}`, type: 'album' as const, name: a.title, id: a.id })),
+    ...tracks.map(t => ({ value: `track:${t.id}`, label: `Track: ${t.title}`, type: 'track' as const, name: t.title, id: t.id })),
     // Removed releases from dropdown options
   ];
 
@@ -95,14 +96,13 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
   };
 
   const addMember = (val: string) => {
-    const [type, id] = val.split(':');
-    const entity = entityOptions.find(opt => opt.value === val);
-    if (entity && !formData.members.some(m => m.entityId === id && m.entityType === type)) {
-      const newMember = { 
-        entityType: type, 
-        entityId: id, 
-        label: entity.name, 
-        showOnEntityPage: (type !== 'track' && type !== 'release') // Tracks and Releases don't have dedicated pages for this
+    const entityOption = entityOptions.find(opt => opt.value === val);
+    if (entityOption && !formData.members.some(m => m.entityId === entityOption.id && m.entityType === entityOption.type)) {
+      const newMember: GroupMember = { // Explicitly type newMember as GroupMember
+        entityType: entityOption.type, 
+        entityId: entityOption.id, 
+        label: entityOption.name, 
+        showOnEntityPage: (entityOption.type !== 'track') 
       };
       // Optimistically update local state first
       setFormData(prev => ({
@@ -111,7 +111,7 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
       }));
       // If editing existing group, call API to add member
       if (groupId) {
-        addGroupMember(groupId, type, id, newMember.showOnEntityPage);
+        addGroupMember(groupId, entityOption.type, entityOption.id, newMember.showOnEntityPage);
       }
     }
   };
@@ -207,7 +207,7 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
               ))}
             </div>
             <SearchableSelect 
-              options={entityOptions.filter(opt => !formData.members.some(m => `${m.entityType}:${m.entityId}` === opt.value))}
+              options={entityOptions.filter(opt => !formData.members.some(m => `${m.entityType}:${m.id}` === opt.value))}
               value=""
               onValueChange={addMember}
               placeholder="Link another entity..."

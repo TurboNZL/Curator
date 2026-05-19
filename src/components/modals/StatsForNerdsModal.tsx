@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock } from 'lucide-react';
 import { Track, Album, Artist } from '@/types/music';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { useMusicStore } from '@/store/useMusicStore';
 
 interface StatsForNerdsModalProps {

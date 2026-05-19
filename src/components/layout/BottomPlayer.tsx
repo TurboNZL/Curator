@@ -6,7 +6,7 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { ScrollArea } from '../ui/scroll-area';
 
 export const BottomPlayer = () => {
@@ -26,7 +26,7 @@ export const BottomPlayer = () => {
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
-  const album = albums.find(al => currentTrack?.albumIds.some(aId => aId.albumId === al.id));
+  const album = albums.find(al => currentTrack && trackHasAlbum(currentTrack, al.id)); // Use trackHasAlbum
   const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   useEffect(() => {

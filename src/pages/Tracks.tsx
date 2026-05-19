@@ -10,6 +10,7 @@ import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { trackHasAlbum } from '@/lib/utils'; // Import the helper
 
 const Tracks = () => {
   const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading } = useMusicStore();
@@ -28,7 +29,7 @@ const Tracks = () => {
     return tracks.filter(t => {
       if (!t) return false;
       const artist = artists?.find(a => a.id === t.artistId);
-      const album = albums?.find(al => t.albumIds?.some(aId => aId.albumId === al.id));
+      const album = albums?.find(al => trackHasAlbum(t, al.id)); // Use trackHasAlbum
       const searchLower = search.toLowerCase();
       return (
         (t.title || '').toLowerCase().includes(searchLower) ||
@@ -130,7 +131,7 @@ const Tracks = () => {
               {sortedTracks.map((track, i) => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
-                const album = albums?.find(al => track.albumIds?.some(aId => aId.albumId === al.id));
+                const album = albums?.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 return (
                   <TrackContextMenu key={track.id} track={track}>
