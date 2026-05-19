@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'; // Removed DialogTrigger
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,12 +18,11 @@ import { Card } from '../ui/card';
 
 interface EditTrackModalProps {
   track: Track;
-  children?: React.ReactElement; // Still accepts children for trigger, but now external controlled
-  open: boolean; // Add open prop
-  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => { // Destructure open, onOpenChange
+export const EditTrackModal = ({ track, open, onOpenChange }: EditTrackModalProps) => {
   const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
   
   const trackGroups = groups.filter(g =>
@@ -131,10 +130,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}> {/* Use open and onOpenChange */}
-      <DialogTrigger asChild>
-        {children || <div className="sr-only" />} {/* Render children as trigger, or an invisible div if none */}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] p-0 overflow-hidden flex flex-col">
         <Tabs defaultValue="metadata" className="w-full flex flex-col overflow-hidden">
           <div className="px-6 pt-6 flex items-center justify-between border-b border-zinc-900 pb-4 shrink-0">
@@ -268,7 +264,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                       <span className="text-xs font-bold text-white">{group.name}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <RelationalBioModal groupId={group.id}>
+                      <RelationalBioModal groupId={group.id} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen}>
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-blue-400">
                           <Edit3 size={14} />
                         </Button>
