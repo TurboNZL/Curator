@@ -1,15 +1,17 @@
 "use client";
 
 import { useMusicStore } from '@/store/useMusicStore';
-import { Settings as SettingsIcon, Search } from 'lucide-react';
+import { Settings as SettingsIcon, Search, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { ImportAlbumModal } from '../modals/ImportAlbumModal'; // Import the ImportAlbumModal
 
 export const TopToolbar = () => {
   const [query, setQuery] = useState('');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false); // State for ImportAlbumModal
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,7 +26,7 @@ export const TopToolbar = () => {
     { label: 'Journal', href: '/' },
     { label: 'Cleanup', href: '/cleanup' },
     { label: 'Stats', href: '/stats' },
-    { label: 'Queue', href: '/queue' }, // Added Queue link
+    { label: 'Queue', href: '/queue' },
   ];
 
   return (
@@ -58,12 +60,21 @@ export const TopToolbar = () => {
             className="pl-10 bg-zinc-900 border-zinc-800 text-white h-9 rounded-full focus-visible:ring-blue-500"
           />
         </form>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9 text-zinc-400 hover:text-white"
+          onClick={() => setIsImportModalOpen(true)} // Open modal on click
+        >
+          <Download size={18} />
+        </Button>
         <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-zinc-400 hover:text-white">
           <Link to="/settings">
             <SettingsIcon size={18} />
           </Link>
         </Button>
       </div>
+      <ImportAlbumModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} /> {/* Render the modal */}
     </header>
   );
 };

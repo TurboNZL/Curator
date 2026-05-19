@@ -10,7 +10,6 @@ const navItems = [
   { icon: Disc, label: 'Albums', href: '/albums' },
   { icon: ListMusic, label: 'Tracks', href: '/tracks' },
   { icon: ListMusic, label: 'Playlists', href: '/playlists' },
-  { icon: ListMusic, label: 'Queue', href: '/queue' }, // Added Queue link
 ];
 
 export const Sidebar = () => {
@@ -19,7 +18,7 @@ export const Sidebar = () => {
       <div className="p-6">
         <h1 className="text-xl font-bold tracking-tighter text-white">CURATOR</h1>
       </div>
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4"> {/* Added overflow-y-auto and pb-4 */}
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4">
         {navItems.map((item) => (
           <NavLink
             key={item.href}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, Disc, Mic2, ListMusic, Brain, FileAudio, Users, Layers, Download } from "lucide-react";
+import { Plus, Disc, Mic2, ListMusic, Brain, FileAudio, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,6 @@ import { CreateAlbumModal } from '../modals/CreateAlbumModal';
 import { CreateTrackModal } from '../modals/CreateTrackModal';
 import { CreateJournalEntryModal } from '../modals/CreateJournalEntryModal';
 import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
-import { ImportAlbumModal } from '../modals/ImportAlbumModal';
 import { RelationalBioModal } from '../modals/RelationalBioModal';
 
 // Define a type for modals that can be passed as 'children' to a trigger
@@ -28,7 +27,6 @@ type ActionItem = {
 
 export const SpeedDial = () => {
   const [isBioModalOpen, setIsBioModalOpen] = useState(false); // State for RelationalBioModal
-  const [isImportAlbumModalOpen, setIsImportAlbumModalOpen] = useState(false); // State for ImportAlbumModal
 
   const actions: ActionItem[] = [
     { icon: Mic2, label: "New Artist", modal: CreateArtistModal },
@@ -56,14 +54,7 @@ export const SpeedDial = () => {
               </DropdownMenuItem>
             </action.modal>
           ))}
-          {/* Dedicated triggers for controlled modals */}
-          <DropdownMenuItem 
-            className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer"
-            onSelect={() => setIsImportAlbumModalOpen(true)}
-          >
-            <Download size={18} />
-            Import Album
-          </DropdownMenuItem>
+          {/* Dedicated trigger for RelationalBioModal */}
           <DropdownMenuItem 
             className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer"
             onSelect={() => setIsBioModalOpen(true)}
@@ -75,7 +66,6 @@ export const SpeedDial = () => {
       </DropdownMenu>
 
       {/* Render controlled modals as siblings */}
-      <ImportAlbumModal isOpen={isImportAlbumModalOpen} onClose={() => setIsImportAlbumModalOpen(false)} />
       <RelationalBioModal open={isBioModalOpen} onOpenChange={setIsBioModalOpen} />
     </div>
   );
