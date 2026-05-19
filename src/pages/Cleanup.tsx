@@ -597,37 +597,36 @@ const Cleanup = () => {
 
               {pair.map((track, idx) => (
                 <div key={track.id} className="space-y-4 min-w-0">
-                  <TrackContextMenu track={track}>
-                    <Card 
-                      className={cn(
-                        "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                      )}
-                      onClick={() => playSnippet(track)}
-                    >
-                      <div className="aspect-square relative overflow-hidden">
-                        <img 
-                          src={getAlbumArt(track)} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
-                          alt="" 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
-                            {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
-                          </div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
-                          <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                          <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                            {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
-                          </p>
-                          <div className="mt-2">
-                            <Rating trackId={track.id} size="md" />
-                          </div>
+                  {/* TrackContextMenu removed from here */}
+                  <Card 
+                    className={cn(
+                      "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
+                    )}
+                    onClick={() => playSnippet(track)}
+                  >
+                    <div className="aspect-square relative overflow-hidden">
+                      <img 
+                        src={getAlbumArt(track)} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
+                        alt="" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
+                          {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
                         </div>
                       </div>
-                    </Card>
-                  </TrackContextMenu>
+                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                        <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                        <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                          {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
+                        </p>
+                        <div className="mt-2">
+                          <Rating trackId={track.id} size="md" />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
                   <Button 
                     onClick={() => handleVote(track.id)}
                     className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
