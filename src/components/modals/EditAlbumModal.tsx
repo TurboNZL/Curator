@@ -25,10 +25,10 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
     g.members?.some(m => m.entityId === album.id && m.entityType === 'album' && m.showOnEntityPage)
   );
 
-  const availableCovers = Array.from(new Set([
+  const availableCovers = useMemo(() => Array.from(new Set([
     ...album.covers,
     ...albumReleases.map(r => r.coverImage).filter(Boolean) as string[]
-  ]));
+  ])), [album.covers, albumReleases]);
 
   const [formData, setFormData] = useState({
     title: album.title,
@@ -43,30 +43,45 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
 
   useEffect(() => {
     if (open) {
-      // Auto-select cover if album.covers is empty and there's a single release with a cover
-      if ((!album.covers || album.covers.length === 0) && albumReleases.length > 0) {
+      const initialCover = album.covers[0] || '';
+      let resolvedCover = initialCover;
+      if (!initialCover && albumReleases.length > 0) {
         const releasesWithCovers = albumReleases.filter(r => r.coverImage);
         if (releasesWithCovers.length === 1 && releasesWithCovers[0].coverImage) {
-          setFormData(prev => ({ ...prev, cover: releasesWithCovers[0].coverImage }));
-          if (album.defaultReleaseId !== releasesWithCovers[0].id) {
-            updateAlbum(album.id, { defaultReleaseId: releasesWithCovers[0].id });
-          }
+          resolvedCover = releasesWithCovers[0].coverImage;
         }
       }
+      
+      setFormData({
+        title: album.title,
+        artistId: album.artistId,
+        artistIds: album.artistIds || [],
+        cover: resolvedCover,
+        pendingFiles: album.pendingFiles || [],
+        releaseDate: albumReleases.length > 0 ? albumReleases.sort((a,b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime())[0].releaseDate : '',
+      });
     }
-  }, [open, album, albumReleases, updateAlbum]);
-
+  }, [open, album, albumReleases]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Album title is required");
 
+    let newDefaultReleaseId = album.defaultReleaseId;
+    if (formData.cover && album.covers[0] !== formData.cover) {
+      const releaseWithNewCover = albumReleases.find(r => r.coverImage === formData.cover);
+      if (releaseWithNewCover) {
+        newDefaultReleaseId = releaseWithNewCover.id;
+      }
+    }
+
     await updateAlbum(album.id, {
       title: formData.title,
       artistId: formData.artistId,
       artistIds: formData.artistIds,
-      covers: formData.cover ? [formData.cover] : album.covers,
-      pendingFiles: formData.pendingFiles
+      covers: formData.cover ? [formData.cover] : [],
+      pendingFiles: formData.pendingFiles,
+      defaultReleaseId: newDefaultReleaseId
     });
 
     toast.success(`Updated ${formData.title}`);
