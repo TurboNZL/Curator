@@ -11,7 +11,7 @@ export default defineHandler(async (event) => {
   }
 
   const file = formData.find(item => item.name === 'file');
-  const type = formData.find(item => item.name === 'type')?.data.toString('utf8') || 'misc';
+  const type = formData.find(item => item.name === 'type')?.data instanceof Buffer ? item.data.toString('utf8') : (item.data ? String(item.data) : 'misc');
 
   if (!file || !file.data) {
     throw createError({ statusCode: 400, statusMessage: 'No file uploaded' });
