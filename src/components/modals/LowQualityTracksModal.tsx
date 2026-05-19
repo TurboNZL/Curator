@@ -11,12 +11,12 @@ import { cn } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
 
 interface LowQualityTracksModalProps {
-  children?: React.ReactElement; // Enforce single React element
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ children }) => {
+export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ open, onOpenChange }) => {
   const { tracks, artists, albums, volume, deleteTrack, fetchData } = useMusicStore();
-  const [open, setOpen] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
@@ -105,7 +105,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
           audioRef.current.pause();
           setPlayingId(null);
         }
-        setOpen(false); // Close modal after mass deletion
+        onOpenChange(false); // Close modal after mass deletion
       } catch (error) {
         toast.error("Failed to delete all low-quality tracks.");
       }
@@ -113,14 +113,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button variant="outline" className="w-full">
-            Open Low Quality Tracks
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -176,7 +169,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ ch
         
         {lowQualityTracks.length > 0 && (
           <DialogFooter className="pt-4 border-t border-zinc-900">
-            <Button variant="ghost" onClick={() => setOpen(false)}>
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Close
             </Button>
             <Button

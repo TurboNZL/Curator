@@ -201,7 +201,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, playbackLogs } = useMusicStore();
+  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, playbackLogs, updateRelease } = useMusicStore();
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isShufflePairing, setIsShufflePairing] = useState(false);
@@ -212,6 +212,7 @@ const Cleanup = () => {
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
   const [imageUploadEntity, setImageUploadEntity] = useState<any>(null);
   const [imageUploadEntityType, setImageUploadEntityType] = useState<'artist' | 'album' | null>(null);
+  const [isLowQualityOpen, setIsLowQualityOpen] = useState(false); // State for LowQualityTracksModal
 
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
@@ -435,11 +436,7 @@ const Cleanup = () => {
     } else if (task.type === 'release_date') {
       const releaseDate = prompt(`Enter release date for ${task.entity.title} (YYYY-MM-DD or YYYY-MM or YYYY):`);
       if (releaseDate !== null) {
-        await fetch(`/api/releases/${task.entity.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ releaseDate })
-        });
+        await updateRelease(task.entity.id, { releaseDate }); // Using store function
         toast.success("Release date updated.");
         fetchData();
       }
@@ -692,9 +689,7 @@ const Cleanup = () => {
             <p className="text-4xl font-black text-white">{lowQualityTracks.length}</p>
             <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">Tracks below 192kbps detected in library</p>
             
-            <LowQualityTracksModal> {/* Wrap the button with the new modal */}
-              <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors">Review Files</Button>
-            </LowQualityTracksModal>
+            <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors" onClick={() => setIsLowQualityOpen(true)}>Review Files</Button>
           </Card>
 
           <Card className="bg-red-950/10 border-red-900/20 p-6 space-y-4 group hover:border-red-500/30 transition-colors">
@@ -742,6 +737,9 @@ const Cleanup = () => {
           onResolve={handleImageUploadResolution}
         />
       )}
+
+      {/* Render the controlled LowQualityTracksModal */}
+      <LowQualityTracksModal open={isLowQualityOpen} onOpenChange={setIsLowQualityOpen} />
     </div>
   );
 };
