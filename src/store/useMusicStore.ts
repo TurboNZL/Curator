@@ -479,6 +479,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
+  decrementMemories: async (id) => {
+    const track = get().tracks.find(t => t.id === id);
+    if (track && (track.memories || 0) > 0) {
+      await get().updateTrack(id, { memories: (track.memories || 0) - 1 });
+    }
+  },
+
   addPlaylist: async (playlistData) => {
     const res = await fetch('/api/playlists', {
       method: 'POST',

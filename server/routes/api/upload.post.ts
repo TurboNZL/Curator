@@ -17,19 +17,30 @@ export default defineHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'No file uploaded' });
   }
 
-  const uploadDir = join(process.cwd(), 'public', 'uploads', type);
-  if (!existsSync(uploadDir)) {
-    mkdirSync(uploadDir, { recursive: true });
+  const baseUploadDir = join(process.cwd(), 'public');
+  let finalUploadDir;
+
+  if (type === 'audio') {
+    finalUploadDir = join(baseUploadDir, 'music');
+  } else if (type === 'image') {
+    finalUploadDir = join(baseUploadDir, 'images');
+  } else {
+    // Fallback for other types, though the prompt only specifies music and images
+    finalUploadDir = join(baseUploadDir, 'uploads', type);
+  }
+
+  if (!existsSync(finalUploadDir)) {
+    mkdirSync(finalUploadDir, { recursive: true });
   }
 
   const extension = file.filename?.split('.').pop() || 'bin';
   const fileName = `${randomUUID()}.${extension}`;
-  const filePath = join(uploadDir, fileName);
+  const filePath = join(finalUploadDir, fileName);
 
   writeFileSync(filePath, file.data);
 
   return {
-    url: `/uploads/${type}/${fileName}`,
+    url: `/${type === 'audio' ? 'music' : type === 'image' ? 'images' : `uploads/${type}`}/${fileName}`,
     fileName: file.filename
   };
 });

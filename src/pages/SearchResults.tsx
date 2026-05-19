@@ -106,7 +106,7 @@ const SearchResults = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-white truncate">{track.title}</p>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{artist?.name}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{artist?.name} {album?.title && `— ${album.title}`}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
