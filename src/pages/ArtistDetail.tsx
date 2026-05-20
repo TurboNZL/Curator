@@ -9,6 +9,8 @@ import { Rating } from '@/components/ui/Rating';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { useState, useMemo } from 'react'; // Import useState
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { cn } from '@/lib/utils';
+
 
 const ArtistDetail = () => {
   const { id } = useParams();
@@ -23,32 +25,55 @@ const ArtistDetail = () => {
   
   // Sort by rating (star rating) then by eloScore (ranking)
   const artistTracks = useMemo(() => {
-    return tracks
-      .filter(t => t.artistId === id)
-      .sort((a, b) => {
-        // Function to get effective rating for sorting
-        const getEffectiveRating = (track: any) => {
-          if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
+    // Function to get effective rating for sorting, prioritizing balanced then initial
+    const getEffectiveRating = (track: any) => {
+        if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
             return track.rating;
-          }
-          if (track.initialRating !== undefined && track.initialRating !== null) {
+        }
+        if (track.initialRating !== undefined && track.initialRating !== null) {
             return track.initialRating;
-          }
-          return -1; // Treat truly unrated as lowest for sorting
-        };
+        }
+        return -1; // Treat truly unrated or 0.0 as lowest for sorting
+    };
 
+    // Get all tracks, even those with only initialRating
+    const allArtistTracks = tracks.filter(t => t.artistId === id);
+
+    const sorted = [...allArtistTracks].sort((a, b) => {
         const ratingA = getEffectiveRating(a);
         const ratingB = getEffectiveRating(b);
 
         if (ratingB !== ratingA) return ratingB - ratingA;
         return (b.eloScore ?? 0) - (a.eloScore ?? 0);
-      });
+    });
+
+    // Special handling for 10-star tracks to group them and then sort by elo
+    const tenStarTracks = sorted.filter(t => (getEffectiveRating(t) >= 9.9999 && t.comparisons > 0)); // Only include 10/10 with comparisons
+    const otherTracks = sorted.filter(t => !(getEffectiveRating(t) >= 9.9999 && t.comparisons > 0));
+
+    tenStarTracks.sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
+
+    return [...tenStarTracks, ...otherTracks];
   }, [tracks, id]);
 
   const avgArtistRating = useMemo(() => {
-    const ratedTracks = artistTracks.filter(t => t.rating !== undefined && t.rating !== null && t.rating >= 0);
+    const ratedTracks = artistTracks.filter(t => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : null;
+        return effectiveRating !== null && effectiveRating > 0; // Only count positive ratings
+    });
     if (ratedTracks.length === 0) return 'N/A';
-    const totalRating = ratedTracks.reduce((sum, t) => sum + (t.rating || 0), 0);
+    const totalRating = ratedTracks.reduce((sum, t) => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : 0;
+        return sum + effectiveRating;
+    }, 0);
     return (totalRating / ratedTracks.length).toFixed(1);
   }, [artistTracks]);
 
@@ -131,6 +156,7 @@ const ArtistDetail = () => {
                       <Rating
                         trackId={track.id}
                         showEditor={false}
+                        size="sm"
                       />
                     </div>
                   </div>

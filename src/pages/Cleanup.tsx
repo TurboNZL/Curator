@@ -658,7 +658,7 @@ const Cleanup = () => {
                           {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
                         <div className="mt-2 flex"> {/* Added flex here */}
-                          <Rating trackId={track.id} size="md" isCleanupContext={true} showEditor={true}/>
+                          <Rating trackId={track.id} size="md" isCleanupContext={true} showEditor={false}/> {/* Disable editor */}
                         </div>
                       </div>
                     </div> {/* Closing div for aspect-[16/9] */}

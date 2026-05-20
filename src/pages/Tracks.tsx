@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus } from 'lucide-react';
+import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus, MoreVertical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating';
@@ -50,13 +50,13 @@ const Tracks = () => {
       } else if (sortConfig.field === 'rating') {
         // Handle unrated songs for sorting: initial rating for <3 comparisons, else balanced rating
         const getEffectiveRating = (track: any) => {
-          if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
+          if (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null && track.rating > 0.001) {
             return track.rating;
           }
-          if (track.initialRating !== undefined && track.initialRating !== null) {
+          if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
             return track.initialRating;
           }
-          return -1; // Treat truly unrated as lowest for sorting
+          return -1; // Treat truly unrated or 0.0 as lowest for sorting
         };
 
         const ratingA = getEffectiveRating(a);
@@ -68,8 +68,22 @@ const Tracks = () => {
 
     // If sorting by rating, specifically handle 10.0 rankings
     if (sortConfig.field === 'rating' && sortConfig.direction === 'desc') {
-      const tenStarTracks = sorted.filter(t => (t.rating === 10 || t.initialRating === 10) && t.comparisons > 0); // Only consider tracks with comparisons for ranking
-      const otherTracks = sorted.filter(t => !((t.rating === 10 || t.initialRating === 10) && t.comparisons > 0));
+      const tenStarTracks = sorted.filter(t => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : null;
+        return effectiveRating >= 9.9999 && t.comparisons > 0;
+      }); 
+      const otherTracks = sorted.filter(t => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : null;
+        return !(effectiveRating >= 9.9999 && t.comparisons > 0);
+      });
 
       // Sort 10-rated tracks by eloScore for ranking
       tenStarTracks.sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0));
@@ -150,7 +164,7 @@ const Tracks = () => {
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
-                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Memories</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right w-16">Actions</TableHead> {/* Updated column header */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,13 +174,6 @@ const Tracks = () => {
                 const album = albums?.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 
-                // Determine global rank for 10-star songs
-                let globalRank = null;
-                if ((track.rating === 10 || track.initialRating === 10) && track.comparisons > 0) {
-                  const tenStarTracks = tracks.filter(t => (t.rating === 10 || t.initialRating === 10) && t.comparisons > 0).sort((a,b) => (b.eloScore || 0) - (a.eloScore || 0));
-                  globalRank = tenStarTracks.findIndex(t => t.id === track.id) + 1;
-                }
-
                 return (
                   <TrackContextMenu key={track.id} track={track}>
                     <TableRow
@@ -190,25 +197,22 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
-                        {globalRank ? (
-                            <div className={cn(
-                              "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold",
-                              "bg-blue-600/10 text-blue-400 border border-blue-500/20"
-                            )}>
-                              <Star size={10} fill="currentColor" /> #{globalRank} <span className="text-[8px] text-zinc-500">({track.comparisons})</span>
-                            </div>
-                        ) : (
-                          <Rating
-                            trackId={track.id}
-                            size="sm"
-                            showEditor={true} // Allow editor for other tracks
-                          />
-                        )}
+                        <Rating
+                          trackId={track.id}
+                          showEditor={true} 
+                          size="sm"
+                        />
                       </TableCell>
                       <TableCell className="text-right">
-                          <div className="flex items-center justify-end">
-                              <p className="text-[10px] text-zinc-500 font-bold uppercase">({track.memories || 0})</p>
-                          </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                              <MoreVertical size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          {/* TrackContextMenu content will be rendered here by the parent component */}
+                          {/* This is a visual cue for the user. The actual context menu is provided by TrackContextMenu */}
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

@@ -82,19 +82,40 @@ const AlbumDetail = () => {
   const currentRelease = albumReleases.find(r => r.id === selectedReleaseId);
   
   const albumTracks = useMemo(() => {
-    if (showAllTracks) {
-      return tracks.filter(t => trackHasAlbum(t, (id || ''))); // Use trackHasAlbum
+    if (!album) return [];
+    let tracksForAlbum = tracks.filter(t => t.albumIds?.some(aId => aId.albumId === album.id));
+    
+    if (!showAllTracks && currentRelease) {
+      tracksForAlbum = tracksForAlbum.filter(t => currentRelease.trackIds.includes(t.id));
     }
-    if (currentRelease) {
-      return tracks.filter(t => currentRelease.trackIds.includes(t.id));
-    }
-    return tracks.filter(t => trackHasAlbum(t, (id || ''))); // Use trackHasAlbum
-  }, [showAllTracks, currentRelease, tracks, id]);
+    
+    // Sort tracks by their order in the album/release first, then by title
+    return tracksForAlbum.sort((a, b) => {
+      const aOrder = a.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
+      const bOrder = b.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.title.localeCompare(b.title);
+    });
+  }, [showAllTracks, currentRelease, tracks, album]);
 
   const avgAlbumRating = useMemo(() => {
-    const ratedTracks = albumTracks.filter(t => t.rating !== undefined && t.rating !== null && t.rating >= 0);
+    const ratedTracks = albumTracks.filter(t => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : null;
+        return effectiveRating !== null && effectiveRating > 0; // Only count positive ratings
+    });
     if (ratedTracks.length === 0) return 'N/A';
-    const totalRating = ratedTracks.reduce((sum, t) => sum + (t.rating || 0), 0);
+    const totalRating = ratedTracks.reduce((sum, t) => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : 0;
+        return sum + effectiveRating;
+    }, 0);
     return (totalRating / ratedTracks.length).toFixed(1);
   }, [albumTracks]);
 
@@ -206,13 +227,6 @@ const AlbumDetail = () => {
               </TableHeader>
               <TableBody>
                 {albumTracks.map((track, index) => {
-                  // Determine global rank for 10-star songs in the context of the entire library
-                  let globalRank = null;
-                  if ((track.rating === 10 || track.initialRating === 10) && track.comparisons > 0) {
-                    const tenStarTracks = tracks.filter(t => (t.rating === 10 || t.initialRating === 10) && t.comparisons > 0).sort((a,b) => (b.eloScore || 0) - (a.eloScore || 0));
-                    globalRank = tenStarTracks.findIndex(t => t.id === track.id) + 1;
-                  }
-
                   return (
                     <TrackContextMenu key={track.id} track={track}>
                       <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
@@ -224,19 +238,10 @@ const AlbumDetail = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {globalRank ? (
-                              <div className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold",
-                                "bg-blue-600/10 text-blue-400 border border-blue-500/20"
-                              )}>
-                                <Star size={10} fill="currentColor" /> #{globalRank} <span className="text-[8px] text-zinc-500">({track.comparisons})</span>
-                              </div>
-                          ) : (
-                            <Rating
-                              trackId={track.id}
-                              showEditor={true} // Allow editor for other tracks
-                            />
-                          )}
+                          <Rating
+                            trackId={track.id}
+                            showEditor={true} 
+                          />
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -263,11 +268,11 @@ const AlbumDetail = () => {
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator className="bg-zinc-800" />
                                   <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
-                                    <Brain size={14} /> Add Memory (+1) ({track.memories || 0})
+                                    <Brain size={14} /> Add Memory
                                   </DropdownMenuItem>
                                   {track.memories && track.memories > 0 && (
                                     <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
-                                      <Brain size={14} /> Remove Memory (-1) ({track.memories || 0})
+                                      <Brain size={14} /> Remove Memory
                                     </DropdownMenuItem>
                                   )}
                                   <DropdownMenuSeparator className="bg-zinc-800" />
