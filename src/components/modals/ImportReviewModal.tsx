@@ -140,11 +140,16 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
   };
 
   const handleArtistSelectChange = (value: string) => {
+    // If the value corresponds to an existing artist ID, find that artist.
+    // Otherwise, treat the value as a custom typed name.
     const existingArtist = artists.find(a => a.id === value);
 
     setAlbumFormData(prev => ({
       ...prev,
-      artistId: existingArtist ? existingArtist.id : '',
+      // If an existing artist is found, set artistId to its ID.
+      // If a custom name is typed (value doesn't match an existing ID),
+      // set artistId to the custom value temporarily, allowing the select to display it.
+      artistId: existingArtist ? existingArtist.id : value,
       artistNameInput: existingArtist ? existingArtist.name : value
     }));
   };
