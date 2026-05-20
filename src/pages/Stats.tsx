@@ -31,9 +31,10 @@ const Stats = () => {
 
     playbackLogs.forEach(log => {
       if (trackPlayCounts[log.trackId]) {
+        // Distinguish full plays from partial/skipped logs
         if (!log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS) {
           trackPlayCounts[log.trackId].fullPlays++;
-          trackPlayCounts[log.trackId].rankingValue++;
+          trackPlayCounts[log.trackId].rankingValue++; // Full plays always contribute to ranking
         } else if (log.duration && log.duration > 0) { // Logged with duration but skipped/short
           trackPlayCounts[log.trackId].partialPlays++;
         }
@@ -42,19 +43,17 @@ const Stats = () => {
     });
 
     // Account for currently playing track in real-time
-    if (currentTrackId && trackPlayCounts[currentTrackId]) {
-      if (isPlaying) {
+    if (currentTrackId && trackPlayCounts[currentTrackId] && isPlaying) {
+        // Any active play counts as a 'live play' for the chart, regardless of duration
+        trackPlayCounts[currentTrackId].livePlays++;
+        // If it's a "full play" in progress, it also contributes to ranking
         if (currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS) {
-          trackPlayCounts[currentTrackId].livePlays++;
-          trackPlayCounts[currentTrackId].rankingValue++;
-        } else if (currentProgress > 0) {
-          trackPlayCounts[currentTrackId].partialPlays++;
+            trackPlayCounts[currentTrackId].rankingValue++;
         }
-        trackPlayCounts[currentTrackId].total++;
-      }
+        trackPlayCounts[currentTrackId].total++; // Also count in total
     }
 
-    // Sort by ranking value (full plays + live plays)
+    // Sort by ranking value (full plays + live plays > PARTIAL_PLAY_THRESHOLD_SECONDS)
     const sorted = [...tracks].sort((a, b) => {
       const countsA = trackPlayCounts[a.id] || { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0, rankingValue: 0 };
       const countsB = trackPlayCounts[b.id] || { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0, rankingValue: 0 };
@@ -159,9 +158,9 @@ const Stats = () => {
                   }}
                 />
                 <Legend layout="horizontal" align="right" verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
-                <Bar dataKey="partialPlays" stackId="a" fill="#3b82f640" radius={[0, 0, 0, 0]} name="Partial Plays" />
                 <Bar dataKey="fullPlays" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} name="Full Plays" />
-                <Bar dataKey="livePlays" stackId="a" fill="#10B981" radius={[0, 4, 4, 0]} name="Live Plays" />
+                <Bar dataKey="livePlays" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} name="Live Plays" />
+                <Bar dataKey="partialPlays" stackId="a" fill="#3b82f640" radius={[0, 4, 4, 0]} name="Partial Plays" />
               </BarChart>
             </ResponsiveContainer>
           </div>
