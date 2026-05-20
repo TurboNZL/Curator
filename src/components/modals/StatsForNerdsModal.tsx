@@ -140,7 +140,7 @@ const StatRow = ({ icon: Icon, label, value, className }: { icon: any, label: st
       </div>
       <span className="text-xs font-bold text-zinc-400 uppercase tracking-tight">{label}</span>
     </div>
-    <span className={cn("text-xs font-mono text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded border border-zinc-800/50", className)}>
+    <span className={cn("text-xs font-mono text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded border border-zinc-800/50 truncate max-w-[200px]", className)}>
       {value}
     </span>
   </div>

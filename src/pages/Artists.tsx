@@ -15,8 +15,6 @@ const Artists = () => {
   const [sortConfig, setSortConfig] = useState({ field: 'name', direction: 'asc' as 'asc' | 'desc' });
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
 
-  const [isCreateArtistModalOpen, setIsCreateArtistModalOpen] = useState(false);
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -41,12 +39,7 @@ const Artists = () => {
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Artists</h1>
           <p className="text-zinc-500 text-sm mt-1">Manage your catalog hierarchy.</p>
         </div>
-        <CreateArtistModal open={isCreateArtistModalOpen} onOpenChange={setIsCreateArtistModalOpen}>
-          <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-full">
-            <Plus size={18} />
-            Quick Add
-          </Button>
-        </CreateArtistModal>
+        <CreateArtistModal />
       </div>
 
       <div className="flex items-center gap-4 py-4 border-y border-zinc-900">
@@ -85,12 +78,7 @@ const Artists = () => {
           <Users size={48} className="text-zinc-800 mb-4" />
           <h3 className="text-zinc-400 font-bold">No artists found</h3>
           <p className="text-zinc-600 text-sm mt-1 mb-6">Try adjusting your search or add a new artist.</p>
-          <CreateArtistModal open={isCreateArtistModalOpen} onOpenChange={setIsCreateArtistModalOpen}>
-            <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-full">
-              <Plus size={18} />
-              Add New Artist
-            </Button>
-          </CreateArtistModal>
+          <CreateArtistModal />
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">

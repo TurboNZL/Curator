@@ -55,7 +55,6 @@ const AlbumDetail = () => {
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false);
 
 
   // Removed selectedReleaseId state, now deriving currentRelease directly
@@ -192,11 +191,7 @@ const AlbumDetail = () => {
             </h2>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-bold text-zinc-600 uppercase">{albumTracks.length} Tracks</span>
-              <CreateTrackModal albumId={album.id} artistId={album.artistId} open={isCreateTrackModalOpen} onOpenChange={setIsCreateTrackModalOpen}>
-                <Button variant="outline" size="sm" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">
-                  <Plus size={14} /> Add Track
-                </Button>
-              </CreateTrackModal>
+              <CreateTrackModal albumId={album.id} artistId={album.artistId} />
             </div>
           </div>
 

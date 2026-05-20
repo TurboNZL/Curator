@@ -88,8 +88,6 @@ const ArtistDetail = () => {
 
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
-  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false);
-
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -120,12 +118,7 @@ const ArtistDetail = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
-              <CreateAlbumModal open={isCreateAlbumModalOpen} onOpenChange={setIsCreateAlbumModalOpen}>
-                <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 rounded-full">
-                  <Plus size={18} />
-                  New Album
-                </Button>
-              </CreateAlbumModal>
+              <CreateAlbumModal />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (

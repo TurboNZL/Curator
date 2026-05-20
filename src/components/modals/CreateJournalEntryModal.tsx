@@ -10,13 +10,8 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { BookOpen, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface CreateJournalEntryModalProps {
-  children?: React.ReactElement;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export const CreateJournalEntryModal = ({ children, open, onOpenChange }: CreateJournalEntryModalProps) => {
+export const CreateJournalEntryModal = ({ children }: { children?: React.ReactElement }) => {
+  const [open, setOpen] = useState(false);
   const addTimelineEntry = useMusicStore((state) => state.addTimelineEntry);
   
   const [formData, setFormData] = useState({
@@ -35,12 +30,12 @@ export const CreateJournalEntryModal = ({ children, open, onOpenChange }: Create
     });
 
     toast.success(`Journal entry saved`);
-    onOpenChange(false); // Close modal using the prop
+    setOpen(false);
     setFormData({ title: '', description: '' });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button variant="outline" className="gap-2 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white">
