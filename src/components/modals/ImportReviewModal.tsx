@@ -140,7 +140,13 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
   };
 
   const handleArtistSelectChange = (value: string) => {
-    setAlbumFormData(prev => ({ ...prev, artistId: value, artistNameInput: artists.find(a => a.id === value)?.name || '' }));
+    const existingArtist = artists.find(a => a.id === value);
+
+    setAlbumFormData(prev => ({
+      ...prev,
+      artistId: existingArtist ? existingArtist.id : '',
+      artistNameInput: existingArtist ? existingArtist.name : value
+    }));
   };
 
   return (
@@ -259,7 +265,6 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
             ) : (
               'Confirm & Add to Catalog'
             )}
-          )
           </Button>
         </DialogFooter>
       </DialogContent>

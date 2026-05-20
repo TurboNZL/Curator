@@ -262,7 +262,7 @@ export const BottomPlayer = () => {
           )}
         </div>
 
-        <StatsForNerdsModal track={currentTrack} artist={artist} album={album} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen}>
+        <StatsForNerdsModal track={currentTrack} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen}>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 disabled:opacity-30" disabled={!currentTrackId}>
             <Info size={18} />
           </Button>

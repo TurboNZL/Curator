@@ -23,6 +23,15 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
   const artist = artists.find(a => a.id === track.artistId);
   const album = albums.find(al => track.albumIds?.some(trackAlbum => trackAlbum.albumId === al.id));
 
+  const trackPlaybackLogs = playbackLogs.filter(log => log.trackId === track.id);
+
+  const playCount = trackPlaybackLogs.length;
+
+  const totalPlaytime = trackPlaybackLogs.reduce(
+    (total, log) => total + (log.duration || 0),
+    0
+  );
+
   const formatPlaytime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
