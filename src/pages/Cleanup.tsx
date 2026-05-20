@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckb
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal'; // Import the new modal
+import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { useLocation } from 'react-router-dom';
 
@@ -144,11 +144,10 @@ const SpotifyUriGroupResolutionModal: React.FC<SpotifyUriGroupResolutionModalPro
   );
 };
 
-// Modal for Image Upload
 interface ImageUploadResolutionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  entity: any; // Artist or Album
+  entity: any;
   onResolve: (id: string, imageUrl: string, type: 'artist' | 'album') => Promise<void>;
   entityType: 'artist' | 'album';
 }
@@ -204,7 +203,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, resetDatabase, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData } = useMusicStore();
+  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData } = useMusicStore();
   
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -234,16 +233,14 @@ const Cleanup = () => {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
-  const location = useLocation(); // To detect page changes
+  const location = useLocation();
 
-  // Separate useEffect for volume control
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }
   }, [volume]);
 
-  // Main audio control useEffect
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -263,9 +260,7 @@ const Cleanup = () => {
 
     return () => {
       audio.removeEventListener('ended', handleEnded);
-      // Only pause and clear src if the component is unmounting or a new snippet is *starting*
-      // Not on every dependency change that doesn't initiate a new play
-      if (audio.src && audio.paused) { // Only remove src if not playing and not a new track starting
+      if (audio.src && audio.paused) {
         audio.removeAttribute('src'); 
       }
       if (timerRef.current) {
@@ -273,9 +268,8 @@ const Cleanup = () => {
         timerRef.current = null;
       }
     };
-  }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
+  }, []);
 
-  // Effect to stop audio when leaving the page
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -287,7 +281,7 @@ const Cleanup = () => {
         timerRef.current = null;
       }
     };
-  }, [location.pathname]); // Trigger cleanup when pathname changes
+  }, [location.pathname]);
 
 
   const getAlbumArt = (track: any) => {
@@ -397,7 +391,7 @@ const Cleanup = () => {
 
     if (sortConfig.field !== 'none') {
       tasks.sort((a, b) => {
-        const aValue = (a as any).label?.toLowerCase() || ''; // Use label for sorting
+        const aValue = (a as any).label?.toLowerCase() || '';
         const bValue = (b as any).label?.toLowerCase() || '';
         
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -417,10 +411,9 @@ const Cleanup = () => {
   const pickNewPair = useCallback(() => {
     if (tracks.length < 2) return;
     
-    // Pause any currently playing audio before picking a new pair
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.removeAttribute('src'); // Clear src
+      audioRef.current.removeAttribute('src');
     }
     setPlayingId(null);
     if (timerRef.current) {
@@ -459,11 +452,11 @@ const Cleanup = () => {
         isEqual
       });
       toast.success(isEqual ? "Marked as equal" : "Vote recorded");
-      if (audioRef.current) { // Pause audio after voting
+      if (audioRef.current) {
         audioRef.current.pause();
         setPlayingId(null);
       }
-      pickNewPair(); // This will also stop current audio
+      pickNewPair();
     } catch (error) {
       toast.error("Failed to record vote");
     }
@@ -486,7 +479,6 @@ const Cleanup = () => {
       return;
     }
 
-    // Stop any currently playing snippet before starting a new one
     if (audioRef.current.src) {
       audioRef.current.pause();
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -498,7 +490,7 @@ const Cleanup = () => {
     
     audioRef.current.onloadedmetadata = () => {
       const duration = audioRef.current?.duration || 0;
-      const start = Math.max(0, (duration / 2) - 7.5); // 7.5 seconds before midpoint for 15s snippet
+      const start = Math.max(0, (duration / 2) - 7.5);
       if (audioRef.current) {
         audioRef.current.currentTime = start;
         audioRef.current.play();
@@ -507,7 +499,7 @@ const Cleanup = () => {
         timerRef.current = setTimeout(() => {
           audioRef.current?.pause();
           setPlayingId(null);
-        }, 15000); // Play for 15 seconds
+        }, 15000);
       }
     };
   };
@@ -551,7 +543,6 @@ const Cleanup = () => {
     } else if (task.type === 'release_date') {
       const releaseDate = prompt(`Enter release date for ${task.entity.title} (YYYY-MM-DD or YYYY-MM or YYYY):`);
       if (releaseDate !== null) {
-        // Find the release and update it
         const releaseToUpdate = releases.find(r => r.id === task.entity.id);
         if (releaseToUpdate) {
           await updateRelease(task.entity.id, { releaseDate });
@@ -608,7 +599,6 @@ const Cleanup = () => {
           <p className="text-zinc-500 text-sm mt-1 font-medium">Maintain your catalog integrity and optimize storage.</p>
         </div>
         <div className="flex gap-4">
-          {/* Removed Export Report Button */}
         </div>
       </div>
 
@@ -657,12 +647,12 @@ const Cleanup = () => {
                         <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
                           {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
-                        <div className="mt-2 flex"> {/* Added flex here */}
-                          <Rating trackId={track.id} size="md" isCleanupContext={true} showEditor={false}/> {/* Disable editor */}
+                        <div className="mt-2 flex">
+                          <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
                         </div>
                       </div>
-                    </div> {/* Closing div for aspect-[16/9] */}
-                  </Card> {/* Closing Card component */}
+                    </div>
+                  </Card>
                   <Button 
                     onClick={() => handleVote(track.id)}
                     className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
@@ -688,7 +678,6 @@ const Cleanup = () => {
               >
                 <SkipForward size={14} /> Skip Pairing
               </Button>
-              {/* Removed Shuffle Pairings Button */}
             </div>
           </>
         ) : (
@@ -802,7 +791,6 @@ const Cleanup = () => {
             <Button variant="outline" className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest group-hover:bg-yellow-500 group-hover:text-black transition-colors" onClick={() => setIsLowQualityOpen(true)}>Review Files</Button>
           </Card>
 
-          {/* Removed Database Management Card */}
         </div>
       </div>
 

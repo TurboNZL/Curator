@@ -12,7 +12,7 @@ interface MusicState {
   groups: (Group & { members?: { entityType: string, entityId: string, label: string, showOnEntityPage?: boolean }[] })[];
   releaseTypes: ReleaseType[];
   timeline: TimelineEntry[];
-  playbackLogs: PlaybackLog[]; // Correctly typed
+  playbackLogs: PlaybackLog[];
   
   userQueue: string[];
   activeQueue: string[];
@@ -56,11 +56,11 @@ interface MusicState {
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'queueRules' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>; 
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>; // Removed queueRules from Omit
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
-  decrementMemories: (id: string) => Promise<void>; // Added
+  decrementMemories: (id: string) => Promise<void>;
   
   addPlaylist: (playlist: Omit<Playlist, 'id' | 'createdAt'>) => Promise<Playlist>; 
   updatePlaylist: (id: string, data: Partial<Playlist>) => Promise<void>;
@@ -82,7 +82,9 @@ interface MusicState {
   
   uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
   resetDatabase: () => Promise<void>;
-  clearUnlinkedFiles: () => Promise<void>; // New action
+  clearUnlinkedFiles: () => Promise<void>;
+  
+  getRankedTenStarTracks: () => Track[]; // New helper to get sorted 10/10 tracks
 }
 
 const DEFAULT_PROFILE: Profile = {
@@ -133,7 +135,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   currentTrackId: null,
   isPlaying: false,
   isLoading: false,
-  volume: 0.4, // Changed default volume from 0.8 to 0.4
+  volume: 0.4,
   isShuffled: false,
   currentProgress: 0,
   currentDuration: 0,
@@ -181,7 +183,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           ...al,
           covers: parseJsonOrDefault(al.covers, []),
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
-          artistIds: parseJsonOrDefault(al.artistIds, [])
+          artistIds: parseJsonOrDefault(al.artistIds, []),
+          credits: parseJsonOrDefault(al.credits, []) // Ensure credits are parsed
         })),
         tracks: (tracks || []).map((t: any) => ({
           ...t,
@@ -233,7 +236,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       if (rule) {
         const shouldApplyRule = rule.applyToAlbumSource === true
           ? (context?.type === 'album')
-          : true; // Apply if not specifically for album or if it is for album and matches context
+          : true;
         
         if (shouldApplyRule) {
           const nextIdFromRule = rule.trackBId;
@@ -418,19 +421,20 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       ...newAlbum, 
       covers: parseJsonOrDefault(newAlbum.covers, []), 
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []), 
-      artistIds: parseJsonOrDefault(newAlbum.artistIds, []) 
+      artistIds: parseJsonOrDefault(newAlbum.artistIds, []),
+      credits: parseJsonOrDefault(newAlbum.credits, [])
     };
     set(state => ({ albums: [...state.albums, parsedNewAlbum] }));
     return parsedNewAlbum;
   },
 
   updateAlbum: async (id, data) => {
-    const res = await fetch(`/api/albums/${id}`, {
+    // Pass array types directly, API routes will handle JSON.stringify
+    await fetch(`/api/albums/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data) 
     });
-    if (!res.ok) throw new Error('Failed to update album');
     await get().fetchData();
   },
 
@@ -451,21 +455,29 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       const res = await fetch('/api/tracks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(trackData)
+        body: JSON.stringify({
+          ...trackData,
+          artistIds: trackData.artistIds, // Pass directly
+          genres: trackData.genres,       // Pass directly
+          producers: trackData.producers, // Pass directly
+          writers: trackData.writers,     // Pass directly
+          credits: trackData.credits,     // Pass directly
+          queueRules: trackData.queueRules, // Pass directly
+        })
       });
-      if (res.ok) { // Only process if the response is OK
+      if (res.ok) {
         const newTrack = await res.json();
         set(state => ({ tracks: [...state.tracks, newTrack] }));
         createdTracks.push(newTrack);
       } else {
         console.error(`Failed to add track: ${trackData.title}`, await res.text());
-        // Optionally toast an error for individual track failure, or aggregate for a single toast at the end
       }
     }
     return createdTracks;
   },
 
   updateTrack: async (id, data) => {
+    // Pass array types directly, API routes will handle JSON.stringify
     await fetch(`/api/tracks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -492,7 +504,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     }
   },
 
-  decrementMemories: async (id) => { // Implementation for decrementMemories
+  decrementMemories: async (id) => {
     const track = get().tracks.find(t => t.id === id);
     if (track && (track.memories || 0) > 0) {
       await get().updateTrack(id, { memories: (track.memories || 0) - 1 });
@@ -511,10 +523,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updatePlaylist: async (id, data) => {
+    const updateData = { ...data };
+    if (data.trackIds) updateData.trackIds = data.trackIds; // trackIds is an array
     await fetch(`/api/playlists/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(updateData)
     });
     await get().fetchData();
   },
@@ -544,10 +558,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateRelease: async (id, data) => {
+    const updateData = { ...data };
+    if (data.trackIds) updateData.trackIds = data.trackIds; // trackIds is an array
     await fetch(`/api/releases/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(updateData)
     });
     await get().fetchData();
   },
@@ -577,7 +593,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const res = await fetch('/api/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(groupData)
+      body: JSON.stringify(groupData) // Pass directly
     });
     const newGroup = await res.json();
     await get().fetchData();
@@ -585,6 +601,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateGroup: async (id, data) => {
+    // Pass array types directly, API routes will handle JSON.stringify
     await fetch(`/api/groups/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -637,7 +654,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await fetch(`/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings: JSON.stringify(updatedSettings) })
+      body: JSON.stringify({ settings: updatedSettings }) // Pass directly
     });
     set(state => ({ activeProfile: { ...state.activeProfile, settings: updatedSettings } }));
   },
@@ -647,14 +664,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await fetch(`/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playbackRules: JSON.stringify(rules) })
+      body: JSON.stringify({ playbackRules: rules }) // Pass directly
     });
     set(state => ({ activeProfile: { ...state.activeProfile, playbackRules: rules } }));
   },
 
   resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
-    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], groups: [] });
+    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], groups: [], playbackLogs: [] });
   },
 
   clearUnlinkedFiles: async () => {
@@ -667,5 +684,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       toast.error(data.message);
     }
     return data;
+  },
+
+  getRankedTenStarTracks: () => {
+    const allTracks = get().tracks;
+    // Filter for tracks that are explicitly rated 10.0 and have been compared
+    const tenStarTracks = allTracks.filter(t => 
+      t.rating !== undefined && t.rating !== null && t.rating >= 9.9999 && t.comparisons > 0
+    );
+    // Sort them by ELO score to determine their internal ranking
+    return [...tenStarTracks].sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
   }
 }));

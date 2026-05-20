@@ -31,20 +31,39 @@ const Index = () => {
     ];
     tracks.forEach(t => {
       // Treat 0.0 or null/undefined ratings as falling into the lowest (0-2) category
-      if (t.rating === undefined || t.rating === null || t.rating < 0.001) ranges[0].count++;
-      else if (t.rating < 2) ranges[0].count++;
-      else if (t.rating < 4) ranges[1].count++;
-      else if (t.rating < 6) ranges[2].count++;
-      else if (t.rating < 8) ranges[3].count++;
+      const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+        ? t.rating
+        : (t.initialRating !== undefined && t.initialRating !== null)
+          ? t.initialRating
+          : 0; // Treat unrated as 0 for distribution purposes
+
+      if (effectiveRating < 0.001) ranges[0].count++; // Explicitly 0.0
+      else if (effectiveRating < 2) ranges[0].count++;
+      else if (effectiveRating < 4) ranges[1].count++;
+      else if (effectiveRating < 6) ranges[2].count++;
+      else if (effectiveRating < 8) ranges[3].count++;
       else ranges[4].count++;
     });
     return ranges;
   }, [tracks]);
 
   const avgRating = useMemo(() => {
-    const ratedTracks = tracks.filter(t => t.rating !== undefined && t.rating !== null);
+    const ratedTracks = tracks.filter(t => 
+      (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating > 0.001) || 
+      (t.initialRating !== undefined && t.initialRating !== null && t.initialRating > 0.001)
+    );
+
     if (ratedTracks.length === 0) return '0.00';
-    return (ratedTracks.reduce((a, b) => a + (b.rating || 0), 0) / ratedTracks.length).toFixed(2);
+    
+    const totalRating = ratedTracks.reduce((sum, t) => {
+      const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+        ? t.rating
+        : (t.initialRating !== undefined && t.initialRating !== null)
+          ? t.initialRating
+          : 0;
+      return sum + effectiveRating;
+    }, 0);
+    return (totalRating / ratedTracks.length).toFixed(2);
   }, [tracks]);
 
   const completionPercentage = useMemo(() => {
@@ -57,9 +76,6 @@ const Index = () => {
   }, [tracks]);
 
   const allEdits = useMemo(() => {
-    // For simplicity, consider any timeline entry that isn't a direct rating update or simple playback log as an "edit"
-    // In a real app, you'd have specific timeline types for 'track_updated', 'album_created', etc.
-    // For now, filtering to show more than just basic entries.
     return timeline.filter(entry => entry.type !== 'playback' && entry.type !== 'rating');
   }, [timeline]);
 

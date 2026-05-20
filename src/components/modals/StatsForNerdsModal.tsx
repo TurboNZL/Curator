@@ -5,21 +5,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock } from 'lucide-react';
 import { Track, Album, Artist } from '@/types/music';
-import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { cn, trackHasAlbum } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
+import { Rating } from '../ui/Rating'; // Import Rating component
 
 interface StatsForNerdsModalProps {
   track?: Track;
-  children?: React.ReactElement; // Made optional
+  children?: React.ReactElement;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: StatsForNerdsModalProps) => {
   const { playbackLogs, artists, albums } = useMusicStore();
-  if (!track) return null; // Render nothing if no track is provided. The trigger should handle opening this based on track context.
+  if (!track) return null;
 
-  // Derive artist and album from the track object
   const artist = artists.find(a => a.id === track.artistId);
   const album = albums.find(al => track.albumIds?.some(trackAlbum => trackAlbum.albumId === al.id));
 
@@ -70,7 +70,15 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Rating Metrics</h4>
             <div className="grid grid-cols-1 gap-3">
               <StatRow icon={Star} label="Initial Rating" value={track.initialRating?.toFixed(2) || 'N/A'} />
-              <StatRow icon={Star} label="Balanced Rating" value={track.rating?.toFixed(2) || 'N/A'} className="text-blue-400" />
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded bg-zinc-900 text-zinc-500 group-hover:text-blue-400 transition-colors">
+                    <Star size={14} />
+                  </div>
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-tight">Balanced Rating</span>
+                </div>
+                <Rating track={track} showEditor={false} size="sm" />
+              </div>
               <StatRow icon={Swords} label="Comparisons" value={track.comparisons.toString()} />
               <StatRow icon={Activity} label="Elo Score" value={track.eloScore.toFixed(0)} />
             </div>

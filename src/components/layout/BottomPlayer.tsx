@@ -6,8 +6,9 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
-import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { cn, trackHasAlbum } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
+import { Rating } from '../ui/Rating'; // Import Rating component
 
 export const BottomPlayer = () => {
   const {
@@ -21,12 +22,12 @@ export const BottomPlayer = () => {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showQueue, setShowQueue] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for StatsForNerdsModal
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
-  const album = albums.find(al => currentTrack && trackHasAlbum(currentTrack, al.id)); // Use trackHasAlbum
+  const album = albums.find(al => currentTrack && trackHasAlbum(currentTrack, al.id));
   const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   useEffect(() => {
@@ -60,29 +61,29 @@ export const BottomPlayer = () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
       if (audio) {
-        audio.removeAttribute('src'); // Ensure src is cleared on unmount
+        audio.removeAttribute('src');
       }
     };
-  }, [currentTrackId, isPlaying]); // Added isPlaying to dependencies
+  }, [currentTrackId, isPlaying]);
 
   useEffect(() => {
     if (audioRef.current) {
       if (currentTrack?.localFilePath) {
         audioRef.current.src = currentTrack.localFilePath;
-        audioRef.current.currentTime = 0; // Reset progress to 0:00
+        audioRef.current.currentTime = 0;
         setProgress(0);
         setStoreProgress(0);
         if (isPlaying) audioRef.current.play();
       } else {
         audioRef.current.pause();
-        audioRef.current.removeAttribute('src'); // Changed to removeAttribute
+        audioRef.current.removeAttribute('src');
         setProgress(0);
         setStoreProgress(0);
         setDuration(0);
         setStoreDuration(0);
       }
     }
-  }, [currentTrackId, isPlaying]); // Added isPlaying to dependencies
+  }, [currentTrackId, isPlaying]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -133,6 +134,7 @@ export const BottomPlayer = () => {
               <span className="text-[8px] font-black px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
                 {currentTrack?.bitrate || '320kbps'}
               </span>
+              <Rating track={currentTrack} showEditor={false} size="sm" />
             </div>
           )}
         </div>

@@ -10,15 +10,15 @@ import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { trackHasAlbum } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, incrementMemories, decrementMemories } = useMusicStore();
+  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
-  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
 
 
   useEffect(() => {
@@ -30,7 +30,7 @@ const Tracks = () => {
     return tracks.filter(t => {
       if (!t) return false;
       const artist = artists?.find(a => a.id === t.artistId);
-      const album = albums?.find(al => trackHasAlbum(t, al.id)); // Use trackHasAlbum
+      const album = albums?.find(al => trackHasAlbum(t, al.id));
       const searchLower = search.toLowerCase();
       return (
         (t.title || '').toLowerCase().includes(searchLower) ||
@@ -48,7 +48,6 @@ const Tracks = () => {
       } else if (sortConfig.field === 'memories') {
         comparison = (a.memories || 0) - (b.memories || 0);
       } else if (sortConfig.field === 'rating') {
-        // Handle unrated songs for sorting: initial rating for <3 comparisons, else balanced rating
         const getEffectiveRating = (track: any) => {
           if (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null && track.rating > 0.001) {
             return track.rating;
@@ -56,7 +55,7 @@ const Tracks = () => {
           if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
             return track.initialRating;
           }
-          return -1; // Treat truly unrated or 0.0 as lowest for sorting
+          return -1;
         };
 
         const ratingA = getEffectiveRating(a);
@@ -66,7 +65,6 @@ const Tracks = () => {
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
 
-    // If sorting by rating, specifically handle 10.0 rankings
     if (sortConfig.field === 'rating' && sortConfig.direction === 'desc') {
       const tenStarTracks = sorted.filter(t => {
         const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
@@ -85,7 +83,6 @@ const Tracks = () => {
         return !(effectiveRating >= 9.9999 && t.comparisons > 0);
       });
 
-      // Sort 10-rated tracks by eloScore for ranking
       tenStarTracks.sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0));
 
       return [...tenStarTracks, ...otherTracks];
@@ -164,14 +161,14 @@ const Tracks = () => {
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
-                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right w-16">Actions</TableHead> {/* Updated column header */}
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right w-16">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedTracks.map((track, i) => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
-                const album = albums?.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
+                const album = albums?.find(al => trackHasAlbum(track, al.id));
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 
                 return (
@@ -198,21 +195,18 @@ const Tracks = () => {
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
                         <Rating
-                          trackId={track.id}
+                          track={track}
                           showEditor={true} 
                           size="sm"
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                              <MoreVertical size={14} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          {/* TrackContextMenu content will be rendered here by the parent component */}
-                          {/* This is a visual cue for the user. The actual context menu is provided by TrackContextMenu */}
-                        </DropdownMenu>
+                        {/* The TrackContextMenu component wraps the entire row, so a separate trigger for the three dots is needed */}
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                            <MoreVertical size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

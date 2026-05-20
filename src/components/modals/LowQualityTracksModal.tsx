@@ -7,9 +7,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Music, Play, Pause, Trash2, Edit2, Zap, AlertTriangle } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { cn, trackHasAlbum } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
 import { TrackContextMenu } from '../ui/TrackContextMenu';
+import { Rating } from '../ui/Rating'; // Import Rating component
 
 interface LowQualityTracksModalProps {
   open: boolean;
@@ -22,8 +23,8 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
-  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
 
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
   const getAlbumArt = (track: any) => {
-    const album = albums.find(a => trackHasAlbum(track, a.id)); // Use trackHasAlbum
+    const album = albums.find(a => trackHasAlbum(track, a.id));
     return album?.covers[0] || '/placeholder.svg';
   };
 
@@ -106,7 +107,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
           audioRef.current.pause();
           setPlayingId(null);
         }
-        onOpenChange(false); // Close modal after mass deletion
+        onOpenChange(false);
       } catch (error) {
         toast.error("Failed to delete all low-quality tracks.");
       }
@@ -146,12 +147,13 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                         <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                       </div>
                       <div className="flex items-center gap-1 ml-4 shrink-0">
+                        <Rating track={track} size="sm" showEditor={false} /> {/* Added Rating component */}
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); playSnippet(track); }}>
                           {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent context menu from re-opening
+                            e.stopPropagation();
                             setSelectedTrackForEdit(track);
                             setIsEditTrackModalOpen(true);
                           }}

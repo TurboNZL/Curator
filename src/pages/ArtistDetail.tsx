@@ -7,7 +7,7 @@ import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
 import { Rating } from '@/components/ui/Rating';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
-import { useState, useMemo } from 'react'; // Import useState
+import { useState, useMemo } from 'react';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn } from '@/lib/utils';
 
@@ -86,8 +86,8 @@ const ArtistDetail = () => {
     g.members?.some(m => m.entityId === id && m.entityType === 'artist')
   ).length;
 
-  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false); // Add state for modal
-  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined); // State for RelationalBioModal
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -154,7 +154,7 @@ const ArtistDetail = () => {
                     </div>
                     <div className="flex items-center gap-1 ml-2">
                       <Rating
-                        trackId={track.id}
+                        track={track}
                         showEditor={false}
                         size="sm"
                       />

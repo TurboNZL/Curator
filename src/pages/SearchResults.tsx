@@ -4,11 +4,12 @@ import React, { useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music, Disc, User, Search, Play } from 'lucide-react';
+import { Music, Disc, User, Search, Play, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { trackHasAlbum } from '@/lib/utils';
+import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,7 @@ const SearchResults = () => {
       tracks: tracks.filter(t => 
         t.title.toLowerCase().includes(query) || 
         artists.find(a => a.id === t.artistId)?.name.toLowerCase().includes(query) || 
-        albums.find(al => trackHasAlbum(t, al.id))?.title.toLowerCase().includes(query) // Use trackHasAlbum
+        albums.find(al => trackHasAlbum(t, al.id))?.title.toLowerCase().includes(query)
       ),
       albums: albums.filter(a => a.title.toLowerCase().includes(query) || artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(query)),
       artists: artists.filter(a => a.name.toLowerCase().includes(query))
@@ -93,7 +94,7 @@ const SearchResults = () => {
               <div className="space-y-2">
                 {results.tracks.map(track => {
                   const artist = artists.find(a => a.id === track.artistId);
-                  const album = albums.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
+                  const album = albums.find(al => trackHasAlbum(track, al.id));
                   return (
                     <TrackContextMenu key={track.id} track={track}>
                       <div 
@@ -116,7 +117,7 @@ const SearchResults = () => {
                         </div>
                         <div className="flex items-center gap-4">
                           <Rating
-                            trackId={track.id}
+                            track={track}
                             size="sm"
                           />
                         </div>

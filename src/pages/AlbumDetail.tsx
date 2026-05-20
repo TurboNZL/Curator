@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music, MoreVertical, Brain, Info } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music, MoreVertical, Brain, Info, Minus } from 'lucide-react'; // Added Minus
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -15,7 +15,7 @@ import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
 import { Rating } from '@/components/ui/Rating';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { cn, trackHasAlbum } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
@@ -24,8 +24,8 @@ import { toast } from 'sonner';
 
 
 const AlbumDetail = () => {
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack } = useMusicStore(); // Destructured new functions
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
@@ -46,13 +46,15 @@ const AlbumDetail = () => {
     return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
   });
 
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false); // State for CreatePlaylistAddModal
-  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false); // State for RelationalBioModal
-  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined); // State for RelationalBioModal
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
-  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for StatsForNerdsModal
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); // For individual track add
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -105,7 +107,7 @@ const AlbumDetail = () => {
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
                 : null;
-        return effectiveRating !== null && effectiveRating > 0; // Only count positive ratings
+        return effectiveRating !== null && effectiveRating > 0;
     });
     if (ratedTracks.length === 0) return 'N/A';
     const totalRating = ratedTracks.reduce((sum, t) => {
@@ -228,87 +230,28 @@ const AlbumDetail = () => {
               <TableBody>
                 {albumTracks.map((track, index) => {
                   return (
-                    <TrackContextMenu key={track.id} track={track}>
-                      <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
-                        <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                        <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                            <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Rating
-                            trackId={track.id}
-                            showEditor={true} 
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {/* All actions moved to context menu */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                                  <MoreVertical size={14} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}>
-                                    <Play size={14} /> Play Track
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsCreatePlaylistAddModalOpen(true)}>
-                                    <ListMusic size={14} /> Add to Playlist
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator className="bg-zinc-800" />
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => {
-                                    setSelectedTrackForEdit(track);
-                                    setIsStatsModalOpen(true);
-                                  }}>
-                                    <Info size={14} /> Stats for Nerds
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator className="bg-zinc-800" />
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
-                                    <Brain size={14} /> Add Memory
-                                  </DropdownMenuItem>
-                                  {track.memories && track.memories > 0 && (
-                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
-                                      <Brain size={14} /> Remove Memory
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator className="bg-zinc-800" />
-                                  {track.spotifyUrl && (
-                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
-                                      <LinkIcon size={14} /> Copy Spotify Link
-                                    </DropdownMenuItem>
-                                  )}
-                                  {track.geniusUrl && (
-                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
-                                      <LinkIcon size={14} /> Copy Genius Link
-                                    </DropdownMenuItem>
-                                  )}
-                                  {track.youtubeMusicUrl && (
-                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
-                                      <LinkIcon size={14} /> Copy YouTube Music Link
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator className="bg-zinc-800" />
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={(e) => { e.stopPropagation(); setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }}>
-                                    <Edit2 size={14} /> Edit Track
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={async () => {
-                                    if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
-                                      await deleteTrack(track.id);
-                                      toast.success("Track deleted.");
-                                    }
-                                  }}>
-                                    <Trash2 size={14} /> Delete Track
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </TrackContextMenu>
+                    <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
+                      <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
+                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                          <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Rating
+                          track={track}
+                          showEditor={true} 
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <TrackContextMenu track={track}> {/* Moved TrackContextMenu here */}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                            <MoreVertical size={14} />
+                          </Button>
+                        </TrackContextMenu>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
               </TableBody>
@@ -440,7 +383,7 @@ const AlbumDetail = () => {
           </section>
         </div>
       </div>
-      <CreatePlaylistAddModal albumToAdd={album} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      <CreatePlaylistAddModal albumToAdd={album} trackToAdd={selectedTrackForPlaylistAdd} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
       <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
       {selectedTrackForEdit && (
         <EditTrackModal
@@ -449,9 +392,9 @@ const AlbumDetail = () => {
           onOpenChange={setIsEditTrackModalOpen}
         />
       )}
-      {selectedTrackForEdit && (
+      {selectedTrackForStats && (
         <StatsForNerdsModal
-          track={selectedTrackForEdit}
+          track={selectedTrackForStats}
           open={isStatsModalOpen}
           onOpenChange={setIsStatsModalOpen}
         />
