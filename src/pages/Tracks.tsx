@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus, MoreVertical } from 'lucide-react';
+import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus, MoreVertical, Info, Trash2 } from 'lucide-react'; // Ensure Info and Trash2 are imported
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
@@ -12,13 +12,20 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { trackHasAlbum } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
+
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading } = useMusicStore();
+  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, deleteTrack } = useMusicStore(); // Add deleteTrack
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
 
 
   useEffect(() => {
@@ -202,11 +209,58 @@ const Tracks = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                            <MoreVertical size={14} />
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenu> {/* Added DropdownMenu here */}
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                              <MoreVertical size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setSelectedTrackForEdit(track); 
+                                setIsEditTrackModalOpen(true); 
+                              }}
+                              className="text-xs font-medium"
+                            >
+                              <Edit2 size={14} className="mr-2" /> Edit Track
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setSelectedTrackForPlaylistAdd(track); 
+                                setIsCreatePlaylistAddModalOpen(true); 
+                              }}
+                              className="text-xs font-medium"
+                            >
+                              <Plus size={14} className="mr-2" /> Add to Playlist
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setSelectedTrackForStats(track); 
+                                setIsStatsModalOpen(true); 
+                              }}
+                              className="text-xs font-medium"
+                            >
+                              <Info size={14} className="mr-2" /> Stats for Nerds
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-zinc-800" />
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
+                                  // Call deleteTrack action from the store
+                                  deleteTrack(track.id);
+                                }
+                              }}
+                              className="text-xs font-medium text-red-500"
+                            >
+                              <Trash2 size={14} className="mr-2" /> Delete Track
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu> {/* End DropdownMenu */}
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>
@@ -221,6 +275,14 @@ const Tracks = () => {
           track={selectedTrackForEdit}
           open={isEditTrackModalOpen}
           onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
         />
       )}
     </div>

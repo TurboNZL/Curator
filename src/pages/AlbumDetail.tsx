@@ -57,6 +57,8 @@ const AlbumDetail = () => {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
 
+  // Removed selectedReleaseId state, now deriving currentRelease directly
+
   useEffect(() => {
     sessionStorage.setItem(`album_sort_${id}`, JSON.stringify(sortConfig));
   }, [sortConfig, id]);
@@ -73,15 +75,11 @@ const AlbumDetail = () => {
     });
   }, [albumReleases, sortConfig]);
 
-  const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (album && !selectedReleaseId) {
-      setSelectedReleaseId(album.defaultReleaseId || (sortedReleases.length > 0 ? sortedReleases[0].id : null));
-    }
-  }, [album, sortedReleases, selectedReleaseId]);
-
-  const currentRelease = albumReleases.find(r => r.id === selectedReleaseId);
+  // Derive currentRelease directly from album.defaultReleaseId, falling back to first sorted release
+  const currentRelease = useMemo(() => {
+    if (!album) return null;
+    return albumReleases.find(r => r.id === album.defaultReleaseId) || (sortedReleases.length > 0 ? sortedReleases[0] : null);
+  }, [album, albumReleases, sortedReleases]);
   
   const albumTracks = useMemo(() => {
     if (!album) return [];
@@ -139,20 +137,8 @@ const AlbumDetail = () => {
   if (!album) return <div className="p-8">Album not found.</div>;
 
   const displayCover = useMemo(() => {
-    if (currentRelease?.coverImage) return currentRelease.coverImage;
-    if (album.defaultReleaseId) {
-        const defaultRel = albumReleases.find(r => r.id === album.defaultReleaseId);
-        if (defaultRel?.coverImage) return defaultRel.coverImage;
-    }
-    if (album.covers && album.covers.length > 0) return album.covers[0];
-    
-    // If no album cover and only one release with a cover, use that
-    const releasesWithCovers = albumReleases.filter(r => r.coverImage);
-    if (releasesWithCovers.length === 1) {
-        return releasesWithCovers[0].coverImage;
-    }
-    return defaultImage;
-}, [currentRelease, album, albumReleases, defaultImage]);
+    return currentRelease?.coverImage || album.covers[0] || defaultImage;
+  }, [currentRelease, album.covers, defaultImage]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -226,29 +212,77 @@ const AlbumDetail = () => {
               <TableBody>
                 {albumTracks.map((track, index) => {
                   return (
-                    <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
-                      <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                          <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
-                        <Rating
-                          track={track}
-                          showEditor={true} 
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <TrackContextMenu track={track}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                            <MoreVertical size={14} />
-                          </Button>
-                        </TrackContextMenu>
-                      </TableCell>
-                    </TableRow>
+                    <TrackContextMenu key={track.id} track={track}> {/* Wrap TR with ContextMenu */}
+                      <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
+                        <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
+                        <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                            <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
+                          <Rating
+                            track={track}
+                            showEditor={true} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu> {/* Added DropdownMenu here */}
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setSelectedTrackForEdit(track); 
+                                  setIsEditTrackModalOpen(true); 
+                                }}
+                                className="text-xs font-medium"
+                              >
+                                <Edit2 size={14} className="mr-2" /> Edit Track
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setSelectedTrackForPlaylistAdd(track); 
+                                  setIsCreatePlaylistAddModalOpen(true); 
+                                }}
+                                className="text-xs font-medium"
+                              >
+                                <Plus size={14} className="mr-2" /> Add to Playlist
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setSelectedTrackForStats(track); 
+                                  setIsStatsModalOpen(true); 
+                                }}
+                                className="text-xs font-medium"
+                              >
+                                <Info size={14} className="mr-2" /> Stats for Nerds
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-zinc-800" />
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
+                                    deleteTrack(track.id);
+                                  }
+                                }}
+                                className="text-xs font-medium text-red-500"
+                              >
+                                <Trash2 size={14} className="mr-2" /> Delete Track
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu> {/* End DropdownMenu */}
+                        </TableCell>
+                      </TableRow>
+                    </TrackContextMenu>
                   );
                 })}
               </TableBody>
@@ -304,12 +338,13 @@ const AlbumDetail = () => {
                   <div key={release.id} className="group/rel relative">
                     <button 
                       onClick={() => {
-                        setSelectedReleaseId(release.id);
+                        // Directly update album.defaultReleaseId
+                        updateAlbum(album.id, { defaultReleaseId: release.id });
                         setShowAllTracks(false);
                       }}
                       className={cn(
                         "w-full text-left text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center justify-between pr-12",
-                        selectedReleaseId === release.id && !showAllTracks
+                        album.defaultReleaseId === release.id && !showAllTracks // Check against actual defaultReleaseId
                           ? "bg-blue-600 text-white" 
                           : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                       )}
