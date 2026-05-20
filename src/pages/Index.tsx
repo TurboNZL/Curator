@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Plus, History, CheckCircle2, BarChart3, TrendingUp, Activity, Users, Disc, Music, Layers, Trash2, Edit2 } from 'lucide-react';
+import { Plus, History, CheckCircle2, BarChart3, TrendingUp, Activity, Users, Disc, Music, Layers, Trash2 } from 'lucide-react';
 import { CreateJournalEntryModal } from '@/components/modals/CreateJournalEntryModal';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -16,7 +16,7 @@ const Index = () => {
   const [showAllEdits, setShowAllEdits] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const editsPerPage = 5;
-  const [isCreateJournalEntryModalOpen, setIsCreateJournalEntryModalOpen] = useState(false); // State for CreateJournalEntryModal
+  const [isCreateJournalEntryModalOpen, setIsCreateJournalEntryModalOpen] = useState(false); 
 
 
   useEffect(() => {
@@ -221,7 +221,7 @@ const Index = () => {
           <Card className="bg-zinc-900/50 border-zinc-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <Edit2 size={16} className="text-emerald-500" />
+                <History size={16} className="text-emerald-500" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-white">Edit History</h3>
               </div>
               <Button 
@@ -275,6 +275,10 @@ const Index = () => {
           </Card>
         </div>
       </div>
+      <CreateJournalEntryModal
+        open={isCreateJournalEntryModalOpen}
+        onOpenChange={setIsCreateJournalEntryModalOpen}
+      />
     </div>
   );
 };

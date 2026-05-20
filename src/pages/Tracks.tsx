@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
 import { toast } from 'sonner';
-
+import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
 
 const Tracks = () => {
   const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, deleteTrack, addToUserQueue, incrementMemories, decrementMemories } = useMusicStore(); // Add deleteTrack, addToUserQueue, incrementMemories, decrementMemories
@@ -27,6 +27,7 @@ const Tracks = () => {
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
+  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); // State for CreateTrackModal
 
 
   useEffect(() => {
@@ -115,6 +116,9 @@ const Tracks = () => {
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Global Tracks</h1>
           <p className="text-zinc-500 text-sm mt-1">Every indexed file in your local curation database.</p>
         </div>
+        <Button onClick={() => setIsCreateTrackModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
+          <Plus size={16} /> New Track
+        </Button>
       </div>
 
       <div className="flex items-center gap-4 py-4 border-y border-zinc-900">
@@ -317,6 +321,10 @@ const Tracks = () => {
           onOpenChange={setIsStatsModalOpen}
         />
       )}
+      <CreateTrackModal
+        open={isCreateTrackModalOpen}
+        onOpenChange={setIsCreateTrackModalOpen}
+      />
     </div>
   );
 };
