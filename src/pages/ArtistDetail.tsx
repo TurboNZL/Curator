@@ -1,9 +1,8 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users, Minus, List, Info, MoreVertical } from 'lucide-react'; // Added MoreVertical and EditTrackModal
+import { Music2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users, Minus, List, Info, MoreVertical } from 'lucide-react'; // Added MoreVertical and EditTrackModal
 import { Button } from '@/components/ui/button';
-import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
@@ -15,6 +14,7 @@ import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddMod
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Imported EditTrackModal
 import { toast } from 'sonner';
+import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
 
 
 const ArtistDetail = () => {
@@ -30,10 +30,10 @@ const ArtistDetail = () => {
   
   const artistTracks = useMemo(() => {
     const getEffectiveRating = (track: any) => {
-        if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
+        if ((track.comparisons >= 3 || track.memories > 0) && track.rating !== undefined && track.rating !== null && track.rating > 0.001) {
             return track.rating;
         }
-        if (track.initialRating !== undefined && track.initialRating !== null) {
+        if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
             return track.initialRating;
         }
         return -1;
@@ -59,7 +59,7 @@ const ArtistDetail = () => {
 
   const avgArtistRating = useMemo(() => {
     const ratedTracks = artistTracks.filter(t => {
-        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+        const effectiveRating = (t.comparisons >= 3 || t.memories > 0) && t.rating !== undefined && t.rating !== null
             ? t.rating
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
@@ -68,7 +68,7 @@ const ArtistDetail = () => {
     });
     if (ratedTracks.length === 0) return 'N/A';
     const totalRating = ratedTracks.reduce((sum, t) => {
-        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+        const effectiveRating = (t.comparisons >= 3 || t.memories > 0) && t.rating !== undefined && t.rating !== null
             ? t.rating
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
@@ -96,6 +96,8 @@ const ArtistDetail = () => {
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isArtistAllTracksModalOpen, setIsArtistAllTracksModalOpen] = useState(false); // State for ArtistAllTracksModal
+
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -126,9 +128,7 @@ const ArtistDetail = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
-              <Button onClick={() => setIsCreateAlbumModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
-                <Plus size={16} /> New Album
-              </Button>
+              {/* Removed Add Album Button */}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
@@ -150,9 +150,19 @@ const ArtistDetail = () => {
 
         <div className="space-y-8">
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={14} className="text-blue-500" />
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Top Rated Tracks</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={14} className="text-blue-500" />
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Top Rated Tracks</h2>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-[10px] font-black uppercase text-zinc-500 hover:text-white"
+                onClick={() => setIsArtistAllTracksModalOpen(true)}
+              >
+                Show All
+              </Button>
             </div>
             <div className="space-y-2">
               {artistTracks.slice(0, 10).map((track, i) => (
@@ -315,6 +325,14 @@ const ArtistDetail = () => {
           track={selectedTrackForStats}
           open={isStatsModalOpen}
           onOpenChange={setIsStatsModalOpen}
+        />
+      )}
+      {artist && (
+        <ArtistAllTracksModal 
+          open={isArtistAllTracksModalOpen} 
+          onOpenChange={setIsArtistAllTracksModalOpen} 
+          artistId={artist.id} 
+          artistName={artist.name} 
         />
       )}
     </div>

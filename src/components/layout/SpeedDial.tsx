@@ -56,7 +56,7 @@ export const SpeedDial = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Render controlled modals as siblings */}
+      {/* Render controlled modals as siblings, their 'open' prop is controlled by state */}
       <CreateArtistModal open={isArtistModalOpen} onOpenChange={setIsArtistModalOpen} />
       <CreateAlbumModal open={isAlbumModalOpen} onOpenChange={setIsAlbumModalOpen} />
       <CreateTrackModal open={isTrackModalOpen} onOpenChange={setIsTrackModalOpen} />
