@@ -69,6 +69,7 @@ export interface Track {
   syncWithAlbumCredits: boolean;
   albumIds: { albumId: string; order: number }[]; // Relation to albums
   isFavorite: boolean;
+  rank?: string; // Added to support 10/10 ranking display
 }
 
 export interface TimelineEntry {

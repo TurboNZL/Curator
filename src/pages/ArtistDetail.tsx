@@ -23,37 +23,37 @@ const ArtistDetail = () => {
   
   const artistAlbums = albums.filter(al => al.artistId === id);
   
-  // Sort by rating (star rating) then by eloScore (ranking)
   const artistTracks = useMemo(() => {
-    // Function to get effective rating for sorting, prioritizing balanced then initial
-    const getEffectiveRating = (track: any) => {
-        if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
-            return track.rating;
-        }
-        if (track.initialRating !== undefined && track.initialRating !== null) {
-            return track.initialRating;
-        }
-        return -1; // Treat truly unrated or 0.0 as lowest for sorting
-    };
-
-    // Get all tracks, even those with only initialRating
     const allArtistTracks = tracks.filter(t => t.artistId === id);
 
-    const sorted = [...allArtistTracks].sort((a, b) => {
-        const ratingA = getEffectiveRating(a);
-        const ratingB = getEffectiveRating(b);
+    // Calculate rank for 10-star tracks
+    const tenStarTracks = allArtistTracks
+      .filter(t => (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating >= 9.9999999))
+      .sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
 
-        if (ratingB !== ratingA) return ratingB - ratingA;
-        return (b.eloScore ?? 0) - (a.eloScore ?? 0);
+    const rankedTenStars = tenStarTracks.map((track, index) => ({
+      ...track,
+      rank: `${index + 1}${['st', 'nd', 'rd'][(index + 1) % 10 - 1] || 'th'}` // 1st, 2nd, 3rd, 4th...
+    }));
+
+    const otherTracks = allArtistTracks.filter(t => 
+      !(t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating >= 9.9999999)
+    ).sort((a, b) => {
+      // Sort other tracks by balanced rating (if available), then initial rating, then Elo
+      const getEffectiveRating = (track: any) => {
+        if (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null) return track.rating;
+        if (track.initialRating !== undefined && track.initialRating !== null) return track.initialRating;
+        return -1; // Lowest value for unrated tracks
+      };
+      
+      const ratingA = getEffectiveRating(a);
+      const ratingB = getEffectiveRating(b);
+
+      if (ratingB !== ratingA) return ratingB - ratingA;
+      return (b.eloScore ?? 0) - (a.eloScore ?? 0);
     });
 
-    // Special handling for 10-star tracks to group them and then sort by elo
-    const tenStarTracks = sorted.filter(t => (getEffectiveRating(t) >= 9.9999 && t.comparisons > 0)); // Only include 10/10 with comparisons
-    const otherTracks = sorted.filter(t => !(getEffectiveRating(t) >= 9.9999 && t.comparisons > 0));
-
-    tenStarTracks.sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
-
-    return [...tenStarTracks, ...otherTracks];
+    return [...rankedTenStars, ...otherTracks];
   }, [tracks, id]);
 
   const avgArtistRating = useMemo(() => {
@@ -157,6 +157,7 @@ const ArtistDetail = () => {
                         trackId={track.id}
                         showEditor={false}
                         size="sm"
+                        rank={track.rank} // Pass the calculated rank
                       />
                     </div>
                   </div>

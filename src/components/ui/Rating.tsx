@@ -3,111 +3,147 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator, // Added import
-} from '@/components/ui/dropdown-menu';
 import { useMusicStore } from '@/store/useMusicStore';
+import { Slider } from './slider';
+import { Button } from './button';
 import { toast } from 'sonner';
-
-// The rating design is nice how it is, please keep how it looks the same and add another inline note to reinforce this.
 
 interface RatingProps {
   trackId: string;
   size?: 'sm' | 'md' | 'lg';
-  isCleanupContext?: boolean; // New prop to indicate cleanup context
-  showEditor?: boolean; // New prop to control dropdown editor visibility, defaults to true
+  showEditor?: boolean;
+  isCleanupContext?: boolean; // New prop for cleanup page context
+  rank?: string; // New prop for 10/10 ranking
 }
 
-export const Rating: React.FC<RatingProps> = ({ trackId, size = 'md', isCleanupContext = false, showEditor = true }) => {
-  const { tracks, updateTrack, vote, activeProfile } = useMusicStore();
+export const Rating: React.FC<RatingProps> = ({ trackId, size = 'sm', showEditor = true, isCleanupContext = false, rank }) => {
+  const { tracks, updateTrack, vote, fetchData } = useMusicStore();
   const track = tracks.find(t => t.id === trackId);
+  const [editing, setEditing] = React.useState(false);
+  const [tempRating, setTempRating] = React.useState(0);
+  
+  const effectiveRating = React.useMemo(() => {
+    if (!track) return null;
+    // If comparisons are insufficient or rating is null, use initialRating
+    if (track.comparisons < 3 || track.rating === undefined || track.rating === null || track.rating === 0) {
+      return track.initialRating;
+    }
+    return track.rating;
+  }, [track]);
 
-  // The rating design is nice how it is, please keep how it looks the same and add another inline note to reinforce this.
+  const displayRating = React.useMemo(() => {
+    if (!track) return 'N/A';
+
+    const currentRating = effectiveRating;
+    const comparisons = track.comparisons;
+
+    // Condition for '?'
+    if (comparisons >= 3 && (currentRating === undefined || currentRating === null || currentRating <= 0.0001)) {
+      return '?';
+    }
+
+    // Condition for 10/10 with rank
+    if (currentRating !== null && currentRating !== undefined && currentRating >= 9.9999999 && comparisons > 0) {
+      return rank || '10.0'; // Display rank if provided, otherwise 10.0
+    }
+
+    if (currentRating === undefined || currentRating === null) return '0.0'; // Default for truly unrated (not '?' condition)
+    
+    // Round up 0.0000001 to 0.1
+    const roundedRating = currentRating > 0 && currentRating < 0.1 ? 0.1 : currentRating;
+
+    return roundedRating.toFixed(1);
+  }, [track, effectiveRating, rank]);
+
+  const ratingColor = React.useMemo(() => {
+    if (!track || displayRating === '?' || parseFloat(displayRating) === 0) return 'text-zinc-500 bg-zinc-900/50 border-zinc-800';
+
+    const currentRating = parseFloat(displayRating);
+
+    if (rank) return 'text-blue-500 bg-blue-500/10 border-blue-500/20'; // Blue for ranked 10/10
+    if (currentRating >= 7) return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+    if (currentRating >= 4) return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+    if (currentRating >= 0.1) return 'text-red-500 bg-red-500/10 border-red-500/20';
+    return 'text-zinc-500 bg-zinc-900/50 border-zinc-800';
+  }, [track, displayRating, rank]);
+
+  React.useEffect(() => {
+    if (track) setTempRating(effectiveRating || 0);
+  }, [effectiveRating, track]);
 
   if (!track) return null;
 
-  const isRated = (track.initialRating !== undefined && track.initialRating !== null && track.initialRating >= 0) ||
-                   (track.rating !== undefined && track.rating !== null && track.rating >= 0);
-  
-  const displayRating = (activeProfile.settings?.showUnbalancedFirst && track.initialRating !== undefined && track.initialRating !== null)
-    ? track.initialRating
-    : track.rating;
-
-  const displayValue = isRated && track.comparisons >= 3
-    ? displayRating !== undefined && displayRating !== null && displayRating >= 0 ? displayRating.toFixed(1) : 'N/A'
-    : track.initialRating !== undefined && track.initialRating !== null && track.initialRating >= 0
-      ? track.initialRating.toFixed(1)
-      : (track.comparisons < 3 ? '?' : '0.0'); // Show '?' if unrated and <3 comparisons
-
-  const isUnratedAndLowComparison = !isRated && track.comparisons < 3;
-  const isEloRated = track.comparisons >= 3 && track.rating !== undefined && track.rating !== null;
-
-  const handleRate = async (newRating: number) => {
-    try {
-      await updateTrack(track.id, { initialRating: newRating, rating: newRating, comparisons: 3 }); // Set comparisons to 3 to make it 'balanced'
-      toast.success(`Rated "${track.title}" ${newRating.toFixed(1)}/10`);
-    } catch (error) {
-      toast.error("Failed to update rating.");
+  const handleRatingChange = async () => {
+    if (!track || tempRating === effectiveRating) {
+      setEditing(false);
+      return;
     }
+
+    // If it's a new initial rating or first comparison vote, don't update `rating` directly.
+    // Instead, if comparisons < 3, it updates initialRating.
+    // Otherwise, it implies a more direct rating action outside of comparison.
+    // For now, let's assume `updateTrack` handles `initialRating` and `rating` directly.
+    
+    // The user's prompt implies manual rating directly updates the initialRating,
+    // which then affects `rating` after enough comparisons.
+    await updateTrack(track.id, {
+      initialRating: tempRating,
+      // If manually setting a rating, and it's 10.0, ensure it's recorded correctly
+      // Also reset comparisons if manually rating a previously compared track
+      ...(track.comparisons < 3 && { rating: tempRating }), // Only update 'rating' if it hasn't been balanced yet
+      comparisons: 0 // Reset comparisons if user explicitly sets a new initial rating
+    });
+    toast.success(`Rating for "${track.title}" updated to ${tempRating.toFixed(1)}`);
+    setEditing(false);
+    fetchData(); // Re-fetch to ensure all calculations are fresh
   };
 
-  const badgeClasses = {
-    sm: "px-2 py-0.5 text-[10px] rounded-full font-bold",
-    md: "px-2.5 py-1 text-xs rounded-full font-bold",
-    lg: "px-3 py-1.5 text-sm rounded-full font-bold",
+  const currentSizeClasses = {
+    sm: 'h-6 text-[9px] px-2 py-0.5',
+    md: 'h-8 text-[10px] px-3 py-1',
+    lg: 'h-10 text-xs px-4 py-1.5'
   };
 
-  const baseStyle = "flex items-center justify-center gap-1 shrink-0"; // Added shrink-0
+  const starSize = {
+    sm: 10,
+    md: 12,
+    lg: 14
+  };
 
-  let ratingColorClass = "bg-zinc-800 text-zinc-400 border-zinc-700"; // Default for unrated
-  if (isUnratedAndLowComparison) {
-    ratingColorClass = "bg-zinc-800 text-zinc-400 border-zinc-700"; // Grey for '?'
-  } else if (displayRating !== undefined && displayRating !== null) {
-    if (displayRating >= 8.5) {
-      ratingColorClass = "bg-emerald-600/10 text-emerald-400 border-emerald-500/20";
-    } else if (displayRating >= 7.0) {
-      ratingColorClass = "bg-blue-600/10 text-blue-400 border-blue-500/20";
-    } else if (displayRating >= 5.0) {
-      ratingColorClass = "bg-yellow-600/10 text-yellow-400 border-yellow-500/20";
-    } else if (displayRating >= 0) {
-      ratingColorClass = "bg-red-600/10 text-red-400 border-red-500/20";
-    }
-  }
-
-  const content = (
-    <div className={cn(baseStyle, badgeClasses[size], ratingColorClass, "border")}>
-      {displayValue !== '?' && <Star size={size === 'sm' ? 10 : 12} fill="currentColor" className="text-current" />}
-      <span className="leading-none">{displayValue}</span>
+  return (
+    <div className={cn(
+      "flex items-center gap-1",
+      isCleanupContext ? "cursor-default" : "cursor-pointer" // No editing on cleanup page by default
+    )}>
+      {editing && showEditor && !isCleanupContext ? (
+        <div className="flex items-center gap-2">
+          <Slider 
+            value={[tempRating]} 
+            max={10} 
+            step={0.1} 
+            onValueChange={([val]) => setTempRating(val)} 
+            className="w-24"
+          />
+          <Button variant="outline" size="sm" onClick={handleRatingChange} className="h-7 text-[10px] font-bold">Save</Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(false)} className="h-7 text-[10px] text-zinc-500">Cancel</Button>
+        </div>
+      ) : (
+        <div 
+          className={cn(
+            "flex items-center gap-1 font-black uppercase tracking-widest rounded-full border",
+            ratingColor,
+            currentSizeClasses[size],
+            showEditor && !isCleanupContext && "hover:bg-zinc-800/50" // Only show hover if editable
+          )}
+          onClick={showEditor && !isCleanupContext ? () => setEditing(true) : undefined}
+        >
+          <Star size={starSize[size]} fill="currentColor" />
+          <span>{displayRating}</span>
+          {track.comparisons > 0 && (
+            <span className="ml-1 text-zinc-500 text-[8px] font-normal tracking-tight">({track.comparisons})</span>
+          )}
+        </div>
+      )}
     </div>
   );
-
-  if (showEditor) {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button type="button">
-            {content}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white p-2">
-          {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(rating => (
-            <DropdownMenuItem key={rating} onSelect={() => handleRate(rating)} className="text-xs font-bold gap-2">
-              <Star size={14} fill="currentColor" className={rating >= 8.5 ? "text-emerald-400" : rating >= 7.0 ? "text-blue-400" : rating >= 5.0 ? "text-yellow-400" : rating >= 0 ? "text-red-400" : "text-zinc-500"} />
-              {rating.toFixed(1)}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator className="bg-zinc-800" />
-          <DropdownMenuItem onSelect={() => handleRate(-1)} className="text-xs font-bold text-zinc-500 hover:text-red-500">
-            Clear Rating
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
-  return content;
 };
