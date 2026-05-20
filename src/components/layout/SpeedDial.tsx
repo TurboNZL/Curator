@@ -17,13 +17,29 @@ import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
 import { RelationalBioModal } from '../modals/RelationalBioModal';
 import { ImportAlbumModal } from '../modals/ImportAlbumModal';
 
+// Define ModalName type as suggested
+type ModalName =
+  | "artist"
+  | "album"
+  | "track"
+  | "journal"
+  | "playlist";
+
+// Define ActionItem type as suggested
+type ActionItem = {
+  icon: React.ComponentType<{ size: number }>;
+  label: string;
+  type: ModalName;
+};
+
 export const SpeedDial = () => {
-  const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [isImportAlbumModalOpen, setIsImportAlbumModalOpen] = useState(false);
+  // Update useState to use ModalName type
+  const [activeModal, setActiveModal] = useState<ModalName | null>(null);
+  const [isImportAlbumModalOpen, setIsImportAlbumModal] = useState(false);
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
 
-  // Define actions using a string 'type' to identify which modal to open
-  const actions = [
+  // Explicitly type the actions array
+  const actions: ActionItem[] = [
     { icon: Mic2, label: "New Artist", type: "artist" },
     { icon: Disc, label: "New Album", type: "album" },
     { icon: FileAudio, label: "New Track", type: "track" },
@@ -44,7 +60,7 @@ export const SpeedDial = () => {
           {actions.map((action) => (
             <DropdownMenuItem 
               key={action.type}
-              onSelect={() => setActiveModal(action.type)} // Use the 'type' to set activeModal
+              onSelect={() => setActiveModal(action.type)}
               className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer"
             >
               <action.icon size={18} />
@@ -54,7 +70,7 @@ export const SpeedDial = () => {
 
           <DropdownMenuItem
             className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer"
-            onSelect={() => setIsImportAlbumModalOpen(true)}
+            onSelect={() => setIsImportAlbumModal(true)}
           >
             <Download size={18} />
             Import Album
@@ -108,7 +124,7 @@ export const SpeedDial = () => {
 
       <ImportAlbumModal
         isOpen={isImportAlbumModalOpen}
-        onClose={() => setIsImportAlbumModalOpen(false)}
+        onClose={() => setIsImportAlbumModal(false)}
       />
 
       <RelationalBioModal
