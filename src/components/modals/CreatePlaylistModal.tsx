@@ -11,8 +11,13 @@ import { ListMusic, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-export const CreatePlaylistModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface CreatePlaylistModalProps {
+  children?: React.ReactElement;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreatePlaylistModal = ({ children, open, onOpenChange }: CreatePlaylistModalProps) => {
   const addPlaylist = useMusicStore((state) => state.addPlaylist);
   
   const [formData, setFormData] = useState({
@@ -33,12 +38,12 @@ export const CreatePlaylistModal = ({ children }: { children?: React.ReactElemen
     });
 
     toast.success(`Playlist "${formData.name}" created`);
-    setOpen(false);
+    onOpenChange(false); // Close modal using the prop
     setFormData({ name: '', description: '', coverImage: '' });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-2 rounded-full">

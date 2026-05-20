@@ -15,6 +15,9 @@ const Albums = () => {
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
 
+  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false);
+
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -40,7 +43,12 @@ const Albums = () => {
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Albums</h1>
           <p className="text-zinc-500 text-sm mt-1">Browse your indexed full-length projects and EPs.</p>
         </div>
-        <CreateAlbumModal />
+        <CreateAlbumModal open={isCreateAlbumModalOpen} onOpenChange={setIsCreateAlbumModalOpen}>
+          <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 rounded-full">
+            <Plus size={18} />
+            New Album
+          </Button>
+        </CreateAlbumModal>
       </div>
 
       <div className="flex items-center gap-4 py-4 border-y border-zinc-900">
@@ -67,7 +75,6 @@ const Albums = () => {
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
-              {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
               {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -79,7 +86,12 @@ const Albums = () => {
           <Disc size={48} className="text-zinc-800 mb-4" />
           <h3 className="text-zinc-400 font-bold">No albums found</h3>
           <p className="text-zinc-600 text-sm mt-1 mb-6">Try adjusting your search or index a new album.</p>
-          <CreateAlbumModal />
+          <CreateAlbumModal open={isCreateAlbumModalOpen} onOpenChange={setIsCreateAlbumModalOpen}>
+            <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 rounded-full">
+              <Plus size={18} />
+              New Album
+            </Button>
+          </CreateAlbumModal>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">

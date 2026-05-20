@@ -8,8 +8,13 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-export const CreateArtistModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface CreateArtistModalProps {
+  children?: React.ReactElement;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreateArtistModal = ({ children, open, onOpenChange }: CreateArtistModalProps) => {
   const addArtist = useMusicStore((state) => state.addArtist);
   
   const [formData, setFormData] = useState({
@@ -27,12 +32,12 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactElement 
     });
 
     toast.success(`${formData.name} added to catalog`);
-    setOpen(false);
+    onOpenChange(false); // Close modal using the prop
     setFormData({ name: '', image: '' });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-full">

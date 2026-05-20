@@ -15,10 +15,11 @@ interface CreateTrackModalProps {
   albumId?: string;
   artistId?: string;
   children?: React.ReactElement; // Enforce single React element
+  open: boolean; // Add open prop
+  onOpenChange: (open: boolean) => void; // Add onOpenChange prop
 }
 
-export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', children }: CreateTrackModalProps) => {
-  const [open, setOpen] = useState(false);
+export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', children, open, onOpenChange }: CreateTrackModalProps) => {
   const [reopen, setReopen] = useState(false);
   const { artists, albums, addTracks, updateAlbum } = useMusicStore();
   
@@ -105,7 +106,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     toast.success(`"${formData.title}" indexed successfully`);
     
     if (!reopen) {
-      setOpen(false);
+      onOpenChange(false);
     }
     
     setFormData({ 
@@ -177,7 +178,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       await addTracks(tracksToCreate);
       await updateAlbum(selectedAlbum.id, { pendingFiles: [] }); // Clear pending files
       toast.success(`Added ${tracksToCreate.length} tracks from pending files.`);
-      setOpen(false); // Close modal after autofill
+      onOpenChange(false); // Close modal after autofill
     } catch (error) {
       console.error("Autofill failed:", error);
       toast.error("Failed to autofill tracks.");
@@ -185,7 +186,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button variant="outline" size="sm" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">

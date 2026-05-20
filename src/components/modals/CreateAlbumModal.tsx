@@ -9,20 +9,25 @@ import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
-  const { artists, addAlbum, addRelease } = useMusicStore(); // Removed addReleaseType as type is removed
+interface CreateAlbumModalProps {
+  children?: React.ReactElement;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreateAlbumModal = ({ children, open, onOpenChange }: CreateAlbumModalProps) => {
+  const { artists, addAlbum, addRelease } = useMusicStore();
   
   const [formData, setFormData] = useState({
     title: '',
     artistId: '',
-    releases: [] as { title: string; date: string }[] // Removed type
+    releases: [] as { title: string; date: string }[]
   });
 
   const handleAddReleaseRow = () => {
     setFormData(prev => ({
       ...prev,
-      releases: [...prev.releases, { title: 'Streaming', date: '' }] // Default title is 'Streaming'
+      releases: [...prev.releases, { title: 'Streaming', date: '' }]
     }));
   };
 
@@ -50,7 +55,6 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
       
       const existingArtist = artists.find(a => a.id === formData.artistId);
       if (!existingArtist) {
-        // If artist not found by ID, assume formData.artistId is a new name
         const res = await fetch('/api/artists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -63,10 +67,10 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
       const newAlbum = await addAlbum({
         title: formData.title,
         artistId: finalArtistId,
-        artistIds: [], // Multi-artist support
+        artistIds: [],
         covers: [],
-        pendingFiles: [], // Added
-        credits: [] // Added
+        pendingFiles: [],
+        credits: []
       });
 
       for (const rel of formData.releases) {
@@ -80,7 +84,7 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
       }
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
-      setOpen(false);
+      onOpenChange(false);
       setFormData({ title: '', artistId: '', releases: [] });
     } catch (error) {
       console.error(error);
@@ -89,10 +93,9 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  // Removed typeOptions
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         {children ? children : (
           <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 rounded-full">
@@ -174,7 +177,6 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
                         onChange={(e) => updateReleaseRow(i, 'date', e.target.value)}
                         className="h-7 text-[10px] bg-zinc-900 border-zinc-800"
                       />
-                      {/* Removed Release Type Select */}
                     </div>
                   </div>
                 ))}

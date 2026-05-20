@@ -17,6 +17,9 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const editsPerPage = 5;
 
+  const [isCreateJournalEntryModalOpen, setIsCreateJournalEntryModalOpen] = useState(false);
+
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -117,7 +120,7 @@ const Index = () => {
           <p className="text-zinc-500 text-sm mt-1 font-medium">Documenting your journey through sound and structure.</p>
         </div>
         <div className="flex gap-4">
-          <CreateJournalEntryModal>
+          <CreateJournalEntryModal open={isCreateJournalEntryModalOpen} onOpenChange={setIsCreateJournalEntryModalOpen}>
             <Button className="bg-purple-600 hover:bg-purple-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
               <Plus size={16} /> New Entry
             </Button>
