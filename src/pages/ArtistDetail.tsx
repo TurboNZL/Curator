@@ -155,7 +155,8 @@ const ArtistDetail = () => {
                     <div className="flex items-center gap-1 ml-2">
                       <Rating
                         trackId={track.id}
-                        showEditor={false} // Always false for artist top tracks
+                        showEditor={false}
+                        size="sm"
                       />
                     </div>
                   </div>

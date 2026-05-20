@@ -164,35 +164,28 @@ const Tracks = () => {
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
-                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right w-16">Actions</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right w-16">Actions</TableHead> {/* Updated column header */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedTracks.map((track, i) => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
-                const album = albums?.find(al => trackHasAlbum(track, al.id));
+                const album = albums?.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 
                 return (
-                  <TrackContextMenu 
-                    key={track.id} 
-                    track={track}
-                    trigger={
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                        <MoreVertical size={14} />
-                      </Button>
-                    }
-                  >
+                  <TrackContextMenu key={track.id} track={track}>
                     <TableRow
                       className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                     >
                       <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
-                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }} className="cursor-pointer">
+                      <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
                             <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
                             <button
+                              onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
                               className="absolute inset-0 flex items-center justify-center text-zinc-500 hover:text-blue-400 transition-all"
                             >
                               <Play size={14} fill="currentColor" />
@@ -207,10 +200,19 @@ const Tracks = () => {
                         <Rating
                           trackId={track.id}
                           showEditor={true} 
+                          size="sm"
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* The MoreVertical button is now passed as a trigger to TrackContextMenu */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                              <MoreVertical size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          {/* TrackContextMenu content will be rendered here by the parent component */}
+                          {/* This is a visual cue for the user. The actual context menu is provided by TrackContextMenu */}
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

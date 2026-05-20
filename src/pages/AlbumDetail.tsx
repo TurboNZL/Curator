@@ -228,15 +228,7 @@ const AlbumDetail = () => {
               <TableBody>
                 {albumTracks.map((track, index) => {
                   return (
-                    <TrackContextMenu 
-                      key={track.id} 
-                      track={track}
-                      trigger={
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                          <MoreVertical size={14} />
-                        </Button>
-                      }
-                    >
+                    <TrackContextMenu key={track.id} track={track}>
                       <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
                         <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
                         <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
@@ -252,7 +244,68 @@ const AlbumDetail = () => {
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          {/* MoreVertical button now wrapped in ContextMenuTrigger */}
+                          <div className="flex items-center justify-end gap-1">
+                            {/* All actions moved to context menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                  <MoreVertical size={14} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}>
+                                    <Play size={14} /> Play Track
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsCreatePlaylistAddModalOpen(true)}>
+                                    <ListMusic size={14} /> Add to Playlist
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => {
+                                    setSelectedTrackForEdit(track);
+                                    setIsStatsModalOpen(true);
+                                  }}>
+                                    <Info size={14} /> Stats for Nerds
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
+                                    <Brain size={14} /> Add Memory
+                                  </DropdownMenuItem>
+                                  {track.memories && track.memories > 0 && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
+                                      <Brain size={14} /> Remove Memory
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  {track.spotifyUrl && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
+                                      <LinkIcon size={14} /> Copy Spotify Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  {track.geniusUrl && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
+                                      <LinkIcon size={14} /> Copy Genius Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  {track.youtubeMusicUrl && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
+                                      <LinkIcon size={14} /> Copy YouTube Music Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={(e) => { e.stopPropagation(); setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }}>
+                                    <Edit2 size={14} /> Edit Track
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={async () => {
+                                    if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
+                                      await deleteTrack(track.id);
+                                      toast.success("Track deleted.");
+                                    }
+                                  }}>
+                                    <Trash2 size={14} /> Delete Track
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     </TrackContextMenu>
