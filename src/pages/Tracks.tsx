@@ -41,21 +41,7 @@ const Tracks = () => {
   }, [tracks, search, artists, albums]);
 
   const sortedTracks = useMemo(() => {
-    const allTracks = [...filteredTracks];
-
-    // Identify and rank 10-star tracks first
-    const tenStarTracks = allTracks
-      .filter(t => (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating >= 9.9999999))
-      .sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
-
-    const rankedTenStars = tenStarTracks.map((track, index) => ({
-      ...track,
-      rank: `${index + 1}${['st', 'nd', 'rd'][(index + 1) % 10 - 1] || 'th'}` // 1st, 2nd, 3rd, 4th...
-    }));
-
-    const otherTracks = allTracks.filter(t => 
-      !(t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating >= 9.9999999)
-    ).sort((a, b) => {
+    const sorted = [...filteredTracks].sort((a, b) => {
       let comparison = 0;
       if (sortConfig.field === 'title') {
         comparison = (a.title || '').localeCompare(b.title || '');
@@ -64,10 +50,10 @@ const Tracks = () => {
       } else if (sortConfig.field === 'rating') {
         // Handle unrated songs for sorting: initial rating for <3 comparisons, else balanced rating
         const getEffectiveRating = (track: any) => {
-          if (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null && track.rating > 0.0001) {
+          if (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null && track.rating > 0.001) {
             return track.rating;
           }
-          if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.0001) {
+          if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
             return track.initialRating;
           }
           return -1; // Treat truly unrated or 0.0 as lowest for sorting
@@ -80,24 +66,32 @@ const Tracks = () => {
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
 
-    // Combine ranked 10-star tracks with other sorted tracks
-    const finalSorted = [...rankedTenStars, ...otherTracks];
-
-    // Reapply overall direction for non-rating sorting to the combined list
-    if (sortConfig.field !== 'rating') {
-      finalSorted.sort((a, b) => {
-        let comparison = 0;
-        if (sortConfig.field === 'title') {
-          comparison = (a.title || '').localeCompare(b.title || '');
-        } else if (sortConfig.field === 'memories') {
-          comparison = (a.memories || 0) - (b.memories || 0);
-        }
-        return sortConfig.direction === 'asc' ? comparison : -comparison;
+    // If sorting by rating, specifically handle 10.0 rankings
+    if (sortConfig.field === 'rating' && sortConfig.direction === 'desc') {
+      const tenStarTracks = sorted.filter(t => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : null;
+        return effectiveRating >= 9.9999 && t.comparisons > 0;
+      }); 
+      const otherTracks = sorted.filter(t => {
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+            ? t.rating
+            : (t.initialRating !== undefined && t.initialRating !== null)
+                ? t.initialRating
+                : null;
+        return !(effectiveRating >= 9.9999 && t.comparisons > 0);
       });
+
+      // Sort 10-rated tracks by eloScore for ranking
+      tenStarTracks.sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0));
+
+      return [...tenStarTracks, ...otherTracks];
     }
 
-
-    return finalSorted;
+    return sorted;
   }, [filteredTracks, sortConfig]);
 
   if (isLoading && tracks.length === 0) {
@@ -207,15 +201,18 @@ const Tracks = () => {
                           trackId={track.id}
                           showEditor={true} 
                           size="sm"
-                          rank={track.rank}
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* The TrackContextMenu component wraps the entire row, so clicking this trigger will open its dropdown. */}
-                        {/* This is a visual cue for the user. The actual context menu is provided by TrackContextMenu */}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                          <MoreVertical size={14} />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                              <MoreVertical size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          {/* TrackContextMenu content will be rendered here by the parent component */}
+                          {/* This is a visual cue for the user. The actual context menu is provided by TrackContextMenu */}
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

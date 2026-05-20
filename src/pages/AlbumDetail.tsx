@@ -19,7 +19,7 @@ import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
-import { StatsForNerdsModal } from '@/components/ui/StatsForNerdsModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { toast } from 'sonner';
 
 
@@ -88,27 +88,14 @@ const AlbumDetail = () => {
     if (!showAllTracks && currentRelease) {
       tracksForAlbum = tracksForAlbum.filter(t => currentRelease.trackIds.includes(t.id));
     }
-
-    const tenStarTracks = tracksForAlbum
-      .filter(t => (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating >= 9.9999999))
-      .sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
-
-    const rankedTenStars = tenStarTracks.map((track, index) => ({
-      ...track,
-      rank: `${index + 1}${['st', 'nd', 'rd'][(index + 1) % 10 - 1] || 'th'}`
-    }));
-
-    const otherTracks = tracksForAlbum.filter(t => 
-      !(t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating >= 9.9999999)
-    ).sort((a, b) => {
-      // Sort other tracks by their order in the album/release first, then by title
+    
+    // Sort tracks by their order in the album/release first, then by title
+    return tracksForAlbum.sort((a, b) => {
       const aOrder = a.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
       const bOrder = b.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
       if (aOrder !== bOrder) return aOrder - bOrder;
       return a.title.localeCompare(b.title);
     });
-
-    return [...rankedTenStars, ...otherTracks];
   }, [showAllTracks, currentRelease, tracks, album]);
 
   const avgAlbumRating = useMemo(() => {
@@ -254,7 +241,6 @@ const AlbumDetail = () => {
                           <Rating
                             trackId={track.id}
                             showEditor={true} 
-                            rank={track.rank}
                           />
                         </TableCell>
                         <TableCell className="text-right">
