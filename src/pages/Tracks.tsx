@@ -172,14 +172,9 @@ const Tracks = () => {
                 const cover = album?.covers?.[0] || '/placeholder.svg';
                 
                 return (
-                  // Inline comment: TrackContextMenu now wraps the entire TableRow
-                  // This enables right-click on the row to open the context menu.
-                  // Left-click on the row will now also open the context menu,
-                  // unless specifically handled by an inner element's onClick.
                   <TrackContextMenu key={track.id} track={track}>
                     <TableRow
-                      className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group cursor-pointer"
-                      onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }} // Keep primary play action
+                      className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                     >
                       <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
                       <TableCell>
@@ -206,10 +201,12 @@ const Tracks = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* MoreVertical button is now purely visual, context menu is triggered by row click/right-click */}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                        {/* The TrackContextMenu component wraps the entire row, so a separate trigger for the three dots is needed */}
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
                             <MoreVertical size={14} />
-                        </Button>
+                          </Button>
+                        </DropdownMenuTrigger>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

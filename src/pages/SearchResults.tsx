@@ -96,14 +96,9 @@ const SearchResults = () => {
                   const artist = artists.find(a => a.id === track.artistId);
                   const album = albums.find(al => trackHasAlbum(track, al.id));
                   return (
-                    // Inline comment: TrackContextMenu now wraps the entire track div
-                    // This enables right-click on the track card to open the context menu.
-                    // Left-click on the card will now also open the context menu,
-                    // unless specifically handled by an inner element's onClick.
                     <TrackContextMenu key={track.id} track={track}>
                       <div 
-                        className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-900/50 hover:bg-zinc-900/50 transition-colors group cursor-pointer"
-                        onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }} // Keep primary play action
+                        className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-900/50 hover:bg-zinc-900/50 transition-colors group"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden relative group/play">
@@ -123,13 +118,8 @@ const SearchResults = () => {
                         <div className="flex items-center gap-4">
                           <Rating
                             track={track}
-                            showEditor={false} // Ensure rating display is not clickable
                             size="sm"
                           />
-                          {/* MoreVertical button is now purely visual, context menu is triggered by card click/right-click */}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                            <MoreVertical size={14} />
-                          </Button>
                         </div>
                       </div>
                     </TrackContextMenu>

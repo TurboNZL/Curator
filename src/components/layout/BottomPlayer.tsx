@@ -60,35 +60,30 @@ export const BottomPlayer = () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
-      // Clean up audio source when component unmounts or track changes
       if (audio) {
         audio.removeAttribute('src');
       }
     };
-  }, [currentTrackId]); // Re-run effect if currentTrackId changes
+  }, [currentTrackId, isPlaying]);
 
   useEffect(() => {
-    if (audioRef.current && currentTrack?.localFilePath) {
-      const audio = audioRef.current;
-      if (isPlaying) {
-        audio.src = currentTrack.localFilePath; // Set src when playing
-        audio.currentTime = progress; // Retain current progress
-        audio.play().catch(e => console.error("Audio play failed:", e));
+    if (audioRef.current) {
+      if (currentTrack?.localFilePath) {
+        audioRef.current.src = currentTrack.localFilePath;
+        audioRef.current.currentTime = 0;
+        setProgress(0);
+        setStoreProgress(0);
+        if (isPlaying) audioRef.current.play();
       } else {
-        // On pause, reset to start as requested
-        audio.pause();
-        audio.currentTime = 0; 
-        setProgress(0); 
-        setStoreProgress(0); 
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
+        setProgress(0);
+        setStoreProgress(0);
+        setDuration(0);
+        setStoreDuration(0);
       }
-    } else if (audioRef.current && !currentTrack?.localFilePath && isPlaying) {
-      // If no local file but somehow playing state is true, stop it
-      audioRef.current.pause();
-      audioRef.current.removeAttribute('src');
-      setStoreProgress(0);
-      setStoreDuration(0);
     }
-  }, [isPlaying, currentTrack?.localFilePath]); // Depend on isPlaying and currentTrack.localFilePath
+  }, [currentTrackId, isPlaying]);
 
   useEffect(() => {
     if (audioRef.current) {
