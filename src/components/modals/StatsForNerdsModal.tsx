@@ -7,7 +7,7 @@ import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Ac
 import { Track, Album, Artist } from '@/types/music';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Rating } from '../ui/Rating'; // Import Rating component
+import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
 interface StatsForNerdsModalProps {
   track?: Track;
@@ -77,6 +77,7 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
                   </div>
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-tight">Balanced Rating</span>
                 </div>
+                {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                 <Rating track={track} showEditor={false} size="sm" />
               </div>
               <StatRow icon={Swords} label="Comparisons" value={track.comparisons.toString()} />

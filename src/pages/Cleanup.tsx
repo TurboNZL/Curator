@@ -7,7 +7,7 @@ import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -648,6 +648,7 @@ const Cleanup = () => {
                           {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
                         <div className="mt-2 flex">
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
                         </div>
                       </div>

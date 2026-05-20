@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
 import { TrackContextMenu } from '../ui/TrackContextMenu';
-import { Rating } from '../ui/Rating'; // Import Rating component
+import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
 interface LowQualityTracksModalProps {
   open: boolean;
@@ -147,7 +147,8 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                         <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                       </div>
                       <div className="flex items-center gap-1 ml-4 shrink-0">
-                        <Rating track={track} size="sm" showEditor={false} /> {/* Added Rating component */}
+                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
+                        <Rating track={track} size="sm" showEditor={false} /> 
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); playSnippet(track); }}>
                           {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
                         </Button>

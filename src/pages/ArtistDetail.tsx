@@ -5,7 +5,7 @@ import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc,
 import { Button } from '@/components/ui/button';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { useState, useMemo } from 'react';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
@@ -153,6 +153,7 @@ const ArtistDetail = () => {
                       <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
+                      {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                       <Rating
                         track={track}
                         showEditor={false}

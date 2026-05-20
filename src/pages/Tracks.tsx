@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus, MoreVertical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -194,6 +194,7 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
+                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating
                           track={track}
                           showEditor={true} 
@@ -201,7 +202,6 @@ const Tracks = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* The TrackContextMenu component wraps the entire row, so a separate trigger for the three dots is needed */}
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
                             <MoreVertical size={14} />

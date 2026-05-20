@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music, MoreVertical, Brain, Info, Minus } from 'lucide-react'; // Added Minus
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music, MoreVertical, Brain, Info, Minus } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -13,7 +13,7 @@ import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 
 
 const AlbumDetail = () => {
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack } = useMusicStore(); // Destructured new functions
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack } = useMusicStore(); 
   const { id } = useParams();
   
   const album = albums.find(a => a.id === id);
@@ -50,7 +50,7 @@ const AlbumDetail = () => {
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); // For individual track add
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); 
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
@@ -189,11 +189,7 @@ const AlbumDetail = () => {
             >
               <Play fill="currentColor" size={18} /> Play
             </Button>
-            <EditAlbumModal album={album}>
-              <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 rounded-full font-bold">
-                Edit Project
-              </Button>
-            </EditAlbumModal>
+            <EditAlbumModal album={album} /> {/* Removed children prop */}
             <Button variant="outline" className="border-emerald-800 bg-emerald-900/50 hover:bg-emerald-900 text-emerald-400 rounded-full font-bold" onClick={() => setIsCreatePlaylistAddModalOpen(true)}>
               <Plus size={18} className="mr-2"/>Add to Playlist
             </Button>
@@ -239,13 +235,14 @@ const AlbumDetail = () => {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating
                           track={track}
                           showEditor={true} 
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <TrackContextMenu track={track}> {/* Moved TrackContextMenu here */}
+                        <TrackContextMenu track={track}>
                           <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
                             <MoreVertical size={14} />
                           </Button>

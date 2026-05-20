@@ -16,7 +16,7 @@ import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-export const EditAlbumModal = ({ album, children }: { album: Album, children?: React.ReactElement }) => {
+export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'children' prop
   const [open, setOpen] = useState(false);
   const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup } = useMusicStore();
   const albumReleases = releases.filter(r => r.albumId === album.id);
@@ -149,11 +149,9 @@ export const EditAlbumModal = ({ album, children }: { album: Album, children?: R
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        {children ? children : (
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">
-            <Edit2 size={14}/>
-          </Button>
-        )}
+        <Button variant="outline" size="sm" className="h-8 w-8 p-0 rounded-full border-zinc-800 bg-zinc-900/50">
+          <Edit2 size={14}/>
+        </Button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] p-0 overflow-hidden max-h-[90vh] flex flex-col">
         <Tabs defaultValue="metadata" className="w-full flex flex-col overflow-hidden">

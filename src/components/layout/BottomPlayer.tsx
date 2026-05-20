@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
-import { Rating } from '../ui/Rating'; // Import Rating component
+import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
 export const BottomPlayer = () => {
   const {
@@ -134,6 +134,7 @@ export const BottomPlayer = () => {
               <span className="text-[8px] font-black px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
                 {currentTrack?.bitrate || '320kbps'}
               </span>
+              {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
               <Rating track={currentTrack} showEditor={false} size="sm" />
             </div>
           )}

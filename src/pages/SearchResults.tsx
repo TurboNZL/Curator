@@ -6,7 +6,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Music, Disc, User, Search, Play, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { trackHasAlbum } from '@/lib/utils';
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -116,6 +116,7 @@ const SearchResults = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
                             track={track}
                             size="sm"
