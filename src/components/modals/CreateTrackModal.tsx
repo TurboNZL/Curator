@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Plus, Music, RefreshCw, FileAudio, X } from 'lucide-react';
+import { Music, RefreshCw, FileAudio, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -12,13 +12,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 interface CreateTrackModalProps {
-  albumId?: string;
-  artistId?: string;
-  children?: React.ReactElement; // Enforce single React element
+  albumId?: string; // These props are now optional for initial form state
+  artistId?: string; // These props are now optional for initial form state
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', children }: CreateTrackModalProps) => {
-  const [open, setOpen] = useState(false);
+export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', open, onOpenChange }: CreateTrackModalProps) => {
   const [reopen, setReopen] = useState(false);
   const { artists, albums, addTracks, updateAlbum } = useMusicStore();
   
@@ -34,8 +34,28 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     audioUrl: '',
     spotifyUrl: '',
     geniusUrl: '',
-    youtubeMusicUrl: '' // Removed soundcloudUrl
+    youtubeMusicUrl: ''
   });
+
+  // Reset form data when the modal opens or initial props change
+  React.useEffect(() => {
+    if (open) {
+      setFormData({
+        title: '',
+        artistId: initialArtistId,
+        artistIds: [],
+        albumId: initialAlbumId,
+        rating: '',
+        genres: '',
+        producers: '',
+        bitrate: '320kbps',
+        audioUrl: '',
+        spotifyUrl: '',
+        geniusUrl: '',
+        youtubeMusicUrl: ''
+      });
+    }
+  }, [open, initialAlbumId, initialArtistId]);
 
   const selectedAlbum = useMemo(() => albums.find(a => a.id === formData.albumId), [albums, formData.albumId]);
   const pendingFiles = selectedAlbum?.pendingFiles || [];
@@ -105,7 +125,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     toast.success(`"${formData.title}" indexed successfully`);
     
     if (!reopen) {
-      setOpen(false);
+      onOpenChange(false); // Close modal
     }
     
     setFormData({ 
@@ -177,7 +197,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       await addTracks(tracksToCreate);
       await updateAlbum(selectedAlbum.id, { pendingFiles: [] }); // Clear pending files
       toast.success(`Added ${tracksToCreate.length} tracks from pending files.`);
-      setOpen(false); // Close modal after autofill
+      onOpenChange(false); // Close modal after autofill
     } catch (error) {
       console.error("Autofill failed:", error);
       toast.error("Failed to autofill tracks.");
@@ -185,14 +205,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button variant="outline" size="sm" className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white gap-2">
-            <Plus size={14} /> Add Track
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -231,7 +244,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                   <span className="text-[8px] font-black uppercase text-zinc-700">OR</span>
                   <div className="h-px flex-1 bg-zinc-900" />
                   <Button type="button" variant="outline" className="ml-2 h-7 text-[10px] font-black uppercase tracking-widest" onClick={autofillAllTracks}>
-                    <Plus size={12} className="mr-1" /> Autofill All
+                    Autofill All
                   </Button>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Disc, Search, ArrowUpDown, SortAsc, SortDesc } from 'lucide-react';
+import { Disc, Search, ArrowUpDown, SortAsc, SortDesc, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
@@ -13,6 +13,7 @@ const Albums = () => {
   const { albums, artists, fetchData, activeProfile } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
+  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false); // State for CreateAlbumModal
   const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
 
   useEffect(() => {
@@ -40,7 +41,9 @@ const Albums = () => {
           <h1 className="text-3xl font-black tracking-tight text-white uppercase">Albums</h1>
           <p className="text-zinc-500 text-sm mt-1">Browse your indexed full-length projects and EPs.</p>
         </div>
-        <CreateAlbumModal />
+        <Button onClick={() => setIsCreateAlbumModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
+          <Plus size={16} /> New Album
+        </Button>
       </div>
 
       <div className="flex items-center gap-4 py-4 border-y border-zinc-900">
@@ -79,7 +82,9 @@ const Albums = () => {
           <Disc size={48} className="text-zinc-800 mb-4" />
           <h3 className="text-zinc-400 font-bold">No albums found</h3>
           <p className="text-zinc-600 text-sm mt-1 mb-6">Try adjusting your search or index a new album.</p>
-          <CreateAlbumModal />
+          <Button onClick={() => setIsCreateAlbumModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
+            <Plus size={16} /> New Album
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
@@ -110,6 +115,7 @@ const Albums = () => {
           })}
         </div>
       )}
+      <CreateAlbumModal open={isCreateAlbumModalOpen} onOpenChange={setIsCreateAlbumModalOpen} />
     </div>
   );
 };

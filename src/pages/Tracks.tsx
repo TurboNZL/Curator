@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus, MoreVertical, Info, Trash2 } from 'lucide-react'; // Ensure Info and Trash2 are imported
+import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus, MoreVertical, Info, Trash2, List } from 'lucide-react'; // Ensure Info and Trash2 are imported
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
@@ -14,10 +14,11 @@ import { trackHasAlbum } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
+import { toast } from 'sonner';
 
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, deleteTrack } = useMusicStore(); // Add deleteTrack
+  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, deleteTrack, addToUserQueue, incrementMemories, decrementMemories } = useMusicStore(); // Add deleteTrack, addToUserQueue, incrementMemories, decrementMemories
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
@@ -156,7 +157,7 @@ const Tracks = () => {
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-3xl">
           <ListMusic size={48} className="text-zinc-800 mb-4" />
           <h3 className="text-zinc-400 font-bold">No tracks found</h3>
-          <p className="text-zinc-600 text-sm mt-1">Try adjusting your search or add tracks to an album.</p>
+          <p className="text-zinc-600 text-sm mt-1 mb-6">Try adjusting your search or add tracks to an album.</p>
         </div>
       ) : (
         <div className="bg-zinc-900/20 rounded-2xl border border-zinc-900 overflow-hidden">
@@ -209,7 +210,7 @@ const Tracks = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu> {/* Added DropdownMenu here */}
+                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
                               <MoreVertical size={14} />
@@ -225,6 +226,37 @@ const Tracks = () => {
                               className="text-xs font-medium"
                             >
                               <Edit2 size={14} className="mr-2" /> Edit Track
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                addToUserQueue(track.id);
+                                toast.success(`"${track.title}" added to queue.`);
+                              }}
+                              className="text-xs font-medium"
+                            >
+                              <List size={14} className="mr-2" /> Add to Queue
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                incrementMemories(track.id);
+                                toast.success(`Memory added for "${track.title}".`);
+                              }}
+                              className="text-xs font-medium"
+                            >
+                              <Plus size={14} className="mr-2" /> Add Memory
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                decrementMemories(track.id);
+                                toast.success(`Memory removed for "${track.title}".`);
+                              }}
+                              disabled={track.memories === 0}
+                              className="text-xs font-medium"
+                            >
+                              <Minus size={14} className="mr-2" /> Remove Memory
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={(e) => { 
@@ -260,7 +292,7 @@ const Tracks = () => {
                               <Trash2 size={14} className="mr-2" /> Delete Track
                             </DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu> {/* End DropdownMenu */}
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

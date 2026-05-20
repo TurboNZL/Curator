@@ -1,18 +1,22 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMusicStore } from '@/store/useMusicStore';
-import { ListMusic, Plus } from 'lucide-react';
+import { ListMusic } from 'lucide-react'; // Added icon import
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-export const CreatePlaylistModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface CreatePlaylistModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreatePlaylistModal = ({ open, onOpenChange }: CreatePlaylistModalProps) => {
   const addPlaylist = useMusicStore((state) => state.addPlaylist);
   
   const [formData, setFormData] = useState({
@@ -20,6 +24,13 @@ export const CreatePlaylistModal = ({ children }: { children?: React.ReactElemen
     description: '',
     coverImage: ''
   });
+
+  // Reset form data when the modal opens
+  React.useEffect(() => {
+    if (open) {
+      setFormData({ name: '', description: '', coverImage: '' });
+    }
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,20 +44,12 @@ export const CreatePlaylistModal = ({ children }: { children?: React.ReactElemen
     });
 
     toast.success(`Playlist "${formData.name}" created`);
-    setOpen(false);
-    setFormData({ name: '', description: '', coverImage: '' });
+    onOpenChange(false); // Close modal
+    setFormData({ name: '', description: '', coverImage: '' }); // Reset form
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-2 rounded-full">
-            <Plus size={18} />
-            New Playlist
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">

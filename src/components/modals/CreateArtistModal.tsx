@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { Mic2 } from 'lucide-react'; // Added icon import
 
-export const CreateArtistModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface CreateArtistModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreateArtistModal = ({ open, onOpenChange }: CreateArtistModalProps) => {
   const addArtist = useMusicStore((state) => state.addArtist);
   
   const [formData, setFormData] = useState({
@@ -27,23 +31,18 @@ export const CreateArtistModal = ({ children }: { children?: React.ReactElement 
     });
 
     toast.success(`${formData.name} added to catalog`);
-    setOpen(false);
-    setFormData({ name: '', image: '' });
+    onOpenChange(false); // Close modal
+    setFormData({ name: '', image: '' }); // Reset form
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-2 rounded-full">
-            <Plus size={18} />
-            Quick Add
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black uppercase tracking-tight">Add New Artist</DialogTitle>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+            <Mic2 size={20} className="text-blue-500" />
+            Add New Artist
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-2">

@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 
 
 const AlbumDetail = () => {
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack } = useMusicStore(); 
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack, addToUserQueue } = useMusicStore(); 
   const { id } = useParams();
   
   const album = albums.find(a => a.id === id);
@@ -56,8 +56,6 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
-
-  // Removed selectedReleaseId state, now deriving currentRelease directly
 
   useEffect(() => {
     sessionStorage.setItem(`album_sort_${id}`, JSON.stringify(sortConfig));
@@ -191,7 +189,7 @@ const AlbumDetail = () => {
             </h2>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-bold text-zinc-600 uppercase">{albumTracks.length} Tracks</span>
-              <CreateTrackModal albumId={album.id} artistId={album.artistId} />
+              <CreateTrackModal albumId={album.id} artistId={album.artistId} open={isEditTrackModalOpen} onOpenChange={setIsEditTrackModalOpen} />
             </div>
           </div>
 
@@ -212,7 +210,7 @@ const AlbumDetail = () => {
               <TableBody>
                 {albumTracks.map((track, index) => {
                   return (
-                    <TrackContextMenu key={track.id} track={track}> {/* Wrap TR with ContextMenu */}
+                    <TrackContextMenu key={track.id} track={track}>
                       <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
                         <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
                         <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
@@ -229,7 +227,7 @@ const AlbumDetail = () => {
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu> {/* Added DropdownMenu here */}
+                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
                                 <MoreVertical size={14} />
@@ -245,6 +243,37 @@ const AlbumDetail = () => {
                                 className="text-xs font-medium"
                               >
                                 <Edit2 size={14} className="mr-2" /> Edit Track
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  addToUserQueue(track.id);
+                                  toast.success(`"${track.title}" added to queue.`);
+                                }}
+                                className="text-xs font-medium"
+                              >
+                                <List size={14} className="mr-2" /> Add to Queue
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  incrementMemories(track.id);
+                                  toast.success(`Memory added for "${track.title}".`);
+                                }}
+                                className="text-xs font-medium"
+                              >
+                                <Plus size={14} className="mr-2" /> Add Memory
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  decrementMemories(track.id);
+                                  toast.success(`Memory removed for "${track.title}".`);
+                                }}
+                                disabled={track.memories === 0}
+                                className="text-xs font-medium"
+                              >
+                                <Minus size={14} className="mr-2" /> Remove Memory
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={(e) => { 
@@ -279,7 +308,7 @@ const AlbumDetail = () => {
                                 <Trash2 size={14} className="mr-2" /> Delete Track
                               </DropdownMenuItem>
                             </DropdownMenuContent>
-                          </DropdownMenu> {/* End DropdownMenu */}
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     </TrackContextMenu>
@@ -403,7 +432,6 @@ const AlbumDetail = () => {
                           {member.entityType === 'artist' && <User size={10} />}
                           {member.entityType === 'album' && <Disc size={10} />}
                           {member.entityType === 'track' && <Music size={10} />}
-                          {/* Releases are not an option anymore */}
                           {member.label}
                         </Link>
                       ))}

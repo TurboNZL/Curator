@@ -1,23 +1,34 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useMusicStore } from '@/store/useMusicStore';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen } from 'lucide-react'; // Added icon import
 import { toast } from 'sonner';
 
-export const CreateJournalEntryModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface CreateJournalEntryModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreateJournalEntryModal = ({ open, onOpenChange }: CreateJournalEntryModalProps) => {
   const addTimelineEntry = useMusicStore((state) => state.addTimelineEntry);
   
   const [formData, setFormData] = useState({
     title: '',
     description: ''
   });
+
+  // Reset form data when the modal opens
+  React.useEffect(() => {
+    if (open) {
+      setFormData({ title: '', description: '' });
+    }
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,19 +41,12 @@ export const CreateJournalEntryModal = ({ children }: { children?: React.ReactEl
     });
 
     toast.success(`Journal entry saved`);
-    setOpen(false);
-    setFormData({ title: '', description: '' });
+    onOpenChange(false); // Close modal
+    setFormData({ title: '', description: '' }); // Reset form
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button variant="outline" className="gap-2 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white">
-            <Plus size={16} /> New Entry
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">

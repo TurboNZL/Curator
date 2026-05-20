@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,14 +9,18 @@ import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
-  const { artists, addAlbum, addRelease } = useMusicStore(); // Removed addReleaseType as type is removed
+interface CreateAlbumModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) => {
+  const { artists, addAlbum, addRelease } = useMusicStore();
   
   const [formData, setFormData] = useState({
     title: '',
     artistId: '',
-    releases: [] as { title: string; date: string }[] // Removed type
+    releases: [] as { title: string; date: string }[]
   });
 
   const handleAddReleaseRow = () => {
@@ -80,8 +84,8 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
       }
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
-      setOpen(false);
-      setFormData({ title: '', artistId: '', releases: [] });
+      onOpenChange(false); // Close modal
+      setFormData({ title: '', artistId: '', releases: [] }); // Reset form
     } catch (error) {
       console.error(error);
       toast.error("Failed to create album");
@@ -89,18 +93,9 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
   };
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  // Removed typeOptions
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children ? children : (
-          <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 rounded-full">
-            <Plus size={18} />
-            New Album
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -174,7 +169,6 @@ export const CreateAlbumModal = ({ children }: { children?: React.ReactElement }
                         onChange={(e) => updateReleaseRow(i, 'date', e.target.value)}
                         className="h-7 text-[10px] bg-zinc-900 border-zinc-800"
                       />
-                      {/* Removed Release Type Select */}
                     </div>
                   </div>
                 ))}

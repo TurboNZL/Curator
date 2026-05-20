@@ -16,24 +16,21 @@ import { CreateJournalEntryModal } from '../modals/CreateJournalEntryModal';
 import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
 import { RelationalBioModal } from '../modals/RelationalBioModal';
 
-// Define a type for modals that can be passed as 'children' to a trigger
-type ChildTriggerModal = React.ComponentType<{ children: React.ReactElement }>;
-
-type ActionItem = { 
-  icon: React.ComponentType<{ size: number }>, 
-  label: string, 
-  modal: ChildTriggerModal 
-};
-
 export const SpeedDial = () => {
-  const [isBioModalOpen, setIsBioModalOpen] = useState(false); // State for RelationalBioModal
+  const [isArtistModalOpen, setIsArtistModalOpen] = useState(false);
+  const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
+  const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
+  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
 
-  const actions: ActionItem[] = [
-    { icon: Mic2, label: "New Artist", modal: CreateArtistModal },
-    { icon: Disc, label: "New Album", modal: CreateAlbumModal },
-    { icon: FileAudio, label: "New Track", modal: CreateTrackModal },
-    { icon: Brain, label: "Journal Entry", modal: CreateJournalEntryModal },
-    { icon: ListMusic, label: "New Playlist", modal: CreatePlaylistModal },
+  const actions = [
+    { icon: Mic2, label: "New Artist", onClick: () => setIsArtistModalOpen(true) },
+    { icon: Disc, label: "New Album", onClick: () => setIsAlbumModalOpen(true) },
+    { icon: FileAudio, label: "New Track", onClick: () => setIsTrackModalOpen(true) },
+    { icon: Brain, label: "Journal Entry", onClick: () => setIsJournalModalOpen(true) },
+    { icon: ListMusic, label: "New Playlist", onClick: () => setIsPlaylistModalOpen(true) },
+    { icon: Users, label: "New Relational Bio", onClick: () => setIsRelationalBioModalOpen(true) },
   ];
 
   return (
@@ -47,26 +44,25 @@ export const SpeedDial = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-60 bg-zinc-950 border-zinc-800 text-white p-2">
           {actions.map((action) => (
-            <action.modal key={action.label}>
-              <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
-                <action.icon size={18} />
-                {action.label}
-              </DropdownMenuItem>
-            </action.modal>
+            <DropdownMenuItem 
+              key={action.label}
+              onSelect={action.onClick}
+              className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer"
+            >
+              <action.icon size={18} />
+              {action.label}
+            </DropdownMenuItem>
           ))}
-          {/* Dedicated trigger for RelationalBioModal */}
-          <DropdownMenuItem 
-            className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer"
-            onSelect={() => setIsBioModalOpen(true)}
-          >
-            <Users size={18} />
-            New Relational Bio
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {/* Render controlled modals as siblings */}
-      <RelationalBioModal open={isBioModalOpen} onOpenChange={setIsBioModalOpen} />
+      <CreateArtistModal open={isArtistModalOpen} onOpenChange={setIsArtistModalOpen} />
+      <CreateAlbumModal open={isAlbumModalOpen} onOpenChange={setIsAlbumModalOpen} />
+      <CreateTrackModal open={isTrackModalOpen} onOpenChange={setIsTrackModalOpen} />
+      <CreateJournalEntryModal open={isJournalModalOpen} onOpenChange={setIsJournalModalOpen} />
+      <CreatePlaylistModal open={isPlaylistModalOpen} onOpenChange={setIsPlaylistModalOpen} />
+      <RelationalBioModal open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} />
     </div>
   );
 };

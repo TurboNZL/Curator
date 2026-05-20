@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users } from 'lucide-react';
+import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users, Minus, List, Info, MoreVertical } from 'lucide-react'; // Added MoreVertical and EditTrackModal
 import { Button } from '@/components/ui/button';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
@@ -10,12 +10,17 @@ import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { useState, useMemo } from 'react';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Imported EditTrackModal
+import { toast } from 'sonner';
 
 
 const ArtistDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteTrack, addToUserQueue, incrementMemories, decrementMemories } = useMusicStore();
 
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
@@ -23,9 +28,7 @@ const ArtistDetail = () => {
   
   const artistAlbums = albums.filter(al => al.artistId === id);
   
-  // Sort by rating (star rating) then by eloScore (ranking)
   const artistTracks = useMemo(() => {
-    // Function to get effective rating for sorting, prioritizing balanced then initial
     const getEffectiveRating = (track: any) => {
         if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
             return track.rating;
@@ -33,10 +36,9 @@ const ArtistDetail = () => {
         if (track.initialRating !== undefined && track.initialRating !== null) {
             return track.initialRating;
         }
-        return -1; // Treat truly unrated or 0.0 as lowest for sorting
+        return -1;
     };
 
-    // Get all tracks, even those with only initialRating
     const allArtistTracks = tracks.filter(t => t.artistId === id);
 
     const sorted = [...allArtistTracks].sort((a, b) => {
@@ -47,8 +49,7 @@ const ArtistDetail = () => {
         return (b.eloScore ?? 0) - (a.eloScore ?? 0);
     });
 
-    // Special handling for 10-star tracks to group them and then sort by elo
-    const tenStarTracks = sorted.filter(t => (getEffectiveRating(t) >= 9.9999 && t.comparisons > 0)); // Only include 10/10 with comparisons
+    const tenStarTracks = sorted.filter(t => (getEffectiveRating(t) >= 9.9999 && t.comparisons > 0));
     const otherTracks = sorted.filter(t => !(getEffectiveRating(t) >= 9.9999 && t.comparisons > 0));
 
     tenStarTracks.sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
@@ -63,7 +64,7 @@ const ArtistDetail = () => {
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
                 : null;
-        return effectiveRating !== null && effectiveRating > 0; // Only count positive ratings
+        return effectiveRating !== null && effectiveRating > 0;
     });
     if (ratedTracks.length === 0) return 'N/A';
     const totalRating = ratedTracks.reduce((sum, t) => {
@@ -88,6 +89,13 @@ const ArtistDetail = () => {
 
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
+  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false); // State for CreateAlbumModal
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); // State for Add to Playlist
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
 
@@ -118,7 +126,9 @@ const ArtistDetail = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
-              <CreateAlbumModal />
+              <Button onClick={() => setIsCreateAlbumModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
+                <Plus size={16} /> New Album
+              </Button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
@@ -159,6 +169,88 @@ const ArtistDetail = () => {
                         showEditor={false}
                         size="sm"
                       />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                            <MoreVertical size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedTrackForEdit(track); 
+                              setIsEditTrackModalOpen(true); 
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Edit2 size={14} className="mr-2" /> Edit Track
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              addToUserQueue(track.id);
+                              toast.success(`"${track.title}" added to queue.`);
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <List size={14} className="mr-2" /> Add to Queue
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              incrementMemories(track.id);
+                              toast.success(`Memory added for "${track.title}".`);
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Plus size={14} className="mr-2" /> Add Memory
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              decrementMemories(track.id);
+                              toast.success(`Memory removed for "${track.title}".`);
+                            }}
+                            disabled={track.memories === 0}
+                            className="text-xs font-medium"
+                          >
+                            <Minus size={14} className="mr-2" /> Remove Memory
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedTrackForPlaylistAdd(track); 
+                              setIsCreatePlaylistAddModalOpen(true); 
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Plus size={14} className="mr-2" /> Add to Playlist
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedTrackForStats(track); 
+                              setIsStatsModalOpen(true); 
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Info size={14} className="mr-2" /> Stats for Nerds
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className="bg-zinc-800" />
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
+                                deleteTrack(track.id);
+                              }
+                            }}
+                            className="text-xs font-medium text-red-500"
+                          >
+                            <Trash2 size={14} className="mr-2" /> Delete Track
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </TrackContextMenu>
@@ -198,7 +290,6 @@ const ArtistDetail = () => {
                           {member.entityType === 'artist' && <User size={10} />}
                           {member.entityType === 'album' && <Disc size={10} />}
                           {member.entityType === 'track' && <Music size={10} />}
-                          {/* Releases are not an option anymore */}
                           {member.label}
                         </Link>
                       ))}
@@ -211,6 +302,21 @@ const ArtistDetail = () => {
         </div>
       </div>
       <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
+      )}
     </div>
   );
 };
