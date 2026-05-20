@@ -45,6 +45,14 @@ const ArtistDetail = () => {
       });
   }, [tracks, id]);
 
+  const avgArtistRating = useMemo(() => {
+    const ratedTracks = artistTracks.filter(t => t.rating !== undefined && t.rating !== null && t.rating >= 0);
+    if (ratedTracks.length === 0) return 'N/A';
+    const totalRating = ratedTracks.reduce((sum, t) => sum + (t.rating || 0), 0);
+    return (totalRating / ratedTracks.length).toFixed(1);
+  }, [artistTracks]);
+
+
   const artistGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === id && m.entityType === 'artist' && m.showOnEntityPage)
   );
@@ -71,6 +79,7 @@ const ArtistDetail = () => {
             <div className="flex items-center gap-6 mt-4 text-zinc-400 text-sm font-medium">
               <span className="flex items-center gap-1.5"><Music2 size={16} className="text-zinc-600"/> {artistAlbums.length} Albums</span>
               <span className="flex items-center gap-1.5"><Users size={16} className="text-zinc-600"/> {totalArtistRelatedGroups} Bios</span>
+              <span className="flex items-center gap-1.5"><Star size={16} className="text-zinc-600"/> Avg. Rating: {avgArtistRating}</span>
               <div className="flex gap-2 ml-4">
                 <EditArtistModal artist={artist} />
               </div>

@@ -19,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal'; // Import the new modal
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { useLocation } from 'react-router-dom';
+
 
 interface SpotifyUriGroupResolutionModalProps {
   isOpen: boolean;
@@ -232,6 +234,7 @@ const Cleanup = () => {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
+  const location = useLocation(); // To detect page changes
 
   // Separate useEffect for volume control
   useEffect(() => {
@@ -271,6 +274,21 @@ const Cleanup = () => {
       }
     };
   }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
+
+  // Effect to stop audio when leaving the page
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
+      }
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [location.pathname]); // Trigger cleanup when pathname changes
+
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
@@ -639,8 +657,8 @@ const Cleanup = () => {
                         <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
                           {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
-                        <div className="mt-2">
-                          <Rating trackId={track.id} size="md" isCleanupContext={true} showEditor={false}/>
+                        <div className="mt-2 flex"> {/* Added flex here */}
+                          <Rating trackId={track.id} size="md" isCleanupContext={true} showEditor={true}/>
                         </div>
                       </div>
                     </div> {/* Closing div for aspect-[16/9] */}

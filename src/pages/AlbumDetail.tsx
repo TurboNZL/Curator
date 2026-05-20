@@ -91,6 +91,14 @@ const AlbumDetail = () => {
     return tracks.filter(t => trackHasAlbum(t, (id || ''))); // Use trackHasAlbum
   }, [showAllTracks, currentRelease, tracks, id]);
 
+  const avgAlbumRating = useMemo(() => {
+    const ratedTracks = albumTracks.filter(t => t.rating !== undefined && t.rating !== null && t.rating >= 0);
+    if (ratedTracks.length === 0) return 'N/A';
+    const totalRating = ratedTracks.reduce((sum, t) => sum + (t.rating || 0), 0);
+    return (totalRating / ratedTracks.length).toFixed(1);
+  }, [albumTracks]);
+
+
   const handleSetDefault = async (releaseId: string) => {
     if (!album) return;
     await updateAlbum(album.id, { defaultReleaseId: releaseId });
@@ -146,6 +154,9 @@ const AlbumDetail = () => {
             <span className="flex items-center gap-1.5 text-zinc-400 text-sm font-medium">
               <Users size={16} className="text-zinc-600"/> {totalAlbumRelatedGroups} Bios
             </span>
+            <span className="flex items-center gap-1.5 text-zinc-400 text-sm font-medium">
+              <Star size={16} className="text-zinc-600"/> Avg. Rating: {avgAlbumRating}
+            </span>
           </div>
           
           <div className="flex gap-3">
@@ -194,89 +205,107 @@ const AlbumDetail = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {albumTracks.map((track, index) => (
-                  <TrackContextMenu key={track.id} track={track}>
-                    <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
-                      <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                          <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Rating
-                          trackId={track.id}
-                          showEditor={false}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {/* All actions moved to context menu */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                                <MoreVertical size={14} />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
-                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}>
-                                  <Play size={14} /> Play Track
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsCreatePlaylistAddModalOpen(true)}>
-                                  <ListMusic size={14} /> Add to Playlist
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-zinc-800" />
-                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => {
-                                  setSelectedTrackForEdit(track);
-                                  setIsStatsModalOpen(true);
-                                }}>
-                                  <Info size={14} /> Stats for Nerds
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-zinc-800" />
-                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
-                                  <Brain size={14} /> Add Memory (+1) ({track.memories || 0})
-                                </DropdownMenuItem>
-                                {track.memories && track.memories > 0 && (
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
-                                    <Brain size={14} /> Remove Memory (-1) ({track.memories || 0})
+                {albumTracks.map((track, index) => {
+                  // Determine global rank for 10-star songs in the context of the entire library
+                  let globalRank = null;
+                  if ((track.rating === 10 || track.initialRating === 10) && track.comparisons > 0) {
+                    const tenStarTracks = tracks.filter(t => (t.rating === 10 || t.initialRating === 10) && t.comparisons > 0).sort((a,b) => (b.eloScore || 0) - (a.eloScore || 0));
+                    globalRank = tenStarTracks.findIndex(t => t.id === track.id) + 1;
+                  }
+
+                  return (
+                    <TrackContextMenu key={track.id} track={track}>
+                      <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
+                        <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
+                        <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                            <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {globalRank ? (
+                              <div className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold",
+                                "bg-blue-600/10 text-blue-400 border border-blue-500/20"
+                              )}>
+                                <Star size={10} fill="currentColor" /> #{globalRank} <span className="text-[8px] text-zinc-500">({track.comparisons})</span>
+                              </div>
+                          ) : (
+                            <Rating
+                              trackId={track.id}
+                              showEditor={true} // Allow editor for other tracks
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {/* All actions moved to context menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                  <MoreVertical size={14} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}>
+                                    <Play size={14} /> Play Track
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator className="bg-zinc-800" />
-                                {track.spotifyUrl && (
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
-                                    <LinkIcon size={14} /> Copy Spotify Link
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsCreatePlaylistAddModalOpen(true)}>
+                                    <ListMusic size={14} /> Add to Playlist
                                   </DropdownMenuItem>
-                                )}
-                                {track.geniusUrl && (
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
-                                    <LinkIcon size={14} /> Copy Genius Link
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => {
+                                    setSelectedTrackForEdit(track);
+                                    setIsStatsModalOpen(true);
+                                  }}>
+                                    <Info size={14} /> Stats for Nerds
                                   </DropdownMenuItem>
-                                )}
-                                {track.youtubeMusicUrl && (
-                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
-                                    <LinkIcon size={14} /> Copy YouTube Music Link
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
+                                    <Brain size={14} /> Add Memory (+1) ({track.memories || 0})
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator className="bg-zinc-800" />
-                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={(e) => { e.stopPropagation(); setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }}>
-                                  <Edit2 size={14} /> Edit Track
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={async () => {
-                                  if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
-                                    await deleteTrack(track.id);
-                                    toast.success("Track deleted.");
-                                  }
-                                }}>
-                                  <Trash2 size={14} /> Delete Track
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </TrackContextMenu>
-                ))}
+                                  {track.memories && track.memories > 0 && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
+                                      <Brain size={14} /> Remove Memory (-1) ({track.memories || 0})
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  {track.spotifyUrl && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
+                                      <LinkIcon size={14} /> Copy Spotify Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  {track.geniusUrl && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
+                                      <LinkIcon size={14} /> Copy Genius Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  {track.youtubeMusicUrl && (
+                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
+                                      <LinkIcon size={14} /> Copy YouTube Music Link
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator className="bg-zinc-800" />
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={(e) => { e.stopPropagation(); setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }}>
+                                    <Edit2 size={14} /> Edit Track
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={async () => {
+                                    if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
+                                      await deleteTrack(track.id);
+                                      toast.success("Track deleted.");
+                                    }
+                                  }}>
+                                    <Trash2 size={14} /> Delete Track
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </TrackContextMenu>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

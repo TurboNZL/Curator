@@ -11,6 +11,7 @@ import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { cn } from '@/lib/utils';
 
 const Tracks = () => {
   const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, incrementMemories, decrementMemories } = useMusicStore();
@@ -67,13 +68,13 @@ const Tracks = () => {
 
     // If sorting by rating, specifically handle 10.0 rankings
     if (sortConfig.field === 'rating' && sortConfig.direction === 'desc') {
-      const rankedTracks = sorted.filter(t => t.rating === 10 || t.initialRating === 10);
-      const otherTracks = sorted.filter(t => t.rating !== 10 && t.initialRating !== 10);
+      const tenStarTracks = sorted.filter(t => (t.rating === 10 || t.initialRating === 10) && t.comparisons > 0); // Only consider tracks with comparisons for ranking
+      const otherTracks = sorted.filter(t => !((t.rating === 10 || t.initialRating === 10) && t.comparisons > 0));
 
       // Sort 10-rated tracks by eloScore for ranking
-      rankedTracks.sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0));
+      tenStarTracks.sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0));
 
-      return [...rankedTracks, ...otherTracks];
+      return [...tenStarTracks, ...otherTracks];
     }
 
     return sorted;
@@ -161,8 +162,8 @@ const Tracks = () => {
                 
                 // Determine global rank for 10-star songs
                 let globalRank = null;
-                if (track.rating === 10 || track.initialRating === 10) {
-                  const tenStarTracks = tracks.filter(t => t.rating === 10 || t.initialRating === 10).sort((a,b) => (b.eloScore || 0) - (a.eloScore || 0));
+                if ((track.rating === 10 || track.initialRating === 10) && track.comparisons > 0) {
+                  const tenStarTracks = tracks.filter(t => (t.rating === 10 || t.initialRating === 10) && t.comparisons > 0).sort((a,b) => (b.eloScore || 0) - (a.eloScore || 0));
                   globalRank = tenStarTracks.findIndex(t => t.id === track.id) + 1;
                 }
 
@@ -189,15 +190,18 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
-                        {globalRank && (track.rating === 10 || track.initialRating === 10) ? (
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-yellow-600/10 text-yellow-400 border border-yellow-500/20 text-xs font-bold">
-                              <Star size={10} fill="currentColor" /> #{globalRank}
+                        {globalRank ? (
+                            <div className={cn(
+                              "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold",
+                              "bg-blue-600/10 text-blue-400 border border-blue-500/20"
+                            )}>
+                              <Star size={10} fill="currentColor" /> #{globalRank} <span className="text-[8px] text-zinc-500">({track.comparisons})</span>
                             </div>
                         ) : (
                           <Rating
                             trackId={track.id}
                             size="sm"
-                            showEditor={false} // Editor handled by context menu
+                            showEditor={true} // Allow editor for other tracks
                           />
                         )}
                       </TableCell>
