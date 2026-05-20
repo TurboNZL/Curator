@@ -7,7 +7,8 @@ import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
 import { Rating } from '@/components/ui/Rating';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
-import { useState } from 'react'; // Import useState
+import { useState, useMemo } from 'react'; // Import useState
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 
 const ArtistDetail = () => {
   const { id } = useParams();
@@ -21,22 +22,28 @@ const ArtistDetail = () => {
   const artistAlbums = albums.filter(al => al.artistId === id);
   
   // Sort by rating (star rating) then by eloScore (ranking)
-  const artistTracks = tracks
-    .filter(t => t.artistId === id)
-    .sort((a, b) => {
-      // Prioritize tracks with valid ratings first
-      const hasRatingA = (a.rating !== undefined && a.rating !== null && a.comparisons >= 3) || (a.initialRating !== undefined && a.initialRating !== null);
-      const hasRatingB = (b.rating !== undefined && b.rating !== null && b.comparisons >= 3) || (b.initialRating !== undefined && b.initialRating !== null);
+  const artistTracks = useMemo(() => {
+    return tracks
+      .filter(t => t.artistId === id)
+      .sort((a, b) => {
+        // Function to get effective rating for sorting
+        const getEffectiveRating = (track: any) => {
+          if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
+            return track.rating;
+          }
+          if (track.initialRating !== undefined && track.initialRating !== null) {
+            return track.initialRating;
+          }
+          return -1; // Treat truly unrated as lowest for sorting
+        };
 
-      if (hasRatingA && !hasRatingB) return -1;
-      if (!hasRatingA && hasRatingB) return 1;
+        const ratingA = getEffectiveRating(a);
+        const ratingB = getEffectiveRating(b);
 
-      // If both have ratings or neither, then sort by rating, then eloScore
-      const ratingA = a.rating ?? 0;
-      const ratingB = b.rating ?? 0;
-      if (ratingB !== ratingA) return ratingB - ratingA;
-      return (b.eloScore ?? 0) - (a.eloScore ?? 0);
-    });
+        if (ratingB !== ratingA) return ratingB - ratingA;
+        return (b.eloScore ?? 0) - (a.eloScore ?? 0);
+      });
+  }, [tracks, id]);
 
   const artistGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === id && m.entityType === 'artist' && m.showOnEntityPage)
@@ -105,17 +112,20 @@ const ArtistDetail = () => {
             </div>
             <div className="space-y-2">
               {artistTracks.slice(0, 10).map((track, i) => (
-                <div key={track.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
-                    <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
+                <TrackContextMenu key={track.id} track={track}>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
+                      <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2">
+                      <Rating
+                        trackId={track.id}
+                        showEditor={false}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    <Rating
-                      trackId={track.id}
-                    />
-                  </div>
-                </div>
+                </TrackContextMenu>
               ))}
             </div>
           </section>
@@ -152,6 +162,7 @@ const ArtistDetail = () => {
                           {member.entityType === 'artist' && <User size={10} />}
                           {member.entityType === 'album' && <Disc size={10} />}
                           {member.entityType === 'track' && <Music size={10} />}
+                          {/* Releases are not an option anymore */}
                           {member.label}
                         </Link>
                       ))}

@@ -1,37 +1,26 @@
 "use client";
 
 import React, { useState } from 'react';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { Button } from "@/components/ui/button";
-import { Play, ListMusic, Brain, Info, Link as LinkIcon, Edit2, Trash2 } from 'lucide-react';
-import { Track } from '@/types/music';
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
-import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
-import { EditTrackModal } from '../modals/EditTrackModal';
-import { useMusicStore } from '@/store/useMusicStore';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { Play, ListMusic, Info, Edit2, Trash2, Link as LinkIcon, Brain, Plus, Minus } from 'lucide-react';
 import { toast } from 'sonner';
+import { Track } from '@/types/music';
+import { useMusicStore } from '@/store/useMusicStore';
+import { EditTrackModal } from '../modals/EditTrackModal';
+import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
+
 
 interface TrackContextMenuProps {
-  track: Track;
   children: React.ReactNode;
+  track: Track;
 }
 
-export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => {
-  const { incrementMemories, decrementMemories, deleteTrack, setCurrentTrack } = useMusicStore();
+export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ children, track }) => {
+  const { setCurrentTrack, incrementMemories, decrementMemories, deleteTrack } = useMusicStore();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [isPlaylistAddModalOpen, setIsPlaylistAddModalOpen] = useState(false);
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
-
-  // Determine if track has specific URLs to show copy options
-  const hasSpotify = !!track.spotifyUrl;
-  const hasGenius = !!track.geniusUrl;
-  const hasYoutubeMusic = !!track.youtubeMusicUrl;
 
   const handleCopyLink = (url?: string) => {
     if (url) {
@@ -42,69 +31,79 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
     }
   };
 
-  const handleEditTrack = () => {
-    setIsEditTrackModalOpen(true);
-  };
+  const handlePlayTrack = (e: Event) => {
+    e.stopPropagation();
+    setCurrentTrack(track.id);
+  }
 
-  const handleDeleteTrack = async () => {
+  const handleDeleteTrack = async (e: Event) => {
+    e.stopPropagation();
     if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
       await deleteTrack(track.id);
       toast.success("Track deleted.");
     }
-  };
+  }
+
 
   return (
-    <>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        <ContextMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white p-2">
-          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id)}>
-            <Play size={14} /> Play Track
-          </ContextMenuItem>
-          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsPlaylistAddModalOpen(true)}>
-            <ListMusic size={14} /> Add to Playlist
-          </ContextMenuItem>
-          <ContextMenuSeparator className="bg-zinc-800" />
-          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
-            <Brain size={14} /> Add Memory (+1) ({track.memories || 0})
-          </ContextMenuItem>
-          {track.memories && track.memories > 0 && (
-            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
-              <Brain size={14} /> Remove Memory (-1) ({track.memories || 0})
-            </ContextMenuItem>
-          )}
-          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsStatsModalOpen(true)}>
-            <Info size={14} /> Stats for Nerds
-          </ContextMenuItem>
-          <ContextMenuSeparator className="bg-zinc-800" />
-          {hasSpotify && (
-            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
-              <LinkIcon size={14} /> Copy Spotify Link
-            </ContextMenuItem>
-          )}
-          {hasGenius && (
-            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
-              <LinkIcon size={14} /> Copy Genius Link
-            </ContextMenuItem>
-          )}
-          {hasYoutubeMusic && (
-            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
-              <LinkIcon size={14} /> Copy YouTube Music Link
-            </ContextMenuItem>
-          )}
-          <ContextMenuSeparator className="bg-zinc-800" />
-          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={handleEditTrack}>
-            <Edit2 size={14} /> Edit Track
-          </ContextMenuItem>
-          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={handleDeleteTrack}>
-            <Trash2 size={14} /> Delete Track
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {children}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white p-2">
+        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-500 truncate">{track.title}</DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuItem onSelect={handlePlayTrack} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+          <Play size={14} /> Play Track
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setIsCreatePlaylistAddModalOpen(true)} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+          <ListMusic size={14} /> Add to Playlist
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuItem onSelect={() => setIsStatsModalOpen(true)} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+          <Info size={14} /> Stats for Nerds
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); incrementMemories(track.id); }} className="flex items-center justify-between px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <Brain size={14} /> Add Memory
+          </div>
+          <Plus size={14} />
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); decrementMemories(track.id); }} disabled={(track.memories || 0) === 0} className="flex items-center justify-between px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+          <div className="flex items-center gap-3">
+            <Brain size={14} /> Remove Memory
+          </div>
+          <Minus size={14} />
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        {track.spotifyUrl && (
+          <DropdownMenuItem onSelect={() => handleCopyLink(track.spotifyUrl)} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+            <LinkIcon size={14} /> Copy Spotify Link
+          </DropdownMenuItem>
+        )}
+        {track.geniusUrl && (
+          <DropdownMenuItem onSelect={() => handleCopyLink(track.geniusUrl)} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+            <LinkIcon size={14} /> Copy Genius Link
+          </DropdownMenuItem>
+        )}
+        {track.youtubeMusicUrl && (
+          <DropdownMenuItem onSelect={() => handleCopyLink(track.youtubeMusicUrl)} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+            <LinkIcon size={14} /> Copy YouTube Music Link
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator className="bg-zinc-800" />
+        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); setIsEditModalOpen(true); }} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer">
+          <Edit2 size={14} /> Edit Track
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleDeleteTrack} className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer">
+          <Trash2 size={14} /> Delete Track
+        </DropdownMenuItem>
+      </DropdownMenuContent>
 
+      <EditTrackModal track={track} open={isEditModalOpen} onOpenChange={setIsEditModalOpen} />
+      <CreatePlaylistAddModal trackToAdd={track} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
       <StatsForNerdsModal track={track} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen} />
-      <CreatePlaylistAddModal trackToAdd={track} open={isPlaylistAddModalOpen} onOpenChange={setIsPlaylistAddModalOpen} />
-      <EditTrackModal track={track} open={isEditTrackModalOpen} onOpenChange={setIsEditTrackModalOpen} />
-    </>
+    </DropdownMenu>
   );
 };

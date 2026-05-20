@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react';
@@ -233,6 +233,14 @@ const Cleanup = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
+  // Separate useEffect for volume control
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  // Main audio control useEffect
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -240,31 +248,29 @@ const Cleanup = () => {
 
     const audio = audioRef.current;
 
-    const handleTimeUpdate = () => { /* ... */ };
-    const handleLoadedMetadata = () => { /* ... */ };
-    const handleEnded = () => { /* ... */ };
+    const handleEnded = () => {
+      setPlayingId(null);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
 
-    // Cleanup function: pause audio and clear timer when component unmounts or dependencies change
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
-      if (audio) {
-        audio.pause(); // Pause when component unmounts or dependencies change
-        audio.removeAttribute('src'); // Clear src
+      // Only pause and clear src if the component is unmounting or a new snippet is *starting*
+      // Not on every dependency change that doesn't initiate a new play
+      if (audio.src && audio.paused) { // Only remove src if not playing and not a new track starting
+        audio.removeAttribute('src'); 
       }
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
-      setPlayingId(null); // Reset playing ID
     };
-  }, [volume, pair]); // Add pair to dependencies to trigger cleanup when pair changes
-
+  }, []); // Empty dependency array means this runs once on mount and cleanup on unmount
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
@@ -390,13 +396,13 @@ const Cleanup = () => {
 
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
-  const pickNewPair = () => {
+  const pickNewPair = useCallback(() => {
     if (tracks.length < 2) return;
     
     // Pause any currently playing audio before picking a new pair
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.removeAttribute('src');
+      audioRef.current.removeAttribute('src'); // Clear src
     }
     setPlayingId(null);
     if (timerRef.current) {
@@ -416,13 +422,13 @@ const Cleanup = () => {
       } while (t2.id === t1.id);
     }
     setPair(t1 && t2 ? [t1, t2] : null);
-  };
+  }, [tracks, isShufflePairing]);
 
   useEffect(() => {
     if (!pair && tracks.length >= 2) {
       pickNewPair();
     }
-  }, [tracks, pair, isShufflePairing]);
+  }, [tracks, pair, pickNewPair]);
 
   const handleVote = async (winnerId?: string, isEqual?: boolean) => {
     if (!pair) return;
@@ -446,9 +452,14 @@ const Cleanup = () => {
   };
 
   const playSnippet = (track: any) => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+
     if (playingId === track.id) {
+      audioRef.current.pause();
       setPlayingId(null);
-      audioRef.current?.pause();
+      if (timerRef.current) clearTimeout(timerRef.current);
       return;
     }
 
@@ -457,15 +468,19 @@ const Cleanup = () => {
       return;
     }
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+    // Stop any currently playing snippet before starting a new one
+    if (audioRef.current.src) {
+      audioRef.current.pause();
+      if (timerRef.current) clearTimeout(timerRef.current);
     }
-
+    
+    setPlayingId(track.id);
     audioRef.current.src = track.localFilePath;
     audioRef.current.volume = volume;
+    
     audioRef.current.onloadedmetadata = () => {
       const duration = audioRef.current?.duration || 0;
-      const start = Math.max(0, (duration / 2) - 7.5);
+      const start = Math.max(0, (duration / 2) - 7.5); // 7.5 seconds before midpoint for 15s snippet
       if (audioRef.current) {
         audioRef.current.currentTime = start;
         audioRef.current.play();
@@ -474,7 +489,7 @@ const Cleanup = () => {
         timerRef.current = setTimeout(() => {
           audioRef.current?.pause();
           setPlayingId(null);
-        }, 15000);
+        }, 15000); // Play for 15 seconds
       }
     };
   };
@@ -625,7 +640,7 @@ const Cleanup = () => {
                           {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
                         <div className="mt-2">
-                          <Rating trackId={track.id} size="md" />
+                          <Rating trackId={track.id} size="md" isCleanupContext={true} showEditor={false}/>
                         </div>
                       </div>
                     </div> {/* Closing div for aspect-[16/9] */}

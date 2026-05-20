@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Palette, Database, Shield, User, Disc, Music, Plus, Trash2, RefreshCw, Brain, Settings as SettingsIcon, Link as LinkIcon } from 'lucide-react';
+import { Palette, Database, Shield, User, Disc, Music, Plus, Trash2, RefreshCw, Brain, Settings as SettingsIcon, Link as LinkIcon, HardDrive } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch'; // Added Switch import
 
 const Settings = () => {
-  const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase } = useMusicStore();
+  const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase, clearUnlinkedFiles } = useMusicStore();
   const [newRule, setNewRule] = useState({ trackAId: '', trackBId: '', playFirstOnShuffle: false, applyToAlbumSource: false });
 
   const handleAddRule = async () => {
@@ -31,6 +31,12 @@ const Settings = () => {
   };
 
   const trackOptions = tracks.map(t => ({ value: t.id, label: t.title }));
+
+  const handleClearUnlinkedFiles = async () => {
+    if (confirm("Are you sure you want to delete all unlinked files? This action cannot be undone.")) {
+      await clearUnlinkedFiles();
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-20">
@@ -178,6 +184,27 @@ const Settings = () => {
             }}
           >
             Wipe Local Database
+          </Button>
+        </Card>
+
+        {/* New: Clear Unlinked Files Card */}
+        <Card className="bg-zinc-900/50 border-zinc-800 p-8 space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+              <HardDrive size={20} className="text-purple-500" />
+              File Cleanup
+            </h3>
+            <p className="text-sm text-zinc-400 leading-relaxed font-medium">
+              Remove audio and image files from the public/uploads directory that are no longer referenced in your database.
+              This helps reclaim storage space and keeps your file system tidy.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-purple-400 hover:text-purple-300 font-black uppercase tracking-widest h-12 px-8"
+            onClick={handleClearUnlinkedFiles}
+          >
+            <Trash2 size={16} className="mr-2" /> Clear Unlinked Files
           </Button>
         </Card>
       </section>

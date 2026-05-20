@@ -207,26 +207,19 @@ const AlbumDetail = () => {
                       <TableCell>
                         <Rating
                           trackId={track.id}
+                          showEditor={false}
                         />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent context menu from re-opening if this button is within trigger
-                                setSelectedTrackForEdit(track);
-                                setIsEditTrackModalOpen(true);
-                              }}
-                            >
-                              <Edit2 size={14}/>
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                                  <MoreVertical size={14} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
+                          {/* All actions moved to context menu */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
                                 <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}>
                                   <Play size={14} /> Play Track
                                 </DropdownMenuItem>

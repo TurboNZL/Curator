@@ -40,20 +40,43 @@ const Tracks = () => {
   }, [tracks, search, artists, albums]);
 
   const sortedTracks = useMemo(() => {
-    return [...filteredTracks].sort((a, b) => {
+    const sorted = [...filteredTracks].sort((a, b) => {
       let comparison = 0;
       if (sortConfig.field === 'title') {
         comparison = (a.title || '').localeCompare(b.title || '');
       } else if (sortConfig.field === 'memories') {
         comparison = (a.memories || 0) - (b.memories || 0);
       } else if (sortConfig.field === 'rating') {
-        // Sort by actual balanced rating for consistency
-        const ratingA = a.rating ?? 0;
-        const ratingB = b.rating ?? 0;
+        // Handle unrated songs for sorting: initial rating for <3 comparisons, else balanced rating
+        const getEffectiveRating = (track: any) => {
+          if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
+            return track.rating;
+          }
+          if (track.initialRating !== undefined && track.initialRating !== null) {
+            return track.initialRating;
+          }
+          return -1; // Treat truly unrated as lowest for sorting
+        };
+
+        const ratingA = getEffectiveRating(a);
+        const ratingB = getEffectiveRating(b);
         comparison = ratingA - ratingB;
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
+
+    // If sorting by rating, specifically handle 10.0 rankings
+    if (sortConfig.field === 'rating' && sortConfig.direction === 'desc') {
+      const rankedTracks = sorted.filter(t => t.rating === 10 || t.initialRating === 10);
+      const otherTracks = sorted.filter(t => t.rating !== 10 && t.initialRating !== 10);
+
+      // Sort 10-rated tracks by eloScore for ranking
+      rankedTracks.sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0));
+
+      return [...rankedTracks, ...otherTracks];
+    }
+
+    return sorted;
   }, [filteredTracks, sortConfig]);
 
   if (isLoading && tracks.length === 0) {
@@ -125,9 +148,8 @@ const Tracks = () => {
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Title</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Album</TableHead>
-                <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Memories</TableHead>
                 <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
-                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Actions</TableHead>
+                <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Memories</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,6 +158,14 @@ const Tracks = () => {
                 const artist = artists?.find(a => a.id === track.artistId);
                 const album = albums?.find(al => trackHasAlbum(track, al.id)); // Use trackHasAlbum
                 const cover = album?.covers?.[0] || '/placeholder.svg';
+                
+                // Determine global rank for 10-star songs
+                let globalRank = null;
+                if (track.rating === 10 || track.initialRating === 10) {
+                  const tenStarTracks = tracks.filter(t => t.rating === 10 || t.initialRating === 10).sort((a,b) => (b.eloScore || 0) - (a.eloScore || 0));
+                  globalRank = tenStarTracks.findIndex(t => t.id === track.id) + 1;
+                }
+
                 return (
                   <TrackContextMenu key={track.id} track={track}>
                     <TableRow
@@ -159,36 +189,22 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
-                        <div className="flex flex-col items-start gap-1">
-                          <p className="text-[10px] text-zinc-500 font-bold uppercase">Memories: {track.memories || 0}</p>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 text-zinc-500 hover:text-blue-400" onClick={(e) => {e.stopPropagation(); incrementMemories(track.id);}}>
-                              <Plus size={14} />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 text-zinc-500 hover:text-red-400" onClick={(e) => {e.stopPropagation(); decrementMemories(track.id);}} disabled={(track.memories || 0) === 0}>
-                              <Minus size={14} />
-                            </Button>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Rating
-                          trackId={track.id}
-                          size="sm"
-                        />
+                        {globalRank && (track.rating === 10 || track.initialRating === 10) ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-yellow-600/10 text-yellow-400 border border-yellow-500/20 text-xs font-bold">
+                              <Star size={10} fill="currentColor" /> #{globalRank}
+                            </div>
+                        ) : (
+                          <Rating
+                            trackId={track.id}
+                            size="sm"
+                            showEditor={false} // Editor handled by context menu
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent context menu from re-opening if this button is within trigger
-                                setSelectedTrackForEdit(track);
-                                setIsEditTrackModalOpen(true);
-                              }}
-                            >
-                              <Edit2 size={14}/>
-                            </Button>
-                        </div>
+                          <div className="flex items-center justify-end">
+                              <p className="text-[10px] text-zinc-500 font-bold uppercase">({track.memories || 0})</p>
+                          </div>
                       </TableCell>
                     </TableRow>
                   </TrackContextMenu>

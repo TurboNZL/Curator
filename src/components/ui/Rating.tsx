@@ -1,89 +1,98 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Star, Edit2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, CircleDot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Import EditTrackModal
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'; // Import HoverCard components
+import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 
 interface RatingProps {
   trackId: string;
   size?: 'sm' | 'md' | 'lg';
+  showEditor?: boolean; // New prop to control showing the editor button
+  isCleanupContext?: boolean; // New prop for Cleanup page specific display
 }
 
-export const Rating = ({ trackId, size = 'md' }: RatingProps) => {
-  const { tracks, activeProfile } = useMusicStore();
-  const track = useMemo(() => tracks.find(t => t.id === trackId), [tracks, trackId]);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+export const Rating: React.FC<RatingProps> = ({ trackId, size = 'md', showEditor = true, isCleanupContext = false }) => {
+  const { tracks } = useMusicStore();
+  const track = tracks.find(t => t.id === trackId);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
-  if (!track) return null; // Or some fallback UI
+  if (!track) return null;
 
-  const { rating, initialRating, comparisons, eloScore } = track;
+  const isUnratedWithLowComparisons = (track.initialRating === undefined || track.initialRating === null) && track.comparisons < 3;
+  const isUnratedByDefinition = (track.initialRating === undefined || track.initialRating === null);
 
-  const displayQuestionMark = (comparisons < 3) || (comparisons === 0 && (initialRating === undefined || initialRating === null || initialRating === 0)); // Added 0 check for initialRating
-  
-  let displayValue: React.ReactNode;
+  let displayRating: string;
+  let ratingValue: number | undefined;
+  let isNewTrack = false;
 
-  const allRatedTracks = useMemo(() => {
-    return tracks
-      .filter(t => (t.comparisons && t.comparisons >= 3) || (t.initialRating !== undefined && t.initialRating !== null && t.initialRating > 0)) // Only consider truly rated tracks for rank
-      .sort((a, b) => (b.eloScore || 0) - (a.eloScore || 0)); // Sort by eloScore for global rank
-  }, [tracks]);
-
-  if (displayQuestionMark) {
-    displayValue = (
-      <button 
-        onClick={(e) => { e.stopPropagation(); setIsEditModalOpen(true); }}
-        className="flex items-center gap-1 text-zinc-500 hover:text-white transition-colors cursor-pointer"
-        title="Quick edit to rate this track"
-      >
-        <span className="font-mono text-xs md:text-sm">?</span>
-        <Edit2 size={size === 'sm' ? 10 : size === 'md' ? 12 : 14} />
-      </button>
-    );
-  } else if (rating === 10 && comparisons >= 3) {
-    const globalRank = allRatedTracks.findIndex(t => t.id === trackId) + 1;
-    displayValue = <span className="font-mono text-xs md:text-sm text-yellow-400">#{globalRank}</span>;
-  } else if (rating !== undefined && rating !== null) {
-    displayValue = <span className="font-mono text-xs md:text-sm">{rating.toFixed(1)}</span>;
+  if (isCleanupContext && isUnratedByDefinition) {
+    displayRating = "NEW";
+    isNewTrack = true;
+  } else if (track.rating !== undefined && track.rating !== null && track.comparisons >= 3) {
+    // Use balanced rating if 3+ comparisons
+    ratingValue = track.rating;
+    if (ratingValue >= 9.95 && ratingValue < 10) {
+      displayRating = '9.9'; // Round down 9.9x to 9.9
+    } else if (ratingValue === 10) {
+      // For a 10-star rating, display global rank if available.
+      // Assuming a global ranking mechanism or a specific display for 10-star items.
+      // For now, if rating is exactly 10, display "10.0".
+      displayRating = '10.0';
+    } else {
+      displayRating = ratingValue.toFixed(1);
+    }
+  } else if (track.initialRating !== undefined && track.initialRating !== null) {
+    // Use initial rating if available and less than 3 comparisons
+    ratingValue = track.initialRating;
+    if (ratingValue >= 9.95 && ratingValue < 10) {
+      displayRating = '9.9';
+    } else if (ratingValue === 10) {
+      displayRating = '10.0';
+    } else {
+      displayRating = ratingValue.toFixed(1);
+    }
   } else {
-    // Fallback if none of the above conditions met (should ideally be caught by displayQuestionMark)
-    displayValue = <span className="font-mono text-xs md:text-sm">?</span>;
+    // If no initial rating and less than 3 comparisons, it's truly unrated
+    displayRating = "?";
   }
 
-  const baseClasses = "flex items-center gap-1 font-mono"; // Changed font to font-mono
-  const iconSize = size === 'sm' ? 10 : size === 'md' ? 12 : 14;
-  const textColor = displayQuestionMark ? "text-zinc-500" : (rating === 10 ? "text-yellow-400" : "text-zinc-300"); // Yellow for #ranking
+  const starSize = size === 'sm' ? 10 : size === 'md' ? 14 : 18;
+  const textSize = size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-base';
+  const padding = size === 'sm' ? 'px-1 py-0.5' : size === 'md' ? 'px-2 py-1' : 'px-3 py-1.5';
 
   return (
-    <HoverCard openDelay={200}>
-      <HoverCardTrigger asChild>
-        <div className={cn(baseClasses, textColor, `text-${size === 'sm' ? 'xs' : size === 'md' ? 'sm' : 'base'}`)}>
-          <Star size={iconSize} className="text-yellow-500" fill="currentColor" />
-          {displayValue}
-        </div>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-auto bg-zinc-900 border-zinc-800 text-white p-3 text-xs">
-        <div className="flex flex-col space-y-1">
-          <div className="flex justify-between">
-            <span className="text-zinc-400">Initial Rating:</span>
-            <span className="font-bold">{initialRating !== undefined && initialRating !== null && initialRating > 0 ? initialRating.toFixed(1) : 'N/A'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-zinc-400">Balanced Rating:</span>
-            <span className="font-bold text-blue-400">{rating !== undefined && rating !== null && rating > 0 ? rating.toFixed(1) : 'N/A'}</span>
-          </div>
-        </div>
-      </HoverCardContent>
-      {track && (
-        <EditTrackModal
-          track={track}
-          open={isEditModalOpen}
-          onOpenChange={setIsEditModalOpen}
-          children={<></>} // Modal is controlled, so children are not used for trigger
-        />
+    <div className={cn(
+      "flex items-center gap-1.5 font-bold tracking-tight",
+      textSize,
+      padding,
+      "rounded-full border",
+      isNewTrack ? "bg-blue-600/10 text-blue-400 border-blue-500/20" :
+      displayRating === '?' ? "bg-zinc-800 text-zinc-500 border-zinc-700" :
+      (ratingValue && ratingValue >= 8) ? "bg-emerald-600/10 text-emerald-400 border-emerald-500/20" :
+      (ratingValue && ratingValue >= 6) ? "bg-yellow-600/10 text-yellow-400 border-yellow-500/20" :
+      "bg-red-600/10 text-red-400 border-red-500/20"
+    )}>
+      {isNewTrack ? (
+        <Star size={starSize} fill="currentColor" className="text-blue-500" />
+      ) : (
+        <Star size={starSize} fill="currentColor" />
       )}
-    </HoverCard>
+      <span>{displayRating}</span>
+      {track.comparisons > 0 && <span className="text-[8px] opacity-50">({track.comparisons})</span>}
+
+      {showEditor && (
+        <StatsForNerdsModal track={track} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setIsStatsModalOpen(true); }}
+            className="ml-1 text-zinc-500 hover:text-white transition-colors h-4 w-4 flex items-center justify-center rounded-full"
+            aria-label="View track stats"
+          >
+            <CircleDot size={12} />
+          </button>
+        </StatsForNerdsModal>
+      )}
+    </div>
   );
 };

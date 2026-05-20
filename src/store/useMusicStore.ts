@@ -82,6 +82,7 @@ interface MusicState {
   
   uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
   resetDatabase: () => Promise<void>;
+  clearUnlinkedFiles: () => Promise<void>; // New action
 }
 
 const DEFAULT_PROFILE: Profile = {
@@ -95,13 +96,21 @@ const DEFAULT_PROFILE: Profile = {
 };
 
 const parseJsonOrDefault = (value: any, defaultValue: any) => {
-  if (value == null) return defaultValue;
+  if (value === undefined || value === null) return defaultValue;
 
   // If already an object/array, return it directly
   if (typeof value !== 'string') return value;
 
   try {
-    return JSON.parse(value);
+    const parsed = JSON.parse(value);
+    // Ensure the parsed value matches the expected type, otherwise return default
+    if (Array.isArray(defaultValue)) {
+      return Array.isArray(parsed) ? parsed : defaultValue;
+    }
+    if (typeof defaultValue === 'object' && defaultValue !== null) {
+      return typeof parsed === 'object' && parsed !== null ? parsed : defaultValue;
+    }
+    return parsed;
   } catch (e) {
     console.error("Error parsing JSON:", e, value);
     return defaultValue;
@@ -646,5 +655,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
     set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], groups: [] });
+  },
+
+  clearUnlinkedFiles: async () => {
+    const res = await fetch('/api/cleanup-files', { method: 'POST' });
+    if (!res.ok) throw new Error('File cleanup failed');
+    const data = await res.json();
+    if (data.success) {
+      toast.success(data.message);
+    } else {
+      toast.error(data.message);
+    }
+    return data;
   }
 }));
