@@ -16,80 +16,79 @@ const Stats = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000); 
+    const interval = setInterval(fetchData, 5000); // Live update every 5s
     return () => clearInterval(interval);
   }, []);
 
   const currentTrack = useMemo(() => tracks.find(t => t.id === currentTrackId), [tracks, currentTrackId]);
 
-  const topTracksData = useMemo(() => {
-    const trackPlayCounts: { [key: string]: { fullPlays: number, partialPlays: number } } = {};
+  const topTracks = useMemo(() => {
+    const trackPlayCounts: { [key: string]: { fullPlays: number, livePlays: number, partialPlays: number, total: number, rankingValue: number } } = {};
     
     tracks.forEach(track => {
-      trackPlayCounts[track.id] = { fullPlays: 0, partialPlays: 0 };
+      trackPlayCounts[track.id] = { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0, rankingValue: 0 };
     });
 
     playbackLogs.forEach(log => {
       if (trackPlayCounts[log.trackId]) {
         if (!log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS) {
           trackPlayCounts[log.trackId].fullPlays++;
-        } else if (log.duration && log.duration > 0) {
+          trackPlayCounts[log.trackId].rankingValue++;
+        } else if (log.duration && log.duration > 0) { // Logged with duration but skipped/short
           trackPlayCounts[log.trackId].partialPlays++;
         }
+        trackPlayCounts[log.trackId].total++;
       }
     });
 
-    const intermediateTracks = tracks.map(track => ({
-      id: track.id,
-      name: track.title,
-      fullPlays: trackPlayCounts[track.id]?.fullPlays || 0,
-      partialPlays: trackPlayCounts[track.id]?.partialPlays || 0,
-    }));
+    // Account for currently playing track in real-time
+    if (currentTrackId && trackPlayCounts[currentTrackId]) {
+      if (isPlaying) {
+        if (currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS) {
+          trackPlayCounts[currentTrackId].livePlays++;
+          trackPlayCounts[currentTrackId].rankingValue++;
+        } else if (currentProgress > 0) {
+          trackPlayCounts[currentTrackId].partialPlays++;
+        }
+        trackPlayCounts[currentTrackId].total++;
+      }
+    }
 
-    // Sort to get top 10 based on historical full plays for primary ranking
-    const sortedAndLimitedTracks = intermediateTracks
-        .sort((a, b) => b.fullPlays - a.fullPlays)
-        .slice(0, 10);
-
-    return sortedAndLimitedTracks.map(track => {
-      const isCurrentlyPlayingThisTrack = isPlaying && track.id === currentTrackId;
+    // Sort by ranking value (full plays + live plays)
+    const sorted = [...tracks].sort((a, b) => {
+      const countsA = trackPlayCounts[a.id] || { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0, rankingValue: 0 };
+      const countsB = trackPlayCounts[b.id] || { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0, rankingValue: 0 };
       
-      const liveFullPlay = isCurrentlyPlayingThisTrack && currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS ? 1 : 0;
-      const livePartialPlay = isCurrentlyPlayingThisTrack && currentProgress > 0 && currentProgress <= PARTIAL_PLAY_THRESHOLD_SECONDS ? 1 : 0;
-
-      return {
-        name: track.name,
-        id: track.id,
-        historicalFullPlays: track.fullPlays,
-        historicalPartialPlays: track.partialPlays,
-        currentLiveFullPlay: liveFullPlay,
-        currentLivePartialPlay: livePartialPlay,
-      };
+      return countsB.rankingValue - countsA.rankingValue;
     });
+
+    return sorted.slice(0, 10).map(track => ({
+      name: track.title,
+      id: track.id,
+      fullPlays: trackPlayCounts[track.id]?.fullPlays || 0,
+      livePlays: trackPlayCounts[track.id]?.livePlays || 0,
+      partialPlays: trackPlayCounts[track.id]?.partialPlays || 0,
+      total: trackPlayCounts[track.id]?.total || 0,
+      rankingValue: trackPlayCounts[track.id]?.rankingValue || 0,
+    }));
   }, [tracks, playbackLogs, currentTrackId, isPlaying, currentProgress]);
 
+  const totalFullPlays = playbackLogs.filter(log => !log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS).length;
+  const totalPartialPlays = playbackLogs.filter(log => log.isSkip || (log.duration && log.duration <= PARTIAL_PLAY_THRESHOLD_SECONDS)).length;
+  const totalPlays = totalFullPlays + totalPartialPlays;
 
-  const totalFullPlays = useMemo(() => playbackLogs.filter(log => !log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS).length + (isPlaying && currentTrackId && currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS ? 1 : 0), [playbackLogs, isPlaying, currentTrackId, currentProgress]);
-  const totalPartialPlays = useMemo(() => playbackLogs.filter(log => log.isSkip || (log.duration && log.duration <= PARTIAL_PLAY_THRESHOLD_SECONDS)).length + (isPlaying && currentTrackId && currentProgress > 0 && currentProgress <= PARTIAL_PLAY_THRESHOLD_SECONDS ? 1 : 0), [playbackLogs, isPlaying, currentTrackId, currentProgress]);
-  
-  const totalPlays = useMemo(() => totalFullPlays + totalPartialPlays, [totalFullPlays, totalPartialPlays]);
-
-  const totalSeconds = useMemo(() => playbackLogs.reduce((a, b) => a + (b.duration || 0), 0) + (isPlaying && currentTrackId ? currentProgress : 0), [playbackLogs, isPlaying, currentTrackId, currentProgress]);
-
+  const totalSeconds = playbackLogs.reduce((a, b) => a + (b.duration || 0), 0);
   const formatTotalTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h}h ${m}m ${s}s`;
+    return `${h}h ${m}m`;
   };
 
   const skipRate = useMemo(() => {
-    const loggedSkips = playbackLogs.filter(l => l.isSkip).length;
-    const loggedTotalPlays = playbackLogs.length; 
-
-    if (loggedTotalPlays === 0) return '0.0%';
-    return `${((loggedSkips / loggedTotalPlays) * 100).toFixed(1)}%`;
-  }, [playbackLogs]);
+    if (totalPlays === 0) return '0%';
+    const skips = playbackLogs.filter(l => l.isSkip).length;
+    return `${((skips / totalPlays) * 100).toFixed(1)}%`;
+  }, [playbackLogs, totalPlays]);
 
   return (
     <div className="space-y-8 pb-20">
@@ -138,7 +137,7 @@ const Stats = () => {
           </div>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTracksData} layout="vertical" margin={{ left: 40, right: 20 }}>
+              <BarChart data={topTracks} layout="vertical" margin={{ left: 40, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis 
@@ -153,18 +152,16 @@ const Stats = () => {
                   contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                   formatter={(value, name) => {
-                    if (name === 'historicalFullPlays') return [`${value} Full Plays (Logged)`, 'Plays'];
-                    if (name === 'historicalPartialPlays') return [`${value} Partial Plays (Logged)`, 'Plays'];
-                    if (name === 'currentLiveFullPlay') return [`${value} Full Plays (Live)`, 'Plays'];
-                    if (name === 'currentLivePartialPlay') return [`${value} Partial Plays (Live)`, 'Plays'];
+                    if (name === 'fullPlays') return [`${value} Full Plays`, 'Plays'];
+                    if (name === 'livePlays') return [`${value} Live Plays`, 'Plays'];
+                    if (name === 'partialPlays') return [`${value} Partial Plays`, 'Plays'];
                     return value;
                   }}
                 />
                 <Legend layout="horizontal" align="right" verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
-                <Bar dataKey="historicalPartialPlays" stackId="a" fill="#3b82f640" radius={[0, 0, 0, 0]} name="Partial Plays (Logged)" />
-                <Bar dataKey="historicalFullPlays" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} name="Full Plays (Logged)" />
-                <Bar dataKey="currentLivePartialPlay" stackId="a" fill="#ffc10740" radius={[0, 0, 0, 0]} name="Partial Plays (Live)" />
-                <Bar dataKey="currentLiveFullPlay" stackId="a" fill="#10B981" radius={[0, 4, 4, 0]} name="Full Plays (Live)" />
+                <Bar dataKey="partialPlays" stackId="a" fill="#3b82f640" radius={[0, 0, 0, 0]} name="Partial Plays" />
+                <Bar dataKey="fullPlays" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} name="Full Plays" />
+                <Bar dataKey="livePlays" stackId="a" fill="#10B981" radius={[0, 4, 4, 0]} name="Live Plays" />
               </BarChart>
             </ResponsiveContainer>
           </div>

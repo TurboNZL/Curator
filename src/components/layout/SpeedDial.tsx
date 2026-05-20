@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, Disc, Mic2, ListMusic, Brain, FileAudio, Users, LucideIcon } from "lucide-react"; 
+import { Plus, Disc, Mic2, ListMusic, Brain, FileAudio, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,13 +16,6 @@ import { CreateJournalEntryModal } from '../modals/CreateJournalEntryModal';
 import { CreatePlaylistModal } from '../modals/CreatePlaylistModal';
 import { RelationalBioModal } from '../modals/RelationalBioModal';
 
-// Define the ActionItem interface to match the actual usage
-interface ActionItem {
-  icon: LucideIcon; // Use LucideIcon type for clarity
-  label: string;
-  onClick: () => void;
-}
-
 export const SpeedDial = () => {
   const [isArtistModalOpen, setIsArtistModalOpen] = useState(false);
   const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
@@ -31,8 +24,7 @@ export const SpeedDial = () => {
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
 
-  // The 'actions' array now correctly matches the ActionItem interface
-  const actions: ActionItem[] = [
+  const actions = [
     { icon: Mic2, label: "New Artist", onClick: () => setIsArtistModalOpen(true) },
     { icon: Disc, label: "New Album", onClick: () => setIsAlbumModalOpen(true) },
     { icon: FileAudio, label: "New Track", onClick: () => setIsTrackModalOpen(true) },
