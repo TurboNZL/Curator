@@ -1,86 +1,71 @@
 "use client";
 
 import React from 'react';
-import { Star } from 'lucide-react';
-import { useMusicStore } from '@/store/useMusicStore';
+import { Star as StarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMusicStore } from '@/store/useMusicStore';
 import { Track } from '@/types/music';
 
 interface RatingProps {
   track: Track;
   showEditor?: boolean;
   size?: 'sm' | 'md' | 'lg';
-  isCleanupContext?: boolean; // New prop to indicate cleanup context
+  isCleanupContext?: boolean;
 }
 
-export const Rating = ({ track, showEditor = false, size = 'md', isCleanupContext = false }: RatingProps) => {
-  const { updateTrack, vote, getRankedTenStarTracks } = useMusicStore();
+export const Rating = ({ track, showEditor = true, size = 'md', isCleanupContext = false }: RatingProps) => {
+  const { updateTrack } = useMusicStore();
+  const [hoverRating, setHoverRating] = React.useState(0);
 
-  const handleVote = async (winnerId: string | undefined, isEqual?: boolean) => {
-    // This component is only for display, actual voting happens in Cleanup.tsx
-    // However, if we wanted to add quick voting here, this would be the handler.
-    // For now, it's just a placeholder to prevent errors if accidentally triggered.
-    console.log("Vote from Rating component (should not happen in current implementation)");
+  const currentRating = (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null)
+    ? track.rating
+    : (isCleanupContext && track.initialRating !== undefined && track.initialRating !== null)
+      ? track.initialRating
+      : 0; // Default to 0 if no rating
+
+  const displayRating = hoverRating > 0 ? hoverRating : currentRating;
+  const isBalanced = (track.comparisons >= 3 && track.rating !== undefined && track.rating !== null);
+
+  const handleStarClick = async (newRating: number) => {
+    // Round to one decimal place to prevent floating point issues on display
+    const roundedRating = Math.round(newRating * 10) / 10;
+    await updateTrack(track.id, { initialRating: roundedRating });
   };
 
-  const getEffectiveRating = (t: Track) => {
-    if (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating > 0.001) {
-      return t.rating;
-    }
-    if (t.initialRating !== undefined && t.initialRating !== null && t.initialRating > 0.001) {
-      return t.initialRating;
-    }
-    return 0; // Treat as 0 if truly unrated or 0.0
-  };
+  const starSize = size === 'sm' ? 12 : size === 'md' ? 16 : 20;
 
-  const effectiveRating = getEffectiveRating(track);
+  const stars = Array.from({ length: 10 }).map((_, i) => {
+    const starValue = i + 1;
+    const filled = displayRating >= starValue;
+    const halfFilled = displayRating > i && displayRating < starValue;
 
-  const isTenStar = effectiveRating >= 9.9999 && track.comparisons > 0;
-  const isUnratedOrZero = effectiveRating < 0.001;
-
-  const displayValue = React.useMemo(() => {
-    if (isUnratedOrZero && track.comparisons < 3) {
-      return '?'; // Show '?' for truly unrated tracks with few comparisons
-    }
-    if (isTenStar) {
-      const rankedTenStarTracks = getRankedTenStarTracks();
-      const rank = rankedTenStarTracks.findIndex(t => t.id === track.id) + 1;
-      return rank > 0 ? `#${rank}` : '10.0'; // Should always find a rank if it's 10-star
-    }
-    return effectiveRating.toFixed(1);
-  }, [track, effectiveRating, isUnratedOrZero, isTenStar, getRankedTenStarTracks]);
-
-  const textColorClass = React.useMemo(() => {
-    if (isUnratedOrZero) return 'text-zinc-500'; // Grey for 0.0
-    if (isTenStar) return 'text-blue-400'; // Blue for 10/10 ranked
-    if (effectiveRating >= 7) return 'text-emerald-400'; // Green for 7-9.9
-    if (effectiveRating >= 4) return 'text-yellow-400'; // Yellow for 4-6.9
-    return 'text-red-400'; // Red for 0.1-3.9
-  }, [effectiveRating, isUnratedOrZero, isTenStar]);
-
-  const buttonClass = cn(
-    "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold transition-colors",
-    "bg-zinc-900 border border-zinc-800",
-    textColorClass,
-    size === 'sm' && "h-6 px-2 text-[10px]",
-    size === 'md' && "h-7 px-2.5 text-xs",
-    size === 'lg' && "h-8 px-3 text-sm",
-    (isCleanupContext && !showEditor) && "pointer-events-none" // Disable interactions in cleanup context if not an editor
-  );
-
-  const starSize = size === 'sm' ? 10 : size === 'md' ? 12 : 14;
-  const comparisonSize = size === 'sm' ? 'text-[8px]' : 'text-[10px]';
+    return (
+      <StarIcon
+        key={i}
+        size={starSize}
+        className={cn(
+          "transition-colors duration-200",
+          filled || halfFilled
+            ? isBalanced
+              ? "text-yellow-400" // Balanced rating color
+              : "text-zinc-400"   // Unbalanced/Initial rating color
+            : "text-zinc-700",
+          showEditor ? "cursor-pointer" : "cursor-default" // Explicitly set cursor
+        )}
+        fill={filled || halfFilled ? "currentColor" : "none"}
+        onMouseEnter={showEditor ? () => setHoverRating(starValue) : undefined}
+        onMouseLeave={showEditor ? () => setHoverRating(0) : undefined}
+        onClick={showEditor ? () => handleStarClick(starValue) : undefined}
+      />
+    );
+  });
 
   return (
-    <div className="flex items-center gap-1">
-      <button className={buttonClass}>
-        <Star size={starSize} fill="currentColor" className={cn(textColorClass, "text-opacity-50")} />
-        <span>{displayValue}</span>
-        {track.comparisons > 0 && (
-          <span className={cn("ml-1 text-zinc-600 font-mono", comparisonSize)}>{track.comparisons}</span>
-        )}
-      </button>
-      {/* Removed +1/-1 buttons, as the prompt specified not to change them visually but remove the interaction */}
+    <div className={cn("flex items-center gap-1", showEditor ? "cursor-pointer" : "cursor-default")} onMouseLeave={showEditor ? () => setHoverRating(0) : undefined}>
+      {stars}
+      {showEditor && displayRating > 0 && (
+        <span className="text-[10px] text-zinc-500 ml-1 font-mono">{displayRating.toFixed(1)}</span>
+      )}
     </div>
   );
 };

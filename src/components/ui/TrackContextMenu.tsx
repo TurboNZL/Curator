@@ -1,33 +1,27 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Play, ListMusic, Brain, Info, Link as LinkIcon, Edit2, Trash2, Plus, Minus, MoreVertical } from "lucide-react";
-import { Button } from "./button";
-import { Track } from "@/types/music";
-import { useMusicStore } from "@/store/useMusicStore";
+import { Copy, Plus, Share2, Info, Edit2, Trash2, ListMusic, Brain, Minus } from "lucide-react";
 import { toast } from "sonner";
-import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
-import { EditTrackModal } from '../modals/EditTrackModal';
+import { Track } from '@/types/music';
+import { useMusicStore } from '@/store/useMusicStore';
+import { EditTrackModal } from '../modals/EditTrackModal'; // Import EditTrackModal
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
-import { useState } from 'react';
 
 interface TrackContextMenuProps {
   track: Track;
-  children: React.ReactNode;
+  children: React.ReactElement; // Enforce single child for DropdownMenuTrigger asChild
 }
 
 export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => {
-  const { setCurrentTrack, incrementMemories, decrementMemories, deleteTrack } = useMusicStore();
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const { incrementMemories, decrementMemories, deleteTrack, addToUserQueue } = useMusicStore();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   const handleCopyLink = (url?: string) => {
@@ -35,68 +29,71 @@ export const TrackContextMenu = ({ track, children }: TrackContextMenuProps) => 
       navigator.clipboard.writeText(url);
       toast.success("Link copied to clipboard!");
     } else {
-      toast.error("No link available for this item.");
+      toast.error("No link available for this track.");
     }
   };
 
+  const handleDeleteTrack = async () => {
+    if (confirm("Are you sure you want to delete this track? This action cannot be undone.")) {
+      await deleteTrack(track.id);
+      toast.success("Track deleted.");
+    }
+  };
+
+  // Inline comment: This DropdownMenuTrigger is configured to open the context menu
+  // on both left-click and right-click on its child element.
+  // The default browser context menu is prevented with e.preventDefault().
+  // This allows the wrapped element (e.g., TableRow, Card) to serve as the main trigger.
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild onContextMenu={(e) => e.preventDefault()}>
         {children}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
-        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id)}>
-          <Play size={14} /> Play Track
+
+      <DropdownMenuContent className="w-56 bg-zinc-950 border-zinc-800 text-white p-2">
+        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => addToUserQueue(track.id)}>
+          <ListMusic size={14} className="mr-2" /> Add to Queue
         </DropdownMenuItem>
-        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsCreatePlaylistAddModalOpen(true)}>
-          <ListMusic size={14} /> Add to Playlist
+
+        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl || track.youtubeMusicUrl || track.geniusUrl)}>
+          <Copy size={14} className="mr-2" /> Copy Link
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-zinc-800" />
+        
+        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsEditModalOpen(true)}>
+          <Edit2 size={14} className="mr-2" /> Edit Track
+        </DropdownMenuItem>
+
         <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsStatsModalOpen(true)}>
-          <Info size={14} /> Stats for Nerds
+          <Info size={14} className="mr-2" /> Stats for Nerds
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-zinc-800" />
+
         <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
-          <Plus size={14} /> Add Memory {track.memories > 0 && <span className="text-[10px] text-zinc-500">({track.memories})</span>}
+          <Brain size={14} className="mr-2" /> Add Memory {track.memories > 0 && <span className="text-[10px] text-zinc-500">({track.memories})</span>}
         </DropdownMenuItem>
-        {track.memories && track.memories > 0 && (
+
+        {/* Fix for the '0' issue: strictly check for > 0 */}
+        {track.memories > 0 && (
           <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
-            <Minus size={14} /> Remove Memory {track.memories > 0 && <span className="text-[10px] text-zinc-500">({track.memories})</span>}
+            <Minus size={14} className="mr-2" /> Remove Memory {track.memories > 0 && <span className="text-[10px] text-zinc-500">({track.memories})</span>}
           </DropdownMenuItem>
         )}
-        <DropdownMenuSeparator className="bg-zinc-800" />
-        {track.spotifyUrl && (
-          <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
-            <LinkIcon size={14} /> Copy Spotify Link
-          </DropdownMenuItem>
-        )}
-        {track.geniusUrl && (
-          <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
-            <LinkIcon size={14} /> Copy Genius Link
-          </DropdownMenuItem>
-        )}
-        {track.youtubeMusicUrl && (
-          <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
-            <LinkIcon size={14} /> Copy YouTube Music Link
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuSeparator className="bg-zinc-800" />
-        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsEditTrackModalOpen(true)}>
-          <Edit2 size={14} /> Edit Track
-        </DropdownMenuItem>
-        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={async () => {
-          if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
-            await deleteTrack(track.id);
-            toast.success("Track deleted.");
-          }
-        }}>
-          <Trash2 size={14} /> Delete Track
+        
+        <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/50 cursor-pointer" onSelect={handleDeleteTrack}>
+          <Trash2 size={14} className="mr-2" /> Delete Track
         </DropdownMenuItem>
       </DropdownMenuContent>
 
-      <CreatePlaylistAddModal trackToAdd={track} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
-      <EditTrackModal track={track} open={isEditTrackModalOpen} onOpenChange={setIsEditTrackModalOpen} />
-      <StatsForNerdsModal track={track} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen} />
+      {/* Render modals outside the DropdownMenuContent */}
+      <EditTrackModal
+        track={track}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+      />
+      <StatsForNerdsModal
+        track={track}
+        open={isStatsModalOpen}
+        onOpenChange={setIsStatsModalOpen}
+      />
     </DropdownMenu>
   );
 };

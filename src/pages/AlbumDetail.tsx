@@ -190,6 +190,7 @@ const AlbumDetail = () => {
               <Play fill="currentColor" size={18} /> Play
             </Button>
             <EditAlbumModal album={album}>
+              {/* Inline comment: This is a single React element, so asChild is correctly used here. */}
               <Button variant="outline" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 rounded-full font-bold">
                 Edit Project
               </Button>
@@ -230,28 +231,35 @@ const AlbumDetail = () => {
               <TableBody>
                 {albumTracks.map((track, index) => {
                   return (
-                    <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
-                      <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
-                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                          <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Rating
-                          track={track}
-                          showEditor={true} 
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <TrackContextMenu track={track}> {/* Moved TrackContextMenu here */}
+                    // Inline comment: TrackContextMenu now wraps the entire TableRow
+                    // This enables right-click on the row to open the context menu.
+                    // Left-click on the row will now also open the context menu,
+                    // unless specifically handled by an inner element's onClick.
+                    <TrackContextMenu key={track.id} track={track}>
+                      <TableRow key={track.id} className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }}
+                      >
+                        <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
+                            <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Rating
+                            track={track}
+                            showEditor={true} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {/* MoreVertical button is now purely visual, context menu is triggered by row click/right-click */}
                           <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
                             <MoreVertical size={14} />
                           </Button>
-                        </TrackContextMenu>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                      </TableRow>
+                    </TrackContextMenu>
                   );
                 })}
               </TableBody>

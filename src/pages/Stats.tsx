@@ -23,11 +23,17 @@ const Stats = () => {
   const currentTrack = useMemo(() => tracks.find(t => t.id === currentTrackId), [tracks, currentTrackId]);
 
   const topTracks = useMemo(() => {
-    // Calculate plays for each track
-    const trackPlayCounts: { [key: string]: { fullPlays: number, partialPlays: number, total: number } } = {};
+    const trackPlayCounts: { 
+      [key: string]: { 
+        fullPlays: number, 
+        livePlays: number, 
+        partialPlays: number, 
+        total: number 
+      } 
+    } = {};
     
     tracks.forEach(track => {
-      trackPlayCounts[track.id] = { fullPlays: 0, partialPlays: 0, total: 0 };
+      trackPlayCounts[track.id] = { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0 };
     });
 
     playbackLogs.forEach(log => {
@@ -43,37 +49,42 @@ const Stats = () => {
 
     // Account for currently playing track in real-time
     if (currentTrackId && trackPlayCounts[currentTrackId]) {
-      if (isPlaying) {
-        if (currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS) {
-          trackPlayCounts[currentTrackId].fullPlays++;
-        } else {
-          trackPlayCounts[currentTrackId].partialPlays++;
-        }
+      // Temporarily remove any "full" or "partial" play from this session's logs for the live play
+      if (currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS) {
+        trackPlayCounts[currentTrackId].livePlays++;
+        // Ensure total is correctly incremented for live play
+        trackPlayCounts[currentTrackId].total++;
+      } else if (isPlaying && currentProgress > 0) { // Count as partial only if playing and not yet full
+        trackPlayCounts[currentTrackId].partialPlays++;
         trackPlayCounts[currentTrackId].total++;
       }
     }
 
-    // Sort by full plays then partial plays
+    // Sort by full plays then live plays (partial plays do not affect ranking)
     const sorted = [...tracks].sort((a, b) => {
-      const countsA = trackPlayCounts[a.id] || { fullPlays: 0, partialPlays: 0, total: 0 };
-      const countsB = trackPlayCounts[b.id] || { fullPlays: 0, partialPlays: 0, total: 0 };
+      const countsA = trackPlayCounts[a.id] || { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0 };
+      const countsB = trackPlayCounts[b.id] || { fullPlays: 0, livePlays: 0, partialPlays: 0, total: 0 };
       
+      // Primary sort: full plays
       if (countsB.fullPlays !== countsA.fullPlays) return countsB.fullPlays - countsA.fullPlays;
-      return countsB.partialPlays - countsA.partialPlays;
+      // Secondary sort: live plays
+      if (countsB.livePlays !== countsA.livePlays) return countsB.livePlays - countsA.livePlays;
+      // Tertiary sort: alphabetical by name if plays are equal
+      return a.title.localeCompare(b.title);
     });
 
     return sorted.slice(0, 10).map(track => ({
       name: track.title,
       id: track.id,
       fullPlays: trackPlayCounts[track.id]?.fullPlays || 0,
+      livePlays: trackPlayCounts[track.id]?.livePlays || 0,
       partialPlays: trackPlayCounts[track.id]?.partialPlays || 0,
-      total: trackPlayCounts[track.id]?.total || 0,
     }));
   }, [tracks, playbackLogs, currentTrackId, isPlaying, currentProgress]);
 
   const totalFullPlays = playbackLogs.filter(log => !log.isSkip && log.duration && log.duration > PARTIAL_PLAY_THRESHOLD_SECONDS).length;
   const totalPartialPlays = playbackLogs.filter(log => log.isSkip || (log.duration && log.duration <= PARTIAL_PLAY_THRESHOLD_SECONDS)).length;
-  const totalPlays = totalFullPlays + totalPartialPlays;
+  const totalPlays = totalFullPlays + totalPartialPlays; // This doesn't include live plays
 
   const totalSeconds = playbackLogs.reduce((a, b) => a + (b.duration || 0), 0);
   const formatTotalTime = (seconds: number) => {
@@ -149,17 +160,30 @@ const Stats = () => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                  formatter={(value, name) => [`${value} ${name === 'fullPlays' ? 'Full' : 'Partial'}`, 'Plays']}
+                  formatter={(value, name) => [`${value} ${name === 'fullPlays' ? 'Full' : name === 'livePlays' ? 'Live' : 'Partial'}`, 'Plays']}
                 />
-                <Legend />
-                <Bar dataKey="fullPlays" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
+                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '20px' }}
+                  formatter={(value) => {
+                    if (value === 'fullPlays') return <span className="text-xs text-zinc-400">Full Plays</span>;
+                    if (value === 'livePlays') return <span className="text-xs text-zinc-400">Live Play</span>;
+                    if (value === 'partialPlays') return <span className="text-xs text-zinc-400">Partial Plays</span>;
+                    return <span className="text-xs text-zinc-400">{value}</span>;
+                  }}
+                />
+                {/* Stacked bars for full, live, and partial plays */}
+                <Bar dataKey="fullPlays" stackId="plays" fill="#3b82f6" radius={[0, 4, 4, 0]}>
                   {topTracks.map((entry, index) => (
-                    <Cell key={`full-cell-${index}`} fill={entry.id === currentTrackId ? '#10B981' : '#3b82f6'} />
+                    <Cell key={`full-cell-${index}`} fill={'#3b82f6'} />
                   ))}
                 </Bar>
-                <Bar dataKey="partialPlays" fill="#3b82f640" radius={[0, 4, 4, 0]} barSize={20}> {/* Dimmed color for partial plays */}
+                <Bar dataKey="livePlays" stackId="plays" fill="#10B981" radius={[0, 4, 4, 0]}>
                   {topTracks.map((entry, index) => (
-                    <Cell key={`partial-cell-${index}`} fill={entry.id === currentTrackId ? '#10B98140' : '#3b82f640'} />
+                    <Cell key={`live-cell-${index}`} fill={'#10B981'} />
+                  ))}
+                </Bar>
+                <Bar dataKey="partialPlays" stackId="plays" fill="#3b82f640" radius={[0, 4, 4, 0]}>
+                  {topTracks.map((entry, index) => (
+                    <Cell key={`partial-cell-${index}`} fill={'#3b82f640'} />
                   ))}
                 </Bar>
               </BarChart>

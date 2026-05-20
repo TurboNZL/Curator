@@ -1,7 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users } from 'lucide-react';
+import { Music2, Calendar, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Trash2, Plus, Users, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
@@ -146,6 +146,10 @@ const ArtistDetail = () => {
             </div>
             <div className="space-y-2">
               {artistTracks.slice(0, 10).map((track, i) => (
+                // Inline comment: TrackContextMenu now wraps the entire track div
+                // This enables right-click on the track item to open the context menu.
+                // Left-click on the item will now also open the context menu,
+                // unless specifically handled by an inner element's onClick.
                 <TrackContextMenu key={track.id} track={track}>
                   <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
                     <div className="flex items-center gap-3 min-w-0">
@@ -158,6 +162,10 @@ const ArtistDetail = () => {
                         showEditor={false}
                         size="sm"
                       />
+                      {/* MoreVertical button is now purely visual, context menu is triggered by item click/right-click */}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                        <MoreVertical size={14} />
+                      </Button>
                     </div>
                   </div>
                 </TrackContextMenu>
