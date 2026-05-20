@@ -305,11 +305,57 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   previousTrack: () => {},
   logPlayback: async (trackId, duration, source, isSkip) => {
-    await fetch('/api/playback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ trackId, duration, sourceType: source?.type, sourceId: source?.id, isSkip })
-    });
+    // Generate a temporary ID for optimistic UI update only.
+    // The server will generate the actual ID.
+    const tempLogId = `temp-${Math.random().toString(36).substring(2, 9)}`;
+
+    const newLog = {
+      id: tempLogId, // Temporary ID for local state
+      trackId,
+      timestamp: new Date(),
+      duration,
+      sourceType: source?.type,
+      sourceId: source?.id,
+      isSkip: !!isSkip,
+    };
+
+    // Optimistically update local state
+    set(state => ({
+      playbackLogs: [...state.playbackLogs, newLog]
+    }));
+
+    // Then make the API call with the correct trackId
+    try {
+      const res = await fetch('/api/playback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackId, // Send the actual trackId
+          duration,
+          sourceType: source?.type,
+          sourceId: source?.id,
+          isSkip: !!isSkip,
+        })
+      });
+      if (res.ok) {
+        const serverLog = await res.json();
+        // Replace the optimistic log with the actual server-generated log
+        set(state => ({
+          playbackLogs: state.playbackLogs.map(log => log.id === tempLogId ? { ...serverLog, timestamp: new Date(serverLog.timestamp) } : log)
+        }));
+      } else {
+        // If API call fails, remove optimistic update
+        console.error("Failed to log playback to server.");
+        set(state => ({
+          playbackLogs: state.playbackLogs.filter(log => log.id !== tempLogId)
+        }));
+      }
+    } catch (e) {
+      console.error("Error logging playback:", e);
+      set(state => ({
+        playbackLogs: state.playbackLogs.filter(log => log.id !== tempLogId)
+      }));
+    }
   },
 
   addToUserQueue: (trackId) => set(state => ({ userQueue: [...state.userQueue, trackId] })),
