@@ -5,6 +5,7 @@ import { Star, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
 import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Import EditTrackModal
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'; // Import HoverCard components
 
 interface RatingProps {
   trackId: string;
@@ -56,19 +57,33 @@ export const Rating = ({ trackId, size = 'md' }: RatingProps) => {
   const textColor = displayQuestionMark ? "text-zinc-500" : (rating === 10 ? "text-yellow-400" : "text-zinc-300"); // Yellow for #ranking
 
   return (
-    <>
-      <div className={cn(baseClasses, textColor, `text-${size === 'sm' ? 'xs' : size === 'md' ? 'sm' : 'base'}`)}>
-        <Star size={iconSize} className="text-yellow-500" fill="currentColor" />
-        {displayValue}
-      </div>
+    <HoverCard openDelay={200}>
+      <HoverCardTrigger asChild>
+        <div className={cn(baseClasses, textColor, `text-${size === 'sm' ? 'xs' : size === 'md' ? 'sm' : 'base'}`)}>
+          <Star size={iconSize} className="text-yellow-500" fill="currentColor" />
+          {displayValue}
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-auto bg-zinc-900 border-zinc-800 text-white p-3 text-xs">
+        <div className="flex flex-col space-y-1">
+          <div className="flex justify-between">
+            <span className="text-zinc-400">Initial Rating:</span>
+            <span className="font-bold">{initialRating !== undefined && initialRating !== null && initialRating > 0 ? initialRating.toFixed(1) : 'N/A'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-zinc-400">Balanced Rating:</span>
+            <span className="font-bold text-blue-400">{rating !== undefined && rating !== null && rating > 0 ? rating.toFixed(1) : 'N/A'}</span>
+          </div>
+        </div>
+      </HoverCardContent>
       {track && (
-        <EditTrackModal 
-          track={track} 
-          open={isEditModalOpen} 
-          onOpenChange={setIsEditModalOpen} 
+        <EditTrackModal
+          track={track}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
           children={<></>} // Modal is controlled, so children are not used for trigger
         />
       )}
-    </>
+    </HoverCard>
   );
 };

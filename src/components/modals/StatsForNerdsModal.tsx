@@ -10,20 +10,18 @@ import { useMusicStore } from '@/store/useMusicStore';
 
 interface StatsForNerdsModalProps {
   track?: Track;
-  album?: Album;
-  artist?: Artist;
   children?: React.ReactElement; // Made optional
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const StatsForNerdsModal = ({ track, album, artist, children, open, onOpenChange }: StatsForNerdsModalProps) => {
-  const { playbackLogs } = useMusicStore();
+export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: StatsForNerdsModalProps) => {
+  const { playbackLogs, artists, albums } = useMusicStore();
   if (!track) return null; // Render nothing if no track is provided. The trigger should handle opening this based on track context.
 
-  const trackLogs = playbackLogs.filter(l => l.trackId === track.id);
-  const playCount = trackLogs.length;
-  const totalPlaytime = trackLogs.reduce((acc, log) => acc + (log.duration || 0), 0);
+  // Derive artist and album from the track object
+  const artist = artists.find(a => a.id === track.artistId);
+  const album = albums.find(al => track.albumIds?.some(trackAlbum => trackAlbum.albumId === al.id));
 
   const formatPlaytime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);

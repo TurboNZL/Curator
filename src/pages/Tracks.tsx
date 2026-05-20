@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2 } from 'lucide-react';
+import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Edit2, Plus, Minus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating';
@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { trackHasAlbum } from '@/lib/utils'; // Import the helper
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading } = useMusicStore();
+  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, incrementMemories, decrementMemories } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
@@ -159,9 +159,16 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Brain size={12} className="text-purple-500" />
-                          <span className="text-xs font-bold text-zinc-300">{track.memories || 0}</span>
+                        <div className="flex flex-col items-start gap-1">
+                          <p className="text-[10px] text-zinc-500 font-bold uppercase">Memories: {track.memories || 0}</p>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 text-zinc-500 hover:text-blue-400" onClick={(e) => {e.stopPropagation(); incrementMemories(track.id);}}>
+                              <Plus size={14} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 p-0 text-zinc-500 hover:text-red-400" onClick={(e) => {e.stopPropagation(); decrementMemories(track.id);}} disabled={(track.memories || 0) === 0}>
+                              <Minus size={14} />
+                            </Button>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>

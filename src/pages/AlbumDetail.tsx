@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music } from 'lucide-react';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Link as LinkIcon, Plus, Edit2, Trash2, Users, Disc, Music, MoreVertical, Brain, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -19,11 +19,13 @@ import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { toast } from 'sonner';
 
 
 const AlbumDetail = () => {
   const { id } = useParams();
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, incrementMemories, decrementMemories, deleteTrack } = useMusicStore();
   
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
@@ -50,6 +52,7 @@ const AlbumDetail = () => {
 
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null); // State to hold track being edited
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // State for StatsForNerdsModal
 
 
   useEffect(() => {
@@ -91,6 +94,15 @@ const AlbumDetail = () => {
   const handleSetDefault = async (releaseId: string) => {
     if (!album) return;
     await updateAlbum(album.id, { defaultReleaseId: releaseId });
+  };
+
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("No link available for this item.");
+    }
   };
 
   if (!album) return <div className="p-8">Album not found.</div>;
@@ -208,6 +220,65 @@ const AlbumDetail = () => {
                             >
                               <Edit2 size={14}/>
                             </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                  <MoreVertical size={14} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-white p-2">
+                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) })}>
+                                  <Play size={14} /> Play Track
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsCreatePlaylistAddModalOpen(true)}>
+                                  <ListMusic size={14} /> Add to Playlist
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-zinc-800" />
+                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => {
+                                  setSelectedTrackForEdit(track);
+                                  setIsStatsModalOpen(true);
+                                }}>
+                                  <Info size={14} /> Stats for Nerds
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-zinc-800" />
+                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
+                                  <Brain size={14} /> Add Memory (+1) ({track.memories || 0})
+                                </DropdownMenuItem>
+                                {track.memories && track.memories > 0 && (
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
+                                    <Brain size={14} /> Remove Memory (-1) ({track.memories || 0})
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator className="bg-zinc-800" />
+                                {track.spotifyUrl && (
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
+                                    <LinkIcon size={14} /> Copy Spotify Link
+                                  </DropdownMenuItem>
+                                )}
+                                {track.geniusUrl && (
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.geniusUrl)}>
+                                    <LinkIcon size={14} /> Copy Genius Link
+                                  </DropdownMenuItem>
+                                )}
+                                {track.youtubeMusicUrl && (
+                                  <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.youtubeMusicUrl)}>
+                                    <LinkIcon size={14} /> Copy YouTube Music Link
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator className="bg-zinc-800" />
+                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={(e) => { e.stopPropagation(); setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }}>
+                                  <Edit2 size={14} /> Edit Track
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={async () => {
+                                  if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
+                                    await deleteTrack(track.id);
+                                    toast.success("Track deleted.");
+                                  }
+                                }}>
+                                  <Trash2 size={14} /> Delete Track
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -349,6 +420,13 @@ const AlbumDetail = () => {
           track={selectedTrackForEdit}
           open={isEditTrackModalOpen}
           onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      {selectedTrackForEdit && (
+        <StatsForNerdsModal
+          track={selectedTrackForEdit}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
         />
       )}
     </div>
