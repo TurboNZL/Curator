@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const Tracks = () => {
@@ -216,24 +215,7 @@ const Tracks = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                              <MoreVertical size={14} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-                            <TrackDropdownMenuItems
-                                track={track}
-                                setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
-                                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
-                                setSelectedTrackForEdit={setSelectedTrackForEdit}
-                                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
-                                setSelectedTrackForStats={setSelectedTrackForStats}
-                                setIsStatsModalOpen={setIsStatsModalOpen}
-                            />
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* MoreVertical dropdown removed in favor of direct right-click menu */}
                       </TableCell>
                     </TableRow>
                   </TrackRightClickMenu>

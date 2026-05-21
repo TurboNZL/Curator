@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/compon
 import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 import { EditTrackModal } from '../modals/EditTrackModal';
 import { toast } from 'sonner';
-import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; // Import new component
+
 
 const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
 
@@ -286,15 +286,25 @@ export const BottomPlayer = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-              <TrackDropdownMenuItems
-                track={currentTrack}
-                setSelectedTrackForPlaylistAdd={() => setIsCreatePlaylistAddModalOpen(true)}
-                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
-                setSelectedTrackForEdit={() => setIsEditTrackModalOpen(true)}
-                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
-                setSelectedTrackForStats={() => setIsStatsModalOpen(true)}
-                setIsStatsModalOpen={setIsStatsModalOpen}
-              />
+              {/* These actions are now handled by TrackRightClickMenu directly */}
+              <button
+                onClick={() => { setIsEditTrackModalOpen(true); }}
+                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-zinc-800 focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left"
+              >
+                <Edit2 size={14} className="mr-2" /> Edit Track
+              </button>
+              <button
+                onClick={() => { setIsStatsModalOpen(true); }}
+                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-zinc-800 focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left"
+              >
+                <Info size={14} className="mr-2" /> Stats for Nerds
+              </button>
+              <button
+                onClick={() => { setIsCreatePlaylistAddModalOpen(true); }}
+                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-zinc-800 focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left"
+              >
+                <Plus size={14} className="mr-2" /> Add to Playlist
+              </button>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -352,7 +362,7 @@ export const BottomPlayer = () => {
                   <div className="space-y-2">
                     <span className="px-2 text-[8px] font-black uppercase text-zinc-600 tracking-tighter">Up Next</span>
                     {userQueue.length === 0 && activeQueue.length === 0 && (
-                      <p className="text-[10px] text-zinc-700 italic text-center py-8">Queue is empty</p>
+                      <p className="text-[10px] text-zinc-700 italic p-4 text-center">Queue is empty</p>
                     )}
                     {userQueue.map((tid, i) => {
                       const t = tracks.find(track => track.id === tid);
