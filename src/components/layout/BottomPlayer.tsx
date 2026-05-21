@@ -9,10 +9,11 @@ import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 import { EditTrackModal } from '../modals/EditTrackModal';
 import { toast } from 'sonner';
+import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; // Import new component
 
 const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
 
@@ -23,8 +24,7 @@ export const BottomPlayer = () => {
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
     isShuffled, toggleShuffle, activeProfile, setProgress: setStoreProgress, setDuration: setStoreDuration,
-    addToUserQueue, incrementMemories, decrementMemories, deleteTrack
-  } = useMusicStore();
+  } = useMusicStore(); // Removed addToUserQueue, incrementMemories, decrementMemories, deleteTrack as they are now handled by TrackDropdownMenuItems
 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -200,14 +200,6 @@ export const BottomPlayer = () => {
     previousTrack();
   };
 
-  const handleCopyLink = (url?: string) => {
-    if (url) {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
-    } else {
-      toast.error("No link available for this item.");
-    }
-  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-24 bg-zinc-950 border-t border-zinc-800 px-6 flex items-center justify-between z-50">
@@ -294,65 +286,15 @@ export const BottomPlayer = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); setIsStatsModalOpen(true); }}
-                className="text-xs font-medium"
-              >
-                <Info size={14} className="mr-2" /> Stats for Nerds
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); setIsEditTrackModalOpen(true); }}
-                className="text-xs font-medium"
-              >
-                <Edit2 size={14} className="mr-2" /> Edit Track
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); addToUserQueue(currentTrack.id); toast.success(`"${currentTrack.title}" added to queue.`); }}
-                className="text-xs font-medium"
-              >
-                <List size={14} className="mr-2" /> Add to Queue
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); incrementMemories(currentTrack.id); toast.success(`Memory added for "${currentTrack.title}".`); }}
-                className="text-xs font-medium"
-              >
-                <Plus size={14} className="mr-2" /> Add Memory
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); decrementMemories(currentTrack.id); toast.success(`Memory removed for "${currentTrack.title}".`); }}
-                disabled={currentTrack.memories === 0}
-                className="text-xs font-medium"
-              >
-                <Minus size={14} className="mr-2" /> Remove Memory
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); setIsCreatePlaylistAddModalOpen(true); }}
-                className="text-xs font-medium"
-              >
-                <Plus size={14} className="mr-2" /> Add to Playlist
-              </DropdownMenuItem>
-              {currentTrack.spotifyUrl && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(currentTrack.spotifyUrl); }} className="text-xs font-medium">
-                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
-                </DropdownMenuItem>
-              )}
-              {currentTrack.geniusUrl && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(currentTrack.geniusUrl); }} className="text-xs font-medium">
-                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
-                </DropdownMenuItem>
-              )}
-              {currentTrack.youtubeMusicUrl && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(currentTrack.youtubeMusicUrl); }} className="text-xs font-medium">
-                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator className="bg-zinc-800" />
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); if (confirm(`Are you sure you want to delete "${currentTrack.title}"?`)) { deleteTrack(currentTrack.id); } }}
-                className="text-xs font-medium text-red-500"
-              >
-                <Trash2 size={14} className="mr-2" /> Delete Track
-              </DropdownMenuItem>
+              <TrackDropdownMenuItems
+                track={currentTrack}
+                setSelectedTrackForPlaylistAdd={() => setIsCreatePlaylistAddModalOpen(true)}
+                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                setSelectedTrackForEdit={() => setIsEditTrackModalOpen(true)}
+                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                setSelectedTrackForStats={() => setIsStatsModalOpen(true)}
+                setIsStatsModalOpen={setIsStatsModalOpen}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         )}
