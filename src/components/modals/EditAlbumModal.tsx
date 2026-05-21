@@ -173,12 +173,27 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                     </button>
                   ))}
                   {/* Option to upload new primary cover */}
-                  <div className="aspect-square rounded-lg border-2 border-dashed border-zinc-800 flex items-center justify-center">
-                    <ImageUpload
-                      value="" 
-                      onChange={(val) => setFormData({...formData, primaryCover: val})}
+                  <label htmlFor="image-upload-input" className="flex items-center justify-center aspect-square w-full rounded-lg border-2 border-dashed border-zinc-800 bg-zinc-900 cursor-pointer group hover:bg-zinc-800 transition-colors">
+                    <Plus size={24} className="text-zinc-500 group-hover:text-white" />
+                    <input
+                      id="image-upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const url = await uploadFile(file, 'image');
+                            setFormData(prev => ({ ...prev, primaryCover: url }));
+                            toast.success("Cover image uploaded.");
+                          } catch (error) {
+                            toast.error("Failed to upload image.");
+                          }
+                        }
+                      }}
                     />
-                  </div>
+                  </label>
                 </div>
               </div>
 

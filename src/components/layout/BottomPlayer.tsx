@@ -2,13 +2,17 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music, MoreVertical, Edit2, List, Plus, Minus, Link as LinkIcon } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { ScrollArea } from '../ui/scroll-area';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
+import { EditTrackModal } from '../modals/EditTrackModal';
 
 const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
 
@@ -18,13 +22,19 @@ export const BottomPlayer = () => {
     volume, setVolume, nextTrack, previousTrack, logPlayback,
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
-    isShuffled, toggleShuffle, activeProfile, setProgress: setStoreProgress, setDuration: setStoreDuration
+    isShuffled, toggleShuffle, activeProfile, setProgress: setStoreProgress, setDuration: setStoreDuration,
+    deleteTrack, addToUserQueue: addToUserQueueStore, incrementMemories, decrementMemories
   } = useMusicStore();
 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showQueue, setShowQueue] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackSessionStartAudioTimeRef = useRef<number | null>(null);
@@ -193,6 +203,15 @@ export const BottomPlayer = () => {
     previousTrack();
   };
 
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("No link available for this item.");
+    }
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 h-24 bg-zinc-950 border-t border-zinc-800 px-6 flex items-center justify-between z-50">
       {/* Track Info */}
@@ -208,7 +227,7 @@ export const BottomPlayer = () => {
           <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">
             {currentTrack?.title || "No Track Selected"}
           </h4>
-          <p className="text-xs font-bold text-zinc-500 truncate uppercase tracking-widest">
+          <p className="text-xs font-bold text-zinc-400 truncate uppercase tracking-widest">
             {artist?.name || "Select music to play"}
           </p>
           {currentTrack && (
@@ -253,7 +272,7 @@ export const BottomPlayer = () => {
           </Button>
         </div>
         <div className="flex items-center gap-3 w-full max-w-md">
-          <span className="text-[10px] font-mono text-zinc-500 w-10 text-right">{formatTime(progress)}</span>
+          <span className="text-xs font-bold text-zinc-400 uppercase w-10 text-right">{formatTime(progress)}</span> {/* Updated */}
           <Slider 
             value={[progress]} 
             max={duration || 100} 
@@ -263,8 +282,12 @@ export const BottomPlayer = () => {
               if (audioRef.current) audioRef.current.currentTime = val;
             }}
             className="flex-1"
+            classNames={{ // Added classNames prop
+              range: "bg-zinc-600", // Filled part color
+              track: "border border-zinc-500" // Outline for the entire track
+            }}
           />
-          <span className="text-[10px] font-mono text-zinc-500 w-10">{formatTime(duration)}</span>
+          <span className="text-xs font-bold text-zinc-400 uppercase w-10">{formatTime(duration)}</span> {/* Updated */}
         </div>
       </div>
 
@@ -353,6 +376,105 @@ export const BottomPlayer = () => {
           </Button>
         </StatsForNerdsModal>
         
+        {currentTrack && ( // Conditionally render the dropdown
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
+                <MoreVertical size={18} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTrackForEdit(currentTrack);
+                  setIsEditTrackModalOpen(true);
+                }}
+                className="text-xs font-medium"
+              >
+                <Edit2 size={14} className="mr-2" /> Edit Track
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addToUserQueueStore(currentTrack.id);
+                  toast.success(`"${currentTrack.title}" added to queue.`);
+                }}
+                className="text-xs font-medium"
+              >
+                <List size={14} className="mr-2" /> Add to Queue
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  incrementMemories(currentTrack.id);
+                  toast.success(`Memory added for "${currentTrack.title}".`);
+                }}
+                className="text-xs font-medium"
+              >
+                <Plus size={14} className="mr-2" /> Add Memory
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  decrementMemories(currentTrack.id);
+                  toast.success(`Memory removed for "${currentTrack.title}".`);
+                }}
+                disabled={currentTrack.memories === 0}
+                className="text-xs font-medium"
+              >
+                <Minus size={14} className="mr-2" /> Remove Memory
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTrackForPlaylistAdd(currentTrack);
+                  setIsCreatePlaylistAddModalOpen(true);
+                }}
+                className="text-xs font-medium"
+              >
+                <Plus size={14} className="mr-2" /> Add to Playlist
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsStatsModalOpen(true);
+                }}
+                className="text-xs font-medium"
+              >
+                <Info size={14} className="mr-2" /> Stats for Nerds
+              </DropdownMenuItem>
+              {currentTrack.spotifyUrl && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(currentTrack.spotifyUrl); }} className="text-xs font-medium">
+                    <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
+                  </DropdownMenuItem>
+                )}
+                {currentTrack.geniusUrl && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(currentTrack.geniusUrl); }} className="text-xs font-medium">
+                    <LinkIcon size={14} className="mr-2" /> Copy Genius Link
+                  </DropdownMenuItem>
+                )}
+                {currentTrack.youtubeMusicUrl && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(currentTrack.youtubeMusicUrl); }} className="text-xs font-medium">
+                    <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
+                  </DropdownMenuItem>
+                )}
+              <DropdownMenuSeparator className="bg-zinc-800" />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Are you sure you want to delete "${currentTrack.title}"?`)) {
+                    deleteTrack(currentTrack.id);
+                  }
+                }}
+                className="text-xs font-medium text-red-500"
+              >
+                <Trash2 size={14} className="mr-2" /> Delete Track
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
         <div className="flex items-center gap-3 w-32">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500" onClick={() => setVolume(volume === 0 ? 0.8 : 0)}>
             {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -363,9 +485,21 @@ export const BottomPlayer = () => {
             step={1} 
             onValueChange={([val]) => setVolume(val / 100)}
             className="w-24"
+            classNames={{ // Added classNames prop
+              range: "bg-zinc-600", // Filled part color
+              track: "border border-zinc-500" // Outline for the entire track
+            }}
           />
         </div>
       </div>
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
     </div>
   );
 };
