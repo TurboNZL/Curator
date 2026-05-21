@@ -16,7 +16,7 @@ import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddMod
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
 import { toast } from 'sonner';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
-import { FixedSizeList } from 'react-window'; // Import FixedSizeList
+import { FixedSizeList } from 'react-window'; // Corrected import: FixedSizeList is a named export
 
 const ROW_HEIGHT = 64; // Approximate height of each table row
 

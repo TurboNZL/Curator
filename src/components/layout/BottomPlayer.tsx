@@ -281,11 +281,7 @@ export const BottomPlayer = () => {
             onValueChange={([val]) => {
               if (audioRef.current) audioRef.current.currentTime = val;
             }}
-            className="flex-1"
-            classNames={{ // Added classNames prop
-              range: "bg-zinc-600", // Filled part color
-              track: "border border-zinc-500" // Outline for the entire track
-            }}
+            className="flex-1 [&_span]:bg-zinc-600 [&_div]:border [&_div]:border-zinc-500" // Applied styling directly to className
           />
           <span className="text-xs font-bold text-zinc-400 uppercase w-10">{formatTime(duration)}</span> {/* Updated */}
         </div>
@@ -484,11 +480,7 @@ export const BottomPlayer = () => {
             max={100} 
             step={1} 
             onValueChange={([val]) => setVolume(val / 100)}
-            className="w-24"
-            classNames={{ // Added classNames prop
-              range: "bg-zinc-600", // Filled part color
-              track: "border border-zinc-500" // Outline for the entire track
-            }}
+            className="w-24 [&_span]:bg-zinc-600 [&_div]:border [&_div]:border-zinc-500" // Applied styling directly to className
           />
         </div>
       </div>

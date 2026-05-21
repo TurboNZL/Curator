@@ -41,50 +41,6 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
       return track.initialRating;
     }
     return -1; // Indicate unrated
-<dyad-write path="src/components/modals/ArtistAllTracksModal.tsx" description="Adjusting the ArtistAllTracksModal to ensure proper scrolling for track lists.">
-"use client";
-
-import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical, Link as LinkIcon } from 'lucide-react';
-import { useMusicStore } from '@/store/useMusicStore';
-import { Rating } from '@/components/ui/Rating';
-import { Track } from '@/types/music';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu'; // Corrected path
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Corrected path
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Corrected path
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Corrected path
-import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-
-interface ArtistAllTracksModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  artistId: string;
-  artistName: string;
-}
-
-export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, activeProfile } = useMusicStore(); // Added releases, activeProfile
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
-  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
-  const [selectedTrackForStats, setSelectedTrackForStats] = useState<Track | null>(null);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-
-
-  const getEffectiveRating = (track: Track) => {
-    if ((track.comparisons >= 3 || track.memories > 0) && track.rating !== undefined && track.rating !== null && track.rating > 0.001) {
-      return track.rating;
-    }
-    if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
-      return track.initialRating;
-    }
-    return -1; // Indicate unrated
   };
 
   const allRatedArtistTracks = useMemo(() => {
