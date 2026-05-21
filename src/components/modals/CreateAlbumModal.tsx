@@ -21,14 +21,14 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
   const [formData, setFormData] = useState({
     title: '',
     artistId: '',
-    primaryCover: '', // New: Primary cover for the album
+    primaryCover: '', 
     releases: [] as { title: string; date: string }[]
   });
 
   const handleAddReleaseRow = () => {
     setFormData(prev => ({
       ...prev,
-      releases: [...prev.releases, { title: 'Streaming', date: '' }] // Default title is 'Streaming'
+      releases: [...prev.releases, { title: 'Streaming', date: '' }] 
     }));
   };
 
@@ -56,7 +56,6 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
       
       const existingArtist = artists.find(a => a.id === formData.artistId);
       if (!existingArtist) {
-        // If artist not found by ID, assume formData.artistId is a new name
         const res = await fetch('/api/artists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,11 +68,11 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
       const newAlbum = await addAlbum({
         title: formData.title,
         artistId: finalArtistId,
-        artistIds: [], // Multi-artist support
-        covers: formData.primaryCover ? [formData.primaryCover] : [], // Keep legacy 'covers' for now, but primary cover is explicit
-        primaryCover: formData.primaryCover || null, // Set primary cover
-        pendingFiles: [], // Added
-        credits: [] // Added
+        artistIds: [], 
+        // Removed 'covers' from album creation
+        primaryCover: formData.primaryCover || null, 
+        pendingFiles: [], 
+        credits: [] 
       });
 
       for (const rel of formData.releases) {
@@ -81,14 +80,14 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
           albumId: newAlbum.id,
           title: rel.title,
           releaseDate: rel.date,
-          coverImage: formData.primaryCover || '', // Use primary cover as default for initial releases
+          coverImage: formData.primaryCover || '', 
           trackIds: []
         });
       }
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
-      onOpenChange(false); // Close modal
-      setFormData({ title: '', artistId: '', primaryCover: '', releases: [] }); // Reset form
+      onOpenChange(false); 
+      setFormData({ title: '', artistId: '', primaryCover: '', releases: [] }); 
     } catch (error) {
       console.error(error);
       toast.error("Failed to create album");

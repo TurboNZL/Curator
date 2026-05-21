@@ -11,7 +11,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Disc, Music, User, Plus, Loader2, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMusicStore } from '@/store/useMusicStore';
-import { cn } from '@/lib/utils';
+import { cn, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ImportedTrackData {
@@ -34,14 +34,14 @@ interface ImportReviewModalProps {
 }
 
 export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, onClose, initialData }) => {
-  const { artists, addArtist, addAlbum, addRelease, addTracks, fetchData } = useMusicStore();
+  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData } = useMusicStore(); // Added releases
   const [isSaving, setIsSaving] = useState(false);
 
   const [albumFormData, setAlbumFormData] = useState({
     title: initialData.suggestedAlbumTitle,
     artistId: initialData.suggestedArtistId || '',
     artistNameInput: initialData.suggestedArtistName,
-    primaryCover: initialData.suggestedAlbumCover, // Use primaryCover
+    primaryCover: initialData.suggestedAlbumCover, 
     releaseDate: ''
   });
 
@@ -103,17 +103,17 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         title: albumFormData.title,
         artistId: finalArtistId,
         artistIds: [finalArtistId],
-        covers: albumFormData.primaryCover ? [albumFormData.primaryCover] : [], // Use primaryCover here for legacy covers array
-        primaryCover: albumFormData.primaryCover || null, // Set primary cover
+        // Removed 'covers' from creation
+        primaryCover: albumFormData.primaryCover || null, 
         pendingFiles: [], 
-        credits: [] // Added credits
+        credits: [] 
       });
       toast.success(`Album "${albumFormData.title}" created.`);
 
       const tracksToCreate = tracksFormData.map(track => ({
         ...track,
         artistId: finalArtistId,
-        artistIds: [finalArtistId], // Added artistIds
+        artistIds: [finalArtistId], 
         albumIds: [{ albumId: newAlbum.id, order: 0 }],
         genres: [], producers: [], writers: [], credits: [],
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {}
@@ -125,7 +125,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         albumId: newAlbum.id,
         title: 'Streaming',
         releaseDate: albumFormData.releaseDate,
-        coverImage: albumFormData.primaryCover, // Use primary cover for release cover
+        coverImage: albumFormData.primaryCover, 
         trackIds: createdTracks.map(t => t.id)
       });
       toast.success(`Default release for "${newAlbum.title}" created.`);
@@ -141,15 +141,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
   };
 
   const handleArtistSelectChange = (value: string) => {
-    // If the value corresponds to an existing artist ID, find that artist.
-    // Otherwise, treat the value as a custom typed name.
     const existingArtist = artists.find(a => a.id === value);
 
     setAlbumFormData(prev => ({
       ...prev,
-      // If an existing artist is found, set artistId to its ID.
-      // If a custom name is typed (value doesn't match an existing ID),
-      // set artistId to the custom value temporarily, allowing the select to display it.
       artistId: existingArtist ? existingArtist.id : value,
       artistNameInput: existingArtist ? existingArtist.name : value
     }));
@@ -226,13 +221,8 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
               <div className="space-y-2">
                 {tracksFormData.map((track, index) => (
                   <div key={index} className="flex items-center gap-3 p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
-                    {track.thumbnailUrl ? (
-                      <img src={track.thumbnailUrl} alt="" className="w-10 h-10 object-cover rounded-md" />
-                    ) : (
-                      <div className="w-10 h-10 flex items-center justify-center bg-zinc-800 rounded-md text-zinc-500">
-                        <Music size={16} />
-                      </div>
-                    )}
+                    {/* Use getAlbumDisplayCover for track thumbnails, passing a mock album or direct URL */}
+                    <img src={track.thumbnailUrl || getAlbumDisplayCover(undefined, [], '/placeholder.svg')} alt="" className="w-10 h-10 object-cover rounded-md" />
                     <Input
                       value={track.title}
                       onChange={(e) => handleTrackTitleChange(index, e.target.value)}

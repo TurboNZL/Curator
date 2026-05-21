@@ -34,10 +34,9 @@ export default defineEventHandler(async () => {
       if (artist.image) usedPaths.add(artist.image);
     });
 
-    // Collect all cover paths from albums
+    // Collect album primary covers
     allAlbums.forEach(album => {
-      const covers = JSON.parse(album.covers || '[]') as string[];
-      covers.forEach(cover => usedPaths.add(cover));
+      if (album.primaryCover) usedPaths.add(album.primaryCover);
     });
 
     // Collect all cover paths from releases

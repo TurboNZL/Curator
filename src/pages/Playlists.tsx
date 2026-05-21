@@ -13,12 +13,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn, trackHasAlbum } from '@/lib/utils'; // Import the helper
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import the helper
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Playlists = () => {
-  const { playlists, tracks, artists, albums, addPlaylist, updatePlaylist, deletePlaylist, setCurrentTrack, fetchData, activeProfile } = useMusicStore();
+  const { playlists, tracks, artists, albums, addPlaylist, updatePlaylist, deletePlaylist, setCurrentTrack, fetchData, activeProfile, releases } = useMusicStore();
   const navigate = useNavigate();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -349,13 +349,8 @@ const Playlists = () => {
                             <div className="text-zinc-600 group-hover:text-zinc-400">
                               <GripVertical size={14} />
                             </div>
-                            {album?.covers?.[0] ? (
-                              <img src={album.covers[0]} alt="" className="w-6 h-6 object-cover rounded" />
-                            ) : (
-                              <div className="w-6 h-6 flex items-center justify-center bg-zinc-800 rounded text-zinc-500">
-                                <MusicIcon size={12} />
-                              </div>
-                            )}
+                            {/* Use getAlbumDisplayCover here */}
+                            <img src={getAlbumDisplayCover(album, releases, defaultCover)} alt="" className="w-6 h-6 object-cover rounded" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-white truncate">{track.title}</p>
                               <p className="text-[10px] text-zinc-500 truncate">{artist?.name}</p>
@@ -382,13 +377,8 @@ const Playlists = () => {
                             onClick={() => addTrackToEditingPlaylist(track.id)}
                             className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-zinc-800 text-zinc-400 w-full text-left transition-colors"
                           >
-                            {album?.covers?.[0] ? (
-                              <img src={album.covers[0]} alt="" className="w-6 h-6 object-cover rounded" />
-                            ) : (
-                              <div className="w-6 h-6 flex items-center justify-center bg-zinc-800 rounded text-zinc-500">
-                                <MusicIcon size={12} />
-                              </div>
-                            )}
+                            {/* Use getAlbumDisplayCover here */}
+                            <img src={getAlbumDisplayCover(album, releases, defaultCover)} alt="" className="w-6 h-6 object-cover rounded" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold truncate">{track.title}</p>
                               <p className="text-[10px] text-zinc-500 truncate">{artist?.name}</p>

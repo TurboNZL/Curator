@@ -15,7 +15,7 @@ import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { cn, trackHasAlbum } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
@@ -30,7 +30,7 @@ const AlbumDetail = () => {
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
-  const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
   
   const albumGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === id && m.entityType === 'album' && m.showOnEntityPage)
@@ -40,12 +40,10 @@ const AlbumDetail = () => {
     g.members?.some(m => m.entityId === id && m.entityType === 'album')
   ).length;
 
-  // New state for temporarily selected release
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
   
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
-    // Separate caching for release list sort order
     const cached = sessionStorage.getItem(`album_releases_sort_${id}`);
     return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
   });
@@ -60,16 +58,17 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
-  // Initialize selectedReleaseId when album or defaultReleaseId changes
+  // Fix 1: Only initialize selectedReleaseId once
   useEffect(() => {
-    if (album) {
-      setSelectedReleaseId(album.defaultReleaseId || albumReleases[0]?.id || null);
+    if (!selectedReleaseId && album) { 
+      setSelectedReleaseId(
+        album.defaultReleaseId || albumReleases[0]?.id || null
+      );
     }
-  }, [album, albumReleases]);
+  }, [album?.id, album?.defaultReleaseId, albumReleases.length]); // Depend on album ID, defaultReleaseId, and releases count (for initial load)
 
 
   useEffect(() => {
-    // Cache the sort config for the release list specifically
     sessionStorage.setItem(`album_releases_sort_${id}`, JSON.stringify(sortConfig));
   }, [sortConfig, id]);
 
@@ -78,14 +77,13 @@ const AlbumDetail = () => {
       let comparison = 0;
       if (sortConfig.field === 'date') {
         comparison = new Date(a.releaseDate || 0).getTime() - new Date(b.releaseDate || 0).getTime();
-      } else { // Default to sorting by title if field is not 'date' or not recognized
+      } else { 
         comparison = a.title.localeCompare(b.title);
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
   }, [albumReleases, sortConfig]);
 
-  // Derive currentRelease from selectedReleaseId (UI state)
   const currentRelease = useMemo(() => {
     return albumReleases.find(r => r.id === selectedReleaseId);
   }, [selectedReleaseId, albumReleases]);
@@ -98,18 +96,18 @@ const AlbumDetail = () => {
       tracksForAlbum = tracksForAlbum.filter(t => currentRelease.trackIds.includes(t.id));
     }
     
-    // Sort tracks by their order in the album/release first, then by title
+    // Fix 2: Prevent alphabetical sorting when orders are the same
     return tracksForAlbum.sort((a, b) => {
       const aOrder = a.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
       const bOrder = b.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
       if (aOrder !== bOrder) return aOrder - bOrder;
-      return a.title.localeCompare(b.title);
+      return 0; // No secondary sort when order is the same
     });
   }, [showAllTracks, currentRelease, tracks, album]);
 
   const avgAlbumRating = useMemo(() => {
     const ratedTracks = albumTracks.filter(t => {
-        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
+        const effectiveRating = (t.comparisons >= 3 || t.memories > 0) && t.rating !== undefined && t.rating !== null
             ? t.rating
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
@@ -147,10 +145,8 @@ const AlbumDetail = () => {
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
-  // Display cover now prioritizes album.primaryCover, then selected release, then fallback
-  const displayCover = useMemo(() => {
-    return album.primaryCover || currentRelease?.coverImage || album.covers[0] || defaultImage;
-  }, [album.primaryCover, currentRelease, album.covers, defaultImage]);
+  // Fix 3: Use the new helper for display cover
+  const displayCover = getAlbumDisplayCover(album, releases, defaultAlbumImage);
 
   return (
     <div className="space-y-8 pb-12">
@@ -187,7 +183,7 @@ const AlbumDetail = () => {
             >
               <Play fill="currentColor" size={18} /> Play
             </Button>
-            <EditAlbumModal album={album} /> {/* Removed children prop */}
+            <EditAlbumModal album={album} />
             <Button variant="outline" className="border-emerald-800 bg-emerald-900/50 hover:bg-emerald-900 text-emerald-400 rounded-full font-bold" onClick={() => setIsCreatePlaylistAddModalOpen(true)}>
               <Plus size={18} className="mr-2"/>Add to Playlist
             </Button>
@@ -381,13 +377,12 @@ const AlbumDetail = () => {
                   <div key={release.id} className="group/rel relative">
                     <button 
                       onClick={() => {
-                        // Only update selectedReleaseId (UI state)
                         setSelectedReleaseId(release.id);
                         setShowAllTracks(false);
                       }}
                       className={cn(
                         "w-full text-left text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center justify-between pr-12",
-                        selectedReleaseId === release.id // Check against UI selected state
+                        selectedReleaseId === release.id 
                           ? "bg-blue-600 text-white" 
                           : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                       )}

@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Music, Play, Pause, Trash2, Edit2, Zap, AlertTriangle } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { EditTrackModal } from './EditTrackModal';
 import { TrackContextMenu } from '../ui/TrackContextMenu';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
@@ -18,7 +18,7 @@ interface LowQualityTracksModalProps {
 }
 
 export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ open, onOpenChange }) => {
-  const { tracks, artists, albums, volume, deleteTrack, fetchData } = useMusicStore();
+  const { tracks, artists, albums, releases, volume, deleteTrack, fetchData, activeProfile } = useMusicStore(); // Added releases, activeProfile
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
@@ -37,7 +37,8 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    return album?.covers[0] || '/placeholder.svg';
+    // Use the new helper here
+    return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
   };
 
   const getArtistName = (track: any) => {
@@ -131,13 +132,14 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
               <p className="text-zinc-600 text-sm mt-1">Your library is in pristine condition!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 h-[calc(90vh-250px)] pr-4">
+            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {lowQualityTracks.map((track) => (
                   <TrackContextMenu key={track.id} track={track}>
                     <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800">
+                        <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{track.id}</span> {/* Using track.id instead of index + 1 */}
+                        <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800 shrink-0">
                           <img src={getAlbumArt(track)} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="min-w-0 flex-1">

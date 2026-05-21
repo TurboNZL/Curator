@@ -181,7 +181,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         artists: (artists || []).map((a: any) => ({ ...a, groups: parseJsonOrDefault(a.groups, []), eras: [] })),
         albums: (albums || []).map((al: any) => ({
           ...al,
-          covers: parseJsonOrDefault(al.covers, []),
+          // Removed 'covers' from parsing
           primaryCover: al.primaryCover || null, // Parse new primaryCover field
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
           artistIds: parseJsonOrDefault(al.artistIds, []),
@@ -466,7 +466,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const newAlbum = await res.json();
     const parsedNewAlbum = { 
       ...newAlbum, 
-      covers: parseJsonOrDefault(newAlbum.covers, []), 
+      // Removed 'covers' from parsing
       primaryCover: newAlbum.primaryCover || null, // Parse new primaryCover field
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []), 
       artistIds: parseJsonOrDefault(newAlbum.artistIds, []),

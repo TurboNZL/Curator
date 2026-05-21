@@ -8,9 +8,10 @@ import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { getAlbumDisplayCover } from '@/lib/utils'; // Import the new utility
 
 const Albums = () => {
-  const { albums, artists, fetchData, activeProfile } = useMusicStore();
+  const { albums, artists, releases, fetchData, activeProfile } = useMusicStore(); // Added 'releases' to destructure
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false); // State for CreateAlbumModal
@@ -96,7 +97,7 @@ const Albums = () => {
                   <Card className="bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden cursor-pointer">
                     <div className="aspect-square overflow-hidden relative">
                       <img
-                        src={album.covers[0] || defaultImage}
+                        src={getAlbumDisplayCover(album, releases, defaultImage)} // Use the new helper
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         alt={album.title}
                       />

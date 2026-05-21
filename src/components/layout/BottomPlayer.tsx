@@ -6,7 +6,7 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, 
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
-import { cn, trackHasAlbum } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { ScrollArea } from '../ui/scroll-area';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
@@ -14,7 +14,7 @@ const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial p
 
 export const BottomPlayer = () => {
   const {
-    currentTrackId, tracks, artists, albums, isPlaying, togglePlay,
+    currentTrackId, tracks, artists, albums, releases, isPlaying, togglePlay, // Added releases
     volume, setVolume, nextTrack, previousTrack, logPlayback,
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
@@ -34,7 +34,7 @@ export const BottomPlayer = () => {
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
   const album = albums.find(al => currentTrack && trackHasAlbum(currentTrack, al.id));
-  const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   // Update refs when relevant props change
   useEffect(() => {
@@ -199,7 +199,7 @@ export const BottomPlayer = () => {
       <div className="flex items-center gap-4 w-1/3">
         <div className="w-14 h-14 rounded-lg overflow-hidden border border-zinc-800 shadow-lg bg-zinc-900 flex items-center justify-center">
           {currentTrack ? (
-            <img src={album?.covers[0] || defaultImage} className="w-full h-full object-cover" alt="" />
+            <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover" alt="" /> 
           ) : (
             <Music size={24} className="text-zinc-700" />
           )}

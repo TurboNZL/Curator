@@ -28,8 +28,8 @@ export interface Album {
   artistId: string; // Primary artist
   artistIds: string[]; // For multiple artists
   eraId?: string;
-  covers: string[];
-  primaryCover?: string; // New: Album's explicitly set primary cover
+  // Removed 'covers: string[]' as it will no longer be stored directly on the album
+  primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
   pendingFiles: { url: string; name: string }[];
   credits: string[];

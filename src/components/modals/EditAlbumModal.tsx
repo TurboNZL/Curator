@@ -10,7 +10,7 @@ import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3,
 import { toast } from 'sonner';
 import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
+import { cn, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
@@ -19,27 +19,32 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 
 export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'children' prop
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup } = useMusicStore();
+  const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup, activeProfile } = useMusicStore(); // Added activeProfile
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
   const albumGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === album.id && m.entityType === 'album' && m.showOnEntityPage)
   );
 
-  const availableCovers = useMemo(() => Array.from(new Set([
-    album.primaryCover, // Include the current primary cover
-    ...album.covers,
-    ...albumReleases.map(r => r.coverImage).filter(Boolean) as string[]
-  ])).filter(Boolean), [album.primaryCover, album.covers, albumReleases]);
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+
+  const allPossibleCovers = useMemo(() => {
+    // Collect all potential cover images
+    const covers = new Set<string>();
+    if (album.primaryCover) covers.add(album.primaryCover);
+    albumReleases.forEach(r => {
+      if (r.coverImage) covers.add(r.coverImage);
+    });
+    return Array.from(covers);
+  }, [album.primaryCover, albumReleases]);
 
 
   const [formData, setFormData] = useState({
     title: album.title,
     artistId: album.artistId,
     artistIds: album.artistIds || [],
-    primaryCover: album.primaryCover || '', // Use primaryCover
+    primaryCover: album.primaryCover || '', 
     pendingFiles: album.pendingFiles || [],
-    // We don't manage releaseDate here, as it belongs to individual releases
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
@@ -51,7 +56,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
         title: album.title,
         artistId: album.artistId,
         artistIds: album.artistIds || [],
-        primaryCover: album.primaryCover || '', // Initialize with actual primaryCover
+        primaryCover: album.primaryCover || '', 
         pendingFiles: album.pendingFiles || [],
       });
     }
@@ -65,10 +70,9 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
       title: formData.title,
       artistId: formData.artistId,
       artistIds: formData.artistIds,
-      primaryCover: formData.primaryCover || null, // Update primaryCover directly
-      covers: album.covers, // Keep existing 'covers' array as it's separate from primaryCover
+      primaryCover: formData.primaryCover || null, 
+      // Removed 'covers' from update
       pendingFiles: formData.pendingFiles,
-      // defaultReleaseId is NOT managed here; it's handled by 'Set as Default' on AlbumDetail
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -150,7 +154,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Primary Cover</Label>
                 <div className="grid grid-cols-4 gap-2">
-                  {availableCovers.map((url, i) => (
+                  {allPossibleCovers.map((url, i) => (
                     <button
                       key={i}
                       type="button"
@@ -171,9 +175,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                   {/* Option to upload new primary cover */}
                   <div className="aspect-square rounded-lg border-2 border-dashed border-zinc-800 flex items-center justify-center">
                     <ImageUpload
-                      value="" // Always empty for new upload
+                      value="" 
                       onChange={(val) => setFormData({...formData, primaryCover: val})}
-                      // The 'trigger' prop is not supported by ImageUpload, it provides its own UI.
                     />
                   </div>
                 </div>

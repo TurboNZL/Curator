@@ -5,7 +5,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Track } from '@/types/music';
 
@@ -16,6 +16,7 @@ const Queue = () => {
     tracks = [],
     artists = [],
     albums = [],
+    releases = [], // Added releases
     currentTrackId,
     setCurrentTrack,
     removeFromUserQueue,
@@ -26,7 +27,8 @@ const Queue = () => {
     clearActiveQueue,
     reorderUserQueue,
     fetchData,
-    isLoading
+    isLoading,
+    activeProfile // Added activeProfile
   } = useMusicStore();
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
@@ -49,6 +51,13 @@ const Queue = () => {
 
   const onDragEnd = () => {
     setDragIndex(null);
+  };
+
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+
+  const getAlbumArt = (track: Track | undefined, album: any) => {
+    if (!track) return defaultAlbumImage;
+    return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
   const getTrackData = (id: string) => {
@@ -110,7 +119,7 @@ const Queue = () => {
           <TrackContextMenu track={currentTrackData.track}>
             <Card className="bg-blue-600/10 border-blue-500/30 p-4 flex items-center gap-4">
               <div className="w-16 h-16 rounded-lg overflow-hidden border border-blue-500/20 bg-zinc-900">
-                <img src={currentTrackData.album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+                <img src={getAlbumArt(currentTrackData.track, currentTrackData.album)} className="w-full h-full object-cover" alt="" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-black text-white uppercase truncate">{currentTrackData.track.title}</h3>
@@ -164,6 +173,8 @@ const Queue = () => {
                     track={track}
                     artist={artist}
                     album={album}
+                    releases={releases} // Pass releases
+                    activeProfile={activeProfile} // Pass activeProfile
                     onRemove={() => removeFromUserQueue(index)}
                     onPlay={() => {
                       removeFromUserQueue(index);
@@ -206,6 +217,8 @@ const Queue = () => {
                   track={track}
                   artist={artist}
                   album={album}
+                  releases={releases} // Pass releases
+                  activeProfile={activeProfile} // Pass activeProfile
                   onRemove={() => {}}
                   onPlay={() => {
                     setCurrentTrack(id);
@@ -220,29 +233,34 @@ const Queue = () => {
   );
 };
 
-const QueueItem = ({ track, artist, album, onRemove, onPlay }: {track: Track, artist: any, album: any, onRemove: () => void, onPlay: () => void}) => (
-  <TrackContextMenu track={track}>
-    <div className="group flex items-center gap-4 p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-lg hover:bg-zinc-900 transition-colors">
-      <div className="text-zinc-700 group-hover:text-zinc-500 cursor-grab">
-        <GripVertical size={14} />
+const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, onPlay }: {track: Track, artist: any, album: any, releases: any[], activeProfile: any, onRemove: () => void, onPlay: () => void}) => {
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+  const albumArt = getAlbumDisplayCover(album, releases, defaultAlbumImage);
+
+  return (
+    <TrackContextMenu track={track}>
+      <div className="group flex items-center gap-4 p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-lg hover:bg-zinc-900 transition-colors">
+        <div className="text-zinc-700 group-hover:text-zinc-500 cursor-grab">
+          <GripVertical size={14} />
+        </div>
+        <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden">
+          <img src={albumArt} className="w-full h-full object-cover" alt="" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
+          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name || 'Unknown Artist'}</p>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); onPlay(); }}>
+            <Play size={14} fill="currentColor" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+            <Trash2 size={14} />
+          </Button>
+        </div>
       </div>
-      <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden">
-        <img src={album?.covers?.[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
-        <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name || 'Unknown Artist'}</p>
-      </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); onPlay(); }}>
-          <Play size={14} fill="currentColor" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-          <Trash2 size={14} />
-        </Button>
-      </div>
-    </div>
-  </TrackContextMenu>
-);
+    </TrackContextMenu>
+  );
+};
 
 export default Queue;

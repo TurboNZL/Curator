@@ -8,7 +8,7 @@ import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF T
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { useState, useMemo } from 'react';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { cn } from '@/lib/utils';
+import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
@@ -20,7 +20,7 @@ import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
 const ArtistDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteTrack, addToUserQueue, incrementMemories, decrementMemories } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, releases } = useMusicStore();
 
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
@@ -68,7 +68,7 @@ const ArtistDetail = () => {
     });
     if (ratedTracks.length === 0) return 'N/A';
     const totalRating = ratedTracks.reduce((sum, t) => {
-        const effectiveRating = (t.comparisons >= 3 || t.memories > 0) && t.rating !== undefined && t.rating !== null
+        const effectiveRating = (t.comparisons >= 3 || t.rating !== undefined && t.rating !== null)
             ? t.rating
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
@@ -134,7 +134,7 @@ const ArtistDetail = () => {
               {artistAlbums.map(album => (
                 <Card key={album.id} className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all cursor-pointer group" onClick={() => navigate(`/albums/${album.id}`)}>
                   <div className="aspect-square rounded-lg overflow-hidden mb-3 relative">
-                    <img src={album.covers[0] || defaultAlbumImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={album.title} />
+                    <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={album.title} />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button size="icon" className="rounded-full bg-blue-600 hover:bg-blue-500 text-white w-10 h-10">
                         <Play fill="currentColor" size={18}/>

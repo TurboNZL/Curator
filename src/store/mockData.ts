@@ -30,7 +30,7 @@ export const MOCK_ALBUMS: Album[] = [
     artistId: 'a1',
     artistIds: ['a1'], // Added
     eraId: 'e1',
-    covers: ['https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop'],
+    primaryCover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
     pendingFiles: [], // Added
     credits: [] // Added
   },
@@ -40,7 +40,7 @@ export const MOCK_ALBUMS: Album[] = [
     artistId: 'a2',
     artistIds: ['a2'], // Added
     eraId: 'e4',
-    covers: ['https://images.unsplash.com/photo-1619983081563-430f63602796?w=400&h=400&fit=crop'],
+    primaryCover: 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=400&h=400&fit=crop',
     pendingFiles: [], // Added
     credits: [] // Added
   }

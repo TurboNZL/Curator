@@ -8,13 +8,13 @@ import { Music, Disc, User, Search, Play, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { trackHasAlbum } from '@/lib/utils';
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q')?.toLowerCase() || '';
-  const { tracks, albums, artists, setCurrentTrack } = useMusicStore();
+  const { tracks, albums, artists, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Added releases, activeProfile
 
   const results = useMemo(() => {
     if (!query) return { tracks: [], albums: [], artists: [] };
@@ -31,6 +31,7 @@ const SearchResults = () => {
   }, [query, tracks, albums, artists]);
 
   const hasResults = results.tracks.length > 0 || results.albums.length > 0 || results.artists.length > 0;
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   return (
     <div className="space-y-8 pb-20">
@@ -78,7 +79,7 @@ const SearchResults = () => {
                   <Link key={album.id} to={`/albums/${album.id}`}>
                     <Card className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all group">
                       <div className="aspect-square rounded-lg overflow-hidden mb-3">
-                        <img src={album.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover" alt="" />
+                        <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover" alt="" /> {/* Use the new helper */}
                       </div>
                       <h3 className="text-sm font-bold text-white truncate">{album.title}</h3>
                     </Card>
@@ -102,7 +103,7 @@ const SearchResults = () => {
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden relative group/play">
-                            <img src={album?.covers[0] || '/placeholder.svg'} className="w-full h-full object-cover opacity-60" alt="" />
+                            <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover opacity-60" alt="" /> {/* Use the new helper */}
                             <button 
                               onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
                               className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover/play:opacity-100 transition-opacity"

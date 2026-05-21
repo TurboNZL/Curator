@@ -18,12 +18,20 @@ export default defineHandler(async (event) => {
       title: body.title,
       artistId: body.artistId,
       eraId: body.eraId,
-      covers: JSON.stringify(body.covers || []),
-      primaryCover: body.primaryCover || null, // Handle new primaryCover
+      // Removed 'covers' from insertion
+      primaryCover: body.primaryCover || null, 
       pendingFiles: JSON.stringify(body.pendingFiles || []),
+      credits: JSON.stringify(body.credits || []), // Ensure credits are stringified for DB
+      artistIds: JSON.stringify(body.artistIds || []) // Ensure artistIds are stringified for DB
     };
 
     await db.insert(albums).values(newAlbum);
-    return newAlbum;
+    // Return the new album with parsed fields for consistency
+    return { 
+      ...newAlbum, 
+      pendingFiles: body.pendingFiles || [],
+      credits: body.credits || [],
+      artistIds: body.artistIds || []
+    };
   }
 });

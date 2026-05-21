@@ -17,9 +17,10 @@ export default defineHandler(async (event) => {
       title: body.title,
       artistId: body.artistId,
       artistIds: JSON.stringify(body.artistIds || []),
-      covers: JSON.stringify(body.covers || []),
-      primaryCover: body.primaryCover || null, // Handle new primaryCover
+      // Removed 'covers' from update
+      primaryCover: body.primaryCover || null, 
       pendingFiles: JSON.stringify(body.pendingFiles || []),
+      credits: JSON.stringify(body.credits || []), // Ensure credits are stringified for DB
     };
     await db.update(albums).set(updateData).where(eq(albums.id, id));
     return { success: true };

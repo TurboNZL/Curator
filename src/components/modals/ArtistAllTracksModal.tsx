@@ -14,7 +14,7 @@ import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
 import { StatsForNerdsModal } from './StatsForNerdsModal';
 import { EditTrackModal } from './EditTrackModal';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ interface ArtistAllTracksModalProps {
 }
 
 export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, setCurrentTrack, deleteTrack, addToUserQueue, incrementMemories, decrementMemories } = useMusicStore();
+  const { tracks, artists, albums, releases, setCurrentTrack, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, activeProfile } = useMusicStore(); // Added releases, activeProfile
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
@@ -57,9 +57,12 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
       });
   }, [tracks, artistId]);
 
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+
   const getAlbumArt = (track: Track) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    return album?.covers[0] || '/placeholder.svg';
+    // Use the new helper here
+    return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
   return (

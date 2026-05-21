@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -153,12 +153,12 @@ interface ImageUploadResolutionModalProps {
 }
 
 const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({ isOpen, onClose, entity, onResolve, entityType }) => {
-  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.covers?.[0] || '');
+  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.primaryCover || ''); // Use primaryCover for albums
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setImageUrl(entity?.image || entity?.covers?.[0] || '');
+      setImageUrl(entity?.image || entity?.primaryCover || ''); // Use primaryCover for albums
     }
   }, [isOpen, entity]);
 
@@ -203,7 +203,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData } = useMusicStore();
+  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData, activeProfile } = useMusicStore(); // Added activeProfile
   
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -221,7 +221,7 @@ const Cleanup = () => {
 
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
-    album_cover: true,
+    album_cover: true, // This will now check primaryCover
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
@@ -285,8 +285,9 @@ const Cleanup = () => {
 
 
   const getAlbumArt = (track: any) => {
-    const album = albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id));
-    return album?.covers[0] || '/placeholder.svg';
+    const album = albums.find(a => trackHasAlbum(track, a.id));
+    // Use the new helper here
+    return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
   };
 
   const getArtistName = (track: any) => {
@@ -297,7 +298,7 @@ const Cleanup = () => {
   const allTasks = useMemo(() => {
     const generatedTasks = [
       ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
-      ...albums.filter(al => !al.covers || al.covers.length === 0).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
+      ...albums.filter(al => !al.primaryCover).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })), // Check primaryCover
       ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500' })),
       ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
       ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' })),
@@ -384,7 +385,7 @@ const Cleanup = () => {
     }
 
     return [...generatedTasks, ...groupedSpotifyTasks];
-  }, [tracks, artists, albums, releases]);
+  }, [tracks, artists, albums, releases, activeProfile]); // Added activeProfile to dependencies
 
   const filteredTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
@@ -579,7 +580,7 @@ const Cleanup = () => {
     if (type === 'artist') {
       await updateArtist(id, { image: imageUrl });
     } else if (type === 'album') {
-      await updateAlbum(id, { covers: [imageUrl] });
+      await updateAlbum(id, { primaryCover: imageUrl }); // Update primaryCover
     }
     fetchData();
   };

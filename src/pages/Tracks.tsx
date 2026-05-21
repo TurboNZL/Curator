@@ -10,7 +10,7 @@ import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF T
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { trackHasAlbum } from '@/lib/utils';
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { cn } from '@/lib/utils';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], setCurrentTrack, fetchData, isLoading, deleteTrack, addToUserQueue, incrementMemories, decrementMemories } = useMusicStore(); // Add deleteTrack, addToUserQueue, incrementMemories, decrementMemories
+  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, activeProfile } = useMusicStore(); // Added releases, activeProfile
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
@@ -108,6 +108,7 @@ const Tracks = () => {
       </div>
     );
   }
+  const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   return (
     <div className="space-y-8 pb-20">
@@ -181,7 +182,7 @@ const Tracks = () => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
                 const album = albums?.find(al => trackHasAlbum(track, al.id));
-                const cover = album?.covers?.[0] || '/placeholder.svg';
+                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage); // Use the new helper
                 
                 return (
                   <TrackContextMenu key={track.id} track={track}>
