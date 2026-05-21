@@ -44,7 +44,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     audioUrl: track.localFilePath || '',
     spotifyUrl: track.spotifyUrl || '',
     geniusUrl: track.geniusUrl || '',
-    youtubeMusicUrl: track.youtubeMusicUrl || '', // Removed soundcloudUrl
+    youtubeMusicUrl: track.youtubeMusicUrl || '', 
   });
 
   const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
@@ -229,6 +229,10 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genius Link</Label>
                   <Input value={formData.geniusUrl} onChange={(e) => setFormData({...formData, geniusUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">YouTube Music Link</Label>
+                <Input value={formData.youtubeMusicUrl} onChange={(e) => setFormData({...formData, youtubeMusicUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
               </div>
             </TabsContent>
 

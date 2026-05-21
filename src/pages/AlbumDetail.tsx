@@ -59,6 +59,10 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
+  // New state for CreateTrackModal
+  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); 
+
+
   // Initialize selectedReleaseId
   useEffect(() => {
     if (!selectedReleaseId && album) { 
@@ -155,6 +159,7 @@ const AlbumDetail = () => {
     }
   };
 
+
   if (!album) return <div className="p-8">Album not found.</div>;
 
   // Determine the cover to display
@@ -216,7 +221,9 @@ const AlbumDetail = () => {
             </h2>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-bold text-zinc-600 uppercase">{albumTracks.length} Tracks</span>
-              <CreateTrackModal albumId={album.id} artistId={album.artistId} open={isEditTrackModalOpen} onOpenChange={setIsEditTrackModalOpen} />
+              <Button onClick={() => setIsCreateTrackModalOpen(true)} className="bg-blue-600 hover:bg-blue-500 text-[10px] font-black uppercase tracking-widest h-10 px-8 gap-2">
+                <Plus size={16} /> New Track
+              </Button>
             </div>
           </div>
 
@@ -322,6 +329,21 @@ const AlbumDetail = () => {
                               >
                                 <Info size={14} className="mr-2" /> Stats for Nerds
                               </DropdownMenuItem>
+                              {track.spotifyUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
+                                </DropdownMenuItem>
+                              )}
+                              {track.geniusUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.geniusUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
+                                </DropdownMenuItem>
+                              )}
+                              {track.youtubeMusicUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator className="bg-zinc-800" />
                               <DropdownMenuItem 
                                 onClick={(e) => { 
@@ -489,6 +511,7 @@ const AlbumDetail = () => {
           onOpenChange={setIsStatsModalOpen}
         />
       )}
+      <CreateTrackModal albumId={album.id} artistId={album.artistId} open={isCreateTrackModalOpen} onOpenChange={setIsCreateTrackModalOpen} />
     </div>
   );
 };

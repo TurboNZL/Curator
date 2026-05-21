@@ -196,7 +196,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           queueRules: parseJsonOrDefault(t.queueRules, {}),
           artistIds: parseJsonOrDefault(t.artistIds, []),
           albumIds: parseJsonOrDefault(t.albumIds, []),
-          isFavorite: !!t.isFavorite
+          isFavorite: !!t.isFavorite,
+          bitrate: t.bitrate || 'Unknown' // Ensure bitrate is always present
         })),
         releases: releases || [],
         playlists: playlists || [],
@@ -511,6 +512,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           writers: trackData.writers,     // Pass directly
           credits: trackData.credits,     // Pass directly
           queueRules: trackData.queueRules, // Pass directly
+          bitrate: trackData.bitrate, // Pass bitrate
         })
       });
       if (res.ok) {

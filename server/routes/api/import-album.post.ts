@@ -115,7 +115,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const suggestedTracks: { title: string; youtubeMusicUrl: string; localFilePath: string; thumbnailUrl?: string; }[] = [];
+    const suggestedTracks: { title: string; youtubeMusicUrl: string; localFilePath: string; thumbnailUrl?: string; bitrate?: string; }[] = [];
     const downloadErrors: string[] = [];
 
     // Process entries in chunks to limit concurrency
@@ -127,6 +127,9 @@ export default defineEventHandler(async (event) => {
         const trackTitle = (entry.title || "Unknown Track").trim();
         const youtubeMusicUrl = entry.webpage_url || `https://www.youtube.com/watch?v=${entry.id}`;
         const thumbnailUrl = entry.thumbnail;
+
+        // Extract bitrate if available from the initial info
+        const bitrate = entry.abr ? `${Math.round(entry.abr)}kbps` : 'Unknown';
 
         // Sanitize filename for local storage
         const cleanTrackTitle = trackTitle.replace(/[^\w\s-]/g, '').trim().substring(0, 100);
@@ -157,7 +160,8 @@ export default defineEventHandler(async (event) => {
             title: trackTitle,
             youtubeMusicUrl,
             localFilePath: relativeLocalFilePath,
-            thumbnailUrl: thumbnailUrl
+            thumbnailUrl: thumbnailUrl,
+            bitrate: bitrate, // Add bitrate here
           };
         } catch (downloadError: any) {
           console.warn(`Skipping track "${trackTitle}" due to download error: ${downloadError.message}`);

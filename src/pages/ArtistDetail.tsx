@@ -18,9 +18,10 @@ import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
 
 
 const ArtistDetail = () => {
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, releases } = useMusicStore();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, releases } = useMusicStore();
+  const {  } = useMusicStore(); // Re-fetch artists after update
 
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
@@ -68,7 +69,7 @@ const ArtistDetail = () => {
     });
     if (ratedTracks.length === 0) return 'N/A';
     const totalRating = ratedTracks.reduce((sum, t) => {
-        const effectiveRating = (t.comparisons >= 3 || t.rating !== undefined && t.rating !== null)
+        const effectiveRating = (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null)
             ? t.rating
             : (t.initialRating !== undefined && t.initialRating !== null)
                 ? t.initialRating
@@ -97,6 +98,15 @@ const ArtistDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isArtistAllTracksModalOpen, setIsArtistAllTracksModalOpen] = useState(false); // State for ArtistAllTracksModal
+
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("No link available for this item.");
+    }
+  };
 
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
@@ -247,6 +257,21 @@ const ArtistDetail = () => {
                           >
                             <Info size={14} className="mr-2" /> Stats for Nerds
                           </DropdownMenuItem>
+                          {track.spotifyUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
+                                </DropdownMenuItem>
+                              )}
+                              {track.geniusUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.geniusUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
+                                </DropdownMenuItem>
+                              )}
+                              {track.youtubeMusicUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
+                                </DropdownMenuItem>
+                              )}
                           <DropdownMenuSeparator className="bg-zinc-800" />
                           <DropdownMenuItem 
                             onClick={(e) => { 

@@ -19,6 +19,7 @@ interface ImportedTrackData {
   youtubeMusicUrl: string;
   localFilePath: string;
   thumbnailUrl?: string;
+  bitrate?: string; // Added bitrate
 }
 
 interface ImportReviewModalProps {
@@ -116,7 +117,8 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         artistIds: [finalArtistId], 
         albumIds: [{ albumId: newAlbum.id, order: 0 }],
         genres: [], producers: [], writers: [], credits: [],
-        eloScore: 1000, comparisons: 0, memories: 0, queueRules: {}
+        eloScore: 1000, comparisons: 0, memories: 0, queueRules: {},
+        bitrate: track.bitrate, // Pass bitrate
       }));
       const createdTracks = await addTracks(tracksToCreate);
       toast.success(`Added ${tracksToCreate.length} tracks to "${newAlbum.title}".`);
@@ -229,6 +231,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                       className="flex-1 bg-zinc-800 border-zinc-700 text-white text-sm"
                       placeholder="Track Title"
                     />
+                    <span className="text-[10px] font-mono text-zinc-600">{track.bitrate || 'N/A'}</span>
                     <a href={track.youtubeMusicUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-red-500">
                       <LinkIcon size={14} />
                     </a>
