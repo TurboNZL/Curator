@@ -12,6 +12,8 @@ import { EditTrackModal } from './EditTrackModal';
 import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
+const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
+
 interface LowQualityTracksModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

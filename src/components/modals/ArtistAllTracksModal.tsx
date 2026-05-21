@@ -8,13 +8,13 @@ import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
-import { StatsForNerdsModal } from './StatsForNerdsModal';
-import { EditTrackModal } from './EditTrackModal';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; // Import new component
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -74,7 +74,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
             {artistName}'s Rated Tracks
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 flex-1 overflow-hidden min-h-0">
+        <div className="space-y-4 py-4 flex-1 overflow-hidden">
           {allRatedArtistTracks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-2xl h-full">
               <Music size={48} className="text-zinc-800 mb-4" />
