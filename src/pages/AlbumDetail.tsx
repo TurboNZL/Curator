@@ -90,19 +90,29 @@ const AlbumDetail = () => {
   
   const albumTracks = useMemo(() => {
     if (!album) return [];
-    let tracksForAlbum = tracks.filter(t => t.albumIds?.some(aId => aId.albumId === album.id));
-    
+
+    let tracksForAlbum =
+      tracks.filter(t =>
+        t.albumIds?.some(aId => aId.albumId === album.id)
+      );
+
     if (!showAllTracks && currentRelease) {
-      tracksForAlbum = tracksForAlbum.filter(t => currentRelease.trackIds.includes(t.id));
+      tracksForAlbum = currentRelease.trackIds
+        .map(trackId =>
+          tracksForAlbum.find(t => t.id === trackId)
+        )
+        .filter(Boolean);
+    } else {
+      tracksForAlbum.sort((a, b) => {
+        const aOrder =
+          a.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
+        const bOrder =
+          b.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
+        return aOrder - bOrder;
+      });
     }
-    
-    // Fix 2: Prevent alphabetical sorting when orders are the same
-    return tracksForAlbum.sort((a, b) => {
-      const aOrder = a.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
-      const bOrder = b.albumIds.find(aId => aId.albumId === album.id)?.order ?? 999;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return 0; // No secondary sort when order is the same
-    });
+
+    return tracksForAlbum;
   }, [showAllTracks, currentRelease, tracks, album]);
 
   const avgAlbumRating = useMemo(() => {

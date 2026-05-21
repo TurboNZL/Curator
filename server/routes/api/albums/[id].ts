@@ -13,16 +13,34 @@ export default defineHandler(async (event) => {
 
   if (method === 'PUT') {
     const body = await readBody(event) as any;
-    const updateData: any = {
-      title: body.title,
-      artistId: body.artistId,
-      artistIds: JSON.stringify(body.artistIds || []),
-      // Removed 'covers' from update
-      primaryCover: body.primaryCover || null, 
-      pendingFiles: JSON.stringify(body.pendingFiles || []),
-      credits: JSON.stringify(body.credits || []), // Ensure credits are stringified for DB
-    };
-    await db.update(albums).set(updateData).where(eq(albums.id, id));
+
+    const updateData: any = {};
+
+    if (body.title !== undefined)
+      updateData.title = body.title;
+
+    if (body.artistId !== undefined)
+      updateData.artistId = body.artistId;
+
+    if (body.artistIds !== undefined)
+      updateData.artistIds = JSON.stringify(body.artistIds);
+
+    if (body.primaryCover !== undefined)
+      updateData.primaryCover = body.primaryCover;
+
+    if (body.defaultReleaseId !== undefined)
+      updateData.defaultReleaseId = body.defaultReleaseId;
+
+    if (body.pendingFiles !== undefined)
+      updateData.pendingFiles = JSON.stringify(body.pendingFiles);
+
+    if (body.credits !== undefined)
+      updateData.credits = JSON.stringify(body.credits);
+
+    await db.update(albums)
+      .set(updateData)
+      .where(eq(albums.id, id));
+
     return { success: true };
   }
 
