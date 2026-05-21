@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Plus, Edit2, Users, Disc, Music, Link as LinkIcon } from 'lucide-react'; 
+import { Badge } from '@/components/ui/badge';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Plus, Edit2, Users, Disc, Music, MoreVertical, Brain, Info, Minus, Link as LinkIcon } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -11,17 +12,20 @@ import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { toast } from 'sonner';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const AlbumDetail = () => {
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore();
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, deleteTrack } = useMusicStore(); // Removed incrementMemories, decrementMemories, addToUserQueue as they are now handled by TrackDropdownMenuItems
   const { id } = useParams();
   
   const album = albums.find(a => a.id === id);
@@ -38,7 +42,7 @@ const AlbumDetail = () => {
   ).length;
 
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
-  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null);
+  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null); // New state for temporary cover override
   
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
@@ -50,6 +54,13 @@ const AlbumDetail = () => {
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); 
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+
+  // New state for CreateTrackModal
   const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); 
 
 
@@ -244,13 +255,31 @@ const AlbumDetail = () => {
                           </div>
                         </TableCell>
                         <TableCell>
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
                             track={track}
                             showEditor={true} 
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          {/* MoreVertical button no longer needed here as right-click handles actions */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                              <TrackDropdownMenuItems
+                                track={track}
+                                setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                                setSelectedTrackForEdit={setSelectedTrackForEdit}
+                                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                                setSelectedTrackForStats={setSelectedTrackForStats}
+                                setIsStatsModalOpen={setIsStatsModalOpen}
+                              />
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     </TrackRightClickMenu>
@@ -278,7 +307,7 @@ const AlbumDetail = () => {
                     )}
                     onClick={() => {
                       setShowAllTracks(!showAllTracks);
-                      setTemporaryDisplayCoverUrl(null);
+                      setTemporaryDisplayCoverUrl(null); // Clear temporary override when toggling track view
                     }}
                     title={showAllTracks ? "Show Release Tracks" : "Show All Tracks"}
                   >
@@ -313,7 +342,7 @@ const AlbumDetail = () => {
                     <button 
                       onClick={() => {
                         setSelectedReleaseId(release.id);
-                        setTemporaryDisplayCoverUrl(release.coverImage || null);
+                        setTemporaryDisplayCoverUrl(release.coverImage || null); // Set temporary cover
                         setShowAllTracks(false);
                       }}
                       className={cn(
@@ -388,8 +417,22 @@ const AlbumDetail = () => {
           </section>
         </div>
       </div>
-      <CreatePlaylistAddModal albumToAdd={album} trackToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      <CreatePlaylistAddModal albumToAdd={album} trackToAdd={selectedTrackForPlaylistAdd} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
       <RelationalBioModal initialEntity={{ type: 'album', id: album.id, label: album.title }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
+      )}
       <CreateTrackModal albumId={album.id} artistId={album.artistId} open={isCreateTrackModalOpen} onOpenChange={setIsCreateTrackModalOpen} />
     </div>
   );

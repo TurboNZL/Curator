@@ -3,21 +3,32 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ListMusic, ArrowUpDown, Brain, Music, Star, Loader2, Plus, Play } from 'lucide-react'; 
+import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Plus, MoreVertical } from 'lucide-react'; 
 import { Input } from '@/components/ui/input';
-import { Rating } from '@/components/ui/Rating';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
-import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { cn } from '@/lib/utils';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
+import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, activeProfile } = useMusicStore(); 
+  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
-  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); 
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
+  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); // State for CreateTrackModal
 
 
   useEffect(() => {
@@ -172,7 +183,7 @@ const Tracks = () => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
                 const album = albums?.find(al => trackHasAlbum(track, al.id));
-                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage);
+                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage); // Use the new helper
                 
                 return (
                   <TrackRightClickMenu key={track.id} track={track}>
@@ -180,7 +191,7 @@ const Tracks = () => {
                       className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                     >
                       <TableCell className="text-xs text-zinc-600 font-mono">{i + 1}</TableCell>
-                      <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }} className="cursor-pointer">
+                      <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded overflow-hidden bg-zinc-900 border border-zinc-800 group/play">
                             <img src={cover} className="w-full h-full object-cover opacity-40 group-hover/play:opacity-20 transition-opacity" alt="" />
@@ -197,6 +208,7 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
+                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating
                           track={track}
                           showEditor={true} 
@@ -204,7 +216,24 @@ const Tracks = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* MoreVertical button no longer needed here as right-click handles actions */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                              <MoreVertical size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                            <TrackDropdownMenuItems
+                                track={track}
+                                setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                                setSelectedTrackForEdit={setSelectedTrackForEdit}
+                                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                                setSelectedTrackForStats={setSelectedTrackForStats}
+                                setIsStatsModalOpen={setIsStatsModalOpen}
+                            />
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   </TrackRightClickMenu>
@@ -213,6 +242,21 @@ const Tracks = () => {
             </TableBody>
           </Table>
         </div>
+      )}
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
       )}
       <CreateTrackModal
         open={isCreateTrackModalOpen}

@@ -5,6 +5,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { ListMusic, Plus, Play, Trash2, Edit2, GripVertical, Album as AlbumIcon, Music as MusicIcon, Share, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -12,12 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import the helper
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
-import { useNavigate } from 'react-router-dom';
-
 
 const Playlists = () => {
   const { playlists, tracks, artists, albums, addPlaylist, updatePlaylist, deletePlaylist, setCurrentTrack, fetchData, activeProfile, releases } = useMusicStore();
@@ -115,7 +113,7 @@ const Playlists = () => {
     return tracks.filter(t => 
       t.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
       artists.some(a => a.id === t.artistId && a.name.toLowerCase().includes(trackSearchTerm.toLowerCase())) ||
-      albums.some(al => trackHasAlbum(t, al.id))
+      albums.some(al => trackHasAlbum(t, al.id)) // Use trackHasAlbum
     );
   }, [tracks, artists, albums, trackSearchTerm]);
 
@@ -159,7 +157,7 @@ const Playlists = () => {
   const getTrackDetails = (trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
     const artist = artists.find(a => a.id === track?.artistId);
-    const album = albums.find(al => track && trackHasAlbum(track, al.id));
+    const album = albums.find(al => track && trackHasAlbum(track, al.id)); // Use trackHasAlbum
     return { track, artist, album };
   };
 
@@ -343,7 +341,7 @@ const Playlists = () => {
                         onDragEnd={onDragEnd}
                         className={cn(
                           "transition-all",
-                          draggedTrackIndex === index && "opacity-50 scale-[0.98]"
+                          draggedTrackIndex === index && "opacity-50 scale-[0.98] border-emerald-500/50"
                         )}
                       >
                         <TrackRightClickMenu track={track}>
@@ -351,6 +349,7 @@ const Playlists = () => {
                             <div className="text-zinc-600 group-hover:text-zinc-400">
                               <GripVertical size={14} />
                             </div>
+                            {/* Use getAlbumDisplayCover here */}
                             <img src={getAlbumDisplayCover(album, releases, defaultCover)} alt="" className="w-6 h-6 object-cover rounded" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-white truncate">{track.title}</p>
@@ -378,6 +377,7 @@ const Playlists = () => {
                             onClick={() => addTrackToEditingPlaylist(track.id)}
                             className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-zinc-800 text-zinc-400 w-full text-left transition-colors"
                           >
+                            {/* Use getAlbumDisplayCover here */}
                             <img src={getAlbumDisplayCover(album, releases, defaultCover)} alt="" className="w-6 h-6 object-cover rounded" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold truncate">{track.title}</p>

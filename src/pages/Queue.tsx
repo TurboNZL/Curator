@@ -16,7 +16,7 @@ const Queue = () => {
     tracks = [],
     artists = [],
     albums = [],
-    releases = [],
+    releases = [], // Added releases
     currentTrackId,
     setCurrentTrack,
     removeFromUserQueue,
@@ -28,7 +28,7 @@ const Queue = () => {
     reorderUserQueue,
     fetchData,
     isLoading,
-    activeProfile
+    activeProfile // Added activeProfile
   } = useMusicStore();
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
@@ -173,8 +173,8 @@ const Queue = () => {
                     track={track}
                     artist={artist}
                     album={album}
-                    releases={releases}
-                    activeProfile={activeProfile}
+                    releases={releases} // Pass releases
+                    activeProfile={activeProfile} // Pass activeProfile
                     onRemove={() => removeFromUserQueue(index)}
                     onPlay={() => {
                       removeFromUserQueue(index);
@@ -217,8 +217,8 @@ const Queue = () => {
                   track={track}
                   artist={artist}
                   album={album}
-                  releases={releases}
-                  activeProfile={activeProfile}
+                  releases={releases} // Pass releases
+                  activeProfile={activeProfile} // Pass activeProfile
                   onRemove={() => {}}
                   onPlay={() => {
                     setCurrentTrack(id);

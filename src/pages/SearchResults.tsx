@@ -4,16 +4,30 @@ import React, { useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music, Disc, User, Search, Play } from 'lucide-react'; 
+import { Music, Disc, User, Search, Play, MoreVertical } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
-import { Rating } from '@/components/ui/Rating';
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
-import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; 
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent } from '@/components/ui/dropdown-menu';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { useState } from 'react';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
+
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q')?.toLowerCase() || '';
-  const { tracks, albums, artists, releases, setCurrentTrack, activeProfile } = useMusicStore(); 
+  const { tracks, albums, artists, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
+
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); 
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   const results = useMemo(() => {
     if (!query) return { tracks: [], albums: [], artists: [] };
@@ -78,7 +92,7 @@ const SearchResults = () => {
                   <Link key={album.id} to={`/albums/${album.id}`}>
                     <Card className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all group">
                       <div className="aspect-square rounded-lg overflow-hidden mb-3">
-                        <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover" alt="" />
+                        <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover" alt="" /> {/* Use the new helper */}
                       </div>
                       <h3 className="text-sm font-bold text-white truncate">{album.title}</h3>
                     </Card>
@@ -102,7 +116,7 @@ const SearchResults = () => {
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden relative group/play">
-                            <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover opacity-60" alt="" />
+                            <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover opacity-60" alt="" /> {/* Use the new helper */}
                             <button 
                               onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
                               className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover/play:opacity-100 transition-opacity"
@@ -116,10 +130,29 @@ const SearchResults = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
                             track={track}
                             size="sm"
                           />
+                           <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                                <MoreVertical size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                              <TrackDropdownMenuItems
+                                track={track}
+                                setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                                setSelectedTrackForEdit={setSelectedTrackForEdit}
+                                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                                setSelectedTrackForStats={setSelectedTrackForStats}
+                                setIsStatsModalOpen={setIsStatsModalOpen}
+                              />
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </TrackRightClickMenu>
@@ -129,6 +162,21 @@ const SearchResults = () => {
             </section>
           )}
         </div>
+      )}
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
       )}
     </div>
   );
