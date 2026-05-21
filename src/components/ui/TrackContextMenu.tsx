@@ -97,20 +97,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
 
           <ContextMenuSeparator className="bg-zinc-800" />
 
-          <ContextMenuItem
-            onClick={() => setIsEditTrackModalOpen(true)}
-            className="text-xs font-medium"
-          >
-            <Edit2 size={14} className="mr-2" /> Edit Track
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => setIsStatsModalOpen(true)}
-            className="text-xs font-medium"
-          >
-            <Info size={14} className="mr-2" /> Stats for Nerds
-          </ContextMenuItem>
-
-          <ContextMenuItem disabled className="text-xs font-medium opacity-100 !cursor-default text-zinc-500">
+          <ContextMenuItem disabled className="text-xs font-medium opacity-100 !cursor-default text-zinc-300">
             <Brain size={14} className="mr-2" /> Memories: {track.memories}
           </ContextMenuItem>
           <ContextMenuItem
@@ -230,6 +217,19 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           )}
 
           <ContextMenuSeparator className="bg-zinc-800" />
+
+          <ContextMenuItem
+            onClick={() => setIsStatsModalOpen(true)}
+            className="text-xs font-medium"
+          >
+            <Info size={14} className="mr-2" /> Stats for Nerds
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => setIsEditTrackModalOpen(true)}
+            className="text-xs font-medium"
+          >
+            <Edit2 size={14} className="mr-2" /> Edit Track
+          </ContextMenuItem>
           <ContextMenuItem
             onClick={() => {
               if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
