@@ -30,7 +30,7 @@ const AlbumDetail = () => {
   const album = albums.find(a => a.id === id);
   const artist = artists.find(a => a.id === album?.artistId);
   const albumReleases = releases.filter(r => r.albumId === id);
-  const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
+  const defaultImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
   
   const albumGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === id && m.entityType === 'album' && m.showOnEntityPage)
@@ -40,9 +40,13 @@ const AlbumDetail = () => {
     g.members?.some(m => m.entityId === id && m.entityType === 'album')
   ).length;
 
+  // New state for temporarily selected release
+  const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
+  
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
-    const cached = sessionStorage.getItem(`album_sort_${id}`);
+    // Separate caching for release list sort order
+    const cached = sessionStorage.getItem(`album_releases_sort_${id}`);
     return cached ? JSON.parse(cached) : { field: 'date', direction: 'desc' };
   });
 
@@ -56,9 +60,17 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
+  // Initialize selectedReleaseId when album or defaultReleaseId changes
+  useEffect(() => {
+    if (album) {
+      setSelectedReleaseId(album.defaultReleaseId || albumReleases[0]?.id || null);
+    }
+  }, [album, albumReleases]);
+
 
   useEffect(() => {
-    sessionStorage.setItem(`album_sort_${id}`, JSON.stringify(sortConfig));
+    // Cache the sort config for the release list specifically
+    sessionStorage.setItem(`album_releases_sort_${id}`, JSON.stringify(sortConfig));
   }, [sortConfig, id]);
 
   const sortedReleases = useMemo(() => {
@@ -66,18 +78,17 @@ const AlbumDetail = () => {
       let comparison = 0;
       if (sortConfig.field === 'date') {
         comparison = new Date(a.releaseDate || 0).getTime() - new Date(b.releaseDate || 0).getTime();
-      } else {
+      } else { // Default to sorting by title if field is not 'date' or not recognized
         comparison = a.title.localeCompare(b.title);
       }
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
   }, [albumReleases, sortConfig]);
 
-  // Derive currentRelease directly from album.defaultReleaseId, falling back to first sorted release
+  // Derive currentRelease from selectedReleaseId (UI state)
   const currentRelease = useMemo(() => {
-    if (!album) return null;
-    return albumReleases.find(r => r.id === album.defaultReleaseId) || (sortedReleases.length > 0 ? sortedReleases[0] : null);
-  }, [album, albumReleases, sortedReleases]);
+    return albumReleases.find(r => r.id === selectedReleaseId);
+  }, [selectedReleaseId, albumReleases]);
   
   const albumTracks = useMemo(() => {
     if (!album) return [];
@@ -118,9 +129,11 @@ const AlbumDetail = () => {
   }, [albumTracks]);
 
 
-  const handleSetDefault = async (releaseId: string) => {
+  const handleSetDefaultRelease = async (releaseId: string) => {
     if (!album) return;
     await updateAlbum(album.id, { defaultReleaseId: releaseId });
+    setSelectedReleaseId(releaseId); // Also update UI state to match new default
+    toast.success("Default release set!");
   };
 
   const handleCopyLink = (url?: string) => {
@@ -134,9 +147,10 @@ const AlbumDetail = () => {
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
+  // Display cover now prioritizes album.primaryCover, then selected release, then fallback
   const displayCover = useMemo(() => {
-    return currentRelease?.coverImage || album.covers[0] || defaultImage;
-  }, [currentRelease, album.covers, defaultImage]);
+    return album.primaryCover || currentRelease?.coverImage || album.covers[0] || defaultImage;
+  }, [album.primaryCover, currentRelease, album.covers, defaultImage]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -185,7 +199,7 @@ const AlbumDetail = () => {
         <div className="lg:col-span-3 space-y-8">
           <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-              <ListMusic size={14} /> {showAllTracks ? 'All Project Tracks' : 'Tracklist'}
+              <ListMusic size={14} /> {showAllTracks ? 'All Project Tracks' : `Tracklist - ${currentRelease?.title || 'Unknown Release'}`}
             </h2>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-bold text-zinc-600 uppercase">{albumTracks.length} Tracks</span>
@@ -367,13 +381,13 @@ const AlbumDetail = () => {
                   <div key={release.id} className="group/rel relative">
                     <button 
                       onClick={() => {
-                        // Directly update album.defaultReleaseId
-                        updateAlbum(album.id, { defaultReleaseId: release.id });
+                        // Only update selectedReleaseId (UI state)
+                        setSelectedReleaseId(release.id);
                         setShowAllTracks(false);
                       }}
                       className={cn(
                         "w-full text-left text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center justify-between pr-12",
-                        album.defaultReleaseId === release.id && !showAllTracks // Check against actual defaultReleaseId
+                        selectedReleaseId === release.id // Check against UI selected state
                           ? "bg-blue-600 text-white" 
                           : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                       )}
@@ -383,7 +397,7 @@ const AlbumDetail = () => {
                     </button>
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/rel:opacity-100 transition-opacity">
                       <button 
-                        onClick={(e) => { e.stopPropagation(); handleSetDefault(release.id); }}
+                        onClick={(e) => { e.stopPropagation(); handleSetDefaultRelease(release.id); }}
                         className="p-1 text-zinc-500 hover:text-yellow-400"
                         title="Set as Default"
                       >

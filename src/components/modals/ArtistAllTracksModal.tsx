@@ -79,7 +79,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
               <p className="text-zinc-600 text-sm mt-1">Start rating tracks to see them here!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 h-full pr-4">
+            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
                   <TrackContextMenu key={track.id} track={track}>

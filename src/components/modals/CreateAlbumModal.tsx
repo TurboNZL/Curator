@@ -8,6 +8,7 @@ import { Plus, Disc, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '../ui/ImageUpload'; // Import ImageUpload
 
 interface CreateAlbumModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
   const [formData, setFormData] = useState({
     title: '',
     artistId: '',
+    primaryCover: '', // New: Primary cover for the album
     releases: [] as { title: string; date: string }[]
   });
 
@@ -68,7 +70,8 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
         title: formData.title,
         artistId: finalArtistId,
         artistIds: [], // Multi-artist support
-        covers: [],
+        covers: formData.primaryCover ? [formData.primaryCover] : [], // Keep legacy 'covers' for now, but primary cover is explicit
+        primaryCover: formData.primaryCover || null, // Set primary cover
         pendingFiles: [], // Added
         credits: [] // Added
       });
@@ -78,14 +81,14 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
           albumId: newAlbum.id,
           title: rel.title,
           releaseDate: rel.date,
-          coverImage: '',
+          coverImage: formData.primaryCover || '', // Use primary cover as default for initial releases
           trackIds: []
         });
       }
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
       onOpenChange(false); // Close modal
-      setFormData({ title: '', artistId: '', releases: [] }); // Reset form
+      setFormData({ title: '', artistId: '', primaryCover: '', releases: [] }); // Reset form
     } catch (error) {
       console.error(error);
       toast.error("Failed to create album");
@@ -105,6 +108,13 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-8 py-4">
           <div className="space-y-6">
+             <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Primary Cover</Label>
+              <ImageUpload
+                value={formData.primaryCover}
+                onChange={(val) => setFormData({...formData, primaryCover: val})}
+              />
+            </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
               <SearchableSelect 

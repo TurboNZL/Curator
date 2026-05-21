@@ -44,9 +44,8 @@ const Stats = () => {
 
     // Account for currently playing track in real-time
     if (currentTrackId && trackPlayCounts[currentTrackId] && isPlaying) {
-        // Any active play counts as a 'live play' for the chart, regardless of duration
-        trackPlayCounts[currentTrackId].livePlays++;
-        // If it's a "full play" in progress, it also contributes to ranking
+        trackPlayCounts[currentTrackId].livePlays = (trackPlayCounts[currentTrackId].livePlays || 0) + 1; // Increment livePlays regardless of duration for charting
+        // Only contribute to rankingValue if it's considered a significant live play (over threshold)
         if (currentProgress > PARTIAL_PLAY_THRESHOLD_SECONDS) {
             trackPlayCounts[currentTrackId].rankingValue++;
         }
@@ -152,7 +151,7 @@ const Stats = () => {
                   itemStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                   formatter={(value, name) => {
                     if (name === 'fullPlays') return [`${value} Full Plays`, 'Plays'];
-                    if (name === 'livePlays') return [`${value} Live Plays`, 'Plays'];
+                    if (name === 'livePlays') return [`${value} Live Plays (current session)`, 'Plays']; // Clarified tooltip
                     if (name === 'partialPlays') return [`${value} Partial Plays`, 'Plays'];
                     return value;
                   }}

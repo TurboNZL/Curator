@@ -18,6 +18,7 @@ export default defineHandler(async (event) => {
       artistId: body.artistId,
       artistIds: JSON.stringify(body.artistIds || []),
       covers: JSON.stringify(body.covers || []),
+      primaryCover: body.primaryCover || null, // Handle new primaryCover
       pendingFiles: JSON.stringify(body.pendingFiles || []),
     };
     await db.update(albums).set(updateData).where(eq(albums.id, id));

@@ -19,6 +19,7 @@ export default defineHandler(async (event) => {
       artistId: body.artistId,
       eraId: body.eraId,
       covers: JSON.stringify(body.covers || []),
+      primaryCover: body.primaryCover || null, // Handle new primaryCover
       pendingFiles: JSON.stringify(body.pendingFiles || []),
     };
 

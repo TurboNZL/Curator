@@ -29,6 +29,7 @@ export interface Album {
   artistIds: string[]; // For multiple artists
   eraId?: string;
   covers: string[];
+  primaryCover?: string; // New: Album's explicitly set primary cover
   defaultReleaseId?: string;
   pendingFiles: { url: string; name: string }[];
   credits: string[];

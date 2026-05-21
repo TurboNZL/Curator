@@ -15,6 +15,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'children' prop
   const [open, setOpen] = useState(false);
@@ -26,40 +27,32 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
   );
 
   const availableCovers = useMemo(() => Array.from(new Set([
+    album.primaryCover, // Include the current primary cover
     ...album.covers,
     ...albumReleases.map(r => r.coverImage).filter(Boolean) as string[]
-  ])), [album.covers, albumReleases]);
+  ])).filter(Boolean), [album.primaryCover, album.covers, albumReleases]);
+
 
   const [formData, setFormData] = useState({
     title: album.title,
     artistId: album.artistId,
     artistIds: album.artistIds || [],
-    cover: album.covers[0] || '',
+    primaryCover: album.primaryCover || '', // Use primaryCover
     pendingFiles: album.pendingFiles || [],
-    releaseDate: albumReleases.length > 0 ? albumReleases.sort((a,b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime())[0].releaseDate : '',
+    // We don't manage releaseDate here, as it belongs to individual releases
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
-    if (newOpen) {
-      const initialCover = album.covers[0] || '';
-      let resolvedCover = initialCover;
-      if (!initialCover && albumReleases.length > 0) {
-        const releasesWithCovers = albumReleases.filter(r => r.coverImage);
-        if (releasesWithCovers.length === 1 && releasesWithCovers[0].coverImage) {
-          resolvedCover = releasesWithCovers[0].coverImage;
-        }
-      }
-      
+    if (newOpen) {      
       setFormData({
         title: album.title,
         artistId: album.artistId,
         artistIds: album.artistIds || [],
-        cover: resolvedCover,
+        primaryCover: album.primaryCover || '', // Initialize with actual primaryCover
         pendingFiles: album.pendingFiles || [],
-        releaseDate: albumReleases.length > 0 ? albumReleases.sort((a,b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime())[0].releaseDate : '',
       });
     }
   };
@@ -68,21 +61,14 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
     e.preventDefault();
     if (!formData.title) return toast.error("Album title is required");
 
-    let newDefaultReleaseId = album.defaultReleaseId;
-    if (formData.cover && album.covers[0] !== formData.cover) {
-      const releaseWithNewCover = albumReleases.find(r => r.coverImage === formData.cover);
-      if (releaseWithNewCover) {
-        newDefaultReleaseId = releaseWithNewCover.id;
-      }
-    }
-
     await updateAlbum(album.id, {
       title: formData.title,
       artistId: formData.artistId,
       artistIds: formData.artistIds,
-      covers: formData.cover ? [formData.cover] : [],
+      primaryCover: formData.primaryCover || null, // Update primaryCover directly
+      covers: album.covers, // Keep existing 'covers' array as it's separate from primaryCover
       pendingFiles: formData.pendingFiles,
-      defaultReleaseId: newDefaultReleaseId
+      // defaultReleaseId is NOT managed here; it's handled by 'Set as Default' on AlbumDetail
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -137,14 +123,6 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
 
-  const handleInheritReleaseDate = (releaseDate: string) => {
-    setFormData(prev => ({ ...prev, releaseDate }));
-    toast.info(`Album release date inherited from ${releaseDate}`);
-  };
-
-  const sortedReleases = useMemo(() => {
-    return [...albumReleases].sort((a, b) => new Date(b.releaseDate || '').getTime() - new Date(a.releaseDate || '').getTime());
-  }, [albumReleases]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -170,26 +148,34 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
           <form onSubmit={handleSubmit}>
             <TabsContent value="metadata" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Select Primary Cover</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Primary Cover</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {availableCovers.map((url, i) => (
                     <button
                       key={i}
                       type="button"
-                      onClick={() => setFormData({...formData, cover: url})}
+                      onClick={() => setFormData({...formData, primaryCover: url})}
                       className={cn(
                         "aspect-square rounded-lg overflow-hidden border-2 transition-all relative group",
-                        formData.cover === url ? "border-blue-500" : "border-zinc-800 hover:border-zinc-600"
+                        formData.primaryCover === url ? "border-blue-500" : "border-zinc-800 hover:border-zinc-600"
                       )}
                     >
                       <img src={url} className="w-full h-full object-cover" alt="" />
-                      {formData.cover === url && (
+                      {formData.primaryCover === url && (
                         <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
                           <Check size={20} className="text-white" />
                         </div>
                       )}
                     </button>
                   ))}
+                  {/* Option to upload new primary cover */}
+                  <div className="aspect-square rounded-lg border-2 border-dashed border-zinc-800 flex items-center justify-center">
+                    <ImageUpload
+                      value="" // Always empty for new upload
+                      onChange={(val) => setFormData({...formData, primaryCover: val})}
+                      // The 'trigger' prop is not supported by ImageUpload, it provides its own UI.
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -239,34 +225,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="album-release-date" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Release Date</Label>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      id="album-release-date" 
-                      type="date"
-                      value={formData.releaseDate}
-                      onChange={(e) => setFormData({...formData, releaseDate: e.target.value})}
-                      className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 flex-1"
-                    />
-                    {sortedReleases.length > 0 && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-9 w-9 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white">
-                            <Calendar size={16} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-                          {sortedReleases.map(rel => rel.releaseDate && (
-                            <DropdownMenuItem key={rel.id} onClick={() => handleInheritReleaseDate(rel.releaseDate!)}>
-                              Inherit from "{rel.title}" ({rel.releaseDate})
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </div>
+                {/* Removed Album Release Date field - managed by individual releases */}
               </div>
             </TabsContent>
 

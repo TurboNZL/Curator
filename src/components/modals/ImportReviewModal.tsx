@@ -41,7 +41,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
     title: initialData.suggestedAlbumTitle,
     artistId: initialData.suggestedArtistId || '',
     artistNameInput: initialData.suggestedArtistName,
-    coverImage: initialData.suggestedAlbumCover,
+    primaryCover: initialData.suggestedAlbumCover, // Use primaryCover
     releaseDate: ''
   });
 
@@ -103,7 +103,8 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         title: albumFormData.title,
         artistId: finalArtistId,
         artistIds: [finalArtistId],
-        covers: albumFormData.coverImage ? [albumFormData.coverImage] : [],
+        covers: albumFormData.primaryCover ? [albumFormData.primaryCover] : [], // Use primaryCover here for legacy covers array
+        primaryCover: albumFormData.primaryCover || null, // Set primary cover
         pendingFiles: [], 
         credits: [] // Added credits
       });
@@ -124,7 +125,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         albumId: newAlbum.id,
         title: 'Streaming',
         releaseDate: albumFormData.releaseDate,
-        coverImage: albumFormData.coverImage,
+        coverImage: albumFormData.primaryCover, // Use primary cover for release cover
         trackIds: createdTracks.map(t => t.id)
       });
       toast.success(`Default release for "${newAlbum.title}" created.`);
@@ -177,10 +178,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Cover</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Primary Cover</Label>
                   <ImageUpload
-                    value={albumFormData.coverImage}
-                    onChange={(val) => setAlbumFormData(prev => ({ ...prev, coverImage: val }))}
+                    value={albumFormData.primaryCover}
+                    onChange={(val) => setAlbumFormData(prev => ({ ...prev, primaryCover: val }))}
                   />
                 </div>
               </div>
