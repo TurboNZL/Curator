@@ -4,59 +4,15 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical, Link as LinkIcon } from 'lucide-react';
+import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu'; // Corrected path
+import { TrackContextMenu } from '../ui/TrackContextMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Corrected path
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Corrected path
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Corrected path
-import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-
-interface ArtistAllTracksModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  artistId: string;
-  artistName: string;
-}
-
-export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, activeProfile } = useMusicStore(); // Added releases, activeProfile
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
-  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
-  const [selectedTrackForStats, setSelectedTrackForStats] = useState<Track | null>(null);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-
-
-  const getEffectiveRating = (track: Track) => {
-    if ((track.comparisons >= 3 || track.memories > 0) && track.rating !== undefined && track.rating !== null && track.rating > 0.001) {
-      return track.rating;
-    }
-    if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
-      return track.initialRating;
-    }
-    return -1; // Indicate unrated
-<dyad-write path="src/components/modals/ArtistAllTracksModal.tsx" description="Adjusting the ArtistAllTracksModal to ensure proper scrolling for track lists.">
-"use client";
-
-import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical, Link as LinkIcon } from 'lucide-react';
-import { useMusicStore } from '@/store/useMusicStore';
-import { Rating } from '@/components/ui/Rating';
-import { Track } from '@/types/music';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu'; // Corrected path
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Corrected path
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Corrected path
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Corrected path
+import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
+import { StatsForNerdsModal } from './StatsForNerdsModal';
+import { EditTrackModal } from './EditTrackModal';
 import { toast } from 'sonner';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 
@@ -109,15 +65,6 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
-  const handleCopyLink = (url?: string) => {
-    if (url) {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
-    } else {
-      toast.error("No link available for this item.");
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] flex flex-col">
@@ -127,7 +74,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
             {artistName}'s Rated Tracks
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 flex-1"> {/* Removed overflow-hidden */}
+        <div className="space-y-4 py-4 flex-1 overflow-hidden">
           {allRatedArtistTracks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-2xl h-full">
               <Music size={48} className="text-zinc-800 mb-4" />
@@ -135,7 +82,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
               <p className="text-zinc-600 text-sm mt-1">Start rating tracks to see them here!</p>
             </div>
           ) : (
-            <ScrollArea className="h-full pr-4"> {/* Explicitly setting h-full here */}
+            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
                   <TrackContextMenu key={track.id} track={track}>
@@ -223,21 +170,6 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
                             >
                               <Info size={14} className="mr-2" /> Stats for Nerds
                             </DropdownMenuItem>
-                            {track.spotifyUrl && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
-                                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
-                                </DropdownMenuItem>
-                              )}
-                              {track.geniusUrl && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.geniusUrl); }} className="text-xs font-medium">
-                                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
-                                </DropdownMenuItem>
-                              )}
-                              {track.youtubeMusicUrl && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
-                                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
-                                </DropdownMenuItem>
-                              )}
                             <DropdownMenuSeparator className="bg-zinc-800" />
                             <DropdownMenuItem
                               onClick={(e) => {
