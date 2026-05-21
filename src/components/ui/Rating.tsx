@@ -16,13 +16,6 @@ interface RatingProps {
 export const Rating = ({ track, showEditor = false, size = 'md', isCleanupContext = false }: RatingProps) => {
   const { updateTrack, vote, getRankedTenStarTracks } = useMusicStore();
 
-  const handleVote = async (winnerId: string | undefined, isEqual?: boolean) => {
-    // This component is only for display, actual voting happens in Cleanup.tsx
-    // However, if we wanted to add quick voting here, this would be the handler.
-    // For now, it's just a placeholder to prevent errors if accidentally triggered.
-    console.log("Vote from Rating component (should not happen in current implementation)");
-  };
-
   const getEffectiveRating = (t: Track) => {
     if (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating > 0.001) {
       return t.rating;
