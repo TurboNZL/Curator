@@ -8,13 +8,13 @@ import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackRightClickMenu } from '../../components/ui/TrackRightClickMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
-import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
-import { EditTrackModal } from '../modals/EditTrackModal';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-import { TrackDropdownMenuItems } from '../../components/ui/TrackDropdownMenuItems'; // Import new component
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 interface ArtistAllTracksModalProps {
   open: boolean;
