@@ -8,13 +8,13 @@ import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
-import { StatsForNerdsModal } from './StatsForNerdsModal';
-import { EditTrackModal } from './EditTrackModal';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; // Import new component
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ interface ArtistAllTracksModalProps {
 }
 
 export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
+  const { tracks, albums, releases, setCurrentTrack, activeProfile } = useMusicStore();
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
@@ -40,7 +40,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
     if (track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001) {
       return track.initialRating;
     }
-    return -1; // Indicate unrated
+    return -1; 
   };
 
   const allRatedArtistTracks = useMemo(() => {
@@ -48,11 +48,9 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
     
     return allArtistTracks
       .map(t => ({ ...t, effectiveRating: getEffectiveRating(t) }))
-      .filter(t => t.effectiveRating > 0) // Exclude unrated
+      .filter(t => t.effectiveRating > 0) 
       .sort((a, b) => {
-        // Sort by effective rating (descending)
         if (b.effectiveRating !== a.effectiveRating) return b.effectiveRating - a.effectiveRating;
-        // Then by ELO score for ties (descending)
         return (b.eloScore ?? 0) - (a.eloScore ?? 0);
       });
   }, [tracks, artistId]);
@@ -61,7 +59,6 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
 
   const getAlbumArt = (track: Track) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    // Use the new helper here
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
@@ -82,7 +79,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
               <p className="text-zinc-600 text-sm mt-1">Start rating tracks to see them here!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
+            <ScrollArea className="flex-1 pr-4"> 
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
                   <TrackRightClickMenu key={track.id} track={track}>

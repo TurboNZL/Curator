@@ -3,11 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from 'lucide-react';
+import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { Track } from '@/types/music';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
 
 const Queue = () => {
   const {
@@ -16,7 +21,7 @@ const Queue = () => {
     tracks = [],
     artists = [],
     albums = [],
-    releases = [], // Added releases
+    releases = [], 
     currentTrackId,
     setCurrentTrack,
     removeFromUserQueue,
@@ -28,10 +33,18 @@ const Queue = () => {
     reorderUserQueue,
     fetchData,
     isLoading,
-    activeProfile // Added activeProfile
+    activeProfile 
   } = useMusicStore();
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
+
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<Track | null>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+
 
   useEffect(() => {
     fetchData();
@@ -112,7 +125,6 @@ const Queue = () => {
         </div>
       </div>
 
-      {/* Now Playing */}
       <section className="space-y-4">
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Now Playing</h2>
         {currentTrackData?.track ? (
@@ -126,9 +138,24 @@ const Queue = () => {
                 <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name || 'Unknown Artist'}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white" onClick={(e) => e.stopPropagation()}>
-                  <ListMusic size={20} />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                      <MoreVertical size={14} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                    <TrackDropdownMenuItems
+                      track={currentTrackData.track}
+                      setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                      setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                      setSelectedTrackForEdit={setSelectedTrackForEdit}
+                      setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                      setSelectedTrackForStats={setSelectedTrackForStats}
+                      setIsStatsModalOpen={setIsStatsModalOpen}
+                    />
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </Card>
           </TrackRightClickMenu>
@@ -137,7 +164,6 @@ const Queue = () => {
         )}
       </section>
 
-      {/* User Queue (Manual) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Next in Queue</h2>
@@ -173,13 +199,19 @@ const Queue = () => {
                     track={track}
                     artist={artist}
                     album={album}
-                    releases={releases} // Pass releases
-                    activeProfile={activeProfile} // Pass activeProfile
+                    releases={releases} 
+                    activeProfile={activeProfile} 
                     onRemove={() => removeFromUserQueue(index)}
                     onPlay={() => {
                       removeFromUserQueue(index);
                       setCurrentTrack(id);
                     }}
+                    setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                    setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                    setSelectedTrackForEdit={setSelectedTrackForEdit}
+                    setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                    setSelectedTrackForStats={setSelectedTrackForStats}
+                    setIsStatsModalOpen={setIsStatsModalOpen}
                   />
                 </div>
               );
@@ -188,7 +220,6 @@ const Queue = () => {
         </div>
       </section>
 
-      {/* Active Queue (Album/Playlist) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Playing From Source</h2>
@@ -217,23 +248,44 @@ const Queue = () => {
                   track={track}
                   artist={artist}
                   album={album}
-                  releases={releases} // Pass releases
-                  activeProfile={activeProfile} // Pass activeProfile
+                  releases={releases} 
+                  activeProfile={activeProfile} 
                   onRemove={() => {}}
                   onPlay={() => {
                     setCurrentTrack(id);
                   }}
+                  setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                  setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                  setSelectedTrackForEdit={setSelectedTrackForEdit}
+                  setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                  setSelectedTrackForStats={setSelectedTrackForStats}
+                  setIsStatsModalOpen={setIsStatsModalOpen}
                 />
               );
             })
           )}
         </div>
       </section>
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
+      )}
     </div>
   );
 };
 
-const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, onPlay }: {track: Track, artist: any, album: any, releases: any[], activeProfile: any, onRemove: () => void, onPlay: () => void}) => {
+const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, onPlay, setSelectedTrackForPlaylistAdd, setIsCreatePlaylistAddModalOpen, setSelectedTrackForEdit, setIsEditTrackModalOpen, setSelectedTrackForStats, setIsStatsModalOpen }: {track: Track, artist: any, album: any, releases: any[], activeProfile: any, onRemove: () => void, onPlay: () => void, setSelectedTrackForPlaylistAdd: (track: Track | null) => void, setIsCreatePlaylistAddModalOpen: (isOpen: boolean) => void, setSelectedTrackForEdit: (track: Track | null) => void, setIsEditTrackModalOpen: (isOpen: boolean) => void, setSelectedTrackForStats: (track: Track | null) => void, setIsStatsModalOpen: (isOpen: boolean) => void}) => {
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
   const albumArt = getAlbumDisplayCover(album, releases, defaultAlbumImage);
 
@@ -254,9 +306,24 @@ const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, on
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); onPlay(); }}>
             <Play size={14} fill="currentColor" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-            <Trash2 size={14} />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                <MoreVertical size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+              <TrackDropdownMenuItems
+                track={track}
+                setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                setSelectedTrackForEdit={setSelectedTrackForEdit}
+                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                setSelectedTrackForStats={setSelectedTrackForStats}
+                setIsStatsModalOpen={setIsStatsModalOpen}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </TrackRightClickMenu>
