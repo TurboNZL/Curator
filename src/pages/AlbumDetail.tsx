@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Plus, Edit2, Users, Music, MoreVertical, Link as LinkIcon, Disc } from 'lucide-react'; 
+import { Badge } from '@/components/ui/badge';
+import { Play, ListMusic, Layers, Check, ArrowUpDown, Calendar, SortAsc, SortDesc, Star, User, List, Plus, Edit2, Users, Disc, Music, MoreVertical, Brain, Info, Minus, Link as LinkIcon } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
@@ -11,7 +12,7 @@ import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
-import { Rating } from '@/components/ui/Rating'; 
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -20,11 +21,11 @@ import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddMod
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { toast } from 'sonner';
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const AlbumDetail = () => {
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore(); 
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, deleteTrack } = useMusicStore(); // Removed incrementMemories, decrementMemories, addToUserQueue as they are now handled by TrackDropdownMenuItems
   const { id } = useParams();
   
   const album = albums.find(a => a.id === id);
@@ -41,7 +42,7 @@ const AlbumDetail = () => {
   ).length;
 
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
-  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null); 
+  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null); // New state for temporary cover override
   
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
@@ -59,16 +60,18 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
+  // New state for CreateTrackModal
   const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); 
 
 
+  // Initialize selectedReleaseId
   useEffect(() => {
     if (!selectedReleaseId && album) { 
       setSelectedReleaseId(
         album.defaultReleaseId || albumReleases[0]?.id || null
       );
     }
-  }, [album?.id, album?.defaultReleaseId, albumReleases.length, selectedReleaseId]);
+  }, [album?.id, album?.defaultReleaseId, albumReleases.length]);
 
 
   useEffect(() => {
@@ -143,13 +146,24 @@ const AlbumDetail = () => {
   const handleSetDefaultRelease = async (releaseId: string) => {
     if (!album) return;
     await updateAlbum(album.id, { defaultReleaseId: releaseId });
-    setSelectedReleaseId(releaseId); 
-    setTemporaryDisplayCoverUrl(null); 
+    setSelectedReleaseId(releaseId); // Also update UI state to match new default
+    setTemporaryDisplayCoverUrl(null); // Clear temporary override when setting default
     toast.success("Default release set!");
   };
 
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("No link available for this item.");
+    }
+  };
+
+
   if (!album) return <div className="p-8">Album not found.</div>;
 
+  // Determine the cover to display
   const finalDisplayCover = useMemo(() => {
     if (temporaryDisplayCoverUrl) {
       return temporaryDisplayCoverUrl;
@@ -241,6 +255,7 @@ const AlbumDetail = () => {
                           </div>
                         </TableCell>
                         <TableCell>
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
                             track={track}
                             showEditor={true} 
@@ -292,7 +307,7 @@ const AlbumDetail = () => {
                     )}
                     onClick={() => {
                       setShowAllTracks(!showAllTracks);
-                      setTemporaryDisplayCoverUrl(null); 
+                      setTemporaryDisplayCoverUrl(null); // Clear temporary override when toggling track view
                     }}
                     title={showAllTracks ? "Show Release Tracks" : "Show All Tracks"}
                   >
@@ -327,7 +342,7 @@ const AlbumDetail = () => {
                     <button 
                       onClick={() => {
                         setSelectedReleaseId(release.id);
-                        setTemporaryDisplayCoverUrl(release.coverImage || null); 
+                        setTemporaryDisplayCoverUrl(release.coverImage || null); // Set temporary cover
                         setShowAllTracks(false);
                       }}
                       className={cn(

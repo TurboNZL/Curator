@@ -1,10 +1,10 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { Music2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Users, Edit2, Plus, MoreVertical } from 'lucide-react'; 
+import { Music2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Plus, Users, MoreVertical } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
-import { Rating } from '@/components/ui/Rating'; 
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { useState, useMemo } from 'react';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
@@ -12,13 +12,13 @@ import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; 
+import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Imported EditTrackModal
 import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const ArtistDetail = () => {
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, releases } = useMusicStore(); 
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, releases } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -89,13 +89,13 @@ const ArtistDetail = () => {
 
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); 
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); // State for Add to Playlist
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [isArtistAllTracksModalOpen, setIsArtistAllTracksModalOpen] = useState(false); 
+  const [isArtistAllTracksModalOpen, setIsArtistAllTracksModalOpen] = useState(false); // State for ArtistAllTracksModal
 
 
   if (!artist) return <div className="p-8">Artist not found.</div>;
@@ -127,6 +127,7 @@ const ArtistDetail = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
+              {/* Removed Add Album Button */}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
@@ -171,6 +172,7 @@ const ArtistDetail = () => {
                       <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
+                      {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                       <Rating
                         track={track}
                         showEditor={false}

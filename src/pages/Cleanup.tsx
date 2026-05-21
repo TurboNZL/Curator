@@ -3,11 +3,11 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react'; 
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
-import { Rating } from '@/components/ui/Rating'; 
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -153,12 +153,12 @@ interface ImageUploadResolutionModalProps {
 }
 
 const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({ isOpen, onClose, entity, onResolve, entityType }) => {
-  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.primaryCover || ''); 
+  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.primaryCover || ''); // Use primaryCover for albums
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setImageUrl(entity?.image || entity?.primaryCover || ''); 
+      setImageUrl(entity?.image || entity?.primaryCover || ''); // Use primaryCover for albums
     }
   }, [isOpen, entity]);
 
@@ -203,7 +203,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData, activeProfile } = useMusicStore(); 
+  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData, activeProfile } = useMusicStore(); // Added activeProfile
   
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -221,7 +221,7 @@ const Cleanup = () => {
 
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
-    album_cover: true, 
+    album_cover: true, // This will now check primaryCover
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
@@ -286,13 +286,19 @@ const Cleanup = () => {
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
+    // Use the new helper here
     return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
+  };
+
+  const getArtistName = (track: any) => {
+    const artist = artists.find(a => a.id === track.artistId);
+    return artist?.name || 'Unknown Artist';
   };
 
   const allTasks = useMemo(() => {
     const generatedTasks = [
       ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
-      ...albums.filter(al => !al.primaryCover).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })), 
+      ...albums.filter(al => !al.primaryCover).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })), // Check primaryCover
       ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500' })),
       ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
       ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' })),
@@ -379,7 +385,7 @@ const Cleanup = () => {
     }
 
     return [...generatedTasks, ...groupedSpotifyTasks];
-  }, [tracks, artists, albums, releases, activeProfile]); 
+  }, [tracks, artists, albums, releases, activeProfile]); // Added activeProfile to dependencies
 
   const filteredTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
@@ -574,7 +580,7 @@ const Cleanup = () => {
     if (type === 'artist') {
       await updateArtist(id, { image: imageUrl });
     } else if (type === 'album') {
-      await updateAlbum(id, { primaryCover: imageUrl }); 
+      await updateAlbum(id, { primaryCover: imageUrl }); // Update primaryCover
     }
     fetchData();
   };
@@ -618,45 +624,44 @@ const Cleanup = () => {
               </div>
 
               {pair.map((track, idx) => (
-                <TrackRightClickMenu key={track.id} track={track}>
-                  <div className="space-y-4 min-w-0">
-                    <Card 
-                      className={cn(
-                        "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                      )}
-                      onClick={() => playSnippet(track)}
-                    >
-                      <div className="aspect-[16/9] relative overflow-hidden">
-                        <img 
-                          src={getAlbumArt(track)} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
-                          alt="" 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
-                            {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
-                          </div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
-                          <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                          <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                            {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
-                          </p>
-                          <div className="mt-2 flex">
-                            <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
-                          </div>
+                <div key={track.id} className="space-y-4 min-w-0">
+                  <Card 
+                    className={cn(
+                      "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
+                    )}
+                    onClick={() => playSnippet(track)}
+                  >
+                    <div className="aspect-[16/9] relative overflow-hidden">
+                      <img 
+                        src={getAlbumArt(track)} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
+                        alt="" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
+                          {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
                         </div>
                       </div>
-                    </Card>
-                    <Button 
-                      onClick={() => handleVote(track.id)}
-                      className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
-                    >
-                      <ThumbsUp size={16} /> Vote for this
-                    </Button>
-                  </div>
-                </TrackRightClickMenu>
+                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                        <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                        <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                          {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
+                        </p>
+                        <div className="mt-2 flex">
+                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
+                          <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                  <Button 
+                    onClick={() => handleVote(track.id)}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
+                  >
+                    <ThumbsUp size={16} /> Vote for this
+                  </Button>
+                </div>
               ))}
             </div>
 
@@ -678,7 +683,7 @@ const Cleanup = () => {
             </div>
           </>
         ) : (
-          <div className="py-20 text-center border-2 border-dashed border-zinc-800 rounded-2xl">
+          <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
             <Swords size={32} className="text-blue-500 mx-auto mb-3 opacity-20" />
             <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Add more tracks to enable comparisons</p>
           </div>

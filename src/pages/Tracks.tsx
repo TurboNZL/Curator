@@ -6,20 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Plus, MoreVertical } from 'lucide-react'; 
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { Rating } from '@/components/ui/Rating'; 
+import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { cn } from '@/lib/utils';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; 
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; 
-import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; 
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
+import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, activeProfile } = useMusicStore(); 
+  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
@@ -28,7 +28,7 @@ const Tracks = () => {
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
-  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); 
+  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); // State for CreateTrackModal
 
 
   useEffect(() => {
@@ -183,7 +183,7 @@ const Tracks = () => {
                 if (!track) return null;
                 const artist = artists?.find(a => a.id === track.artistId);
                 const album = albums?.find(al => trackHasAlbum(track, al.id));
-                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage); 
+                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage); // Use the new helper
                 
                 return (
                   <TrackRightClickMenu key={track.id} track={track}>
@@ -208,6 +208,7 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
+                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating
                           track={track}
                           showEditor={true} 

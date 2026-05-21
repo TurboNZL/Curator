@@ -3,8 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { ListMusic, Plus, Play, Trash2, Edit2, GripVertical, MoreVertical, Share } from 'lucide-react';
+import { ListMusic, Plus, Play, Trash2, Edit2, GripVertical, Album as AlbumIcon, Music as MusicIcon, Share, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -12,17 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import the helper
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Track } from '@/types/music';
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
-import { EditTrackModal } from '@/components/modals/EditTrackModal';
 
 const Playlists = () => {
   const { playlists, tracks, artists, albums, addPlaylist, updatePlaylist, deletePlaylist, setCurrentTrack, fetchData, activeProfile, releases } = useMusicStore();
+  const navigate = useNavigate();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -44,13 +41,6 @@ const Playlists = () => {
   });
   const [trackSearchTerm, setTrackSearchTerm] = useState('');
   const [draggedTrackIndex, setDraggedTrackIndex] = useState<number | null>(null);
-
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
-  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
-  const [selectedTrackForStats, setSelectedTrackForStats] = useState<Track | null>(null);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   const defaultCover = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
@@ -123,7 +113,7 @@ const Playlists = () => {
     return tracks.filter(t => 
       t.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
       artists.some(a => a.id === t.artistId && a.name.toLowerCase().includes(trackSearchTerm.toLowerCase())) ||
-      albums.some(al => trackHasAlbum(t, al.id))
+      albums.some(al => trackHasAlbum(t, al.id)) // Use trackHasAlbum
     );
   }, [tracks, artists, albums, trackSearchTerm]);
 
@@ -167,7 +157,7 @@ const Playlists = () => {
   const getTrackDetails = (trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
     const artist = artists.find(a => a.id === track?.artistId);
-    const album = albums.find(al => track && trackHasAlbum(track, al.id));
+    const album = albums.find(al => track && trackHasAlbum(track, al.id)); // Use trackHasAlbum
     return { track, artist, album };
   };
 
@@ -359,29 +349,15 @@ const Playlists = () => {
                             <div className="text-zinc-600 group-hover:text-zinc-400">
                               <GripVertical size={14} />
                             </div>
+                            {/* Use getAlbumDisplayCover here */}
                             <img src={getAlbumDisplayCover(album, releases, defaultCover)} alt="" className="w-6 h-6 object-cover rounded" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-white truncate">{track.title}</p>
                               <p className="text-[10px] text-zinc-500 truncate">{artist?.name}</p>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white">
-                                  <MoreVertical size={14} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-                                <TrackDropdownMenuItems
-                                  track={track}
-                                  setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
-                                  setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
-                                  setSelectedTrackForEdit={setSelectedTrackForEdit}
-                                  setIsEditTrackModalOpen={setIsEditTrackModalOpen}
-                                  setSelectedTrackForStats={setSelectedTrackForStats}
-                                  setIsStatsModalOpen={setIsStatsModalOpen}
-                                />
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500" onClick={() => removeTrackFromEditingPlaylist(track.id)}>
+                              <Trash2 size={12} />
+                            </Button>
                           </div>
                         </TrackRightClickMenu>
                       </div>
@@ -401,6 +377,7 @@ const Playlists = () => {
                             onClick={() => addTrackToEditingPlaylist(track.id)}
                             className="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-zinc-800 text-zinc-400 w-full text-left transition-colors"
                           >
+                            {/* Use getAlbumDisplayCover here */}
                             <img src={getAlbumDisplayCover(album, releases, defaultCover)} alt="" className="w-6 h-6 object-cover rounded" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold truncate">{track.title}</p>
@@ -429,21 +406,6 @@ const Playlists = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
-      {selectedTrackForEdit && (
-        <EditTrackModal
-          track={selectedTrackForEdit}
-          open={isEditTrackModalOpen}
-          onOpenChange={setIsEditTrackModalOpen}
-        />
-      )}
-      {selectedTrackForStats && (
-        <StatsForNerdsModal
-          track={selectedTrackForStats}
-          open={isStatsModalOpen}
-          onOpenChange={setIsStatsModalOpen}
-        />
-      )}
     </div>
   );
 };

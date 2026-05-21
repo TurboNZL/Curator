@@ -1,22 +1,16 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Play, Pause, Trash2, Edit2, Zap, AlertTriangle, MoreVertical } from 'lucide-react';
+import { Music, Play, Pause, Trash2, Edit2, Zap, AlertTriangle } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { EditTrackModal } from './EditTrackModal';
 import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
-import { Rating } from '../ui/Rating'; 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
-import { StatsForNerdsModal } from './StatsForNerdsModal';
-import { Track } from '@/types/music';
-import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems';
-
+import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
 interface LowQualityTracksModalProps {
   open: boolean;
@@ -24,17 +18,13 @@ interface LowQualityTracksModalProps {
 }
 
 export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ open, onOpenChange }) => {
-  const { tracks, artists, albums, releases, volume, deleteTrack, fetchData, activeProfile } = useMusicStore();
+  const { tracks, artists, albums, releases, volume, deleteTrack, fetchData, activeProfile } = useMusicStore(); // Added releases, activeProfile
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
 
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
-  const [selectedTrackForStats, setSelectedTrackForStats] = useState<Track | null>(null);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -47,6 +37,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
+    // Use the new helper here
     return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
   };
 
@@ -90,6 +81,22 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
     };
   };
 
+  const handleDeleteTrack = async (trackId: string) => {
+    if (confirm("Are you sure you want to delete this track? This action cannot be undone.")) {
+      try {
+        await deleteTrack(trackId);
+        toast.success("Track deleted successfully.");
+        fetchData();
+        if (playingId === trackId) {
+          audioRef.current?.pause();
+          setPlayingId(null);
+        }
+      } catch (error) {
+        toast.error("Failed to delete track.");
+      }
+    }
+  };
+
   const handleDeleteAllLowQuality = async () => {
     if (confirm("Are you sure you want to delete ALL low-quality tracks? This action cannot be undone.")) {
       try {
@@ -125,13 +132,13 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
               <p className="text-zinc-600 text-sm mt-1">Your library is in pristine condition!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 pr-4"> 
+            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {lowQualityTracks.map((track) => (
                   <TrackRightClickMenu key={track.id} track={track}>
                     <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{track.id}</span>
+                        <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{track.id}</span> {/* Using track.id instead of index + 1 */}
                         <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800 shrink-0">
                           <img src={getAlbumArt(track)} alt="" className="w-full h-full object-cover" />
                         </div>
@@ -142,28 +149,23 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                         <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                       </div>
                       <div className="flex items-center gap-1 ml-4 shrink-0">
+                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating track={track} size="sm" showEditor={false} /> 
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); playSnippet(track); }}>
                           {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
                         </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                              <MoreVertical size={14} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-                            <TrackDropdownMenuItems
-                              track={track}
-                              setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
-                              setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
-                              setSelectedTrackForEdit={setSelectedTrackForEdit}
-                              setIsEditTrackModalOpen={setIsEditTrackModalOpen}
-                              setSelectedTrackForStats={setSelectedTrackForStats}
-                              setIsStatsModalOpen={setIsStatsModalOpen}
-                            />
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-blue-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTrackForEdit(track);
+                            setIsEditTrackModalOpen(true);
+                          }}
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); handleDeleteTrack(track.id); }}>
+                          <Trash2 size={14} />
+                        </Button>
                       </div>
                     </div>
                   </TrackRightClickMenu>
@@ -192,16 +194,6 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
             track={selectedTrackForEdit}
             open={isEditTrackModalOpen}
             onOpenChange={setIsEditTrackModalOpen}
-          />
-        )}
-        {selectedTrackForPlaylistAdd && (
-          <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
-        )}
-        {selectedTrackForStats && (
-          <StatsForNerdsModal
-            track={selectedTrackForStats}
-            open={isStatsModalOpen}
-            onOpenChange={setIsStatsModalOpen}
           />
         )}
       </DialogContent>
