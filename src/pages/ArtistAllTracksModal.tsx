@@ -4,15 +4,17 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Star, Play } from 'lucide-react';
+import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -22,7 +24,7 @@ interface ArtistAllTracksModalProps {
 }
 
 export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore();
+  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
@@ -72,7 +74,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
             {artistName}'s Rated Tracks
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 flex-1 overflow-hidden min-h-0">
+        <div className="space-y-4 py-4 flex-1 overflow-hidden">
           {allRatedArtistTracks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-2xl h-full">
               <Music size={48} className="text-zinc-800 mb-4" />
@@ -100,6 +102,24 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}>
                           <Play size={14} fill="currentColor" />
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                              <MoreVertical size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                            <TrackDropdownMenuItems
+                              track={track}
+                              setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                              setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                              setSelectedTrackForEdit={setSelectedTrackForEdit}
+                              setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                              setSelectedTrackForStats={setSelectedTrackForStats}
+                              setIsStatsModalOpen={setIsStatsModalOpen}
+                            />
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </TrackRightClickMenu>

@@ -14,6 +14,7 @@ import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddMod
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Imported EditTrackModal
 import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const ArtistDetail = () => {
@@ -177,7 +178,24 @@ const ArtistDetail = () => {
                         showEditor={false}
                         size="sm"
                       />
-                      {/* MoreVertical dropdown removed in favor of direct right-click menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                            <MoreVertical size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                          <TrackDropdownMenuItems
+                            track={track}
+                            setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                            setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                            setSelectedTrackForEdit={setSelectedTrackForEdit}
+                            setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                            setSelectedTrackForStats={setSelectedTrackForStats}
+                            setIsStatsModalOpen={setIsStatsModalOpen}
+                          />
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </TrackRightClickMenu>
