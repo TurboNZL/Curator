@@ -8,7 +8,7 @@ import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackContextMenu } from '../ui/TrackContextMenu';
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
 import { StatsForNerdsModal } from './StatsForNerdsModal';

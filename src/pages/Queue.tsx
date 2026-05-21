@@ -3,11 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from 'lucide-react';
+import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2, Edit2, Plus, Minus, Info, List, MoreVertical, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { Track } from '@/types/music';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
+import { toast } from 'sonner';
+
 
 const Queue = () => {
   const {
@@ -28,10 +34,21 @@ const Queue = () => {
     reorderUserQueue,
     fetchData,
     isLoading,
-    activeProfile // Added activeProfile
+    activeProfile, // Added activeProfile
+    incrementMemories,
+    decrementMemories,
+    deleteTrack,
+    addToUserQueue: addTrackToUserQueueStore // Renamed to avoid conflict with local handler
   } = useMusicStore();
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
+
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [selectedTrackForStats, setSelectedTrackForStats] = useState<Track | null>(null);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -68,6 +85,15 @@ const Queue = () => {
   };
 
   const currentTrackData = currentTrackId ? getTrackData(currentTrackId) : null;
+
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("No link available for this item.");
+    }
+  };
 
   if (isLoading && tracks.length === 0) {
     return (
@@ -180,6 +206,14 @@ const Queue = () => {
                       removeFromUserQueue(index);
                       setCurrentTrack(id);
                     }}
+                    onEditTrack={(t) => { setSelectedTrackForEdit(t); setIsEditTrackModalOpen(true); }}
+                    onAddToQueue={(tId) => addTrackToUserQueueStore(tId)}
+                    onIncrementMemories={(tId) => incrementMemories(tId)}
+                    onDecrementMemories={(tId) => decrementMemories(tId)}
+                    onAddToPlaylist={(t) => { setSelectedTrackForPlaylistAdd(t); setIsCreatePlaylistAddModalOpen(true); }}
+                    onStatsForNerds={(t) => { setSelectedTrackForStats(t); setIsStatsModalOpen(true); }}
+                    onCopyLink={handleCopyLink}
+                    onDeleteTrack={(tId) => deleteTrack(tId)}
                   />
                 </div>
               );
@@ -219,21 +253,63 @@ const Queue = () => {
                   album={album}
                   releases={releases} // Pass releases
                   activeProfile={activeProfile} // Pass activeProfile
-                  onRemove={() => {}}
+                  onRemove={() => {}} // No remove from active queue
                   onPlay={() => {
                     setCurrentTrack(id);
                   }}
+                  onEditTrack={(t) => { setSelectedTrackForEdit(t); setIsEditTrackModalOpen(true); }}
+                  onAddToQueue={(tId) => addTrackToUserQueueStore(tId)}
+                  onIncrementMemories={(tId) => incrementMemories(tId)}
+                  onDecrementMemories={(tId) => decrementMemories(tId)}
+                  onAddToPlaylist={(t) => { setSelectedTrackForPlaylistAdd(t); setIsCreatePlaylistAddModalOpen(true); }}
+                  onStatsForNerds={(t) => { setSelectedTrackForStats(t); setIsStatsModalOpen(true); }}
+                  onCopyLink={handleCopyLink}
+                  onDeleteTrack={(tId) => deleteTrack(tId)}
                 />
               );
             })
           )}
         </div>
       </section>
+
+      <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
+        />
+      )}
+      {selectedTrackForStats && (
+        <StatsForNerdsModal
+          track={selectedTrackForStats}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
+      )}
     </div>
   );
 };
 
-const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, onPlay }: {track: Track, artist: any, album: any, releases: any[], activeProfile: any, onRemove: () => void, onPlay: () => void}) => {
+interface QueueItemProps {
+  track: Track;
+  artist: any;
+  album: any;
+  releases: any[];
+  activeProfile: any;
+  onRemove: () => void;
+  onPlay: () => void;
+  onEditTrack: (track: Track) => void;
+  onAddToQueue: (trackId: string) => void;
+  onIncrementMemories: (trackId: string) => void;
+  onDecrementMemories: (trackId: string) => void;
+  onAddToPlaylist: (track: Track) => void;
+  onStatsForNerds: (track: Track) => void;
+  onCopyLink: (url?: string) => void;
+  onDeleteTrack: (trackId: string) => void;
+}
+
+const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, onPlay, onEditTrack, onAddToQueue, onIncrementMemories, onDecrementMemories, onAddToPlaylist, onStatsForNerds, onCopyLink, onDeleteTrack }: QueueItemProps) => {
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
   const albumArt = getAlbumDisplayCover(album, releases, defaultAlbumImage);
 
@@ -254,9 +330,79 @@ const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, on
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); onPlay(); }}>
             <Play size={14} fill="currentColor" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-            <Trash2 size={14} />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                <MoreVertical size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onEditTrack(track); }}
+                className="text-xs font-medium"
+              >
+                <Edit2 size={14} className="mr-2" /> Edit Track
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onAddToQueue(track.id); toast.success(`"${track.title}" added to queue.`); }}
+                className="text-xs font-medium"
+              >
+                <List size={14} className="mr-2" /> Add to Queue
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onIncrementMemories(track.id); toast.success(`Memory added for "${track.title}".`); }}
+                className="text-xs font-medium"
+              >
+                <Plus size={14} className="mr-2" /> Add Memory
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onDecrementMemories(track.id); toast.success(`Memory removed for "${track.title}".`); }}
+                disabled={track.memories === 0}
+                className="text-xs font-medium"
+              >
+                <Minus size={14} className="mr-2" /> Remove Memory
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onAddToPlaylist(track); }}
+                className="text-xs font-medium"
+              >
+                <Plus size={14} className="mr-2" /> Add to Playlist
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onStatsForNerds(track); }}
+                className="text-xs font-medium"
+              >
+                <Info size={14} className="mr-2" /> Stats for Nerds
+              </DropdownMenuItem>
+              {track.spotifyUrl && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
+                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
+                </DropdownMenuItem>
+              )}
+              {track.geniusUrl && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCopyLink(track.geniusUrl); }} className="text-xs font-medium">
+                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
+                </DropdownMenuItem>
+              )}
+              {track.youtubeMusicUrl && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
+                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator className="bg-zinc-800" />
+              <DropdownMenuItem 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
+                    onDeleteTrack(track.id);
+                  }
+                }}
+                className="text-xs font-medium text-red-500"
+              >
+                <Trash2 size={14} className="mr-2" /> Delete Track
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </TrackContextMenu>
