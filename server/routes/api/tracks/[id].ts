@@ -25,7 +25,9 @@ export default defineHandler(async (event) => {
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
-      bitrate: body.bitrate,
+      // Change Start
+      bitrate: body.bitrate === undefined ? undefined : body.bitrate || '320kbps', // Changed: handle undefined vs blank
+      // Change End
       bpm: body.bpm,
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,

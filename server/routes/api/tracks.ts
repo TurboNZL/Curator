@@ -12,9 +12,12 @@ export default defineHandler(async (event) => {
       const allTracks = await db.select().from(tracks);
       const relations = await db.select().from(albumTracks);
       
-      type TrackSelect = InferSelectModel<typeof tracks>; // Define an alias for clarity
+      // InferSelectModel infers based on the table definition,
+      // which uses the column name 'is_favorite'.
+      // We explicitly create a type that includes 'is_favorite' to satisfy TypeScript
+      type TrackSelectWithDbFields = InferSelectModel<typeof tracks> & { is_favorite?: number | boolean };
 
-      return allTracks.map((track: TrackSelect) => { // Use the alias here
+      return allTracks.map((track: TrackSelectWithDbFields) => { // Use the updated alias here
         const parseJson = (val: any) => {
           if (typeof val === 'string') {
             try { return JSON.parse(val || '[]'); } catch (e) { return []; }
@@ -29,7 +32,7 @@ export default defineHandler(async (event) => {
           writers: parseJson(track.writers),
           credits: parseJson(track.credits),
           queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
-          isFavorite: !!track.isFavorite, // This should now be fine as isFavorite exists
+          isFavorite: !!track.is_favorite, // Corrected: access 'is_favorite' from DB result and map to 'isFavorite'
           albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
           artistIds: parseJson(track.artistIds)
         };
@@ -62,7 +65,7 @@ export default defineHandler(async (event) => {
       producers: JSON.stringify(body.producers || []),
       writers: JSON.stringify(body.writers || []),
       credits: JSON.stringify(body.credits || []),
-      bitrate: body.bitrate,
+      bitrate: body.bitrate || '320kbps', // Changed: default to '320kbps' if not provided
       bpm: body.bpm,
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
