@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { Rating } from '@/components/ui/Rating';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
-import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { useLocation } from 'react-router-dom';
@@ -203,7 +202,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData, activeProfile } = useMusicStore(); // Added activeProfile
+  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData, activeProfile } = useMusicStore();
   
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -221,7 +220,7 @@ const Cleanup = () => {
 
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
-    album_cover: true, // This will now check primaryCover
+    album_cover: true,
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
@@ -286,7 +285,6 @@ const Cleanup = () => {
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    // Use the new helper here
     return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
   };
 
@@ -298,7 +296,7 @@ const Cleanup = () => {
   const allTasks = useMemo(() => {
     const generatedTasks = [
       ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
-      ...albums.filter(al => !al.primaryCover).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })), // Check primaryCover
+      ...albums.filter(al => !al.primaryCover).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
       ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500' })),
       ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
       ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' })),
@@ -385,7 +383,7 @@ const Cleanup = () => {
     }
 
     return [...generatedTasks, ...groupedSpotifyTasks];
-  }, [tracks, artists, albums, releases, activeProfile]); // Added activeProfile to dependencies
+  }, [tracks, artists, albums, releases, activeProfile]);
 
   const filteredTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
@@ -580,7 +578,7 @@ const Cleanup = () => {
     if (type === 'artist') {
       await updateArtist(id, { image: imageUrl });
     } else if (type === 'album') {
-      await updateAlbum(id, { primaryCover: imageUrl }); // Update primaryCover
+      await updateAlbum(id, { primaryCover: imageUrl });
     }
     fetchData();
   };
@@ -624,44 +622,45 @@ const Cleanup = () => {
               </div>
 
               {pair.map((track, idx) => (
-                <div key={track.id} className="space-y-4 min-w-0">
-                  <Card 
-                    className={cn(
-                      "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
-                    )}
-                    onClick={() => playSnippet(track)}
-                  >
-                    <div className="aspect-[16/9] relative overflow-hidden">
-                      <img 
-                        src={getAlbumArt(track)} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
-                        alt="" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
-                          {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                <TrackRightClickMenu key={track.id} track={track}>
+                  <div className="space-y-4 min-w-0">
+                    <Card 
+                      className={cn(
+                        "group relative overflow-hidden bg-zinc-900/40 border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer",
+                      )}
+                      onClick={() => playSnippet(track)}
+                    >
+                      <div className="aspect-[16/9] relative overflow-hidden">
+                        <img 
+                          src={getAlbumArt(track)} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0" 
+                          alt="" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-60" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-2xl">
+                            {playingId === track.id ? <Pause fill="currentColor" /> : <Play fill="currentColor" className="ml-1" />}
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                          <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
+                          <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
+                            {albums.find(a => trackHasAlbum(track, a.id))?.title || 'Unknown Album'}
+                          </p>
+                          <div className="mt-2 flex">
+                            <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
+                          </div>
                         </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
-                        <h3 className="text-xl font-black text-white uppercase truncate leading-tight">{track.title}</h3>
-                        <p className="text-xs font-bold text-blue-500 uppercase tracking-tight mt-1">
-                          {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
-                        </p>
-                        <div className="mt-2 flex">
-                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
-                          <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                  <Button 
-                    onClick={() => handleVote(track.id)}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
-                  >
-                    <ThumbsUp size={16} /> Vote for this
-                  </Button>
-                </div>
+                    </Card>
+                    <Button 
+                      onClick={() => handleVote(track.id)}
+                      className="w-full bg-zinc-900 border border-zinc-800 hover:bg-blue-600 hover:border-blue-500 text-white font-black uppercase tracking-widest h-12 gap-2"
+                    >
+                      <ThumbsUp size={16} /> Vote for this
+                    </Button>
+                  </div>
+                </TrackRightClickMenu>
               ))}
             </div>
 

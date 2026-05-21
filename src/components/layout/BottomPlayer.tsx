@@ -2,20 +2,17 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music, MoreVertical, Plus, Minus, Edit2, List, Link as LinkIcon } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PlayerSlider } from '@/components/ui/PlayerSlider'; // Use custom PlayerSlider
-import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
+import { PlayerSlider } from '@/components/ui/PlayerSlider';
+import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
-import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '../ui/Rating';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
-import { EditTrackModal } from '../modals/EditTrackModal';
-import { toast } from 'sonner';
-import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; // Import new component
 
-const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
+
+const PARTIAL_PLAY_THRESHOLD_SECONDS = 30;
 
 export const BottomPlayer = () => {
   const {
@@ -24,29 +21,25 @@ export const BottomPlayer = () => {
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
     isShuffled, toggleShuffle, activeProfile, setProgress: setStoreProgress, setDuration: setStoreDuration,
-  } = useMusicStore(); // Removed addToUserQueue, incrementMemories, decrementMemories, deleteTrack as they are now handled by TrackDropdownMenuItems
+  } = useMusicStore();
 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showQueue, setShowQueue] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
-  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
-
+  
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackSessionStartAudioTimeRef = useRef<number | null>(null);
-  const previousTrackIdForLoggingRef = useRef<string | null>(null); // To store trackId *before* it changes for logging
-  const isPlayingRef = useRef(isPlaying); // Keep track of isPlaying state for cleanup/logging
+  const previousTrackIdForLoggingRef = useRef<string | null>(null);
+  const isPlayingRef = useRef(isPlaying);
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
   const album = albums.find(al => currentTrack && trackHasAlbum(currentTrack, al.id));
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
-  // Update refs when relevant props change
   useEffect(() => {
     isPlayingRef.current = isPlaying;
-    previousTrackIdForLoggingRef.current = currentTrackId; // This will hold the ID of the track that *was* playing
+    previousTrackIdForLoggingRef.current = currentTrackId;
   }, [isPlaying, currentTrackId]);
 
 
@@ -54,16 +47,14 @@ export const BottomPlayer = () => {
     const audio = audioRef.current;
     if (!audio || !trackIdToLog || playbackSessionStartAudioTimeRef.current === null) return;
 
-    // Calculate actual duration played since the session started
     const durationPlayed = audio.currentTime - playbackSessionStartAudioTimeRef.current;
 
     if (durationPlayed > 0) {
       logPlayback(trackIdToLog, durationPlayed, currentTrackId ? { type: 'track', id: currentTrackId } : undefined, isSkipped);
     }
-    playbackSessionStartAudioTimeRef.current = null; // Reset session
+    playbackSessionStartAudioTimeRef.current = null;
   }, [logPlayback, currentTrackId]);
 
-  // Main effect for audio events and playback control
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -78,28 +69,23 @@ export const BottomPlayer = () => {
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setStoreDuration(audio.duration);
-      // If a track loads and we should be playing, start the playback session for accurate logging
       if (isPlayingRef.current && currentTrackId) {
-        playbackSessionStartAudioTimeRef.current = 0; // New track, starts from 0 audio time
+        playbackSessionStartAudioTimeRef.current = 0;
       }
     };
     const handleEnded = () => {
       if (currentTrackId) {
-        // Log the completed playback duration (from session start to end of track)
         commitPlaybackLog(currentTrackId, false);
       }
       nextTrack();
     };
     const handlePauseEvent = () => {
-      // This listener handles pauses that are not explicitly triggered by togglePlay
-      // For now, togglePlay handles the logging on pause. This is a safeguard if other things pause it.
-      // We rely on the togglePlay useEffect to manage session state changes.
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('pause', handlePauseEvent); // Just in case, might not be strictly necessary with other logic
+    audio.addEventListener('pause', handlePauseEvent);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -110,7 +96,6 @@ export const BottomPlayer = () => {
   }, [volume, currentTrackId, nextTrack, setStoreDuration, setStoreProgress, commitPlaybackLog]);
 
 
-  // Effect for controlling play/pause and source changes
   useEffect(() => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
@@ -119,12 +104,10 @@ export const BottomPlayer = () => {
     const trackIdChanged = currentTrackId !== audio.dataset.currentTrackId;
 
     if (trackIdChanged) {
-      // If track changed AND previous track was playing, commit log for the previous track (as skipped/interrupted)
       if (audio.dataset.currentTrackId && previousTrackWasPlaying && playbackSessionStartAudioTimeRef.current !== null) {
         commitPlaybackLog(audio.dataset.currentTrackId, true);
       }
 
-      // Load new track
       if (currentTrack?.localFilePath) {
         audio.src = currentTrack.localFilePath;
         audio.currentTime = 0;
@@ -139,31 +122,28 @@ export const BottomPlayer = () => {
         setStoreDuration(0);
         audio.dataset.currentTrackId = '';
       }
-      // New session starts from 0 for audio time (but real time starts when play is called)
       playbackSessionStartAudioTimeRef.current = 0;
     }
 
-    // Handle play/pause state
     if (isPlaying && currentTrackId) {
-      if (audio.paused) { // Only play if currently paused
+      if (audio.paused) {
         audio.play().catch(e => console.error("Error playing audio:", e));
-        playbackSessionStartAudioTimeRef.current = audio.currentTime; // Start/resume session
+        playbackSessionStartAudioTimeRef.current = audio.currentTime;
       }
-    } else { // Paused
-      if (!audio.paused && playbackSessionStartAudioTimeRef.current !== null) { // Only log if it was actually playing
-        commitPlaybackLog(currentTrackId!, false); // Use currentTrackId! as we know it's not null here
+    } else {
+      if (!audio.paused && playbackSessionStartAudioTimeRef.current !== null) {
+        commitPlaybackLog(currentTrackId!, false);
       }
       audio.pause();
     }
   }, [currentTrackId, currentTrack, isPlaying, setStoreDuration, setStoreProgress, commitPlaybackLog]);
 
 
-  // Cleanup effect when component unmounts or currentTrackId becomes null
   useEffect(() => {
     return () => {
       const audio = audioRef.current;
       if (audio && previousTrackIdForLoggingRef.current && isPlayingRef.current && playbackSessionStartAudioTimeRef.current !== null) {
-        commitPlaybackLog(previousTrackIdForLoggingRef.current, false); // Log current session on unmount
+        commitPlaybackLog(previousTrackIdForLoggingRef.current, false);
       }
       if (audio) {
         audio.pause();
@@ -173,7 +153,6 @@ export const BottomPlayer = () => {
     };
   }, [commitPlaybackLog]);
 
-  // Effect to sync volume slider with audio element
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -188,14 +167,14 @@ export const BottomPlayer = () => {
 
   const handleNext = () => {
     if (currentTrackId) {
-      commitPlaybackLog(currentTrackId, true); // Log as skipped
+      commitPlaybackLog(currentTrackId, true);
     }
     nextTrack();
   };
 
   const handlePrevious = () => {
     if (currentTrackId) {
-      commitPlaybackLog(currentTrackId, true); // Log as skipped
+      commitPlaybackLog(currentTrackId, true);
     }
     previousTrack();
   };
@@ -224,7 +203,6 @@ export const BottomPlayer = () => {
               <span className="text-[8px] font-black px-1.5 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-500 uppercase tracking-tighter">
                 {currentTrack?.bitrate || '320kbps'}
               </span>
-              {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
               <Rating track={currentTrack} showEditor={false} size="sm" />
             </div>
           )}
@@ -279,24 +257,11 @@ export const BottomPlayer = () => {
       {/* Volume & Extra */}
       <div className="flex items-center justify-end gap-4 w-1/3">
         {currentTrack && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
-                <MoreVertical size={18} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-              <TrackDropdownMenuItems
-                track={currentTrack}
-                setSelectedTrackForPlaylistAdd={() => setIsCreatePlaylistAddModalOpen(true)}
-                setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
-                setSelectedTrackForEdit={() => setIsEditTrackModalOpen(true)}
-                setIsEditTrackModalOpen={setIsEditTrackModalOpen}
-                setSelectedTrackForStats={() => setIsStatsModalOpen(true)}
-                setIsStatsModalOpen={setIsStatsModalOpen}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <TrackRightClickMenu track={currentTrack}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white">
+              <MoreVertical size={18} />
+            </Button>
+          </TrackRightClickMenu>
         )}
 
         <div className="relative">
@@ -375,19 +340,6 @@ export const BottomPlayer = () => {
             </div>
           )}
         </div>
-
-        <StatsForNerdsModal track={currentTrack} open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen} />
-
-        {currentTrack && (
-          <CreatePlaylistAddModal trackToAdd={currentTrack} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
-        )}
-        {currentTrack && (
-          <EditTrackModal
-            track={currentTrack}
-            open={isEditTrackModalOpen}
-            onOpenChange={setIsEditTrackModalOpen}
-          />
-        )}
 
         <div className="flex items-center gap-3 w-32">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500" onClick={() => setVolume(volume === 0 ? 0.8 : 0)}>

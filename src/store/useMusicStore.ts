@@ -56,7 +56,7 @@ interface MusicState {
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>; // Removed queueRules from Omit
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>;
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
@@ -84,7 +84,7 @@ interface MusicState {
   resetDatabase: () => Promise<void>;
   clearUnlinkedFiles: () => Promise<void>;
   
-  getRankedTenStarTracks: () => Track[]; // New helper to get sorted 10/10 tracks
+  getRankedTenStarTracks: () => Track[];
 }
 
 const DEFAULT_PROFILE: Profile = {
@@ -100,12 +100,10 @@ const DEFAULT_PROFILE: Profile = {
 const parseJsonOrDefault = (value: any, defaultValue: any) => {
   if (value === undefined || value === null) return defaultValue;
 
-  // If already an object/array, return it directly
   if (typeof value !== 'string') return value;
 
   try {
     const parsed = JSON.parse(value);
-    // Ensure the parsed value matches the expected type, otherwise return default
     if (Array.isArray(defaultValue)) {
       return Array.isArray(parsed) ? parsed : defaultValue;
     }
@@ -181,11 +179,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         artists: (artists || []).map((a: any) => ({ ...a, groups: parseJsonOrDefault(a.groups, []), eras: [] })),
         albums: (albums || []).map((al: any) => ({
           ...al,
-          // Removed 'covers' from parsing
-          primaryCover: al.primaryCover || null, // Parse new primaryCover field
+          primaryCover: al.primaryCover || null,
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
           artistIds: parseJsonOrDefault(al.artistIds, []),
-          credits: parseJsonOrDefault(al.credits, []) // Ensure credits are parsed
+          credits: parseJsonOrDefault(al.credits, [])
         })),
         tracks: (tracks || []).map((t: any) => ({
           ...t,
@@ -197,7 +194,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           artistIds: parseJsonOrDefault(t.artistIds, []),
           albumIds: parseJsonOrDefault(t.albumIds, []),
           isFavorite: !!t.isFavorite,
-          bitrate: t.bitrate || 'Unknown' // Ensure bitrate is always present
+          bitrate: t.bitrate || 'Unknown'
         })),
         releases: releases || [],
         playlists: playlists || [],
@@ -232,7 +229,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
     let finalUserQueue = [...state.userQueue];
 
-    // Apply rule if current track is trackA
     if (trackId) {
       const rule = state.activeProfile.playbackRules.find(r => r.trackAId === trackId);
       if (rule) {
@@ -245,7 +241,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           const isNextDirectlyInUserQueue = finalUserQueue.length > 0 && finalUserQueue[0] === nextIdFromRule;
           const isNextDirectlyInActiveQueue = newActiveQueue.length > 0 && newActiveQueue[0] === nextIdFromRule;
 
-          // If trackB is not already directly next, insert it at the beginning of the user queue
           if (!isNextDirectlyInUserQueue && !isNextDirectlyInActiveQueue) {
             finalUserQueue.unshift(nextIdFromRule);
           }
@@ -274,7 +269,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const state = get();
     const { activeQueue, userQueue, currentTrackId, activeProfile, currentTrackContext } = state;
     
-    // Check for rule application from the *current* track first
     if (currentTrackId) {
       const rule = activeProfile.playbackRules.find(r => r.trackAId === currentTrackId);
       if (rule) {
@@ -284,7 +278,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
         if (shouldApplyRule) {
           const nextIdFromRule = rule.trackBId;
-          // If the rule's trackB is at the very front of the user queue, play it and remove it
           if (userQueue.length > 0 && userQueue[0] === nextIdFromRule) {
             set({ currentTrackId: nextIdFromRule, userQueue: userQueue.slice(1), isPlaying: true });
             return;
@@ -293,7 +286,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       }
     }
 
-    // Fallback to regular queue logic if no rule applied or rule already handled
     if (userQueue.length > 0) {
       const nextId = userQueue[0];
       set({ currentTrackId: nextId, userQueue: userQueue.slice(1), isPlaying: true });
@@ -307,12 +299,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   previousTrack: () => {},
   logPlayback: async (trackId, duration, source, isSkip) => {
-    // Generate a temporary ID for optimistic UI update only.
-    // The server will generate the actual ID.
     const tempLogId = `temp-${Math.random().toString(36).substring(2, 9)}`;
 
     const newLog = {
-      id: tempLogId, // Temporary ID for local state
+      id: tempLogId,
       trackId,
       timestamp: new Date(),
       duration,
@@ -321,18 +311,16 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       isSkip: !!isSkip,
     };
 
-    // Optimistically update local state
     set(state => ({
       playbackLogs: [...state.playbackLogs, newLog]
     }));
 
-    // Then make the API call with the correct trackId
     try {
       const res = await fetch('/api/playback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trackId, // Send the actual trackId
+          trackId,
           duration,
           sourceType: source?.type,
           sourceId: source?.id,
@@ -341,12 +329,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       });
       if (res.ok) {
         const serverLog = await res.json();
-        // Replace the optimistic log with the actual server-generated log
         set(state => ({
           playbackLogs: state.playbackLogs.map(log => log.id === tempLogId ? { ...serverLog, timestamp: new Date(serverLog.timestamp) } : log)
         }));
       } else {
-        // If API call fails, remove optimistic update
         console.error("Failed to log playback to server.");
         set(state => ({
           playbackLogs: state.playbackLogs.filter(log => log.id !== tempLogId)
@@ -377,20 +363,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     let shuffled = [...state.activeQueue].sort(() => Math.random() - 0.5);
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
     
-    // Apply shuffle rules: ensure trackB follows trackA if both are present
     for (const rule of rules) {
       const indexA = shuffled.indexOf(rule.trackAId);
       const indexB = shuffled.indexOf(rule.trackBId);
 
       if (indexA !== -1 && indexB !== -1) {
-        // Remove B from its current position
         shuffled.splice(indexB, 1);
-        // Insert B right after A
         shuffled.splice(indexA + 1, 0, rule.trackBId);
       } else if (indexA !== -1 && indexB === -1) {
-        // If A is present but B is not, we can't apply the rule fully.
-        // Or if we want to ensure B is always added when A is shuffled... depends on rule interpretation.
-        // For now, only apply if both are present.
       }
     }
     set({ activeQueue: shuffled, isShuffled: true });
@@ -401,15 +381,12 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     let shuffled = [...state.userQueue].sort(() => Math.random() - 0.5);
     const rules = state.activeProfile.playbackRules.filter(r => r.playFirstOnShuffle);
 
-    // Apply shuffle rules: ensure trackB follows trackA if both are present
     for (const rule of rules) {
       const indexA = shuffled.indexOf(rule.trackAId);
       const indexB = shuffled.indexOf(rule.trackBId);
 
       if (indexA !== -1 && indexB !== -1) {
-        // Remove B from its current position
         shuffled.splice(indexB, 1);
-        // Insert B right after A
         shuffled.splice(indexA + 1, 0, rule.trackBId);
       }
     }
@@ -467,8 +444,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const newAlbum = await res.json();
     const parsedNewAlbum = { 
       ...newAlbum, 
-      // Removed 'covers' from parsing
-      primaryCover: newAlbum.primaryCover || null, // Parse new primaryCover field
+      primaryCover: newAlbum.primaryCover || null,
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []), 
       artistIds: parseJsonOrDefault(newAlbum.artistIds, []),
       credits: parseJsonOrDefault(newAlbum.credits, [])
@@ -478,7 +454,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateAlbum: async (id, data) => {
-    // Pass array types directly, API routes will handle JSON.stringify
     await fetch(`/api/albums/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -506,13 +481,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...trackData,
-          artistIds: trackData.artistIds, // Pass directly
-          genres: trackData.genres,       // Pass directly
-          producers: trackData.producers, // Pass directly
-          writers: trackData.writers,     // Pass directly
-          credits: trackData.credits,     // Pass directly
-          queueRules: trackData.queueRules, // Pass directly
-          bitrate: trackData.bitrate, // Pass bitrate
+          artistIds: trackData.artistIds,
+          genres: trackData.genres,
+          producers: trackData.producers,
+          writers: trackData.writers,
+          credits: trackData.credits,
+          queueRules: trackData.queueRules,
+          bitrate: trackData.bitrate,
         })
       });
       if (res.ok) {
@@ -527,7 +502,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateTrack: async (id, data) => {
-    // Pass array types directly, API routes will handle JSON.stringify
     await fetch(`/api/tracks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -574,7 +548,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   updatePlaylist: async (id, data) => {
     const updateData = { ...data };
-    if (data.trackIds) updateData.trackIds = data.trackIds; // trackIds is an array
+    if (data.trackIds) updateData.trackIds = data.trackIds;
     await fetch(`/api/playlists/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -609,7 +583,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   updateRelease: async (id, data) => {
     const updateData = { ...data };
-    if (data.trackIds) updateData.trackIds = data.trackIds; // trackIds is an array
+    if (data.trackIds) updateData.trackIds = data.trackIds;
     await fetch(`/api/releases/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -643,7 +617,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const res = await fetch('/api/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(groupData) // Pass directly
+      body: JSON.stringify(groupData)
     });
     const newGroup = await res.json();
     await get().fetchData();
@@ -651,7 +625,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateGroup: async (id, data) => {
-    // Pass array types directly, API routes will handle JSON.stringify
     await fetch(`/api/groups/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -704,7 +677,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await fetch(`/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings: updatedSettings }) // Pass directly
+      body: JSON.stringify({ settings: updatedSettings })
     });
     set(state => ({ activeProfile: { ...state.activeProfile, settings: updatedSettings } }));
   },
@@ -714,7 +687,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await fetch(`/api/profiles/${profile.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playbackRules: rules }) // Pass directly
+      body: JSON.stringify({ playbackRules: rules })
     });
     set(state => ({ activeProfile: { ...state.activeProfile, playbackRules: rules } }));
   },
@@ -738,11 +711,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   getRankedTenStarTracks: () => {
     const allTracks = get().tracks;
-    // Filter for tracks that are explicitly rated 10.0 and have been compared
     const tenStarTracks = allTracks.filter(t => 
       t.rating !== undefined && t.rating !== null && t.rating >= 9.9999 && t.comparisons > 0
     );
-    // Sort them by ELO score to determine their internal ranking
     return [...tenStarTracks].sort((a, b) => (b.eloScore ?? 0) - (a.eloScore ?? 0));
   }
 }));
