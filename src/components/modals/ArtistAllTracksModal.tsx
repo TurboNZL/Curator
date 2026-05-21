@@ -74,7 +74,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
             {artistName}'s Rated Tracks
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4 flex-1 overflow-hidden">
+        <div className="space-y-4 py-4 flex-1 overflow-hidden min-h-0">
           {allRatedArtistTracks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-900 rounded-2xl h-full">
               <Music size={48} className="text-zinc-800 mb-4" />
