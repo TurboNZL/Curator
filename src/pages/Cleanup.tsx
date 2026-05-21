@@ -18,7 +18,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { useLocation } from 'react-router-dom';
 
 
@@ -308,13 +308,13 @@ const Cleanup = () => {
     ];
 
     const sortedTracks = [...tracks].sort((a, b) => {
-      const albumA = a.albumIds.length > 0 ? a.albumIds[0].albumId : '';
+      const albumInfo = a.albumIds.length > 0 ? a.albumIds[0].albumId : '';
       const orderA = a.albumIds.length > 0 ? a.albumIds[0].order : 0;
       const albumB = b.albumIds.length > 0 ? b.albumIds[0].albumId : '';
       const orderB = b.albumIds.length > 0 ? b.albumIds[0].order : 0;
 
-      if (albumA < albumB) return -1;
-      if (albumA > albumB) return 1;
+      if (albumInfo < albumB) return -1;
+      if (albumInfo > albumB) return 1;
       return orderA - orderB;
     });
 

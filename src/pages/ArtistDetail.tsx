@@ -7,7 +7,7 @@ import { EditArtistModal } from '@/components/modals/EditArtistModal';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
 import { useState, useMemo } from 'react';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
@@ -165,7 +165,7 @@ const ArtistDetail = () => {
             </div>
             <div className="space-y-2">
               {artistTracks.slice(0, 10).map((track, i) => (
-                <TrackContextMenu key={track.id} track={track}>
+                <TrackRightClickMenu key={track.id} track={track}>
                   <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
@@ -198,7 +198,7 @@ const ArtistDetail = () => {
                       </DropdownMenu>
                     </div>
                   </div>
-                </TrackContextMenu>
+                </TrackRightClickMenu>
               ))}
             </div>
           </section>

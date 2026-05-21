@@ -7,7 +7,7 @@ import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, 
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
@@ -186,7 +186,7 @@ const Tracks = () => {
                 const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage); // Use the new helper
                 
                 return (
-                  <TrackContextMenu key={track.id} track={track}>
+                  <TrackRightClickMenu key={track.id} track={track}>
                     <TableRow
                       className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group"
                     >
@@ -236,7 +236,7 @@ const Tracks = () => {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  </TrackContextMenu>
+                  </TrackRightClickMenu>
                 );
               })}
             </TableBody>

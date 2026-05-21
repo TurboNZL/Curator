@@ -8,7 +8,7 @@ import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackContextMenu } from '../ui/TrackContextMenu';
+import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from './CreatePlaylistAddModal';
 import { StatsForNerdsModal } from './StatsForNerdsModal';
@@ -85,7 +85,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
             <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
-                  <TrackContextMenu key={track.id} track={track}>
+                  <TrackRightClickMenu key={track.id} track={track}>
                     <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{i + 1}</span>
@@ -122,7 +122,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
                         </DropdownMenu>
                       </div>
                     </div>
-                  </TrackContextMenu>
+                  </TrackRightClickMenu>
                 ))}
               </div>
             </ScrollArea>

@@ -9,7 +9,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { EditTrackModal } from './EditTrackModal';
-import { TrackContextMenu } from '../ui/TrackContextMenu';
+import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
 interface LowQualityTracksModalProps {
@@ -135,7 +135,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
             <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {lowQualityTracks.map((track) => (
-                  <TrackContextMenu key={track.id} track={track}>
+                  <TrackRightClickMenu key={track.id} track={track}>
                     <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{track.id}</span> {/* Using track.id instead of index + 1 */}
@@ -168,7 +168,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                         </Button>
                       </div>
                     </div>
-                  </TrackContextMenu>
+                  </TrackRightClickMenu>
                 ))}
               </div>
             </ScrollArea>

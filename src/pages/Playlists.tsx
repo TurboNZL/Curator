@@ -14,7 +14,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import the helper
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Playlists = () => {
@@ -344,7 +344,7 @@ const Playlists = () => {
                           draggedTrackIndex === index && "opacity-50 scale-[0.98] border-emerald-500/50"
                         )}
                       >
-                        <TrackContextMenu track={track}>
+                        <TrackRightClickMenu track={track}>
                           <div className="flex items-center gap-2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg group cursor-grab transition-all">
                             <div className="text-zinc-600 group-hover:text-zinc-400">
                               <GripVertical size={14} />
@@ -359,7 +359,7 @@ const Playlists = () => {
                               <Trash2 size={12} />
                             </Button>
                           </div>
-                        </TrackContextMenu>
+                        </TrackRightClickMenu>
                       </div>
                     );
                   })}

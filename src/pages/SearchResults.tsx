@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Music, Disc, User, Search, Play, MoreVertical } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
@@ -110,7 +110,7 @@ const SearchResults = () => {
                   const artist = artists.find(a => a.id === track.artistId);
                   const album = albums.find(al => trackHasAlbum(track, al.id));
                   return (
-                    <TrackContextMenu key={track.id} track={track}>
+                    <TrackRightClickMenu key={track.id} track={track}>
                       <div 
                         className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-900/50 hover:bg-zinc-900/50 transition-colors group"
                       >
@@ -155,7 +155,7 @@ const SearchResults = () => {
                           </DropdownMenu>
                         </div>
                       </div>
-                    </TrackContextMenu>
+                    </TrackRightClickMenu>
                   );
                 })}
               </div>

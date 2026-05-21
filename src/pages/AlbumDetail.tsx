@@ -13,7 +13,7 @@ import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
 import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
@@ -245,7 +245,7 @@ const AlbumDetail = () => {
               <TableBody>
                 {albumTracks.map((track, index) => {
                   return (
-                    <TrackContextMenu key={track.id} track={track}>
+                    <TrackRightClickMenu key={track.id} track={track}>
                       <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
                         <TableCell className="text-zinc-500 font-mono text-xs">{(index + 1).toString().padStart(2, '0')}</TableCell>
                         <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
@@ -282,7 +282,7 @@ const AlbumDetail = () => {
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    </TrackContextMenu>
+                    </TrackRightClickMenu>
                   );
                 })}
               </TableBody>

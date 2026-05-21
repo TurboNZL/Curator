@@ -4,17 +4,17 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical, Link as LinkIcon } from 'lucide-react';
+import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
-import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { toast } from 'sonner';
+import { TrackRightClickMenu } from '../../components/ui/TrackRightClickMenu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
+import { EditTrackModal } from '../modals/EditTrackModal';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { TrackDropdownMenuItems } from '../../components/ui/TrackDropdownMenuItems'; // Import new component
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ interface ArtistAllTracksModalProps {
 }
 
 export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, activeProfile } = useMusicStore(); // Added releases, activeProfile
+  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
@@ -65,15 +65,6 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
-  const handleCopyLink = (url?: string) => {
-    if (url) {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
-    } else {
-      toast.error("No link available for this item.");
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] flex flex-col">
@@ -94,7 +85,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
             <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
-                  <TrackContextMenu key={track.id} track={track}>
+                  <TrackRightClickMenu key={track.id} track={track}>
                     <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{i + 1}</span>
@@ -118,99 +109,20 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTrackForEdit(track);
-                                setIsEditTrackModalOpen(true);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Edit2 size={14} className="mr-2" /> Edit Track
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addToUserQueue(track.id);
-                                toast.success(`"${track.title}" added to queue.`);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <List size={14} className="mr-2" /> Add to Queue
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                incrementMemories(track.id);
-                                toast.success(`Memory added for "${track.title}".`);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Plus size={14} className="mr-2" /> Add Memory
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                decrementMemories(track.id);
-                                toast.success(`Memory removed for "${track.title}".`);
-                              }}
-                              disabled={track.memories === 0}
-                              className="text-xs font-medium"
-                            >
-                              <Minus size={14} className="mr-2" /> Remove Memory
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTrackForPlaylistAdd(track);
-                                setIsCreatePlaylistAddModalOpen(true);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Plus size={14} className="mr-2" /> Add to Playlist
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTrackForStats(track);
-                                setIsStatsModalOpen(true);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Info size={14} className="mr-2" /> Stats for Nerds
-                            </DropdownMenuItem>
-                            {track.spotifyUrl && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
-                                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
-                                </DropdownMenuItem>
-                              )}
-                              {track.geniusUrl && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.geniusUrl); }} className="text-xs font-medium">
-                                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
-                                </DropdownMenuItem>
-                              )}
-                              {track.youtubeMusicUrl && (
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
-                                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
-                                </DropdownMenuItem>
-                              )}
-                            <DropdownMenuSeparator className="bg-zinc-800" />
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
-                                  deleteTrack(track.id);
-                                }
-                              }}
-                              className="text-xs font-medium text-red-500"
-                            >
-                              <Trash2 size={14} className="mr-2" /> Delete Track
-                            </DropdownMenuItem>
+                            <TrackDropdownMenuItems
+                              track={track}
+                              setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
+                              setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+                              setSelectedTrackForEdit={setSelectedTrackForEdit}
+                              setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+                              setSelectedTrackForStats={setSelectedTrackForStats}
+                              setIsStatsModalOpen={setIsStatsModalOpen}
+                            />
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
                     </div>
-                  </TrackContextMenu>
+                  </TrackRightClickMenu>
                 ))}
               </div>
             </ScrollArea>
