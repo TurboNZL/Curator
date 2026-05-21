@@ -1,13 +1,13 @@
 "use client";
 
+import React, { useState } from 'react';
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-} from "@/components/ui/dropdown-menu";
-import { Track } from "@/types/music";
-import React from "react";
-import { TrackDropdownMenuItems } from "./TrackDropdownMenuItems";
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { Track } from '@/types/music';
+import { TrackDropdownMenuItems } from './TrackDropdownMenuItems';
 import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 import { EditTrackModal } from '../modals/EditTrackModal';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
@@ -17,62 +17,44 @@ interface TrackRightClickMenuProps {
   children: React.ReactNode;
 }
 
-export const TrackRightClickMenu: React.FC<TrackRightClickMenuProps> = ({
-  track,
-  children,
-}) => {
-  const [isPlaylistAddModalOpen, setIsPlaylistAddModalOpen] =
-    React.useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = React.useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] =
-    React.useState<Track | null>(null);
-  const [selectedTrackForEdit, setSelectedTrackForEdit] =
-    React.useState<Track | null>(null);
-  const [selectedTrackForStats, setSelectedTrackForStats] =
-    React.useState<Track | null>(null);
+export const TrackRightClickMenu: React.FC<TrackRightClickMenuProps> = ({ track, children }) => {
+  const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="bg-zinc-950 border-zinc-800 text-white"
-        >
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="w-64 bg-zinc-950 border-zinc-800 text-white p-1 rounded-md shadow-lg">
           <TrackDropdownMenuItems
             track={track}
-            setSelectedTrackForPlaylistAdd={setSelectedTrackForPlaylistAdd}
-            setIsCreatePlaylistAddModalOpen={setIsPlaylistAddModalOpen}
-            setSelectedTrackForEdit={setSelectedTrackForEdit}
-            setIsEditTrackModalOpen={setIsEditModalOpen}
-            setSelectedTrackForStats={setSelectedTrackForStats}
+            setSelectedTrackForPlaylistAdd={() => {}}
+            setIsCreatePlaylistAddModalOpen={setIsCreatePlaylistAddModalOpen}
+            setSelectedTrackForEdit={() => {}}
+            setIsEditTrackModalOpen={setIsEditTrackModalOpen}
+            setSelectedTrackForStats={() => {}}
             setIsStatsModalOpen={setIsStatsModalOpen}
           />
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {selectedTrackForPlaylistAdd && (
-        <CreatePlaylistAddModal
-          trackToAdd={selectedTrackForPlaylistAdd}
-          open={isPlaylistAddModalOpen}
-          onOpenChange={setIsPlaylistAddModalOpen}
-        />
-      )}
-      {selectedTrackForEdit && (
-        <EditTrackModal
-          track={selectedTrackForEdit}
-          open={isEditModalOpen}
-          onOpenChange={setIsEditModalOpen}
-        />
-      )}
-      {selectedTrackForStats && (
-        <StatsForNerdsModal
-          track={selectedTrackForStats}
-          open={isStatsModalOpen}
-          onOpenChange={setIsStatsModalOpen}
-        />
-      )}
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <CreatePlaylistAddModal
+        trackToAdd={track}
+        albumToAdd={undefined}
+        open={isCreatePlaylistAddModalOpen}
+        onOpenChange={setIsCreatePlaylistAddModalOpen}
+      />
+      <EditTrackModal
+        track={track}
+        open={isEditTrackModalOpen}
+        onOpenChange={setIsEditTrackModalOpen}
+      />
+      <StatsForNerdsModal
+        track={track}
+        open={isStatsModalOpen}
+        onOpenChange={setIsStatsModalOpen}
+      />
     </>
   );
 };
