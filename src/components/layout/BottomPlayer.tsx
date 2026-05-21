@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
 
@@ -14,7 +14,7 @@ const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial p
 
 export const BottomPlayer = () => {
   const {
-    currentTrackId, tracks, artists, albums, releases, isPlaying, togglePlay, // Added releases
+    currentTrackId, tracks, artists, albums, releases, isPlaying, togglePlay,
     volume, setVolume, nextTrack, previousTrack, logPlayback,
     userQueue, activeQueue, removeFromUserQueue, clearUserQueue,
     mergeActiveToUserQueue, clearActiveQueue, shuffleActiveQueue,
@@ -27,9 +27,10 @@ export const BottomPlayer = () => {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const preloadAudioRef = useRef<HTMLAudioElement | null>(null); // New ref for preloading
   const playbackSessionStartAudioTimeRef = useRef<number | null>(null);
-  const previousTrackIdForLoggingRef = useRef<string | null>(null); // To store trackId *before* it changes for logging
-  const isPlayingRef = useRef(isPlaying); // Keep track of isPlaying state for cleanup/logging
+  const previousTrackIdForLoggingRef = useRef<string | null>(null);
+  const isPlayingRef = useRef(isPlaying);
 
   const currentTrack = tracks.find(t => t.id === currentTrackId);
   const artist = artists.find(a => a.id === currentTrack?.artistId);
@@ -39,29 +40,74 @@ export const BottomPlayer = () => {
   // Update refs when relevant props change
   useEffect(() => {
     isPlayingRef.current = isPlaying;
-    previousTrackIdForLoggingRef.current = currentTrackId; // This will hold the ID of the track that *was* playing
+    previousTrackIdForLoggingRef.current = currentTrackId;
   }, [isPlaying, currentTrackId]);
 
-
-  const commitPlaybackLog = useCallback((trackIdToLog: string, isSkipped: boolean) => {
-    const audio = audioRef.current;
-    if (!audio || !trackIdToLog || playbackSessionStartAudioTimeRef.current === null) return;
-
-    // Calculate actual duration played since the session started
-    const durationPlayed = audio.currentTime - playbackSessionStartAudioTimeRef.current;
-
-    if (durationPlayed > 0) {
-      logPlayback(trackIdToLog, durationPlayed, currentTrackId ? { type: 'track', id: currentTrackId } : undefined, isSkipped);
-    }
-    playbackSessionStartAudioTimeRef.current = null; // Reset session
-  }, [logPlayback, currentTrackId]);
-
-  // Main effect for audio events and playback control
+  // Initialize main audio player once
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.volume = volume;
     }
+  }, []);
+
+  // Initialize preload audio player once
+  useEffect(() => {
+    if (!preloadAudioRef.current) {
+      preloadAudioRef.current = new Audio();
+      preloadAudioRef.current.preload = 'auto'; // Set to auto to start downloading metadata/audio
+    }
+  }, []);
+
+  const commitPlaybackLog = useCallback((trackIdToLog: string, isSkipped: boolean) => {
+    const audio = audioRef.current;
+    if (!audio || !trackIdToLog || playbackSessionStartAudioTimeRef.current === null) return;
+
+    const durationPlayed = audio.currentTime - playbackSessionStartAudioTimeRef.current;
+
+    if (durationPlayed > 0) {
+      logPlayback(trackIdToLog, durationPlayed, currentTrackId ? { type: 'track', id: currentTrackId } : undefined, isSkipped);
+    }
+    playbackSessionStartAudioTimeRef.current = null;
+  }, [logPlayback, currentTrackId]);
+
+  // Determine the next track to potentially preload
+  const nextTrackIdToPreload = useMemo(() => {
+    // This logic correctly identifies the *next* track that `nextTrack()` would play
+    // taking into account both user-defined queue and active source queue.
+    if (userQueue.length > 0) {
+      return userQueue[0];
+    }
+    if (activeQueue.length > 0) {
+      return activeQueue[0];
+    }
+    return null;
+  }, [userQueue, activeQueue]);
+
+  // Find the actual track object for preloading
+  const nextTrackToPreload = tracks.find(t => t.id === nextTrackIdToPreload);
+
+  // Effect for managing the preloaded track's source
+  useEffect(() => {
+    const preloadAudio = preloadAudioRef.current;
+    if (!preloadAudio) return;
+
+    // Check if the source needs to be updated for preloading
+    if (nextTrackToPreload?.localFilePath && preloadAudio.src !== nextTrackToPreload.localFilePath) {
+      preloadAudio.src = nextTrackToPreload.localFilePath;
+      preloadAudio.preload = 'auto'; // Ensure preload is set
+      console.log(`Preloading next track: ${nextTrackToPreload.title}`);
+    } else if (!nextTrackToPreload && preloadAudio.src) {
+      // Clear preload if no next track is available
+      preloadAudio.removeAttribute('src');
+      console.log('Cleared preloaded track');
+    }
+  }, [nextTrackToPreload]); // Only re-run when the next track to preload changes
+
+
+  // Main effect for audio events and playback control
+  useEffect(() => {
+    if (!audioRef.current) return;
     const audio = audioRef.current;
 
     const handleTimeUpdate = () => {
@@ -71,37 +117,27 @@ export const BottomPlayer = () => {
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setStoreDuration(audio.duration);
-      // If a track loads and we should be playing, start the playback session for accurate logging
       if (isPlayingRef.current && currentTrackId) {
-        playbackSessionStartAudioTimeRef.current = 0; // New track, starts from 0 audio time
+        playbackSessionStartAudioTimeRef.current = 0;
       }
     };
     const handleEnded = () => {
       if (currentTrackId) {
-        // Log the completed playback duration (from session start to end of track)
         commitPlaybackLog(currentTrackId, false);
       }
       nextTrack();
-    };
-    const handlePauseEvent = () => {
-      // This listener handles pauses that are not explicitly triggered by togglePlay
-      // For now, togglePlay handles the logging on pause. This is a safeguard if other things pause it.
-      // We rely on the togglePlay useEffect to manage session state changes.
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('pause', handlePauseEvent); // Just in case, might not be strictly necessary with other logic
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('pause', handlePauseEvent);
     };
   }, [volume, currentTrackId, nextTrack, setStoreDuration, setStoreProgress, commitPlaybackLog]);
-
 
   // Effect for controlling play/pause and source changes
   useEffect(() => {
@@ -112,12 +148,10 @@ export const BottomPlayer = () => {
     const trackIdChanged = currentTrackId !== audio.dataset.currentTrackId;
 
     if (trackIdChanged) {
-      // If track changed AND previous track was playing, commit log for the previous track (as skipped/interrupted)
       if (audio.dataset.currentTrackId && previousTrackWasPlaying && playbackSessionStartAudioTimeRef.current !== null) {
         commitPlaybackLog(audio.dataset.currentTrackId, true);
       }
 
-      // Load new track
       if (currentTrack?.localFilePath) {
         audio.src = currentTrack.localFilePath;
         audio.currentTime = 0;
@@ -132,35 +166,35 @@ export const BottomPlayer = () => {
         setStoreDuration(0);
         audio.dataset.currentTrackId = '';
       }
-      // New session starts from 0 for audio time (but real time starts when play is called)
-      playbackSessionStartAudioTimeRef.current = 0; 
+      playbackSessionStartAudioTimeRef.current = 0;
     }
 
-    // Handle play/pause state
     if (isPlaying && currentTrackId) {
-      if (audio.paused) { // Only play if currently paused
+      if (audio.paused) {
         audio.play().catch(e => console.error("Error playing audio:", e));
-        playbackSessionStartAudioTimeRef.current = audio.currentTime; // Start/resume session
+        playbackSessionStartAudioTimeRef.current = audio.currentTime;
       }
-    } else { // Paused
-      if (!audio.paused && playbackSessionStartAudioTimeRef.current !== null) { // Only log if it was actually playing
-        commitPlaybackLog(currentTrackId!, false); // Use currentTrackId! as we know it's not null here
+    } else {
+      if (!audio.paused && playbackSessionStartAudioTimeRef.current !== null) {
+        commitPlaybackLog(currentTrackId!, false);
       }
       audio.pause();
     }
   }, [currentTrackId, currentTrack, isPlaying, setStoreDuration, setStoreProgress, commitPlaybackLog]);
 
-
-  // Cleanup effect when component unmounts or currentTrackId becomes null
+  // Cleanup effect when component unmounts
   useEffect(() => {
     return () => {
       const audio = audioRef.current;
       if (audio && previousTrackIdForLoggingRef.current && isPlayingRef.current && playbackSessionStartAudioTimeRef.current !== null) {
-        commitPlaybackLog(previousTrackIdForLoggingRef.current, false); // Log current session on unmount
+        commitPlaybackLog(previousTrackIdForLoggingRef.current, false);
       }
       if (audio) {
         audio.pause();
         audio.removeAttribute('src');
+      }
+      if (preloadAudioRef.current) { // Also clean up preload audio
+        preloadAudioRef.current.removeAttribute('src');
       }
       playbackSessionStartAudioTimeRef.current = null;
     };
@@ -181,14 +215,14 @@ export const BottomPlayer = () => {
 
   const handleNext = () => {
     if (currentTrackId) {
-      commitPlaybackLog(currentTrackId, true); // Log as skipped
+      commitPlaybackLog(currentTrackId, true);
     }
     nextTrack();
   };
 
   const handlePrevious = () => {
     if (currentTrackId) {
-      commitPlaybackLog(currentTrackId, true); // Log as skipped
+      commitPlaybackLog(currentTrackId, true);
     }
     previousTrack();
   };
