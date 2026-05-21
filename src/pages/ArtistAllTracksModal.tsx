@@ -8,11 +8,11 @@ import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
-import { TrackContextMenu } from '@/components/ui/TrackContextMenu'; // Corrected path
+import { TrackContextMenu } from '@/components/ui/TrackContextMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Corrected path
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Corrected path
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Corrected path
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { toast } from 'sonner';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
 

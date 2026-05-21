@@ -172,13 +172,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                       )}
                     </button>
                   ))}
-                  {/* Option to upload new primary cover */}
-                  <div className="aspect-square rounded-lg border-2 border-dashed border-zinc-800 flex items-center justify-center">
-                    <ImageUpload
-                      value="" 
-                      onChange={(val) => setFormData({...formData, primaryCover: val})}
-                    />
-                  </div>
+                  {/* Removed the drag and drop box for new primary cover upload */}
+                  {/* The ImageUpload is still available for selection within the grid if a URL is provided or chosen */}
                 </div>
               </div>
 
@@ -236,20 +231,20 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Unassigned Audio Files</Label>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     className="h-8 border-zinc-800 bg-zinc-900/50 text-[10px] font-black uppercase tracking-widest gap-2"
                     onClick={() => document.getElementById('bulk-audio')?.click()}
                   >
                     <Plus size={14} /> Upload Folder/Files
                   </Button>
-                  <input 
-                    id="bulk-audio" 
-                    type="file" 
-                    multiple 
-                    accept="audio/*" 
-                    className="hidden" 
+                  <input
+                    id="bulk-audio"
+                    type="file"
+                    multiple
+                    accept="audio/*"
+                    className="hidden"
                     onChange={handleBulkUpload}
                   />
                 </div>

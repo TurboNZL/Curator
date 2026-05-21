@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical } from 'lucide-react';
+import { Music, Star, Play, List, Plus, Minus, Info, Trash2, Edit2, MoreVertical, Link as LinkIcon } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
 import { Track } from '@/types/music';
@@ -63,6 +63,15 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
     const album = albums.find(a => trackHasAlbum(track, a.id));
     // Use the new helper here
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
+  };
+
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } else {
+      toast.error("No link available for this item.");
+    }
   };
 
   return (
@@ -170,6 +179,21 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
                             >
                               <Info size={14} className="mr-2" /> Stats for Nerds
                             </DropdownMenuItem>
+                            {track.spotifyUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
+                                </DropdownMenuItem>
+                              )}
+                              {track.geniusUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.geniusUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy Genius Link
+                                </DropdownMenuItem>
+                              )}
+                              {track.youtubeMusicUrl && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
+                                  <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
+                                </DropdownMenuItem>
+                              )}
                             <DropdownMenuSeparator className="bg-zinc-800" />
                             <DropdownMenuItem
                               onClick={(e) => {
