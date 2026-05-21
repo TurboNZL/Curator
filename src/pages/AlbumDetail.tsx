@@ -41,6 +41,7 @@ const AlbumDetail = () => {
   ).length;
 
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
+  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null); // New state for temporary cover override
   
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
@@ -58,14 +59,14 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
-  // Fix 1: Only initialize selectedReleaseId once
+  // Initialize selectedReleaseId
   useEffect(() => {
     if (!selectedReleaseId && album) { 
       setSelectedReleaseId(
         album.defaultReleaseId || albumReleases[0]?.id || null
       );
     }
-  }, [album?.id, album?.defaultReleaseId, albumReleases.length]); // Depend on album ID, defaultReleaseId, and releases count (for initial load)
+  }, [album?.id, album?.defaultReleaseId, albumReleases.length]);
 
 
   useEffect(() => {
@@ -141,6 +142,7 @@ const AlbumDetail = () => {
     if (!album) return;
     await updateAlbum(album.id, { defaultReleaseId: releaseId });
     setSelectedReleaseId(releaseId); // Also update UI state to match new default
+    setTemporaryDisplayCoverUrl(null); // Clear temporary override when setting default
     toast.success("Default release set!");
   };
 
@@ -155,14 +157,19 @@ const AlbumDetail = () => {
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
-  // Fix 3: Use the new helper for display cover
-  const displayCover = getAlbumDisplayCover(album, releases, defaultAlbumImage);
+  // Determine the cover to display
+  const finalDisplayCover = useMemo(() => {
+    if (temporaryDisplayCoverUrl) {
+      return temporaryDisplayCoverUrl;
+    }
+    return getAlbumDisplayCover(album, releases, defaultAlbumImage);
+  }, [temporaryDisplayCoverUrl, album, releases, defaultAlbumImage]);
 
   return (
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row gap-8 items-end">
         <img 
-          src={displayCover} 
+          src={finalDisplayCover} 
           className="w-64 h-64 rounded-xl shadow-2xl border border-zinc-800 object-cover" 
           alt={album.title} 
         />
@@ -354,7 +361,10 @@ const AlbumDetail = () => {
                       "h-6 w-6",
                       showAllTracks ? "text-blue-500" : "text-zinc-500"
                     )}
-                    onClick={() => setShowAllTracks(!showAllTracks)}
+                    onClick={() => {
+                      setShowAllTracks(!showAllTracks);
+                      setTemporaryDisplayCoverUrl(null); // Clear temporary override when toggling track view
+                    }}
                     title={showAllTracks ? "Show Release Tracks" : "Show All Tracks"}
                   >
                     <List size={12} />
@@ -388,6 +398,7 @@ const AlbumDetail = () => {
                     <button 
                       onClick={() => {
                         setSelectedReleaseId(release.id);
+                        setTemporaryDisplayCoverUrl(release.coverImage || null); // Set temporary cover
                         setShowAllTracks(false);
                       }}
                       className={cn(
