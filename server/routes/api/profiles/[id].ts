@@ -17,8 +17,8 @@ export default defineHandler(async (event) => {
     if (body.theme !== undefined) updateData.theme = body.theme;
     if (body.accentColor !== undefined) updateData.accentColor = body.accentColor;
     if (body.playbackMode !== undefined) updateData.playback_mode = body.playbackMode;
-    if (body.settings !== undefined) updateData.settings = body.settings;
-    if (body.playbackRules !== undefined) updateData.playbackRules = body.playbackRules;
+    if (body.settings !== undefined) updateData.settings = JSON.stringify(body.settings);
+    if (body.playbackRules !== undefined) updateData.playbackRules = JSON.stringify(body.playbackRules);
     
     await db.update(profiles)
       .set(updateData)
