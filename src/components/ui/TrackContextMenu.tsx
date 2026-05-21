@@ -20,7 +20,6 @@ import {
   Plus,
   Minus,
   Info,
-  Trash2,
   Edit2,
   Link as LinkIcon,
   ExternalLink,
@@ -47,7 +46,6 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
     addToUserQueue,
     incrementMemories,
     decrementMemories,
-    deleteTrack,
     artists,
     albums,
   } = useMusicStore();
@@ -96,6 +94,13 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           </ContextMenuItem>
 
           <ContextMenuSeparator className="bg-zinc-800" />
+          
+          <ContextMenuItem
+            onClick={() => setIsEditTrackModalOpen(true)}
+            className="text-xs font-medium"
+          >
+            <Edit2 size={14} className="mr-2" /> Edit Track
+          </ContextMenuItem>
 
           <ContextMenuItem disabled className="text-xs font-medium opacity-100 !cursor-default text-zinc-300">
             <Brain size={14} className="mr-2" /> Memories: {track.memories}
@@ -223,22 +228,6 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
             className="text-xs font-medium"
           >
             <Info size={14} className="mr-2" /> Stats for Nerds
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => setIsEditTrackModalOpen(true)}
-            className="text-xs font-medium"
-          >
-            <Edit2 size={14} className="mr-2" /> Edit Track
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => {
-              if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
-                deleteTrack(track.id);
-              }
-            }}
-            className="text-xs font-medium text-red-500"
-          >
-            <Trash2 size={14} className="mr-2" /> Delete Track
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
