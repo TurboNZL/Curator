@@ -15,7 +15,6 @@ import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Imported EditTrackModal
 import { toast } from 'sonner';
 import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const ArtistDetail = () => {
@@ -175,91 +174,90 @@ const ArtistDetail = () => {
                 Show All
               </Button>
             </div>
-            <ScrollArea className="h-[200px]"> {/* Added ScrollArea with fixed height */}
-              <div className="space-y-2 pr-4"> {/* Added pr-4 for scrollbar space */}
-                {artistTracks.slice(0, 10).map((track, i) => (
-                  <TrackContextMenu key={track.id} track={track}>
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
-                        <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
-                        <Rating
-                          track={track}
-                          showEditor={false}
-                          size="sm"
-                        />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
-                              <MoreVertical size={14} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
-                            <DropdownMenuItem 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setSelectedTrackForEdit(track); 
-                                setIsEditTrackModalOpen(true); 
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Edit2 size={14} className="mr-2" /> Edit Track
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                addToUserQueue(track.id);
-                                toast.success(`"${track.title}" added to queue.`);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <List size={14} className="mr-2" /> Add to Queue
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                incrementMemories(track.id);
-                                toast.success(`Memory added for "${track.title}".`);
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Plus size={14} className="mr-2" /> Add Memory
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                decrementMemories(track.id);
-                                toast.success(`Memory removed for "${track.title}".`);
-                              }}
-                              disabled={track.memories === 0}
-                              className="text-xs font-medium"
-                            >
-                              <Minus size={14} className="mr-2" /> Remove Memory
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setSelectedTrackForPlaylistAdd(track); 
-                                setIsCreatePlaylistAddModalOpen(true); 
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Plus size={14} className="mr-2" /> Add to Playlist
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setSelectedTrackForStats(track); 
-                                setIsStatsModalOpen(true); 
-                              }}
-                              className="text-xs font-medium"
-                            >
-                              <Info size={14} className="mr-2" /> Stats for Nerds
-                            </DropdownMenuItem>
-                            {track.spotifyUrl && (
+            <div className="space-y-2">
+              {artistTracks.slice(0, 10).map((track, i) => (
+                <TrackContextMenu key={track.id} track={track}>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-900 transition-colors cursor-pointer group" onClick={() => setCurrentTrack(track.id)}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
+                      <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2">
+                      {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
+                      <Rating
+                        track={track}
+                        showEditor={false}
+                        size="sm"
+                      />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 hover:text-white">
+                            <MoreVertical size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white">
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedTrackForEdit(track); 
+                              setIsEditTrackModalOpen(true); 
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Edit2 size={14} className="mr-2" /> Edit Track
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              addToUserQueue(track.id);
+                              toast.success(`"${track.title}" added to queue.`);
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <List size={14} className="mr-2" /> Add to Queue
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              incrementMemories(track.id);
+                              toast.success(`Memory added for "${track.title}".`);
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Plus size={14} className="mr-2" /> Add Memory
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              decrementMemories(track.id);
+                              toast.success(`Memory removed for "${track.title}".`);
+                            }}
+                            disabled={track.memories === 0}
+                            className="text-xs font-medium"
+                          >
+                            <Minus size={14} className="mr-2" /> Remove Memory
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedTrackForPlaylistAdd(track); 
+                              setIsCreatePlaylistAddModalOpen(true); 
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Plus size={14} className="mr-2" /> Add to Playlist
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedTrackForStats(track); 
+                              setIsStatsModalOpen(true); 
+                            }}
+                            className="text-xs font-medium"
+                          >
+                            <Info size={14} className="mr-2" /> Stats for Nerds
+                          </DropdownMenuItem>
+                          {track.spotifyUrl && (
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
                                   <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
                                 </DropdownMenuItem>
@@ -293,7 +291,6 @@ const ArtistDetail = () => {
                 </TrackContextMenu>
               ))}
             </div>
-            </ScrollArea>
           </section>
 
           <section className="space-y-6">
