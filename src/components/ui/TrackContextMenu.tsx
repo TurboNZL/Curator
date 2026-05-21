@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import React from 'react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -8,97 +8,108 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useMusicStore } from "@/store/useMusicStore";
-import { toast } from "sonner";
-import { Track } from "@/types/music";
-import { Edit2, List, Plus, Minus, Info, Trash2, Link as LinkIcon } from "lucide-react"; // Added LinkIcon
+import { Copy, Plus, Edit2, Trash2, Link, Play, Info, Heart, Minus, Brain } from 'lucide-react';
+import { useMusicStore } from '@/store/useMusicStore';
+import { toast } from 'sonner';
+import { Track } from '@/types/music';
+import { EditTrackModal } from '../modals/EditTrackModal';
+import { StatsForNerdsModal } from '../modals/StatsForNerdsModal';
+import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 
+// DO NOT CHANGE THE STYLE OF THE RATING CARD
 interface TrackContextMenuProps {
-  children: ReactNode;
+  children: React.ReactNode;
   track: Track;
 }
 
 export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({ children, track }) => {
-  const { 
-    setCurrentTrack, 
-    addToUserQueue, 
-    incrementMemories, 
-    decrementMemories, 
-    deleteTrack 
-  } = useMusicStore();
+  const { setCurrentTrack, addToUserQueue, incrementMemories, decrementMemories, deleteTrack, fetchData } = useMusicStore();
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = React.useState(false);
+  const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] = React.useState(false);
 
-  const handlePlay = () => {
-    setCurrentTrack(track.id);
-    toast.success(`Playing "${track.title}"`);
-  };
-
-  const handleCopyLink = () => {
-    let urlToCopy = '';
-    let linkType = '';
-
-    if (track.spotifyUrl) {
-      urlToCopy = track.spotifyUrl;
-      linkType = 'Spotify';
-    } else if (track.youtubeMusicUrl) {
-      urlToCopy = track.youtubeMusicUrl;
-      linkType = 'YouTube Music';
-    } else if (track.geniusUrl) {
-      urlToCopy = track.geniusUrl;
-      linkType = 'Genius';
-    }
-
-    if (urlToCopy) {
-      navigator.clipboard.writeText(urlToCopy);
-      toast.success(`${linkType} link copied!`);
+  const handleCopyLink = (url?: string) => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
     } else {
       toast.error("No link available for this track.");
     }
   };
 
-  // Helper to determine the label for the copy link action
-  const getCopyLinkLabel = () => {
-    if (track.spotifyUrl) return "Copy Spotify Link";
-    if (track.youtubeMusicUrl) return "Copy YouTube Music Link";
-    if (track.geniusUrl) return "Copy Genius Link";
-    return "No Link Available";
+  const handleDeleteTrack = async () => {
+    if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
+      await deleteTrack(track.id);
+      toast.success(`"${track.title}" deleted.`);
+      fetchData(); // Re-fetch data to update UI
+    }
   };
 
-  const hasCopyLink = track.spotifyUrl || track.youtubeMusicUrl || track.geniusUrl;
-
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-64 bg-zinc-950 border-zinc-800 text-white">
-        <ContextMenuItem onClick={handlePlay} className="text-xs font-medium">
-          <List className="mr-2 h-4 w-4" /> Play Now
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => addToUserQueue(track.id)} className="text-xs font-medium">
-          <Plus className="mr-2 h-4 w-4" /> Add to Queue
-        </ContextMenuItem>
-        <ContextMenuSeparator className="bg-zinc-800" />
-        <ContextMenuItem onClick={() => incrementMemories(track.id)} className="text-xs font-medium">
-          <Plus className="mr-2 h-4 w-4" /> Add Memory
-        </ContextMenuItem>
-        <ContextMenuItem 
-          onClick={() => decrementMemories(track.id)} 
-          disabled={track.memories === 0} 
-          className="text-xs font-medium"
-        >
-          <Minus className="mr-2 h-4 w-4" /> Remove Memory
-        </ContextMenuItem>
-        {hasCopyLink && (
-          <ContextMenuItem onClick={handleCopyLink} className="text-xs font-medium">
-            <LinkIcon className="mr-2 h-4 w-4" /> {getCopyLinkLabel()}
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="w-64 bg-zinc-950 border-zinc-800 text-white p-2">
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setCurrentTrack(track.id)}>
+            <Play size={14} /> Play Now
           </ContextMenuItem>
-        )}
-        <ContextMenuSeparator className="bg-zinc-800" />
-        <ContextMenuItem 
-          onClick={() => { if (confirm(`Are you sure you want to delete "${track.title}"?`)) deleteTrack(track.id); }} 
-          className="text-xs font-medium text-red-500"
-        >
-          <Trash2 className="mr-2 h-4 w-4" /> Delete Track
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsAddToPlaylistModalOpen(true)}>
+            <Plus size={14} /> Add to Playlist
+          </ContextMenuItem>
+          
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => addToUserQueue(track.id)}>
+            <Plus size={14} /> Add to Queue
+          </ContextMenuItem>
+
+          <ContextMenuSeparator className="bg-zinc-800" />
+
+          {track.memories > 0 && (
+            <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => decrementMemories(track.id)}>
+              <Minus size={14} /> Remove Memory {track.memories > 0 && <span className="text-[10px] text-zinc-500">({track.memories})</span>}
+            </ContextMenuItem>
+          )}
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => incrementMemories(track.id)}>
+            <Brain size={14} /> Add Memory {track.memories > 0 && <span className="text-[10px] text-zinc-500">({track.memories})</span>}
+          </ContextMenuItem>
+          
+          <ContextMenuSeparator className="bg-zinc-800" />
+
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsEditModalOpen(true)}>
+            <Edit2 size={14} /> Edit Track
+          </ContextMenuItem>
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => setIsStatsModalOpen(true)}>
+            <Info size={14} /> Stats for Nerds
+          </ContextMenuItem>
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-900/50 cursor-pointer" onSelect={() => handleCopyLink(track.spotifyUrl)}>
+            <Link size={14} /> Copy Spotify Link
+          </ContextMenuItem>
+
+          <ContextMenuSeparator className="bg-zinc-800" />
+
+          <ContextMenuItem className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium text-red-500 hover:bg-red-900/20 cursor-pointer" onSelect={handleDeleteTrack}>
+            <Trash2 size={14} /> Delete Track
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {isAddToPlaylistModalOpen && (
+        <CreatePlaylistAddModal trackToAdd={track} open={isAddToPlaylistModalOpen} onOpenChange={setIsAddToPlaylistModalOpen} />
+      )}
+      {isEditModalOpen && (
+        <EditTrackModal
+          track={track}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+        />
+      )}
+      {isStatsModalOpen && (
+        <StatsForNerdsModal
+          track={track}
+          open={isStatsModalOpen}
+          onOpenChange={setIsStatsModalOpen}
+        />
+      )}
+    </>
   );
 };
