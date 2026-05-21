@@ -92,6 +92,7 @@ export const BottomPlayer = () => {
     };
     const handlePauseEvent = () => {
       // This listener handles pauses that are not explicitly triggered by togglePlay
+      // For now, togglePlay handles the logging on pause. This is a safeguard if other things pause it.
       // We rely on the togglePlay useEffect to manage session state changes.
     };
 
@@ -114,7 +115,7 @@ export const BottomPlayer = () => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
 
-    const previousTrackWasPlaying = audio.dataset.currentTrackId && isPlayingRef.current;
+    const previousTrackWasPlaying = previousTrackIdForLoggingRef.current === audio.dataset.currentTrackId && isPlayingRef.current;
     const trackIdChanged = currentTrackId !== audio.dataset.currentTrackId;
 
     if (trackIdChanged) {

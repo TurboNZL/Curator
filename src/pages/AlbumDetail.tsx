@@ -70,7 +70,7 @@ const AlbumDetail = () => {
         album.defaultReleaseId || albumReleases[0]?.id || null
       );
     }
-  }, [album?.id, album?.defaultReleaseId, albumReleases.length, selectedReleaseId]);
+  }, [album?.id, album?.defaultReleaseId, albumReleases.length]);
 
 
   useEffect(() => {

@@ -21,7 +21,7 @@ const ArtistDetail = () => {
   const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, deleteTrack, addToUserQueue, incrementMemories, decrementMemories, releases } = useMusicStore();
   const { id } = useParams();
   const navigate = useNavigate();
-  // Removed re-fetch artists after update as it's handled by zustand store now
+  const {  } = useMusicStore(); // Re-fetch artists after update
 
   const artist = artists.find(a => a.id === id);
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
@@ -90,7 +90,7 @@ const ArtistDetail = () => {
 
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
-  // Removed [isCreateAlbumModalOpen] as it's not used here
+  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false); // State for CreateAlbumModal
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); // State for Add to Playlist
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
