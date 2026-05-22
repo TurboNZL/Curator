@@ -17,6 +17,7 @@ import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { ArtistCreditSelect } from '@/components/shared/ArtistCreditSelect';
 
 interface EditTrackModalProps {
   track: Track;
@@ -34,8 +35,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
   
   const [formData, setFormData] = useState({
     title: track.title,
-    artistId: track.artistId,
-    artistIds: track.artistIds || [],
+    artistCredits: track.artistCredits || [], // Updated to new credit structure
     albumId: track.albumIds[0]?.albumId || '',
     initialRating: track.initialRating?.toString() || '',
     genres: track.genres.join(', '),
@@ -72,8 +72,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
 
     await updateTrack(track.id, {
       title: formData.title,
-      artistId: formData.artistId,
-      artistIds: formData.artistIds,
+      artistCredits: formData.artistCredits,
       albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
       genres: formData.syncWithAlbumCredits ? [] : formData.genres.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
@@ -92,17 +91,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     onOpenChange(false); // Close modal
   };
 
-  const addArtist = (id: string) => {
-    if (!formData.artistIds.includes(id)) {
-      setFormData(prev => ({ ...prev, artistIds: [...prev.artistIds, id] }));
-    }
-  };
-
-  const removeArtist = (id: string) => {
-    setFormData(prev => ({ ...prev, artistIds: prev.artistIds.filter(aid => aid !== id) }));
-  };
-
-  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this track?")) {
@@ -147,7 +135,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Credits</TabsTrigger>
+              <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Links & Rating</TabsTrigger>
               <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
@@ -174,55 +162,40 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                   />
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
-                  <SearchableSelect 
-                    options={artistOptions} 
-                    value={formData.artistId} 
-                    onValueChange={(val) => setFormData({...formData, artistId: val})}
-                    placeholder="Search or type artist..."
-                    allowCustom
-                  />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap size={14} className="text-orange-500" />
+                  <Label htmlFor="sync-credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    Sync with Album Credits
+                  </Label>
                 </div>
+                <Switch
+                  id="sync-credits"
+                  checked={formData.syncWithAlbumCredits}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, syncWithAlbumCredits: checked }))}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Artists</Label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {formData.artistIds.map(aid => {
-                      const a = artists.find(art => art.id === aid);
-                      return (
-                        <div key={aid} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
-                          <span>{a?.name || aid}</span>
-                          <button type="button" onClick={() => removeArtist(aid)} className="text-zinc-600 hover:text-red-500">
-                            <X size={10} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <SearchableSelect 
-                    options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))} 
-                    value="" 
-                    onValueChange={addArtist}
-                    placeholder="Add another artist..."
-                    allowCustom
-                  />
-                </div>
+              <ArtistCreditSelect
+                value={formData.artistCredits}
+                onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
+              />
+
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10)</Label>
-                  <Input type="number" step="0.1" value={formData.initialRating} onChange={(e) => setFormData({...formData, initialRating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
-                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bitrate</Label>
                   <Input value={formData.bitrate || 'Unknown'} disabled className="bg-zinc-900 border-zinc-800 text-zinc-400" />
                 </div>
               </div>
+            </TabsContent>
 
+            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10)</Label>
+                <Input type="number" step="0.1" value={formData.initialRating} onChange={(e) => setFormData({...formData, initialRating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Spotify Link</Label>
@@ -236,22 +209,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">YouTube Music Link</Label>
                 <Input value={formData.youtubeMusicUrl} onChange={(e) => setFormData({...formData, youtubeMusicUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
-              <div className="flex items-center justify-between pb-4">
-                <div className="flex items-center gap-2">
-                  <Zap size={14} className="text-orange-500" />
-                  <Label htmlFor="sync-credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                    Sync with Album Credits
-                  </Label>
-                </div>
-                <Switch 
-                  id="sync-credits" 
-                  checked={formData.syncWithAlbumCredits} 
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, syncWithAlbumCredits: checked }))} 
-                />
               </div>
 
               <div className="space-y-2">

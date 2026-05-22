@@ -52,12 +52,12 @@ interface MusicState {
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
-  addAlbum: (album: Omit<Album, 'id'>) => Promise<Album>; 
-  updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
+  addAlbum: (album: Omit<Album, 'id' | 'artistCredits'> & { artistCredits: Credit[] }) => Promise<Album>;
+  updateAlbum: (id: string, data: Partial<Omit<Album, 'artistCredits'> & { artistCredits?: Credit[] }>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>;
-  updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite' | 'artistCredits'> & { artistCredits: Credit[] }[]) => Promise<Track[]>;
+  updateTrack: (id: string, data: Partial<Omit<Track, 'artistCredits'> & { artistCredits?: Credit[] }>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
   decrementMemories: (id: string) => Promise<void>;
@@ -183,7 +183,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           ...al,
           primaryCover: al.primaryCover || null,
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
-          artistIds: parseJsonOrDefault(al.artistIds, []),
+          artistCredits: parseJsonOrDefault(al.artistCredits, []),
           credits: parseJsonOrDefault(al.credits, []) // Ensure credits are parsed here
         })),
         tracks: (tracks || []).map((t: any) => ({
@@ -193,7 +193,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           writers: parseJsonOrDefault(t.writers, []),
           credits: parseJsonOrDefault(t.credits, []),
           queueRules: parseJsonOrDefault(t.queueRules, {}),
-          artistIds: parseJsonOrDefault(t.artistIds, []),
+          artistCredits: parseJsonOrDefault(t.artistCredits, []),
           albumIds: parseJsonOrDefault(t.albumIds, []),
           isFavorite: !!t.isFavorite,
           bitrate: t.bitrate || 'Unknown',
@@ -446,14 +446,14 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const res = await fetch('/api/albums', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(albumData)
+      body: JSON.stringify({ ...albumData, artistCredits: albumData.artistCredits })
     });
     const newAlbum = await res.json();
     const parsedNewAlbum = { 
-      ...newAlbum, 
+      ...newAlbum,
       primaryCover: newAlbum.primaryCover || null,
-      pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []), 
-      artistIds: parseJsonOrDefault(newAlbum.artistIds, []),
+      pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []),
+      artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), // Ensure credits are parsed
       credits: parseJsonOrDefault(newAlbum.credits, []) // Ensure credits are parsed
     };
     set(state => ({ albums: [...state.albums, parsedNewAlbum] }));

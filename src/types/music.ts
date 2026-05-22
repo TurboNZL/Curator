@@ -1,3 +1,8 @@
+export interface Credit {
+  artistId: string;
+  role: string;
+}
+
 export interface Profile {
   id: string;
   name: string;
@@ -25,8 +30,7 @@ export interface Artist {
 export interface Album {
   id: string;
   title: string;
-  artistId: string; // Primary artist
-  artistIds: string[]; // For multiple artists
+  credits: Credit[]; // Primary artist and additional artists with roles
   eraId?: string;
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
@@ -47,8 +51,7 @@ export interface Release {
 export interface Track {
   id: string;
   title: string;
-  artistId: string; // Primary artist
-  artistIds: string[]; // For multiple artists
+  artistCredits: Credit[]; // Combined primary and additional artists with roles
   rating?: number; // Balanced rating (0-10)
   initialRating?: number; // Unbalanced rating
   eloScore: number;

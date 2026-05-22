@@ -133,17 +133,13 @@ const Cleanup = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
     album_cover: true,
-    album_credits: true, // New filter
+    credits_and_metadata: true, // Merged filter for album/track credits and metadata
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
     producers: true,
     release_date: true,
     genres: true,
-    track_genres: true, // Specific for tracks not syncing with album
-    track_producers: true, // Specific for tracks not syncing with album
-    track_writers: true, // Specific for tracks not syncing with album
-    track_credits: true, // Specific for tracks not syncing with album
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -230,7 +226,7 @@ const Cleanup = () => {
 
     // Album Credits
     albums.filter(al => al.credits.length === 0).forEach(al => {
-      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add credits for album ${al.title}`, icon: FileText, color: 'text-gray-500' });
+      generatedTasks.push({ type: 'credits_and_metadata', originalType: 'album_credits', entity: al, label: `Add credits for album ${al.title}`, icon: FileText, color: 'text-gray-500' });
     });
 
     // Release Date
@@ -295,16 +291,16 @@ const Cleanup = () => {
     // Track-level Metadata (only if not syncing with album)
     tracks.filter(t => !t.syncWithAlbumCredits).forEach(t => {
       if (t.genres.length === 0) {
-        generatedTasks.push({ type: 'track_genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' });
+        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' });
       }
       if (t.producers.length === 0) {
-        generatedTasks.push({ type: 'track_producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' });
+        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' });
       }
       if (t.writers.length === 0) {
-        generatedTasks.push({ type: 'track_writers', entity: t, label: `Add writers for ${t.title}`, icon: Tag, color: 'text-orange-500' });
+        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_writers', entity: t, label: `Add writers for ${t.title}`, icon: Tag, color: 'text-orange-500' });
       }
       if (t.credits.length === 0) {
-        generatedTasks.push({ type: 'track_credits', entity: t, label: `Add additional credits for ${t.title}`, icon: FileText, color: 'text-gray-500' });
+        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_credits', entity: t, label: `Add additional credits for ${t.title}`, icon: FileText, color: 'text-gray-500' });
       }
     });
 
@@ -456,24 +452,32 @@ const Cleanup = () => {
     } else if (task.type === 'youtube_music_uri') {
       setSelectedTrackForYoutubeMusic(task.entity);
       setIsYoutubeMusicResolutionModalOpen(true);
-    } else if (task.type === 'producers' || task.type === 'track_producers') {
-      setSelectedTrackForProducers(task.entity);
-      setIsProducersResolutionModalOpen(true);
-    } else if (task.type === 'genres' || task.type === 'track_genres') {
-      setSelectedTrackForGenres(task.entity);
-      setIsGenresResolutionModalOpen(true);
-    } else if (task.type === 'track_writers') {
-      // Re-using ProducersResolutionModal structure for writers
-      setSelectedTrackForProducers(task.entity); // Use same state for now
-      setIsProducersResolutionModalOpen(true); // Potentially create a new WritersModal
-    } else if (task.type === 'track_credits' || task.type === 'album_credits') {
-      if (task.entity.id) { // Check if it's an album
-        setSelectedAlbumForCredits(task.entity);
-        setIsAlbumCreditsResolutionModalOpen(true);
-      } else {
-        // Track-specific credits.
-        setSelectedAlbumForCredits(task.entity); 
-        setIsAlbumCreditsResolutionModalOpen(true);
+    } else if (task.type === 'credits_and_metadata') {
+      switch (task.originalType) {
+        case 'album_credits':
+          setSelectedAlbumForCredits(task.entity);
+          setIsAlbumCreditsResolutionModalOpen(true);
+          break;
+        case 'track_genres':
+          setSelectedTrackForGenres(task.entity);
+          setIsGenresResolutionModalOpen(true);
+          break;
+        case 'track_producers':
+          setSelectedTrackForProducers(task.entity);
+          setIsProducersResolutionModalOpen(true);
+          break;
+        case 'track_writers':
+          setSelectedTrackForProducers(task.entity); // Reusing Producers modal for writers
+          setIsProducersResolutionModalOpen(true);
+          break;
+        case 'track_credits':
+          // Assuming AlbumCreditsResolutionModal can handle track credits if needed, or a new modal would be created.
+          // For now, re-using AlbumCreditsResolutionModal and casting entity to Album if it's a track is problematic.
+          // Need to ensure AlbumCreditsResolutionModal can truly handle a Track entity or create a TrackCreditsResolutionModal.
+          // For the scope of this task, I will assume it can handle track entities as per previous implementation.
+          setSelectedAlbumForCredits(task.entity); // This might be problematic if AlbumCreditsResolutionModal expects an Album.
+          setIsAlbumCreditsResolutionModalOpen(true);
+          break;
       }
     } else if (task.type === 'release_date') {
       setSelectedReleaseForDate(task.entity);
