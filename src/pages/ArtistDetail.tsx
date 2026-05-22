@@ -18,7 +18,7 @@ import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
 
 const ArtistDetail = () => {
-  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, releases } = useMusicStore();
+  const { artists, albums, tracks, setCurrentTrack, groups, activeProfile, releases, addArtist } = useMusicStore();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -110,7 +110,7 @@ const ArtistDetail = () => {
     }
 
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
+      .filter((credit: any) => credit.role.includes('Lead artist'))
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -277,7 +277,7 @@ const ArtistDetail = () => {
           </section>
         </div>
       </div>
-      <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} />
+      <RelationalBioModal initialEntity={{ type: 'artist', id: artist.id, label: artist.name }} open={isRelationalBioModalOpen} onOpenChange={setIsRelationalBioModalOpen} groupId={selectedGroupId} onNewArtist={addArtist} />
       <CreatePlaylistAddModal trackToAdd={selectedTrackForPlaylistAdd} albumToAdd={undefined} open={isCreatePlaylistAddModalOpen} onOpenChange={setIsCreatePlaylistAddModalOpen} />
       {selectedTrackForEdit && (
         <EditTrackModal

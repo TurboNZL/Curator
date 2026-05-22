@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Album, Release, Track }  from '@/../server/types/music'; // Corrected import path
+import { Album, Release, Track, Artist }  from '@/../server/types/music'; // Corrected import path
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,4 +42,29 @@ export const getAlbumDisplayCover = (
   
   // 4. Fallback to provided default image
   return defaultImageFallback;
+};
+
+// Helper to get all lead artists for an album for display
+export const getAlbumDisplayArtists = (
+  album: Album,
+  allArtists: Artist[]
+): string => {
+  if (!album || !allArtists) return 'Unknown Artist';
+
+  const primaryArtist = allArtists.find(a => a.id === album.artistId);
+  const leadArtistsFromCredits = album.artistCredits
+    .filter(credit => credit.role.includes('Lead artist') && credit.artistId !== album.artistId)
+    .map(credit => allArtists.find(a => a.id === credit.artistId)?.name)
+    .filter(Boolean);
+
+  const displayNames = [primaryArtist?.name, ...leadArtistsFromCredits].filter(Boolean);
+
+  if (displayNames.length === 0) return 'Unknown Artist';
+  if (displayNames.length === 1) return displayNames[0] as string;
+  
+  // Join with ' & ' for two artists, 'feat.' for more
+  if (displayNames.length === 2) {
+    return `${displayNames[0]} & ${displayNames[1]}`;
+  }
+  return `${displayNames[0]} feat. ${displayNames.slice(1).join(', ')}`;
 };

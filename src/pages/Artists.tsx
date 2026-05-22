@@ -69,7 +69,6 @@ const Artists = () => {
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
             <DropdownMenuItem onClick={() => setSortConfig({ ...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })} className="text-xs font-bold gap-2">
-              {sortConfig.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />}
               {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -24,7 +24,7 @@ interface CreateTrackModalProps {
 
 export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', open, onOpenChange }: CreateTrackModalProps) => {
   const [reopen, setReopen] = useState(false);
-  const { artists, albums, addTracks, updateAlbum, genres: allGenres, addGenre } = useMusicStore(); // Renamed to allGenres
+  const { artists, albums, addTracks, updateAlbum, genres: allGenres, addGenre, addArtist } = useMusicStore(); // Renamed to allGenres, added addArtist
   
   const [formData, setFormData] = useState({
     title: '',
@@ -105,7 +105,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
             const res = await fetch('/api/artists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: primaryArtistCredit.artistId }) // artistId acts as name if new
+                body: JSON.stringify({ name: primaryArtistCredit.artistId })
             });
             const newArtist = await res.json();
             finalPrimaryArtistId = newArtist.id;
@@ -118,7 +118,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
 
     const newTrack = {
       title: formData.title,
-      artistId: finalPrimaryArtistId, // Set primary artist from credits
+      artistId: finalPrimaryArtistId,
       artistCredits: formData.artistCredits,
       albumIds: formData.albumId && formData.albumId !== 'none' ? [{ albumId: formData.albumId, order: 0 }] : [],
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
@@ -153,10 +153,10 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     
     setFormData({ 
       title: '', 
-      artistCredits: [{ artistId: finalPrimaryArtistId, role: ['Lead artist'] }], // Keep primary artist for convenience if reopening
+      artistCredits: [{ artistId: finalPrimaryArtistId, role: ['Lead artist'] }],
       albumId: formData.albumId, 
       rating: '', 
-      genres: selectedAlbum && formData.syncWithAlbumCredits ? selectedAlbum.genres : [], // Reset genres based on sync
+      genres: selectedAlbum && formData.syncWithAlbumCredits ? selectedAlbum.genres : [],
       bitrate: '320kbps', 
       audioUrl: '', 
       spotifyUrl: '', 
@@ -197,7 +197,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         albumIds: [{ albumId: selectedAlbum.id, order: 0 }],
         rating: undefined,
         initialRating: undefined,
-        genres: selectedAlbum.genres, // Apply album genres to all tracks
+        genres: selectedAlbum.genres,
         bitrate: '320kbps',
         localFilePath: file.url,
         spotifyUrl: '',
@@ -273,7 +273,6 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Album selection */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album (Optional)</Label>
               <SearchableSelect 
@@ -283,8 +282,8 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                   setFormData(prev => ({ 
                     ...prev, 
                     albumId: val,
-                    genres: (albums.find(a => a.id === val)?.genres || []), // Update genres on album change
-                    syncWithAlbumCredits: !!val, // Sync if album is selected
+                    genres: (albums.find(a => a.id === val)?.genres || []),
+                    syncWithAlbumCredits: !!val,
                   }));
                 }}
                 placeholder="Search or type album..."
@@ -294,7 +293,6 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 itemClassName="text-white hover:bg-zinc-800"
               />
             </div>
-             {/* Track Title and Initial Rating */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Track Title</Label>
               <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
@@ -314,16 +312,16 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
               onCheckedChange={(checked) => setFormData(prev => ({ 
                 ...prev, 
                 syncWithAlbumCredits: checked,
-                genres: checked && selectedAlbum ? selectedAlbum.genres : [], // Reset genres if toggling sync
+                genres: checked && selectedAlbum ? selectedAlbum.genres : [],
               }))}
-              disabled={!selectedAlbum} // Disable if no album is selected
+              disabled={!selectedAlbum}
             />
           </div>
 
-          {/* Artist Credits */}
           <ArtistCreditSelect
             value={formData.artistCredits}
             onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
+            onNewArtist={addArtist}
           />
           
           <div className="space-y-2">
@@ -335,7 +333,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 placeholder="Select genres..."
                 allowCustom
                 onNewItem={addGenre}
-                disabled={!isGenresEditable} // Disable if not editable
+                disabled={!isGenresEditable}
             />
           </div>
 

@@ -156,11 +156,21 @@ const AlbumDetail = () => {
       return primaryArtist?.name || "Unknown Artist";
     }
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
+      .filter((credit: any) => credit.role.includes('Lead artist'))
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
     return leadArtists.length > 0 ? leadArtists.join(', ') : artists.find(a => a.id === track.artistId)?.name || "Unknown Artist";
   }, [artists]);
+
+  const getAlbumAllCredits = useCallback(() => {
+    if (!album || !album.artistCredits) return [];
+    return album.artistCredits
+      .map(credit => {
+        const creditedArtist = artists.find(a => a.id === credit.artistId);
+        return creditedArtist ? `${creditedArtist.name} (${(credit.role || []).join(', ')})` : `Unknown Artist (${(credit.role || []).join(', ')})`;
+      })
+      .filter(Boolean);
+  }, [album, artists]);
 
 
   if (!album) return <div className="p-8">Album not found.</div>;
@@ -171,6 +181,8 @@ const AlbumDetail = () => {
     }
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   }, [temporaryDisplayCoverUrl, album, releases, defaultAlbumImage]);
+
+  const albumAllCredits = getAlbumAllCredits();
 
   return (
     <div className="space-y-8 pb-12">
@@ -185,13 +197,25 @@ const AlbumDetail = () => {
             <h1 className="text-5xl font-black tracking-tighter text-white uppercase leading-none">
               {album.title}
             </h1>
-            <Link 
-              to={`/artists/${artist?.id}`}
-              className="text-xl font-bold text-blue-500 hover:text-blue-400 flex items-center gap-2 group"
-            >
-              {artist?.name}
-              <User size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
+            {albumAllCredits.length > 0 ? (
+              <div className="space-y-1">
+                {album.artistCredits.filter(credit => credit.role.includes('Lead artist')).map((credit, i) => {
+                  const creditedArtist = artists.find(a => a.id === credit.artistId);
+                  return (
+                    <Link 
+                      key={i} 
+                      to={`/artists/${creditedArtist?.id}`}
+                      className="text-xl font-bold text-blue-500 hover:text-blue-400 flex items-center gap-2 group"
+                    >
+                      {creditedArtist?.name || 'Unknown Artist'}
+                      <User size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xl font-bold text-blue-500">Unknown Artist</p>
+            )}
             <span className="flex items-center gap-1.5 text-zinc-400 text-sm font-medium">
               <Users size={16} className="text-zinc-600"/> {totalAlbumRelatedGroups} Bios
             </span>
@@ -205,6 +229,11 @@ const AlbumDetail = () => {
                     {genre}
                   </Badge>
                 ))}
+              </div>
+            )}
+            {albumAllCredits.length > 0 && (
+              <div className="pt-2 text-xs text-zinc-500">
+                <span className="font-bold uppercase tracking-widest text-zinc-600">Credits:</span> {albumAllCredits.join('; ')}
               </div>
             )}
           </div>
@@ -259,11 +288,11 @@ const AlbumDetail = () => {
                   const displayCredits = (track.syncWithAlbumCredits && album?.artistCredits)
                     ? album.artistCredits
                         .filter(credit => !credit.role.includes('Lead artist') && credit.artistId !== track.artistId)
-                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role.join(', ')})`) // Join roles
+                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role.join(', ')})`) 
                         .join(', ')
                     : track.artistCredits
                         .filter(credit => !credit.role.includes('Lead artist') && credit.artistId !== track.artistId)
-                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role.join(', ')})`) // Join roles
+                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role.join(', ')})`) 
                         .join(', ');
 
                   return (
@@ -279,7 +308,7 @@ const AlbumDetail = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-zinc-400 text-xs font-medium">{displayArtists}</TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[80px]">
                           <Rating
                             track={track}
                             showEditor={true} 
@@ -333,7 +362,7 @@ const AlbumDetail = () => {
                       setShowAllTracks(!showAllTracks);
                       setTemporaryDisplayCoverUrl(null); 
                     }}
-                    title={showAllTracks ? "Show Release Tracks" : "Show All Tracks"}
+                    title={showAllTracks ? "Show Release Tracks" : "Show All Tracks (ignores current release filter)"}
                   >
                     <List size={12} />
                   </Button>

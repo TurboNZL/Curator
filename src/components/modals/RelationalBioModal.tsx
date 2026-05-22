@@ -18,17 +18,18 @@ import { SearchableSelect } from '../ui/SearchableSelect';
 import { X, User, Disc, Music, Layers, Link as LinkIcon, Check } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
-import { GroupMember }  from '@/../server/types/music'; // Corrected import path
+import { GroupMember, Artist }  from '@/../server/types/music'; // Corrected import path
 
 interface RelationalBioModalProps {
   initialEntity?: { type: string, id: string, label: string };
   groupId?: string; // If editing
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onNewArtist?: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<Artist>; // New prop for creating artists
 }
 
-export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange }: RelationalBioModalProps) => {
-  const { groups, artists, albums, tracks, addGroup, updateGroup, addGroupMember, removeGroupMember, fetchData } = useMusicStore();
+export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange, onNewArtist }: RelationalBioModalProps) => {
+  const { groups, artists, albums, tracks, addGroup, updateGroup, addGroupMember, removeGroupMember, fetchData, addArtist } = useMusicStore();
   
   const group = groupId ? groups.find(g => g.id === groupId) : null;
 
@@ -60,12 +61,12 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
     }
   }, [open, group, initialEntity]);
 
-  const entityOptions = [
+  const entityOptions = useMemo(() => ([
     ...artists.map(a => ({ value: `artist:${a.id}`, label: `Artist: ${a.name}`, type: 'artist' as const, name: a.name, id: a.id })),
     ...albums.map(a => ({ value: `album:${a.id}`, label: `Album: ${a.title}`, type: 'album' as const, name: a.title, id: a.id })),
     ...tracks.map(t => ({ value: `track:${t.id}`, label: `Track: ${t.title}`, type: 'track' as const, name: t.title, id: t.id })),
     // Removed releases from dropdown options
-  ];
+  ]), [artists, albums, tracks]);
 
   const handleSave = async () => {
     if (!formData.name) return toast.error("Bio name is required");
@@ -95,8 +96,22 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
     fetchData(); // Ensures local state is fully synchronized after add/update
   };
 
-  const addMember = (val: string) => {
-    const entityOption = entityOptions.find(opt => opt.value === val);
+  const addMember = async (val: string) => {
+    let entityOption = entityOptions.find(opt => opt.value === val);
+
+    // If it's a new artist name entered directly
+    if (!entityOption && val.startsWith('artist:') && onNewArtist) {
+      const artistName = val.substring('artist:'.length);
+      try {
+        const newArtist = await onNewArtist({ name: artistName });
+        entityOption = { value: `artist:${newArtist.id}`, label: `Artist: ${newArtist.name}`, type: 'artist', name: newArtist.name, id: newArtist.id };
+        toast.success(`Artist "${newArtist.name}" created and linked.`);
+      } catch (error) {
+        toast.error(`Failed to create artist "${artistName}".`);
+        return;
+      }
+    }
+
     if (entityOption && !formData.members.some(m => m.entityId === entityOption.id && m.entityType === entityOption.type)) {
       const newMember: GroupMember = { // Explicitly type newMember as GroupMember
         entityType: entityOption.type, 
@@ -179,11 +194,10 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
                     {m.entityType === 'artist' && <User size={10} />}
                     {m.entityType === 'album' && <Disc size={10} />}
                     {m.entityType === 'track' && <Music size={10} />}
-                    {/* Releases are not an option anymore */}
                     <span>{m.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {m.entityType !== 'track' && m.entityType !== 'release' && ( // No track page, so no checkbox needed
+                    {m.entityType !== 'track' && m.entityType !== 'release' && ( 
                       <div className="flex items-center gap-1">
                         <Checkbox 
                           id={`show-on-${m.entityType}-${m.entityId}`} 
@@ -211,6 +225,8 @@ export const RelationalBioModal = ({ initialEntity, groupId, open, onOpenChange 
               value=""
               onValueChange={addMember}
               placeholder="Link another entity..."
+              allowCustom={!!onNewArtist} // Allow custom input if onNewArtist is provided
+              onNewItem={(item) => addMember(`artist:${item}`)} // Handle new artist creation
               className="h-9 text-xs"
             />
           </div>

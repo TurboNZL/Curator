@@ -1,51 +1,55 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Text, Loader2 } from 'lucide-react';
+import { Text, Loader2, Tag } from 'lucide-react'; // Added Tag icon
 import { toast } from 'sonner';
 import { Album, Credit } from '@/../server/types/music'; // Corrected import path
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import MultiSelectSearch
+import { useMusicStore } from '@/store/useMusicStore'; // Import useMusicStore
 
 interface AlbumCreditsResolutionModalProps {
   isOpen: boolean;
   onClose: () => void;
   album: Album | null;
-  onResolve: (albumId: string, artistCredits: Credit[]) => Promise<void>; // Removed general credits param
+  onResolve: (albumId: string, artistCredits: Credit[], genres: string[]) => Promise<void>;
+  initialGenres: string[];
 }
 
-export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalProps> = ({ isOpen, onClose, album, onResolve }) => {
-  // Removed generalCreditsText state
+export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalProps> = ({ isOpen, onClose, album, onResolve, initialGenres }) => {
+  const { genres: allGenres, addGenre, artists, addArtist } = useMusicStore(); // Destructure addGenre and artists
   const [artistSpecificCredits, setArtistSpecificCredits] = useState<Credit[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]); // New state for genres
   const [isResolving, setIsResolving] = useState(false);
+
+  // Memoize genre options for MultiSelectSearch
+  const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
 
   useEffect(() => {
     if (isOpen && album) {
-      // Removed setGeneralCreditsText(album.credits.join(', '));
-      // Ensure artistCredits are initialized with role as string[]
       setArtistSpecificCredits(album.artistCredits.map(credit => ({
         ...credit,
-        role: Array.isArray(credit.role) ? credit.role : [credit.role as string], // Ensure role is array
+        role: Array.isArray(credit.role) ? credit.role : [credit.role as string],
       })) || []);
+      setSelectedGenres(initialGenres); // Initialize genres from props
     }
-  }, [isOpen, album]);
+  }, [isOpen, album, initialGenres]);
 
   const handleSubmit = async () => {
     if (!album) return;
     
-    // const generalCreditsArray = generalCreditsText.split(',').map(s => s.trim()).filter(Boolean); // Removed
-
     setIsResolving(true);
     try {
-      await onResolve(album.id, artistSpecificCredits); // Removed generalCreditsArray
-      toast.success("Album credits updated successfully.");
+      await onResolve(album.id, artistSpecificCredits, selectedGenres); // Pass selectedGenres to onResolve
+      toast.success("Album credits and genres updated successfully.");
       onClose();
     } catch (error) {
       console.error("Failed to update album credits:", error);
-      toast.error("Failed to update album credits.");
+      toast.error("Failed to update album credits and genres.");
     } finally {
       setIsResolving(false);
     }
@@ -59,18 +63,30 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
             <Text size={20} className="text-blue-500" />
-            Resolve Album Credits
+            Resolve Album Credits & Genres
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Add credits for: <span className="font-bold text-white">{album.title}</span>
+            Add credits and genres for: <span className="font-bold text-white">{album.title}</span>
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {/* Removed General Credits Textarea */}
           <ArtistCreditSelect
             value={artistSpecificCredits}
             onChange={setArtistSpecificCredits}
+            onNewArtist={addArtist} // Pass addArtist to enable new artist creation
           />
+          {/* New: Genres MultiSelectSearch */}
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2"><Tag size={12}/> Genres</Label>
+            <MultiSelectSearch
+              options={genreOptions}
+              selected={selectedGenres.map(genre => ({ value: genre, label: genre }))}
+              onSelectedChange={(items) => setSelectedGenres(items.map(item => item.value))}
+              placeholder="Select genres..."
+              allowCustom
+              onNewItem={addGenre} // Allow creating new genres
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={isResolving}>
@@ -83,7 +99,7 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
                 Saving...
               </>
             ) : (
-              'Save Credits'
+              'Save Details'
             )}
           </Button>
         </DialogFooter>

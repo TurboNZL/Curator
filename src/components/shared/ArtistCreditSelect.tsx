@@ -6,17 +6,19 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, X } from 'lucide-react';
-import { Credit } from '@/../server/types/music'; // Corrected import path
+import { Credit, Artist } from '@/../server/types/music'; // Corrected import path
 import { cn } from '@/lib/utils';
 import { MultiSelectSearch } from '../ui/MultiSelectSearch'; // Import MultiSelectSearch
+import { toast } from 'sonner';
 
 interface ArtistCreditSelectProps {
   value: Credit[];
   onChange: (credits: Credit[]) => void;
   disabled?: boolean;
+  onNewArtist?: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<Artist>; // New prop for creating artists
 }
 
-export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, onChange, disabled = false }) => {
+export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, onChange, disabled = false, onNewArtist }) => {
   const { artists, roleCategories } = useMusicStore();
 
   const artistOptions = useMemo(() => artists.map(a => ({ value: a.id, label: a.name })), [artists]);
@@ -26,12 +28,24 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
     onChange([...value, { artistId: '', role: ['Lead artist'] }]); // Default to 'Lead artist' role (as array)
   };
 
-  const handleUpdateCredit = (index: number, field: 'artistId' | 'role', newValue: string | string[]) => {
+  const handleUpdateCredit = async (index: number, field: 'artistId' | 'role', newValue: string | string[]) => {
     const newCredits = [...value];
     if (field === 'artistId') {
-      newCredits[index] = { ...newCredits[index], artistId: newValue as string }; // Ensure artistId is a string
+      let finalArtistId = newValue as string;
+      // Check if a new artist needs to be created
+      if (onNewArtist && newValue && !artists.some(a => a.id === newValue)) {
+        try {
+          const newArtist = await onNewArtist({ name: newValue as string });
+          finalArtistId = newArtist.id;
+          toast.success(`Artist "${newArtist.name}" created.`);
+        } catch (error) {
+          toast.error(`Failed to create artist "${newValue}".`);
+          return; // Prevent updating credit if artist creation failed
+        }
+      }
+      newCredits[index] = { ...newCredits[index], artistId: finalArtistId };
     } else if (field === 'role') {
-      newCredits[index] = { ...newCredits[index], role: Array.isArray(newValue) ? newValue : [newValue as string] }; // Ensure role is an array of strings
+      newCredits[index] = { ...newCredits[index], role: Array.isArray(newValue) ? newValue : [newValue as string] };
     }
     onChange(newCredits);
   };
@@ -52,7 +66,8 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
               value={credit.artistId}
               onValueChange={(val) => handleUpdateCredit(index, 'artistId', val)}
               placeholder="Select artist..."
-              allowCustom
+              allowCustom={!!onNewArtist} // Allow custom input if onNewArtist is provided
+              onNewItem={(item) => handleUpdateCredit(index, 'artistId', item)} // Handle new item creation
               disabled={disabled}
               className={cn("bg-zinc-900 border-zinc-800", disabled && "bg-zinc-900/50 cursor-not-allowed")}
               contentClassName="bg-zinc-950 border-zinc-800"
@@ -60,10 +75,10 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
             />
           </div>
           <div className="w-32">
-            <MultiSelectSearch // Changed to MultiSelectSearch
+            <MultiSelectSearch 
               options={roleOptions}
-              selected={credit.role.map(r => ({ value: r, label: r }))} // Map string[] to selected format
-              onSelectedChange={(selectedItems) => handleUpdateCredit(index, 'role', selectedItems.map(item => item.value))} // Map back to string[]
+              selected={credit.role.map(r => ({ value: r, label: r }))}
+              onSelectedChange={(selectedItems) => handleUpdateCredit(index, 'role', selectedItems.map(item => item.value))}
               placeholder="Select role(s)..."
               disabled={disabled}
               className={cn("bg-zinc-900 border-zinc-800", disabled && "bg-zinc-900/50 cursor-not-allowed")}
@@ -84,7 +99,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
       <Button
         type="button"
         variant="outline"
-        className="w-full border-zinc-800 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-black uppercase h-9 tracking-widest text-white" // Styled button for dark theme
+        className="w-full border-zinc-800 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-black uppercase h-9 tracking-widest text-white"
         onClick={handleAddCredit}
         disabled={disabled}
       >

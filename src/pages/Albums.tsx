@@ -8,13 +8,13 @@ import { CreateAlbumModal } from '@/components/modals/CreateAlbumModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { getAlbumDisplayCover } from '@/lib/utils'; // Import the new utility
+import { getAlbumDisplayCover, getAlbumDisplayArtists } from '@/lib/utils'; // Import the new utility and new helper
 
 const Albums = () => {
-  const { albums, artists, releases, fetchData, activeProfile } = useMusicStore(); // Added 'releases' to destructure
+  const { albums, artists, releases, fetchData, activeProfile } = useMusicStore(); 
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
-  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false); // State for CreateAlbumModal
+  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false); 
   const defaultImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
 
   useEffect(() => {
@@ -24,7 +24,7 @@ const Albums = () => {
   const filteredAlbums = useMemo(() => {
     return albums.filter(a =>
       a.title.toLowerCase().includes(search.toLowerCase()) ||
-      artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(search.toLowerCase())
+      getAlbumDisplayArtists(a, artists).toLowerCase().includes(search.toLowerCase()) // Search by all credited artists
     );
   }, [albums, search, artists]);
 
@@ -90,21 +90,21 @@ const Albums = () => {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
           {sortedAlbums.map((album) => {
-            const artist = artists.find(a => a.id === album.artistId);
+            const displayArtists = getAlbumDisplayArtists(album, artists); // Use the new helper
             return (
               <div key={album.id} className="relative group">
                 <Link to={`/albums/${album.id}`}>
                   <Card className="bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden cursor-pointer">
                     <div className="aspect-square overflow-hidden relative">
                       <img
-                        src={getAlbumDisplayCover(album, releases, defaultImage)} // Use the new helper
+                        src={getAlbumDisplayCover(album, releases, defaultImage)} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         alt={album.title}
                       />
                     </div>
                     <div className="p-3">
                       <h3 className="font-bold text-white text-sm truncate">{album.title}</h3>
-                      <p className="text-xs text-zinc-500 truncate mt-0.5">{artist?.name || 'Unknown Artist'}</p>
+                      <p className="text-xs text-zinc-500 truncate mt-0.5">{displayArtists}</p> {/* Display all credited artists */}
                     </div>
                   </Card>
                 </Link>

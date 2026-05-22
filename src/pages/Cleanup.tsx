@@ -125,16 +125,12 @@ const Cleanup = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
     album_cover: true,
-    album_metadata: true, // Combines album credits and genres
-    thumbnail: true, // Added for future use, just in case
+    album_metadata: true, 
     release_date: true,
-    track_spotify_link: true, // Specific Spotify link
-    track_genius_link: true, // Specific Genius link
-    track_youtube_music_link: true, // Specific YouTube Music link
-    album_spotify_links: true, // Grouped Spotify links
-    album_genius_links: true, // Grouped Genius links
-    album_youtube_music_links: true, // Grouped YouTube Music links
-    track_metadata: true, // Any missing track genres or credits
+    spotify_links: true, // Merged
+    genius_links: true,   // Merged
+    youtube_music_links: true, // Merged
+    track_metadata: true,
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -201,7 +197,7 @@ const Cleanup = () => {
 
   const allTasks = useMemo(() => {
     const generatedTasks: any[] = [];
-    const processedTrackIdsForGroupedLinks = new Set<string>(); 
+    const processedTrackIdsForSpotifyGroupedLinks = new Set<string>(); 
 
     // Artist Image
     artists.filter(a => !a.image).forEach(a => {
@@ -241,7 +237,7 @@ const Cleanup = () => {
       generatedTasks.push({ type: 'release_date', entity: r, label: `Add date for release ${r.title} (${album?.title || 'Unknown Album'})`, icon: Calendar, color: 'text-orange-500' });
     });
 
-    // Grouped Track Links (Album-level)
+    // Grouped Spotify Links (Album-level)
     albums.forEach(album => {
         let relevantRelease = album.defaultReleaseId ? releases.find(r => r.id === album.defaultReleaseId) : null;
         if (!relevantRelease && releases.some(r => r.albumId === album.id)) {
@@ -262,24 +258,14 @@ const Cleanup = () => {
               .map(t => t.id);
         }
 
-        // Filter tracks that are missing links and haven't been processed yet by other album-level tasks
         const tracksInAlbumMissingSpotify = albumTrackIdsInOrder
             .map(trackId => tracks.find(t => t.id === trackId))
-            .filter((t): t is Track => t !== undefined && !t.spotifyUrl && !processedTrackIdsForGroupedLinks.has(t.id));
+            .filter((t): t is Track => t !== undefined && !t.spotifyUrl && !processedTrackIdsForSpotifyGroupedLinks.has(t.id));
         
-        const tracksInAlbumMissingGenius = albumTrackIdsInOrder
-            .map(trackId => tracks.find(t => t.id === trackId))
-            .filter((t): t is Track => t !== undefined && !t.geniusUrl && !processedTrackIdsForGroupedLinks.has(t.id));
-
-        const tracksInAlbumMissingYoutube = albumTrackIdsInOrder
-            .map(trackId => tracks.find(t => t.id === trackId))
-            .filter((t): t is Track => t !== undefined && !t.youtubeMusicUrl && !processedTrackIdsForGroupedLinks.has(t.id));
-
-
         if (tracksInAlbumMissingSpotify.length > 0) {
-            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForGroupedLinks.add(t.id));
+            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForSpotifyGroupedLinks.add(t.id));
             generatedTasks.push({
-                type: 'album_spotify_links',
+                type: 'spotify_links',
                 entity: { 
                     albumId: album.id, 
                     albumTitle: album.title,
@@ -293,52 +279,18 @@ const Cleanup = () => {
                 isGrouped: true,
             });
         }
-        if (tracksInAlbumMissingGenius.length > 0) {
-            tracksInAlbumMissingGenius.forEach(t => processedTrackIdsForGroupedLinks.add(t.id));
-            generatedTasks.push({
-                type: 'album_genius_links',
-                entity: { 
-                    albumId: album.id, 
-                    albumTitle: album.title,
-                    releaseId: relevantRelease?.id,
-                    releaseTitle: relevantRelease?.title,
-                    tracks: tracksInAlbumMissingGenius 
-                },
-                label: `Add Genius links for ${album.title} (${tracksInAlbumMissingGenius.length} tracks)`,
-                icon: Link,
-                color: 'text-yellow-500',
-                isGrouped: true,
-            });
-        }
-        if (tracksInAlbumMissingYoutube.length > 0) {
-            tracksInAlbumMissingYoutube.forEach(t => processedTrackIdsForGroupedLinks.add(t.id));
-            generatedTasks.push({
-                type: 'album_youtube_music_links',
-                entity: { 
-                    albumId: album.id, 
-                    albumTitle: album.title,
-                    releaseId: relevantRelease?.id,
-                    releaseTitle: relevantRelease?.title,
-                    tracks: tracksInAlbumMissingYoutube 
-                },
-                label: `Add YouTube Music links for ${album.title} (${tracksInAlbumMissingYoutube.length} tracks)`,
-                icon: Link,
-                color: 'text-red-500',
-                isGrouped: true,
-            });
-        }
     });
 
-    // Individual Track Links (not part of an album or already covered by album-level task)
-    tracks.filter(t => !processedTrackIdsForGroupedLinks.has(t.id)).forEach(t => {
+    // Individual Track Links (Spotify, Genius, YouTube Music) - not part of an album's grouped Spotify task
+    tracks.filter(t => !processedTrackIdsForSpotifyGroupedLinks.has(t.id)).forEach(t => {
         if (!t.spotifyUrl) {
-            generatedTasks.push({ type: 'track_spotify_link', entity: t, label: `Add Spotify URI for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false });
+            generatedTasks.push({ type: 'spotify_links', entity: t, label: `Add Spotify URI for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false });
         }
         if (!t.geniusUrl) {
-            generatedTasks.push({ type: 'track_genius_link', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500', isGrouped: false });
+            generatedTasks.push({ type: 'genius_links', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500', isGrouped: false });
         }
         if (!t.youtubeMusicUrl) {
-            generatedTasks.push({ type: 'track_youtube_music_link', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500', isGrouped: false });
+            generatedTasks.push({ type: 'youtube_music_links', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500', isGrouped: false });
         }
     });
 
@@ -481,8 +433,8 @@ const Cleanup = () => {
   };
 
   const handleResolveTask = async (task: any) => {
-    // Album-level link resolution
-    if (task.type === 'album_spotify_links') {
+    if (task.type === 'spotify_links') {
+      if (task.isGrouped) {
         setSpotifyResolutionTracks(task.entity.tracks);
         setSpotifyResolutionAlbum({
             albumId: task.entity.albumId,
@@ -491,37 +443,17 @@ const Cleanup = () => {
             releaseTitle: task.entity.releaseTitle,
         });
         setIsSpotifyResolutionModalOpen(true);
-    } else if (task.type === 'album_genius_links') {
-        // For album-level grouped Genius links, we'll open EditTrackModal for each track.
-        // It might be better to have a similar group resolution modal for Genius/YouTube in the future.
-        // For now, we'll default to resolving the first track or opening a generic edit modal.
-        if (task.entity.tracks.length > 0) {
-            setSelectedTrackForGenius(task.entity.tracks[0]);
-            setIsGeniusResolutionModalOpen(true);
-        } else {
-            toast.info("No tracks found for this grouped Genius link task.");
-        }
-    } else if (task.type === 'album_youtube_music_links') {
-        if (task.entity.tracks.length > 0) {
-            setSelectedTrackForYoutubeMusic(task.entity.tracks[0]);
-            setIsYoutubeMusicResolutionModalOpen(true);
-        } else {
-            toast.info("No tracks found for this grouped YouTube Music link task.");
-        }
-    } 
-    // Individual track link resolution
-    else if (task.type === 'track_spotify_link') {
-        setSelectedTrackForEdit(task.entity); // Open EditTrackModal which has all links
+      } else {
+        setSelectedTrackForEdit(task.entity); // Open EditTrackModal for individual track
         setIsEditTrackModalOpen(true);
-    } else if (task.type === 'track_genius_link') {
+      }
+    } else if (task.type === 'genius_links') {
         setSelectedTrackForGenius(task.entity);
         setIsGeniusResolutionModalOpen(true);
-    } else if (task.type === 'track_youtube_music_link') {
+    } else if (task.type === 'youtube_music_links') {
         setSelectedTrackForYoutubeMusic(task.entity);
         setIsYoutubeMusicResolutionModalOpen(true);
-    }
-    // Other task types
-    else if (task.type === 'album_metadata') {
+    } else if (task.type === 'album_metadata') {
       setSelectedAlbumForCredits(task.entity);
       setIsAlbumCreditsResolutionModalOpen(true);
     } else if (task.type === 'release_date') {
@@ -564,9 +496,9 @@ const Cleanup = () => {
     fetchData();
   };
 
-  const handleAlbumCreditsResolution = async (albumId: string, artistCredits: Credit[]) => {
-    const albumToUpdate = albums.find(a => a.id === albumId);
-    await updateAlbum(albumId, { artistCredits, genres: albumToUpdate?.genres || [] }); // Keep existing genres for now
+  const handleAlbumCreditsResolution = async (albumId: string, artistCredits: Credit[], genres: string[]) => {
+    // Note: The `updateAlbum` call here is updated to handle genres
+    await updateAlbum(albumId, { artistCredits, genres });
     fetchData();
   };
 
@@ -847,6 +779,7 @@ const Cleanup = () => {
           onClose={() => setIsAlbumCreditsResolutionModalOpen(false)}
           album={selectedAlbumForCredits} 
           onResolve={handleAlbumCreditsResolution}
+          initialGenres={selectedAlbumForCredits.genres || []}
         />
       )}
       {selectedTrackForEdit && (

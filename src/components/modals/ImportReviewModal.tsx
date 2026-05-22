@@ -43,10 +43,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
 
   const [albumFormData, setAlbumFormData] = useState({
     title: initialData.suggestedAlbumTitle,
-    artistCredits: [] as Credit[], // Now using artistCredits directly
+    artistCredits: [] as Credit[],
     primaryCover: initialData.suggestedAlbumCover, 
     releaseDate: '',
-    genres: [] as string[], // Added genres
+    genres: [] as string[],
   });
 
   const [tracksFormData, setTracksFormData] = useState<ImportedTrackData[]>(initialData.suggestedTracks);
@@ -71,10 +71,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
       setAlbumFormData(prev => ({ 
         ...prev, 
         artistCredits: defaultArtistCredit,
-        title: initialData.suggestedAlbumTitle, // Reset title in case it changed
-        primaryCover: initialData.suggestedAlbumCover, // Reset cover
-        releaseDate: '', // Reset release date
-        genres: [], // Reset genres
+        title: initialData.suggestedAlbumTitle,
+        primaryCover: initialData.suggestedAlbumCover,
+        releaseDate: '', 
+        genres: [],
       }));
       setTracksFormData(initialData.suggestedTracks);
     }
@@ -101,7 +101,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
       if (primaryArtistCredit) {
         let existingPrimaryArtist = artists.find(a => a.id === primaryArtistCredit.artistId);
         if (!existingPrimaryArtist) {
-          const newArtist = await addArtist({ name: primaryArtistCredit.artistId }); // artistId acts as name if new
+          const newArtist = await addArtist({ name: primaryArtistCredit.artistId }); 
           finalArtistId = newArtist.id;
           toast.success(`Artist "${newArtist.name}" created.`);
         } else {
@@ -116,9 +116,8 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         artistId: finalArtistId,
         primaryCover: albumFormData.primaryCover || null, 
         pendingFiles: [], 
-        // Removed credits: [],
-        artistCredits: albumFormData.artistCredits, // Album artist credits (role: string[])
-        genres: albumFormData.genres, // Add genres
+        artistCredits: albumFormData.artistCredits,
+        genres: albumFormData.genres,
       });
       toast.success(`Album "${albumFormData.title}" created.`);
 
@@ -126,10 +125,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         ...track,
         artistId: finalArtistId,
         albumIds: [{ albumId: newAlbum.id, order: index }], 
-        genres: albumFormData.genres, // Apply album genres to all tracks
+        genres: albumFormData.genres,
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {},
         bitrate: track.bitrate,
-        artistCredits: [{ artistId: finalArtistId, role: ['Lead artist'] }], // Add default artistCredits for tracks (role: string[])
+        artistCredits: [{ artistId: finalArtistId, role: ['Lead artist'] }],
         syncWithAlbumCredits: true,
       }));
       const createdTracks = await addTracks(tracksToCreate);
@@ -195,10 +194,10 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                     className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
                   />
                 </div>
-                {/* Artist Credit Select replaces old primary/additional artist inputs */}
                 <ArtistCreditSelect
                   value={albumFormData.artistCredits}
                   onChange={(credits) => setAlbumFormData(prev => ({ ...prev, artistCredits: credits }))}
+                  onNewArtist={addArtist} 
                 />
                 <div className="space-y-2">
                   <Label htmlFor="release-date" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Release Date (for default release)</Label>

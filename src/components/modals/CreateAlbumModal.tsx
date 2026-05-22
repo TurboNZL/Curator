@@ -21,14 +21,13 @@ interface CreateAlbumModalProps {
 }
 
 export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) => {
-  const { artists, addAlbum, addRelease, genres: allGenres, addGenre } = useMusicStore(); // Renamed to allGenres to avoid conflict
+  const { artists, addAlbum, addRelease, genres: allGenres, addGenre, addArtist } = useMusicStore(); // Destructure addArtist
   
   const [formData, setFormData] = useState({
     title: '',
-    artistCredits: [] as Credit[], // Now using artistCredits directly
+    artistCredits: [] as Credit[], 
     primaryCover: '', 
-    // Removed credits: [] as string[], // General album notes (was Input, now needs to be Textarea or just array)
-    genres: [] as string[], // Added genres
+    genres: [] as string[],
     releases: [] as { title: string; date: string }[]
   });
 
@@ -41,7 +40,6 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
         title: '', 
         artistCredits: [{ artistId: '', role: ['Lead artist'] }], // Initialize with one empty lead artist credit
         primaryCover: '', 
-        // Removed credits: [],
         genres: [],
         releases: [] 
       }); 
@@ -84,7 +82,7 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
               const res = await fetch('/api/artists', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ name: primaryArtistCredit.artistId }) // artistId acts as name if new
+                  body: JSON.stringify({ name: primaryArtistCredit.artistId }) 
               });
               const newArtist = await res.json();
               finalPrimaryArtistId = newArtist.id;
@@ -97,12 +95,11 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
       
       const newAlbum = await addAlbum({
         title: formData.title,
-        artistId: finalPrimaryArtistId, // Derive primary artist from credits
+        artistId: finalPrimaryArtistId,
         primaryCover: formData.primaryCover || null, 
         pendingFiles: [], 
-        // Removed credits: formData.credits,
         artistCredits: formData.artistCredits,
-        genres: formData.genres, // Add genres
+        genres: formData.genres,
       });
 
       for (const rel of formData.releases) {
@@ -117,11 +114,10 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
       onOpenChange(false); 
-      setFormData({ // Reset form
+      setFormData({ 
         title: '', 
         artistCredits: [{ artistId: '', role: ['Lead artist'] }],
         primaryCover: '', 
-        // Removed credits: [],
         genres: [],
         releases: [] 
       }); 
@@ -160,13 +156,11 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
                 className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
               />
             </div>
-            {/* New: ArtistCreditSelect for album-level artist roles, replaces old artist select boxes */}
             <ArtistCreditSelect
               value={formData.artistCredits}
               onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
+              onNewArtist={addArtist}
             />
-            {/* General Album Credits - REMOVED */}
-            {/* NEW: Genres MultiSelectSearch */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
               <MultiSelectSearch

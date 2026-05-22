@@ -27,7 +27,7 @@ interface EditTrackModalProps {
 }
 
 export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => {
-  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, genres: allGenres, addGenre } = useMusicStore(); // Added allGenres, addGenre
+  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, genres: allGenres, addGenre, addArtist } = useMusicStore(); // Added allGenres, addGenre, addArtist
   
   const trackGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === track.id && m.entityType === 'track' && m.showOnEntityPage)
@@ -224,6 +224,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 value={formData.artistCredits}
                 onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
                 disabled={formData.syncWithAlbumCredits}
+                onNewArtist={addArtist}
               />
               
               <div className="space-y-2">
