@@ -32,7 +32,7 @@ export default defineHandler(async (event) => {
           isFavorite: !!track.is_favorite,
           albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
           artistIds: parseJson(track.artistIds),
-          syncWithAlbumCredits: !!track.sync_with_album_credits, // Parse new field
+          syncWithAlbumCredits: !!track.syncWithAlbumCredits, // Corrected: Use camelCase property
         };
       });
     } catch (error) {
