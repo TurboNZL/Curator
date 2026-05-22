@@ -1,5 +1,5 @@
 import { defineEventHandler } from "h3";
-import { db } from '../../db';
+import { db } from '../../../data/curator.db'
 import { tracks, artists, albums, releases, playlists } from '../../db/schema';
 import fs from 'fs/promises';
 import path from 'path';
