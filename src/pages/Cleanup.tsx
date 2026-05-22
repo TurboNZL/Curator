@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { Rating } from '@/components/ui/Rating';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,129 +20,8 @@ import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { useLocation } from 'react-router-dom';
+import { SpotifyUriGroupResolutionModal } from '@/components/modals/SpotifyUriGroupResolutionModal'; // Import new modal
 
-
-interface SpotifyUriGroupResolutionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  tracks: any[];
-  onResolve: (trackIds: string[], uris: string[]) => Promise<void>;
-}
-
-const SpotifyUriGroupResolutionModal: React.FC<SpotifyUriGroupResolutionModalProps> = ({ isOpen, onClose, tracks, onResolve }) => {
-  const [uris, setUris] = useState<string[]>(tracks.map(t => t.spotifyUrl || ''));
-  const [pastedText, setPastedText] = useState('');
-  const [isResolving, setIsResolving] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setUris(tracks.map(t => t.spotifyUrl || ''));
-      setPastedText('');
-    }
-  }, [isOpen, tracks]);
-
-  const handleUriChange = (index: number, value: string) => {
-    setUris(prev => {
-      const newUris = [...prev];
-      newUris[index] = value;
-      return newUris;
-    });
-  };
-
-  const handlePaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    setPastedText(text);
-    const pastedUris = text.split('\n').map(line => line.trim()).filter(line => line.startsWith('https://open.spotify.com/track/'));
-    
-    setUris(prev => {
-      const newUris = [...prev];
-      pastedUris.forEach((uri, index) => {
-        if (index < newUris.length) {
-          newUris[index] = uri;
-        }
-      });
-      return newUris;
-    });
-  };
-
-  const submitResolution = async () => {
-    setIsResolving(true);
-    try {
-      const trackIds = tracks.map(t => t.id);
-      await onResolve(trackIds, uris);
-      toast.success("Spotify URIs updated successfully.");
-      onClose();
-    } catch (error) {
-      console.error("Failed to resolve Spotify URIs:", error);
-      toast.error("Failed to update Spotify URIs.");
-    } finally {
-      setIsResolving(false);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-            <Link size={20} className="text-green-500" />
-            Resolve Spotify URIs
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tracks</Label>
-              <ScrollArea className="h-[250px] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
-                <div className="space-y-1">
-                  {tracks.map((track) => (
-                    <div key={track.id} className="flex items-center p-2 rounded-lg text-zinc-400">
-                      <span className="text-xs font-bold truncate">{track.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Spotify URIs</Label>
-              <ScrollArea className="h-[250px] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
-                <div className="space-y-1">
-                  {uris.map((uri, index) => (
-                    <Input
-                      key={tracks[index]?.id || index}
-                      value={uri}
-                      onChange={(e) => handleUriChange(index, e.target.value)}
-                      placeholder={`URI for ${tracks[index]?.title}`}
-                      className="bg-zinc-900 border-zinc-800 focus-visible:ring-green-500 text-xs"
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="paste-uris" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Paste Multiple URIs</Label>
-            <Textarea
-              id="paste-uris"
-              value={pastedText}
-              onChange={handlePaste}
-              placeholder="Paste Spotify track URLs here (one per line)"
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-green-500 text-xs min-h-[100px]"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={isResolving}>
-            Cancel
-          </Button>
-          <Button onClick={submitResolution} className="bg-green-600 hover:bg-green-500 font-bold uppercase tracking-wider" disabled={isResolving}>
-            {isResolving ? "Resolving..." : "Resolve Group"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 interface ImageUploadResolutionModalProps {
   isOpen: boolean;
@@ -153,12 +32,12 @@ interface ImageUploadResolutionModalProps {
 }
 
 const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({ isOpen, onClose, entity, onResolve, entityType }) => {
-  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.primaryCover || ''); // Use primaryCover for albums
+  const [imageUrl, setImageUrl] = useState(entity?.image || entity?.primaryCover || '');
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setImageUrl(entity?.image || entity?.primaryCover || ''); // Use primaryCover for albums
+      setImageUrl(entity?.image || entity?.primaryCover || '');
     }
   }, [isOpen, entity]);
 
@@ -203,14 +82,22 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, updateRelease, fetchData, activeProfile } = useMusicStore(); // Added activeProfile
+  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, activeProfile } = useMusicStore();
   
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isShufflePairing, setIsShufflePairing] = useState(false);
   const [isShuffleTasks, setIsShuffleTasks] = useState(false);
+
+  // State for Spotify Group Resolution Modal
   const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
   const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
+  const [spotifyResolutionAlbum, setSpotifyResolutionAlbum] = useState<{
+    albumId: string;
+    albumTitle: string;
+    releaseId?: string;
+    releaseTitle?: string;
+  } | null>(null);
 
   const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: 'none', direction: 'asc' });
 
@@ -221,14 +108,13 @@ const Cleanup = () => {
 
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
-    album_cover: true, // This will now check primaryCover
+    album_cover: true,
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
     producers: true,
     release_date: true,
     genres: true,
-    grouped_spotify_uri: true,
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -286,126 +172,90 @@ const Cleanup = () => {
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    // Use the new helper here
     return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
   };
 
-  const getArtistName = (track: any) => {
-    const artist = artists.find(a => a.id === track.artistId);
-    return artist?.name || 'Unknown Artist';
-  };
-
   const allTasks = useMemo(() => {
-    const generatedTasks = [
+    const generatedTasks: any[] = [
       ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
-      ...albums.filter(al => !al.primaryCover).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })), // Check primaryCover
-      ...tracks.filter(t => !t.spotifyUrl).map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500' })),
+      ...albums.filter(al => {
+          const hasPrimaryCover = !!al.primaryCover;
+          if (hasPrimaryCover) return false;
+          const albumHasReleaseCover = releases.some(r => r.albumId === al.id && !!r.coverImage);
+          return !albumHasReleaseCover;
+      }).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
       ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
       ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' })),
       ...tracks.filter(t => t.producers.length === 0).map(t => ({ type: 'producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' })),
+      // Removed release_date from here as it's not applicable for tracks. It applies to releases.
       ...releases.filter(r => !r.releaseDate).map(r => ({ type: 'release_date', entity: r, label: `Add date for ${r.title}`, icon: Calendar, color: 'text-orange-500' })),
       ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
     ];
 
-    const sortedTracks = [...tracks].sort((a, b) => {
-      const albumInfo = a.albumIds.length > 0 ? a.albumIds[0].albumId : '';
-      const orderA = a.albumIds.length > 0 ? a.albumIds[0].order : 0;
-      const albumB = b.albumIds.length > 0 ? b.albumIds[0].albumId : '';
-      const orderB = b.albumIds.length > 0 ? b.albumIds[0].order : 0;
+    const tracksMissingSpotify = tracks.filter(t => !t.spotifyUrl);
+    const spotifyTasksForAlbums: any[] = [];
+    const processedTrackIdsForSpotify = new Set<string>();
 
-      if (albumInfo < albumB) return -1;
-      if (albumInfo > albumB) return 1;
-      return orderA - orderB;
-    });
+    albums.forEach(album => {
+        let relevantRelease = album.defaultReleaseId ? releases.find(r => r.id === album.defaultReleaseId) : null;
+        if (!relevantRelease && releases.some(r => r.albumId === album.id)) {
+            relevantRelease = releases.find(r => r.albumId === album.id);
+        }
 
-    const groupedSpotifyTasks: any[] = [];
-    let currentGroup: any[] = [];
+        let albumTrackIdsInOrder: string[] = [];
 
-    sortedTracks.forEach((track, index) => {
-      const albumInfo = track.albumIds.length > 0 ? track.albumIds[0] : null;
-      if (!track.spotifyUrl && albumInfo) {
-        const prevTrack = sortedTracks[index - 1];
-        const prevAlbumInfo = prevTrack?.albumIds.length > 0 ? prevTrack.albumIds[0] : null;
-
-        if (currentGroup.length === 0 ||
-            (prevTrack &&
-             albumInfo.albumId === prevAlbumInfo?.albumId &&
-             albumInfo.order === (prevAlbumInfo?.order || 0) + 1 &&
-             !prevTrack.spotifyUrl)) {
-          currentGroup.push(track);
+        if (relevantRelease) {
+            albumTrackIdsInOrder = relevantRelease.trackIds;
         } else {
-          if (currentGroup.length > 1) {
-            groupedSpotifyTasks.push({
-              type: 'grouped_spotify_uri',
-              entity: { albumId: currentGroup[0].albumIds[0].albumId, tracks: currentGroup },
-              label: `Add Spotify links for ${albums.find(al => al.id === currentGroup[0].albumIds[0].albumId)?.title || 'Unknown Album'}: ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
-              icon: Link,
-              color: 'text-green-500',
-              isGrouped: true,
-            });
-          } else if (currentGroup.length === 1) {
-            generatedTasks.push({
-              type: 'spotify_uri', entity: currentGroup[0], label: `Add Spotify link for ${currentGroup[0].title}`, icon: Link, color: 'text-green-500'
-            });
-          }
-          currentGroup = [track];
+            const associatedAlbumTracks = tracks.filter(t => t.albumIds.some(aid => aid.albumId === album.id));
+            albumTrackIdsInOrder = [...associatedAlbumTracks]
+              .sort((a, b) => {
+                const orderA = a.albumIds.find(aid => aid.albumId === album.id)?.order ?? 999;
+                const orderB = b.albumIds.find(aid => aid.albumId === album.id)?.order ?? 999;
+                return orderA - orderB;
+              })
+              .map(t => t.id);
         }
-      } else {
-        if (currentGroup.length > 1) {
-          groupedSpotifyTasks.push({
-            type: 'grouped_spotify_uri',
-            entity: { albumId: currentGroup[0].albumIds[0].albumId, tracks: currentGroup },
-            label: `Add Spotify links for ${albums.find(al => al.id === currentGroup[0].albumIds[0].albumId)?.title || 'Unknown Album'}: ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
-            icon: Link,
-            color: 'text-green-500',
-            isGrouped: true,
-          });
-        } else if (currentGroup.length === 1) {
-          generatedTasks.push({
-            type: 'spotify_uri', entity: currentGroup[0], label: `Add Spotify link for ${currentGroup[0].title}`, icon: Link, color: 'text-green-500'
-          });
+
+        const tracksInAlbumMissingSpotify = albumTrackIdsInOrder
+            .map(trackId => tracks.find(t => t.id === trackId))
+            .filter(t => t && !t.spotifyUrl && !processedTrackIdsForSpotify.has(t.id));
+
+        if (tracksInAlbumMissingSpotify.length > 0) {
+            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForSpotify.add(t!.id));
+
+            spotifyTasksForAlbums.push({
+                type: 'spotify_uri',
+                entity: { 
+                    albumId: album.id, 
+                    albumTitle: album.title,
+                    releaseId: relevantRelease?.id,
+                    releaseTitle: relevantRelease?.title,
+                    tracks: tracksInAlbumMissingSpotify 
+                },
+                label: `Add Spotify links for ${album.title}: ${tracksInAlbumMissingSpotify.length} tracks`,
+                icon: Link,
+                color: 'text-green-500',
+                isGrouped: true,
+            });
         }
-        currentGroup = [];
-      }
     });
 
-    if (currentGroup.length > 1) {
-      groupedSpotifyTasks.push({
-        type: 'grouped_spotify_uri',
-        entity: { albumId: currentGroup[0].albumIds[0].albumId, tracks: currentGroup },
-        label: `Add Spotify links for ${albums.find(al => al.id === currentGroup[0].albumIds[0].albumId)?.title || 'Unknown Album'}: ${currentGroup[0].title} and ${currentGroup.length - 1} more tracks`,
-        icon: Link,
-        color: 'text-green-500',
-        isGrouped: true,
-      });
-    } else if (currentGroup.length === 1) {
-      generatedTasks.push({
-        type: 'spotify_uri', entity: currentGroup[0], label: `Add Spotify link for ${currentGroup[0].title}`, icon: Link, color: 'text-green-500'
-      });
-    }
+    const individualSpotifyTasks = tracksMissingSpotify
+      .filter(t => !processedTrackIdsForSpotify.has(t.id))
+      .map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false }));
 
-    return [...generatedTasks, ...groupedSpotifyTasks];
-  }, [tracks, artists, albums, releases, activeProfile]); // Added activeProfile to dependencies
+    return [...generatedTasks, ...spotifyTasksForAlbums, ...individualSpotifyTasks];
+  }, [tracks, artists, albums, releases, activeProfile]);
 
   const filteredTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
-
-    if (sortConfig.field !== 'none') {
-      tasks.sort((a, b) => {
-        const aValue = (a as any).label?.toLowerCase() || '';
-        const bValue = (b as any).label?.toLowerCase() || '';
-        
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
 
     if (isShuffleTasks) {
       tasks = [...tasks].sort(() => Math.random() - 0.5);
     }
     return tasks;
-  }, [allTasks, activeFilters, isShuffleTasks, sortConfig]);
+  }, [allTasks, activeFilters, isShuffleTasks]); // Removed sortConfig as it's no longer needed
 
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
@@ -507,12 +357,23 @@ const Cleanup = () => {
 
   const handleResolveTask = async (task: any) => {
     if (task.type === 'spotify_uri') {
-      const spotifyUrl = prompt(`Enter Spotify URL for ${task.entity.title}:`);
-      if (spotifyUrl) {
-        await updateTrack(task.entity.id, { spotifyUrl });
-        toast.success("Spotify URL updated.");
-        fetchData();
-      }
+        if (task.isGrouped) {
+            setSpotifyResolutionTracks(task.entity.tracks);
+            setSpotifyResolutionAlbum({
+                albumId: task.entity.albumId,
+                albumTitle: task.entity.albumTitle,
+                releaseId: task.entity.releaseId,
+                releaseTitle: task.entity.releaseTitle,
+            });
+            setIsSpotifyResolutionModalOpen(true);
+        } else {
+            const spotifyUrl = prompt(`Enter Spotify URL for ${task.entity.title}:`);
+            if (spotifyUrl) {
+                await updateTrack(task.entity.id, { spotifyUrl });
+                toast.success("Spotify URL updated.");
+                fetchData();
+            }
+        }
     } else if (task.type === 'genius_uri') {
       const geniusUrl = prompt(`Enter Genius URL for ${task.entity.title}:`);
       if (geniusUrl) {
@@ -546,7 +407,13 @@ const Cleanup = () => {
       if (releaseDate !== null) {
         const releaseToUpdate = releases.find(r => r.id === task.entity.id);
         if (releaseToUpdate) {
-          await updateRelease(task.entity.id, { releaseDate });
+          // This should be updateRelease, not updateTrack
+          // Assuming updateRelease is available from useMusicStore
+          await fetch(`/api/releases/${task.entity.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ releaseDate })
+          });
           toast.success("Release date updated.");
           fetchData();
         } else {
@@ -561,16 +428,18 @@ const Cleanup = () => {
       setImageUploadEntity(task.entity);
       setImageUploadEntityType('album');
       setIsImageUploadModalOpen(true);
-    } else if (task.type === 'grouped_spotify_uri') {
-      setSpotifyResolutionTracks(task.entity.tracks);
-      setIsSpotifyResolutionModalOpen(true);
     }
   };
 
   const handleSpotifyResolution = async (trackIds: string[], uris: string[]) => {
     const updatePromises = trackIds.map((id, index) => {
       const uri = uris[index];
-      return updateTrack(id, { spotifyUrl: uri });
+      // Only update if the URI is not empty and different from current (or was empty)
+      const currentTrack = tracks.find(t => t.id === id);
+      if (uri && currentTrack?.spotifyUrl !== uri) {
+        return updateTrack(id, { spotifyUrl: uri });
+      }
+      return Promise.resolve(); // No update needed
     });
     await Promise.all(updatePromises);
     fetchData();
@@ -580,7 +449,7 @@ const Cleanup = () => {
     if (type === 'artist') {
       await updateArtist(id, { image: imageUrl });
     } else if (type === 'album') {
-      await updateAlbum(id, { primaryCover: imageUrl }); // Update primaryCover
+      await updateAlbum(id, { primaryCover: imageUrl });
     }
     fetchData();
   };
@@ -649,7 +518,6 @@ const Cleanup = () => {
                           {albums.find(a => track.albumIds?.some((aId:any) => aId.albumId === a.id))?.title || 'Unknown Album'}
                         </p>
                         <div className="mt-2 flex">
-                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating track={track} size="md" isCleanupContext={true} showEditor={false}/>
                         </div>
                       </div>
@@ -708,27 +576,6 @@ const Cleanup = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
-                    Sort By: {sortConfig.field !== 'none' ? sortConfig.field.replace(/\b\w/g, c => c.toUpperCase()) : 'None'} {sortConfig.direction === 'asc' ? '(Asc)' : '(Desc)'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-zinc-950 border-zinc-800 text-white">
-                  <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-zinc-800" />
-                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'label', direction: 'asc' })} className="text-xs font-medium">Label (Asc)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'label', direction: 'desc' })} className="text-xs font-medium">Label (Desc)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'type', direction: 'asc' })} className="text-xs font-medium">Type (Asc)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSortConfig({ field: 'type', direction: 'desc' })} className="text-xs font-medium">Type (Desc)</DropdownMenuItem>
-                  {sortConfig.field !== 'none' && (
-                    <>
-                      <DropdownMenuSeparator className="bg-zinc-800" />
-                      <DropdownMenuItem onClick={() => setSortConfig({ field: 'none', direction: 'asc' })} className="text-xs font-medium">Remove Sort</DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-black uppercase tracking-widest border-zinc-800 bg-zinc-900/50">
                     Filter Tasks
                   </Button>
                 </DropdownMenuTrigger>
@@ -740,6 +587,7 @@ const Cleanup = () => {
                       key={filterType}
                       checked={activeFilters[filterType]}
                       onCheckedChange={() => handleFilterToggle(filterType)}
+                      onSelect={(e) => e.preventDefault()} // Keep dropdown open
                       className="text-xs font-medium"
                     >
                       {filterType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -808,12 +656,15 @@ const Cleanup = () => {
         </div>
       </Card>
 
-      <SpotifyUriGroupResolutionModal
-        isOpen={isSpotifyResolutionModalOpen}
-        onClose={() => setIsSpotifyResolutionModalOpen(false)}
-        tracks={spotifyResolutionTracks}
-        onResolve={handleSpotifyResolution}
-      />
+      {spotifyResolutionAlbum && (
+        <SpotifyUriGroupResolutionModal
+          isOpen={isSpotifyResolutionModalOpen}
+          onClose={() => setIsSpotifyResolutionModalOpen(false)}
+          tracks={spotifyResolutionTracks}
+          albumDetails={spotifyResolutionAlbum}
+          onResolve={handleSpotifyResolution}
+        />
+      )}
 
       {imageUploadEntity && imageUploadEntityType && (
         <ImageUploadResolutionModal
