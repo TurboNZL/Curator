@@ -10,7 +10,7 @@ export default defineHandler(async (event) => {
     const allAlbums = await db.select().from(albums);
     return allAlbums.map(album => ({
       ...album,
-      credits: JSON.parse(album.credits || '[]'),
+      // Removed credits: JSON.parse(album.credits || '[]'),
       artistCredits: JSON.parse(album.artistCredits || '[]'),
       genres: JSON.parse(album.genres || '[]'), // Parse genres
     }));
@@ -26,7 +26,7 @@ export default defineHandler(async (event) => {
       eraId: body.eraId,
       primaryCover: body.primaryCover || null, 
       pendingFiles: JSON.stringify(body.pendingFiles || []),
-      credits: JSON.stringify(body.credits || []), // General album credits
+      // Removed credits: JSON.stringify(body.credits || []), // General album credits
       artistCredits: JSON.stringify(body.artistCredits || []), // Album artist credits (role: string[])
       genres: JSON.stringify(body.genres || []), // Stringify genres for DB
     };
@@ -35,7 +35,7 @@ export default defineHandler(async (event) => {
     return { 
       ...newAlbum, 
       pendingFiles: body.pendingFiles || [],
-      credits: body.credits || [],
+      // Removed credits: body.credits || [],
       artistCredits: body.artistCredits || [], // Parse back for return
       genres: body.genres || [], // Parse back for return
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'; 
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle, FileText, Users } from 'lucide-react'; 
@@ -213,9 +213,9 @@ const Cleanup = () => {
     });
 
     // Album Metadata (Credits & Genres)
-    albums.filter(al => al.credits.length === 0 || al.artistCredits.length === 0 || al.genres.length === 0).forEach(al => {
+    albums.filter(al => al.artistCredits.length === 0 || al.genres.length === 0).forEach(al => {
       let missingItems = [];
-      if (al.credits.length === 0) missingItems.push("general notes");
+      // Removed general credits check: if (al.credits.length === 0) missingItems.push("general notes");
       if (al.artistCredits.length === 0) missingItems.push("artist roles");
       if (al.genres.length === 0) missingItems.push("genres");
       
@@ -454,16 +454,12 @@ const Cleanup = () => {
         } else {
             // For individual track links, open the appropriate modal based on what's missing
             const track = task.entity;
-            if (!track.spotifyUrl) {
-                setSelectedTrackForGenius(track); // Reusing for Spotify too
-                setIsGeniusResolutionModalOpen(true);
-            } else if (!track.geniusUrl) {
-                setSelectedTrackForGenius(track);
-                setIsGeniusResolutionModalOpen(true);
-            } else if (!track.youtubeMusicUrl) {
-                setSelectedTrackForYoutubeMusic(track);
-                setIsYoutubeMusicResolutionModalOpen(true);
-            }
+            // The logic here needs to be more granular. Since the dropdown has all 3,
+            // we should likely open EditTrackModal for single track link resolution.
+            // For now, I'll keep the existing logic that assumes one specific link type.
+            // If multiple are missing, EditTrackModal is better.
+            setSelectedTrackForEdit(track);
+            setIsEditTrackModalOpen(true);
         }
     } else if (task.type === 'album_metadata') {
       setSelectedAlbumForCredits(task.entity);
@@ -510,10 +506,10 @@ const Cleanup = () => {
     fetchData();
   };
 
-  const handleAlbumCreditsResolution = async (albumId: string, credits: string[], artistCredits: Credit[]) => {
+  const handleAlbumCreditsResolution = async (albumId: string, artistCredits: Credit[]) => { // Removed credits: string[]
     // Also include genres when resolving album metadata
     const albumToUpdate = albums.find(a => a.id === albumId);
-    await updateAlbum(albumId, { credits, artistCredits, genres: albumToUpdate?.genres || [] }); // Keep existing genres for now
+    await updateAlbum(albumId, { artistCredits, genres: albumToUpdate?.genres || [] }); // Keep existing genres for now
     fetchData();
   };
 

@@ -38,7 +38,7 @@ interface ImportReviewModalProps {
 }
 
 export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, onClose, initialData }) => {
-  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData, genres: allGenres } = useMusicStore();
+  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData, genres: allGenres, addGenre } = useMusicStore();
   const [isSaving, setIsSaving] = useState(false);
 
   const [albumFormData, setAlbumFormData] = useState({
@@ -116,7 +116,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         artistId: finalArtistId,
         primaryCover: albumFormData.primaryCover || null, 
         pendingFiles: [], 
-        credits: [],
+        // Removed credits: [],
         artistCredits: albumFormData.artistCredits, // Album artist credits (role: string[])
         genres: albumFormData.genres, // Add genres
       });
@@ -218,6 +218,8 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                     selected={albumFormData.genres.map(genre => ({ value: genre, label: genre }))}
                     onSelectedChange={(selectedItems) => setAlbumFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
                     placeholder="Select genres..."
+                    allowCustom
+                    onNewItem={addGenre}
                   />
                 </div>
               </div>

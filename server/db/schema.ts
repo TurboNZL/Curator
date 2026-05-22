@@ -29,7 +29,7 @@ export const albums = sqliteTable('albums', {
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(), // Primary artist
   // Removed artistIds: text('artist_ids'), // JSON string array for multiple artists
-  credits: text('credits'), // JSON string array for album-level general credits
+  // Removed credits: text('credits'), // JSON string array for album-level general credits
   artistCredits: text('artist_credits'), // JSON string array for album-level artist-specific credits with roles (role now string[])
   eraId: text('era_id'),
   primaryCover: text('primary_cover'), // New column for the album's primary cover

@@ -22,7 +22,7 @@ export async function initDb() {
     `CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, theme TEXT NOT NULL DEFAULT 'dark', accent_color TEXT NOT NULL DEFAULT '#3b82f6', playback_mode TEXT NOT NULL DEFAULT 'local', settings TEXT, playback_rules TEXT)`,
     `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT)`, // Removed groups
     `CREATE TABLE IF NOT EXISTS eras (id TEXT PRIMARY KEY, name TEXT NOT NULL, artist_id TEXT NOT NULL, description TEXT)`,
-    `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, era_id TEXT, primary_cover TEXT, default_release_id TEXT, pending_files TEXT, credits TEXT, artist_credits TEXT, genres TEXT)`, // Removed artist_ids, Added genres
+    `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, era_id TEXT, primary_cover TEXT, default_release_id TEXT, pending_files TEXT, artist_credits TEXT, genres TEXT)`, // Removed artist_ids, Removed credits, Added genres
     `CREATE TABLE IF NOT EXISTS release_types (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE)`,
     `CREATE TABLE IF NOT EXISTS releases (id TEXT PRIMARY KEY, album_id TEXT NOT NULL, title TEXT NOT NULL, cover_image TEXT, release_date TEXT, spotify_uri TEXT)`,
     `CREATE TABLE IF NOT EXISTS release_tracks (release_id TEXT NOT NULL, track_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(release_id, track_id))`,
@@ -71,7 +71,7 @@ export async function initDb() {
     `ALTER TABLE groups ADD COLUMN is_artist_only INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE groups ADD COLUMN label TEXT`,
     `ALTER TABLE group_members ADD COLUMN show_on_entity_page INTEGER NOT NULL DEFAULT 0`,
-    `ALTER TABLE albums ADD COLUMN credits TEXT`, // General album notes
+    // Removed `ALTER TABLE albums ADD COLUMN credits TEXT`, // General album notes
     `ALTER TABLE albums ADD COLUMN artist_credits TEXT`, // NEW: Album artist credits
     `ALTER TABLE tracks ADD COLUMN artist_credits TEXT`, // NEW: Track artist credits
     `ALTER TABLE album_tracks ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0`,

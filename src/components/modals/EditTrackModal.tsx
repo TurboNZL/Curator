@@ -27,11 +27,15 @@ interface EditTrackModalProps {
 }
 
 export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => {
-  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, genres: allGenres } = useMusicStore(); // Added allGenres
+  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, genres: allGenres, addGenre } = useMusicStore(); // Added allGenres, addGenre
   
   const trackGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === track.id && m.entityType === 'track' && m.showOnEntityPage)
   );
+
+  const albumForTrack = useMemo(() => {
+    return track.albumIds.length > 0 ? albums.find(a => a.id === track.albumIds[0].albumId) : undefined;
+  }, [albums, track.albumIds]);
   
   const [formData, setFormData] = useState({
     title: track.title,
@@ -50,7 +54,13 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
 
   const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
 
-  const albumOptions = useMemo(() => albums.filter(a => a.artistId === track.artistId).map(a => ({ value: a.id, label: a.title })), [albums, track.artistId]);
+  const albumOptions = useMemo(() => albums.filter(al => {
+    // Only show albums where the track's current primary artist is a lead artist on the album
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role.includes('Lead artist'));
+    const currentPrimaryArtistId = primaryArtistCredit?.artistId;
+    return al.artistId === currentPrimaryArtistId || al.artistCredits?.some(ac => ac.artistId === currentPrimaryArtistId && ac.role.includes('Lead artist'));
+  }).map(al => ({ value: al.id, label: al.title })), [albums, formData.artistCredits]);
+
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
@@ -65,9 +75,14 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     }
   };
 
+  const isGenresEditable = useMemo(() => {
+    return !albumForTrack || !formData.syncWithAlbumCredits;
+  }, [albumForTrack, formData.syncWithAlbumCredits]);
+
   // Reset form data when modal opens
   useEffect(() => {
     if (open) {
+      const albumGenres = albumForTrack?.genres || [];
       setFormData({
         title: track.title,
         artistId: track.artistId,
@@ -76,7 +91,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
           : (track.artistId ? [{ artistId: track.artistId, role: ['Lead artist'] }] : []),
         albumId: track.albumIds[0]?.albumId || '',
         initialRating: track.initialRating?.toString() || '',
-        genres: track.genres || [],
+        genres: track.syncWithAlbumCredits && albumForTrack ? albumGenres : track.genres, // Apply album genres if syncing
         bitrate: track.bitrate || '320kbps',
         audioUrl: track.localFilePath || '',
         spotifyUrl: track.spotifyUrl || '',
@@ -85,7 +100,17 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
         syncWithAlbumCredits: track.syncWithAlbumCredits,
       });
     }
-  }, [open, track]);
+  }, [open, track, albumForTrack]);
+
+  // Update genres if album or syncWithAlbumCredits changes
+  useEffect(() => {
+    if (albumForTrack && formData.syncWithAlbumCredits) {
+      setFormData(prev => ({ ...prev, genres: albumForTrack.genres }));
+    } else if (!albumForTrack && formData.syncWithAlbumCredits) { // If no album, but sync is somehow true
+      setFormData(prev => ({ ...prev, genres: track.genres, syncWithAlbumCredits: false }));
+    }
+  }, [albumForTrack, formData.syncWithAlbumCredits, track.genres]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +184,14 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                   <SearchableSelect
                     options={albumOptions}
                     value={formData.albumId}
-                    onValueChange={(val) => setFormData({...formData, albumId: val})}
+                    onValueChange={(val) => {
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        albumId: val,
+                        genres: (albums.find(a => a.id === val)?.genres || []), // Update genres on album change
+                        syncWithAlbumCredits: !!val, // Sync if album is selected
+                      }));
+                    }}
                     placeholder="Select album..."
                     className="bg-zinc-900 border-zinc-800"
                     contentClassName="bg-zinc-950 border-zinc-800"
@@ -172,13 +204,18 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 <div className="flex items-center gap-2">
                   <Zap size={14} className="text-blue-500" />
                   <Label htmlFor="sync-credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                    Sync with Album Credits (if applicable)
+                    Sync with Album (Credits & Genres)
                   </Label>
                 </div>
                 <Switch
                   id="sync-credits"
                   checked={formData.syncWithAlbumCredits}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, syncWithAlbumCredits: checked }))}
+                  onCheckedChange={(checked) => setFormData(prev => ({ 
+                    ...prev, 
+                    syncWithAlbumCredits: checked,
+                    genres: checked && albumForTrack ? albumForTrack.genres : track.genres, // Reset genres if toggling sync
+                  }))}
+                  disabled={!albumForTrack} // Disable if no album is selected
                 />
               </div>
 
@@ -196,6 +233,9 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                     selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
                     onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
                     placeholder="Select genres..."
+                    allowCustom
+                    onNewItem={addGenre}
+                    disabled={!isGenresEditable} // Disable if not editable
                 />
               </div>
 

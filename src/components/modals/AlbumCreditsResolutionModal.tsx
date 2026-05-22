@@ -14,17 +14,17 @@ interface AlbumCreditsResolutionModalProps {
   isOpen: boolean;
   onClose: () => void;
   album: Album | null;
-  onResolve: (albumId: string, credits: string[], artistCredits: Credit[]) => Promise<void>;
+  onResolve: (albumId: string, artistCredits: Credit[]) => Promise<void>; // Removed general credits param
 }
 
 export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalProps> = ({ isOpen, onClose, album, onResolve }) => {
-  const [generalCreditsText, setGeneralCreditsText] = useState('');
+  // Removed generalCreditsText state
   const [artistSpecificCredits, setArtistSpecificCredits] = useState<Credit[]>([]);
   const [isResolving, setIsResolving] = useState(false);
 
   useEffect(() => {
     if (isOpen && album) {
-      setGeneralCreditsText(album.credits.join(', '));
+      // Removed setGeneralCreditsText(album.credits.join(', '));
       // Ensure artistCredits are initialized with role as string[]
       setArtistSpecificCredits(album.artistCredits.map(credit => ({
         ...credit,
@@ -36,11 +36,11 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
   const handleSubmit = async () => {
     if (!album) return;
     
-    const generalCreditsArray = generalCreditsText.split(',').map(s => s.trim()).filter(Boolean);
+    // const generalCreditsArray = generalCreditsText.split(',').map(s => s.trim()).filter(Boolean); // Removed
 
     setIsResolving(true);
     try {
-      await onResolve(album.id, generalCreditsArray, artistSpecificCredits);
+      await onResolve(album.id, artistSpecificCredits); // Removed generalCreditsArray
       toast.success("Album credits updated successfully.");
       onClose();
     } catch (error) {
@@ -66,16 +66,7 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="general-credits-text" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">General Credits (comma separated)</Label>
-            <Textarea
-              id="general-credits-text"
-              value={generalCreditsText}
-              onChange={(e) => setGeneralCreditsText(e.target.value)}
-              placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean"
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
-            />
-          </div>
+          {/* Removed General Credits Textarea */}
           <ArtistCreditSelect
             value={artistSpecificCredits}
             onChange={setArtistSpecificCredits}

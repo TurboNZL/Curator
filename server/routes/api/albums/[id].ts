@@ -35,8 +35,9 @@ export default defineHandler(async (event) => {
     if (body.pendingFiles !== undefined)
       updateData.pendingFiles = JSON.stringify(body.pendingFiles);
 
-    if (body.credits !== undefined)
-      updateData.credits = JSON.stringify(body.credits); // Handle general credits
+    // Removed credits handling
+    // if (body.credits !== undefined)
+    //   updateData.credits = JSON.stringify(body.credits); // Handle general credits
 
     if (body.artistCredits !== undefined)
       updateData.artistCredits = JSON.stringify(body.artistCredits); // Handle album artist credits (role: string[])

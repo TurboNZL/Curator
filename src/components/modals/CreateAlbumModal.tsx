@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,13 +21,13 @@ interface CreateAlbumModalProps {
 }
 
 export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) => {
-  const { artists, addAlbum, addRelease, genres: allGenres } = useMusicStore(); // Renamed to allGenres to avoid conflict
+  const { artists, addAlbum, addRelease, genres: allGenres, addGenre } = useMusicStore(); // Renamed to allGenres to avoid conflict
   
   const [formData, setFormData] = useState({
     title: '',
     artistCredits: [] as Credit[], // Now using artistCredits directly
     primaryCover: '', 
-    credits: [] as string[], // General album notes (was Input, now needs to be Textarea or just array)
+    // Removed credits: [] as string[], // General album notes (was Input, now needs to be Textarea or just array)
     genres: [] as string[], // Added genres
     releases: [] as { title: string; date: string }[]
   });
@@ -39,7 +41,7 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
         title: '', 
         artistCredits: [{ artistId: '', role: ['Lead artist'] }], // Initialize with one empty lead artist credit
         primaryCover: '', 
-        credits: [],
+        // Removed credits: [],
         genres: [],
         releases: [] 
       }); 
@@ -98,7 +100,7 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
         artistId: finalPrimaryArtistId, // Derive primary artist from credits
         primaryCover: formData.primaryCover || null, 
         pendingFiles: [], 
-        credits: formData.credits,
+        // Removed credits: formData.credits,
         artistCredits: formData.artistCredits,
         genres: formData.genres, // Add genres
       });
@@ -119,7 +121,7 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
         title: '', 
         artistCredits: [{ artistId: '', role: ['Lead artist'] }],
         primaryCover: '', 
-        credits: [],
+        // Removed credits: [],
         genres: [],
         releases: [] 
       }); 
@@ -163,18 +165,8 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
               value={formData.artistCredits}
               onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
             />
-            {/* General Album Credits */}
-            <div className="space-y-2">
-              <Label htmlFor="credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">General Album Notes (comma separated)</Label>
-              <Input 
-                id="credits" 
-                value={formData.credits.join(', ')} // Display as comma-separated
-                onChange={(e) => setFormData({...formData, credits: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} // Parse back to array
-                placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean" 
-                className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
-              />
-            </div>
-            {/* New: Genres MultiSelectSearch */}
+            {/* General Album Credits - REMOVED */}
+            {/* NEW: Genres MultiSelectSearch */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
               <MultiSelectSearch
@@ -182,6 +174,8 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
                 selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
                 onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
                 placeholder="Select genres..."
+                allowCustom
+                onNewItem={addGenre}
               />
             </div>
           </div>

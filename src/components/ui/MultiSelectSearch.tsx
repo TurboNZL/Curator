@@ -1,127 +1,187 @@
 "use client";
 
-import * as React from "react";
-import { X, Check, Search as SearchIcon } from "lucide-react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "./badge";
 
-interface MultiSelectSearchOption {
+interface Option {
   value: string;
   label: string;
 }
 
 interface MultiSelectSearchProps {
-  options: MultiSelectSearchOption[];
-  selected: MultiSelectSearchOption[];
-  onSelectedChange: (selected: MultiSelectSearchOption[]) => void;
+  options: Option[];
+  selected: Option[];
+  onSelectedChange: (selected: Option[]) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  allowCustom?: boolean; // New prop for custom creation
+  onNewItem?: (newItemValue: string) => void; // Callback for new item creation
 }
 
 export const MultiSelectSearch: React.FC<MultiSelectSearchProps> = ({
   options,
   selected,
   onSelectedChange,
-  placeholder = "Select items...",
-  disabled = false,
+  placeholder,
+  disabled,
   className,
+  allowCustom = false,
+  onNewItem,
 }) => {
-  const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSelect = (option: MultiSelectSearchOption) => {
-    const isSelected = selected.some(item => item.value === option.value);
-    if (isSelected) {
-      onSelectedChange(selected.filter(item => item.value !== option.value));
-    } else {
-      onSelectedChange([...selected, option]);
-    }
-    setInputValue(""); // Clear input after selection
-  };
-
-  const handleRemove = (itemToRemove: MultiSelectSearchOption) => {
-    onSelectedChange(selected.filter(item => item.value !== itemToRemove.value));
-  };
-
-  const filteredOptions = React.useMemo(() => {
-    const lowerInputValue = inputValue.toLowerCase();
-    return options.filter(option =>
-      option.label.toLowerCase().includes(lowerInputValue) &&
-      !selected.some(item => item.value === option.value)
+  // Filtered options based on input value, excluding already selected ones
+  const filteredOptions = useMemo(() => {
+    const selectedValues = new Set(selected.map((s) => s.value));
+    return options.filter(
+      (option) =>
+        !selectedValues.has(option.value) &&
+        option.label.toLowerCase().includes(inputValue.toLowerCase())
     );
   }, [options, selected, inputValue]);
+
+  // Determine if a custom option can be added
+  const canCreateCustom = useMemo(() => {
+    if (!allowCustom || !inputValue.trim()) return false;
+    const lowerInputValue = inputValue.toLowerCase();
+    // Check if it already exists in options or selected
+    return (
+      !options.some((o) => o.label.toLowerCase() === lowerInputValue) &&
+      !selected.some((s) => s.label.toLowerCase() === lowerInputValue)
+    );
+  }, [allowCustom, inputValue, options, selected]);
+
+  const handleSelect = (option: Option) => {
+    const newSelected = selected.some((s) => s.value === option.value)
+      ? selected.filter((s) => s.value !== option.value)
+      : [...selected, option];
+    onSelectedChange(newSelected);
+    setInputValue(""); // Clear input after selection
+    if (inputRef.current) inputRef.current.focus();
+  };
+
+  const handleCreateNew = () => {
+    if (!canCreateCustom || !inputValue.trim()) return;
+
+    const newValue = inputValue.trim();
+    const newOption: Option = { value: newValue, label: newValue };
+
+    // Optimistically update UI
+    onSelectedChange([...selected, newOption]);
+    setInputValue(""); // Clear input after creation
+    
+    // Call the external handler for persistence
+    if (onNewItem) {
+        onNewItem(newValue);
+    }
+    setOpen(false); // Close popover after creating and selecting
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && canCreateCustom && inputValue.trim()) {
+        e.preventDefault(); // Prevent form submission if in a form
+        handleCreateNew();
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
           className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white",
-            "focus-within:ring-1 focus-within:ring-blue-500",
-            disabled && "cursor-not-allowed opacity-50",
-            className
+            "w-full justify-between h-9 text-xs",
+            className,
+            disabled && "cursor-not-allowed opacity-70"
           )}
+          disabled={disabled}
         >
-          <div className="flex flex-wrap gap-1">
-            {selected.length === 0 && (
-              <span className="text-zinc-500">{placeholder}</span>
+          <div className="flex flex-wrap items-center gap-1">
+            {selected.length > 0 ? (
+              selected.map((item) => (
+                <Badge
+                  key={item.value}
+                  variant="secondary"
+                  className="bg-zinc-800 text-zinc-300 hover:bg-zinc-700/80 cursor-pointer text-[10px] font-medium"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent popover from closing
+                    onSelectedChange(selected.filter((s) => s.value !== item.value));
+                  }}
+                >
+                  {item.label}
+                  <X className="ml-1 h-3 w-3" />
+                </Badge>
+              ))
+            ) : (
+              <span className="text-zinc-500">{placeholder || "Select options..."}</span>
             )}
-            {selected.map((item) => (
-              <Badge
-                key={item.value}
-                variant="secondary"
-                className="bg-zinc-800 text-white hover:bg-zinc-700 cursor-pointer text-xs group/badge"
-                onClick={(e) => {
-                  if (!disabled) {
-                    e.stopPropagation(); // Prevent popover from closing immediately
-                    handleRemove(item);
-                  }
-                }}
-              >
-                {item.label}
-                {!disabled && (
-                  <X className="ml-1 h-3 w-3 text-zinc-500 group-hover/badge:text-white" />
-                )}
-              </Badge>
-            ))}
           </div>
-          <SearchIcon className="h-4 w-4 text-zinc-500" />
-        </div>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-zinc-950 border-zinc-800 text-white">
-        <Command className="bg-zinc-950 text-white">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-zinc-900 border-zinc-800 text-white z-[60]" align="start">
+        <Command className="bg-zinc-900">
           <CommandInput
-            placeholder="Search..."
-            className="text-white placeholder:text-zinc-500 border-b border-zinc-800"
+            ref={inputRef}
+            placeholder={placeholder || "Search options..."}
             value={inputValue}
             onValueChange={setInputValue}
-            disabled={disabled}
+            onKeyDown={handleKeyDown}
+            className="h-9 bg-zinc-900 border-b border-zinc-800 text-white placeholder:text-zinc-500 focus:ring-0 focus:border-0"
           />
-          <CommandList>
+          <CommandList className="max-h-60">
+            <CommandEmpty className="py-2 text-zinc-400 text-sm text-center">
+                {allowCustom && inputValue.trim() ? (
+                    <Button
+                        variant="ghost"
+                        onClick={handleCreateNew}
+                        className="w-full text-left text-blue-400 hover:text-blue-300 gap-2 justify-start py-2 h-auto"
+                    >
+                        <Plus size={14} /> Create "{inputValue}"
+                    </Button>
+                ) : (
+                    "No results found."
+                )}
+            </CommandEmpty>
             <CommandGroup>
-              {filteredOptions.length === 0 && (
-                <CommandItem disabled>
-                  <span className="text-zinc-500">No items found.</span>
-                </CommandItem>
-              )}
               {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={option.value}
                   onSelect={() => handleSelect(option)}
-                  className="text-white hover:bg-zinc-800"
+                  className="flex items-center justify-between text-sm py-2 px-2 cursor-pointer aria-selected:bg-zinc-800 hover:bg-zinc-800 text-white"
                 >
+                  {option.label}
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.some(item => item.value === option.value) ? "opacity-100" : "opacity-0"
+                      "ml-auto h-4 w-4",
+                      selected.some((s) => s.value === option.value)
+                        ? "opacity-100"
+                        : "opacity-0"
                     )}
                   />
-                  {option.label}
                 </CommandItem>
               ))}
             </CommandGroup>

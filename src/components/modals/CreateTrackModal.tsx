@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Music, RefreshCw, FileAudio } from 'lucide-react'; // Removed X icon
+import { Music, RefreshCw, FileAudio, Zap } from 'lucide-react'; // Added Zap icon
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; 
 import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; 
 import { Credit } from '@/types/music'; 
+import { Switch } from '@/components/ui/switch'; // Import Switch
 
 interface CreateTrackModalProps {
   albumId?: string; 
@@ -23,7 +24,7 @@ interface CreateTrackModalProps {
 
 export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', open, onOpenChange }: CreateTrackModalProps) => {
   const [reopen, setReopen] = useState(false);
-  const { artists, albums, addTracks, updateAlbum, genres: allGenres } = useMusicStore(); // Renamed to allGenres
+  const { artists, albums, addTracks, updateAlbum, genres: allGenres, addGenre } = useMusicStore(); // Renamed to allGenres
   
   const [formData, setFormData] = useState({
     title: '',
@@ -35,31 +36,49 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     audioUrl: '',
     spotifyUrl: '',
     geniusUrl: '',
-    youtubeMusicUrl: ''
+    youtubeMusicUrl: '',
+    syncWithAlbumCredits: true, // Default to true
   });
 
   const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
 
+  const selectedAlbum = useMemo(() => albums.find(a => a.id === formData.albumId), [albums, formData.albumId]);
+  const pendingFiles = selectedAlbum?.pendingFiles || [];
+
+  // Determine if genres should be editable (not syncing with album, or no album)
+  const isGenresEditable = useMemo(() => {
+    return !selectedAlbum || !formData.syncWithAlbumCredits;
+  }, [selectedAlbum, formData.syncWithAlbumCredits]);
+
   // Reset form data when the modal opens or initial props change
   React.useEffect(() => {
     if (open) {
+      const albumGenres = selectedAlbum?.genres || [];
       setFormData({
         title: '',
         artistCredits: initialArtistId ? [{ artistId: initialArtistId, role: ['Lead artist'] }] : [], // Initialize artistCredits
         albumId: initialAlbumId,
         rating: '',
-        genres: [],
+        genres: selectedAlbum ? albumGenres : [], // If album selected, inherit genres
         bitrate: '320kbps',
         audioUrl: '',
         spotifyUrl: '',
         geniusUrl: '',
-        youtubeMusicUrl: ''
+        youtubeMusicUrl: '',
+        syncWithAlbumCredits: !!selectedAlbum, // Sync by default if album is present
       });
     }
-  }, [open, initialAlbumId, initialArtistId]);
+  }, [open, initialAlbumId, initialArtistId, selectedAlbum]);
 
-  const selectedAlbum = useMemo(() => albums.find(a => a.id === formData.albumId), [albums, formData.albumId]);
-  const pendingFiles = selectedAlbum?.pendingFiles || [];
+  // Update genres if album or syncWithAlbumCredits changes
+  React.useEffect(() => {
+    if (selectedAlbum && formData.syncWithAlbumCredits) {
+      setFormData(prev => ({ ...prev, genres: selectedAlbum.genres }));
+    } else if (!selectedAlbum) {
+      setFormData(prev => ({ ...prev, genres: [], syncWithAlbumCredits: false }));
+    }
+  }, [selectedAlbum, formData.syncWithAlbumCredits]);
+
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -114,7 +133,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       comparisons: 0,
       memories: 0,
       queueRules: {},
-      syncWithAlbumCredits: true,
+      syncWithAlbumCredits: formData.syncWithAlbumCredits,
       isFavorite: false,
     };
 
@@ -137,12 +156,13 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       artistCredits: [{ artistId: finalPrimaryArtistId, role: ['Lead artist'] }], // Keep primary artist for convenience if reopening
       albumId: formData.albumId, 
       rating: '', 
-      genres: [], 
+      genres: selectedAlbum && formData.syncWithAlbumCredits ? selectedAlbum.genres : [], // Reset genres based on sync
       bitrate: '320kbps', 
       audioUrl: '', 
       spotifyUrl: '', 
       geniusUrl: '', 
-      youtubeMusicUrl: '' 
+      youtubeMusicUrl: '',
+      syncWithAlbumCredits: !!selectedAlbum,
     });
   };
 
@@ -177,7 +197,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         albumIds: [{ albumId: selectedAlbum.id, order: 0 }],
         rating: undefined,
         initialRating: undefined,
-        genres: [],
+        genres: selectedAlbum.genres, // Apply album genres to all tracks
         bitrate: '320kbps',
         localFilePath: file.url,
         spotifyUrl: '',
@@ -259,7 +279,14 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
               <SearchableSelect 
                 options={albumOptions} 
                 value={formData.albumId} 
-                onValueChange={(val) => setFormData({...formData, albumId: val})}
+                onValueChange={(val) => {
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    albumId: val,
+                    genres: (albums.find(a => a.id === val)?.genres || []), // Update genres on album change
+                    syncWithAlbumCredits: !!val, // Sync if album is selected
+                  }));
+                }}
                 placeholder="Search or type album..."
                 allowCustom
                 className="bg-zinc-900 border-zinc-800"
@@ -272,6 +299,25 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Track Title</Label>
               <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
             </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap size={14} className="text-blue-500" />
+              <Label htmlFor="sync-credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Sync with Album (Credits & Genres)
+              </Label>
+            </div>
+            <Switch
+              id="sync-credits"
+              checked={formData.syncWithAlbumCredits}
+              onCheckedChange={(checked) => setFormData(prev => ({ 
+                ...prev, 
+                syncWithAlbumCredits: checked,
+                genres: checked && selectedAlbum ? selectedAlbum.genres : [], // Reset genres if toggling sync
+              }))}
+              disabled={!selectedAlbum} // Disable if no album is selected
+            />
           </div>
 
           {/* Artist Credits */}
@@ -287,6 +333,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
                 onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
                 placeholder="Select genres..."
+                allowCustom
+                onNewItem={addGenre}
+                disabled={!isGenresEditable} // Disable if not editable
             />
           </div>
 

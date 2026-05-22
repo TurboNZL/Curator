@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -26,8 +28,11 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
 
   const handleUpdateCredit = (index: number, field: 'artistId' | 'role', newValue: string | string[]) => {
     const newCredits = [...value];
-    // Ensure role is always an array for consistency
-    newCredits[index] = { ...newCredits[index], [field]: Array.isArray(newValue) ? newValue : [newValue] };
+    if (field === 'artistId') {
+      newCredits[index] = { ...newCredits[index], artistId: newValue as string }; // Ensure artistId is a string
+    } else if (field === 'role') {
+      newCredits[index] = { ...newCredits[index], role: Array.isArray(newValue) ? newValue : [newValue as string] }; // Ensure role is an array of strings
+    }
     onChange(newCredits);
   };
 

@@ -18,7 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Textarea } from '@/components/ui/textarea';
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
-import { MultiSelectSearch } from '../ui/MultiSelectSearch'; // Import MultiSelectSearch
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import MultiSelectSearch
 
 export const EditAlbumModal = ({ album }: { album: Album }) => {
   const [open, setOpen] = useState(false);
@@ -48,7 +48,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
     artistCredits: album.artistCredits || [],
     primaryCover: album.primaryCover || '', 
     pendingFiles: album.pendingFiles || [],
-    credits: album.credits.join(', '), // General album notes, stored as comma-separated string
+    // credits: album.credits.join(', '), // General album notes, stored as comma-separated string - REMOVED
     genres: album.genres || [], // Added genres
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
@@ -66,7 +66,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
           : (album.artistId ? [{ artistId: album.artistId, role: ['Lead artist'] }] : []),
         primaryCover: album.primaryCover || '', 
         pendingFiles: album.pendingFiles || [],
-        credits: album.credits.join(', '), 
+        // credits: album.credits.join(', '), // REMOVED
         genres: album.genres || [],
       });
     }
@@ -86,7 +86,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
       artistId: derivedPrimaryArtistId, // Update primary artist from credits
       primaryCover: formData.primaryCover || null, 
       pendingFiles: formData.pendingFiles,
-      credits: formData.credits.split(',').map(s => s.trim()).filter(Boolean), 
+      // credits: formData.credits.split(',').map(s => s.trim()).filter(Boolean), // REMOVED
       artistCredits: formData.artistCredits,
       genres: formData.genres, // Save genres
     });
@@ -194,21 +194,11 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
                 value={formData.artistCredits}
                 onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
               />
-              {/* General Album Notes - was 'credits' Textarea */}
-              <div className="space-y-2">
-                <Label htmlFor="credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">General Album Notes (comma separated)</Label>
-                <Textarea 
-                  id="credits" 
-                  value={formData.credits}
-                  onChange={(e) => setFormData({...formData, credits: e.target.value})}
-                  placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean" 
-                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[120px]"
-                />
-              </div>
+              {/* General Album Notes - was 'credits' Textarea - REMOVED */}
               {/* NEW: Genres MultiSelectSearch */}
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
-                <MultiSelectSearch
+                <MultiSelectSearch // Changed to MultiSelectSearch
                     options={genreOptions}
                     selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
                     onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}

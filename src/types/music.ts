@@ -32,7 +32,7 @@ export interface Album {
   title: string;
   artistId: string; // Primary artist ID
   // Removed artistIds: string[]; // Additional artist IDs
-  credits: string[]; // Album-level general credits (e.g., Mixed by, Mastered by)
+  // Removed credits: string[]; // Album-level general credits (e.g., Mixed by, Mastered by)
   artistCredits: Credit[]; // Album-level artist-specific credits with roles
   eraId?: string;
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)

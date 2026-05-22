@@ -79,6 +79,7 @@ interface MusicState {
   removeGroupMember: (groupId: string, entityType: string, entityId: string) => Promise<void>;
   
   addRoleCategory: (name: string) => Promise<void>; 
+  addGenre: (name: string) => Promise<void>; // New: Add Genre
   
   vote: (data: { trackAId: string, trackBId: string, winnerId?: string, isEqual?: boolean }) => Promise<void>;
   updateSettings: (settings: Partial<Profile['settings']>) => Promise<void>;
@@ -192,7 +193,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           // Removed artistIds parsing
           primaryCover: al.primaryCover || null,
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
-          credits: parseJsonOrDefault(al.credits, []), 
+          // Removed credits: parseJsonOrDefault(al.credits, []), 
           artistCredits: parseJsonOrDefault(al.artistCredits, []), // Artist credits (role: string[])
           genres: parseJsonOrDefault(al.genres, []), // Parse genres for Album
         })),
@@ -351,7 +352,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           playbackLogs: state.playbackLogs.map(log => log.id === tempLogId ? { ...serverLog, timestamp: new Date(serverLog.timestamp) } : log)
         }));
       } else {
-        console.error("Failed to log playback to server.");
+        console.error(`Failed to log playback to server: ${trackId}`, await res.text());
         set(state => ({
           playbackLogs: state.playbackLogs.filter(log => log.id !== tempLogId)
         }));
@@ -458,18 +459,16 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...albumData,
-        // Removed artistIds
-        credits: JSON.stringify(albumData.credits || []),
+        // Removed `credits` from here
         artistCredits: JSON.stringify(albumData.artistCredits || []), // Album artist credits (role: string[])
         genres: JSON.stringify(albumData.genres || []), // Stringify genres for DB
       })
     });
-    const newAlbum = await res.json();
+    const newAlbum = (await res.json()) as Album; // Cast to Album
     const parsedNewAlbum = { 
-      ...newAlbum,
-      // Removed artistIds
+      ...newAlbum, 
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []),
-      credits: parseJsonOrDefault(newAlbum.credits, []),
+      // Removed credits: parseJsonOrDefault(newAlbum.credits, []), 
       artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), // Parse album artist credits (role: string[])
       genres: parseJsonOrDefault(newAlbum.genres, []), // Parse genres for Album
     };
@@ -480,7 +479,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   updateAlbum: async (id, data) => {
     const updateData: Partial<any> = { ...data };
     // Removed artistIds
-    if (updateData.credits !== undefined) updateData.credits = JSON.stringify(updateData.credits);
+    // if (updateData.credits !== undefined) updateData.credits = JSON.stringify(updateData.credits); // Removed general credits
     if (updateData.artistCredits !== undefined) updateData.artistCredits = JSON.stringify(updateData.artistCredits); // Album artist credits (role: string[])
     if (updateData.genres !== undefined) updateData.genres = JSON.stringify(updateData.genres); // Stringify genres for DB
 
@@ -681,7 +680,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await fetch(`/api/groups/${groupId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entityType, entityId, showOnEntityPage })
+      body: JSON.stringify({ entityType, entityId, showOnEntityPage }),
     });
     await get().fetchData();
   },
@@ -690,7 +689,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     await fetch(`/api/groups/${groupId}/members`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entityType, entityId })
+      body: JSON.stringify({ entityType, entityId }),
     });
     await get().fetchData();
   },
@@ -702,6 +701,21 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify({ name })
     });
     await get().fetchData();
+  },
+
+  addGenre: async (name: string) => {
+    try {
+      const res = await fetch('/api/genres/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (!res.ok) throw new Error('Failed to add genre');
+      await get().fetchData();
+      toast.success(`Genre "${name}" added.`);
+    } catch (err) {
+      toast.error("Failed to add genre.");
+    }
   },
 
   vote: async (voteData) => {
