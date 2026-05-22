@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input }:// NO NEED TO IMPORT `Input` as it's not being used in this file
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap } from 'lucide-react';
@@ -16,9 +15,9 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input'; // Re-adding Input because it is used for title, rating and links
 import { ArtistCreditSelect } from '@/components/shared/ArtistCreditSelect';
-import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // NEW IMPORT
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch';
 
 interface EditTrackModalProps {
   track: Track;
@@ -48,7 +47,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     syncWithAlbumCredits: track.syncWithAlbumCredits, // New field
   });
 
-  const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
+  const albumOptions = albums.filter(a => a.artistId === track.artistId).map(a => ({ value: a.id, label: a.title }));
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
@@ -154,7 +153,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album</Label>
                   <SearchableSelect
-                    options={albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }))}
+                    options={albumOptions}
                     value={formData.albumId}
                     onValueChange={(val) => setFormData({...formData, albumId: val})}
                     placeholder="Select album..."

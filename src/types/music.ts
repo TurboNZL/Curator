@@ -30,7 +30,9 @@ export interface Artist {
 export interface Album {
   id: string;
   title: string;
-  credits: Credit[]; // Primary artist and additional artists with roles
+  artistId: string; // Primary artist ID
+  artistIds: string[]; // Additional artist IDs
+  credits: string[]; // Album-level credits (e.g., Mixed by, Mastered by)
   eraId?: string;
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
@@ -50,6 +52,8 @@ export interface Release {
 export interface Track {
   id: string;
   title: string;
+  artistId: string; // Primary artist
+  artistIds: string[]; // Additional artist IDs
   artistCredits: Credit[]; // Combined primary and additional artists with roles
   rating?: number; // Balanced rating (0-10)
   initialRating?: number; // Unbalanced rating

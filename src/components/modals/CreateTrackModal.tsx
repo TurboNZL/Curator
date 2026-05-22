@@ -26,6 +26,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     title: '',
     artistId: initialArtistId,
     artistIds: [] as string[],
+    artistCredits: [] as { artistId: string; role: string }[], // Initialize artistCredits
     albumId: initialAlbumId,
     rating: '',
     genres: '',
@@ -44,6 +45,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         title: '',
         artistId: initialArtistId,
         artistIds: [],
+        artistCredits: [], // Reset artistCredits
         albumId: initialAlbumId,
         rating: '',
         genres: '',
@@ -95,6 +97,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       title: formData.title,
       artistId: finalPrimaryArtistId,
       artistIds: finalArtistIds,
+      artistCredits: [{ artistId: finalPrimaryArtistId, role: 'Primary artist' }], // Add default artistCredits
       albumIds: formData.albumId && formData.albumId !== 'none' ? [{ albumId: formData.albumId, order: 0 }] : [], // Corrected albumIds structure
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
       initialRating: formData.rating ? parseFloat(formData.rating) : undefined,
@@ -110,7 +113,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       eloScore: 1000,
       comparisons: 0,
       memories: 0,
-      queueRules: {}
+      queueRules: {},
+      syncWithAlbumCredits: true,
+      isFavorite: false,
     };
 
     await addTracks([newTrack]);
@@ -132,6 +137,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       title: '', 
       artistId: formData.artistId, 
       artistIds: [],
+      artistCredits: [], // Reset artistCredits
       albumId: formData.albumId, 
       rating: '', 
       genres: '', 
@@ -174,6 +180,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         title: cleanTitle,
         artistId: formData.artistId,
         artistIds: formData.artistIds,
+        artistCredits: [{ artistId: formData.artistId, role: 'Primary artist' }], // Add default artistCredits
         albumIds: [{ albumId: selectedAlbum.id, order: 0 }], // Corrected albumIds structure
         rating: undefined,
         initialRating: undefined,
@@ -189,7 +196,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         eloScore: 1000,
         comparisons: 0,
         memories: 0,
-        queueRules: {}
+        queueRules: {},
+        syncWithAlbumCredits: true,
+        isFavorite: false,
       };
     });
   

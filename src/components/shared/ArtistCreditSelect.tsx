@@ -9,6 +9,7 @@ import { Credit } from '@/types/music';
 interface ArtistCreditSelectProps {
   value: Credit[];
   onChange: (credits: Credit[]) => void;
+  disabled?: boolean; // Added disabled prop
 }
 
 const roles = [
@@ -37,7 +38,7 @@ const roles = [
   { value: 'Designer', label: 'Designer' },
 ];
 
-export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, onChange }) => {
+export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, onChange, disabled = false }) => {
   const { artists } = useMusicStore();
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
@@ -70,6 +71,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
               onValueChange={(val) => handleUpdateCredit(index, 'artistId', val)}
               placeholder="Select artist..."
               allowCustom
+              disabled={disabled} // Propagate disabled prop
             />
           </div>
           <div className="w-32">
@@ -79,6 +81,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
               onValueChange={(val) => handleUpdateCredit(index, 'role', val)}
               placeholder="Select role..."
               allowCustom
+              disabled={disabled} // Propagate disabled prop
             />
           </div>
           <Button
@@ -87,6 +90,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
             size="icon"
             className="h-7 w-7 text-zinc-500 hover:text-red-500"
             onClick={() => handleRemoveCredit(index)}
+            disabled={disabled} // Propagate disabled prop
           >
             <X size={14} />
           </Button>
@@ -97,6 +101,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
         variant="outline"
         className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest hover:bg-zinc-800"
         onClick={handleAddCredit}
+        disabled={disabled} // Propagate disabled prop
       >
         <Plus size={12} className="mr-1" /> Add Artist Credit
       </Button>

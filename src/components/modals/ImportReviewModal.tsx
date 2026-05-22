@@ -119,6 +119,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         genres: [], producers: [], writers: [], credits: [],
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {},
         bitrate: track.bitrate, // Pass bitrate
+        artistCredits: [{ artistId: finalArtistId, role: 'Primary artist' }], // Add default artistCredits
       }));
       const createdTracks = await addTracks(tracksToCreate);
       toast.success(`Added ${tracksToCreate.length} tracks to "${newAlbum.title}".`);

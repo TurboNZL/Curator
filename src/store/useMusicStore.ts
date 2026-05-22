@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, ArtistCredit } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, Credit } from '../types/music';
 import { toast } from 'sonner';
 
 interface MusicState {
@@ -53,12 +53,12 @@ interface MusicState {
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
-  addAlbum: (album: Omit<Album, 'id' | 'artistCredits'> & { artistCredits: ArtistCredit[] }) => Promise<Album>;
-  updateAlbum: (id: string, data: Partial<Omit<Album, 'artistCredits'> & { artistCredits?: ArtistCredit[] }>) => Promise<void>;
+  addAlbum: (album: Omit<Album, 'id'>) => Promise<Album>; // Updated signature
+  updateAlbum: (id: string, data: Partial<Album>) => Promise<void>; // Updated signature
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite' | 'artistCredits'> & { artistCredits: ArtistCredit[] }[]) => Promise<Track[]>;
-  updateTrack: (id: string, data: Partial<Omit<Track, 'artistCredits'> & { artistCredits?: ArtistCredit[] }>) => Promise<void>;
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite'>[]) => Promise<Track[]>;
+  updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
   decrementMemories: (id: string) => Promise<void>;
@@ -185,20 +185,23 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         artists: (artists || []).map((a: any) => ({ ...a, groups: parseJsonOrDefault(a.groups, []), eras: [] })),
         albums: (albums || []).map((al: any) => ({
           ...al,
+          artistIds: parseJsonOrDefault(al.artistIds, []), // Parse artistIds for Album
           primaryCover: al.primaryCover || null,
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
-          artistCredits: parseJsonOrDefault(al.artistCredits, []), 
-          credits: parseJsonOrDefault(al.credits, []) 
+          credits: parseJsonOrDefault(al.credits, []), // Parse album-level credits
         })),
         tracks: (tracks || []).map((t: any) => ({
           ...t,
-          genres: parseJsonOrDefault(t.genres, []),
+          genres: t.genres || [], // API now returns array directly
+          producers: parseJsonOrDefault(t.producers, []), // Ensure producers are parsed
+          writers: parseJsonOrDefault(t.writers, []), // Ensure writers are parsed
+          credits: parseJsonOrDefault(t.credits, []), // Ensure track-level credits are parsed
           queueRules: parseJsonOrDefault(t.queueRules, {}),
           artistCredits: parseJsonOrDefault(t.artistCredits, []),
           albumIds: parseJsonOrDefault(t.albumIds, []),
           isFavorite: !!t.isFavorite,
           bitrate: t.bitrate || 'Unknown',
-          syncWithAlbumCredits: !!t.sync_with_album_credits 
+          syncWithAlbumCredits: !!t.syncWithAlbumCredits 
         })),
         releases: releases || [],
         groups: (groups || []).map((g: any) => ({
@@ -448,14 +451,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const res = await fetch('/api/albums', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...albumData, artistCredits: albumData.artistCredits })
+      body: JSON.stringify({
+        ...albumData,
+        artistIds: JSON.stringify(albumData.artistIds || []), // Stringify array for DB
+        credits: JSON.stringify(albumData.credits || []), // Stringify array for DB
+      })
     });
     const newAlbum = await res.json();
+    // Parse back for client state consistency
     const parsedNewAlbum = { 
       ...newAlbum,
-      primaryCover: newAlbum.primaryCover || null,
+      artistIds: parseJsonOrDefault(newAlbum.artistIds, []),
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []),
-      artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), 
       credits: parseJsonOrDefault(newAlbum.credits, []) 
     };
     set(state => ({ albums: [...state.albums, parsedNewAlbum] }));
@@ -463,10 +470,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateAlbum: async (id, data) => {
+    // Stringify arrays before sending to DB if they are present in data
+    const updateData: Partial<any> = { ...data };
+    if (updateData.artistIds !== undefined) updateData.artistIds = JSON.stringify(updateData.artistIds);
+    if (updateData.credits !== undefined) updateData.credits = JSON.stringify(updateData.credits);
+
     await fetch(`/api/albums/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data) 
+      body: JSON.stringify(updateData) 
     });
     await get().fetchData();
   },
@@ -490,10 +502,13 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...trackData,
-          artistIds: trackData.artistIds,
-          genres: trackData.genres,
-          queueRules: trackData.queueRules,
-          bitrate: trackData.bitrate,
+          artistIds: JSON.stringify(trackData.artistIds || []), // Stringify for DB
+          artistCredits: JSON.stringify(trackData.artistCredits || []), // Stringify for DB
+          genres: trackData.genres || [], // Already array, send as is
+          producers: JSON.stringify(trackData.producers || []),
+          writers: JSON.stringify(trackData.writers || []),
+          credits: JSON.stringify(trackData.credits || []),
+          queueRules: JSON.stringify(trackData.queueRules || {}),
         })
       });
       if (res.ok) {
@@ -508,10 +523,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   updateTrack: async (id, data) => {
+    const updateData: Partial<any> = { ...data };
+    if (updateData.artistIds !== undefined) updateData.artistIds = JSON.stringify(updateData.artistIds);
+    if (updateData.artistCredits !== undefined) updateData.artistCredits = JSON.stringify(updateData.artistCredits);
+    if (updateData.producers !== undefined) updateData.producers = JSON.stringify(updateData.producers);
+    if (updateData.writers !== undefined) updateData.writers = JSON.stringify(updateData.writers);
+    if (updateData.credits !== undefined) updateData.credits = JSON.stringify(updateData.credits);
+    if (updateData.queueRules !== undefined) updateData.queueRules = JSON.stringify(updateData.queueRules);
+
     await fetch(`/api/tracks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(updateData)
     });
     await get().fetchData();
   },
