@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useEffect } from "react";
-import { Check, ChevronDown, Plus, X } from "lucide-react";
+import * as React from "react";
+import { X, Plus, Search } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
@@ -18,22 +16,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "./badge";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
-interface Option {
+export interface MultiSelectSearchOption {
   value: string;
   label: string;
+  // Optional: Add other properties if needed for rendering or logic
 }
 
 interface MultiSelectSearchProps {
-  options: Option[];
-  selected: Option[];
-  onSelectedChange: (selected: Option[]) => void;
+  options: MultiSelectSearchOption[];
+  selected: MultiSelectSearchOption[];
+  onSelectedChange: (selected: MultiSelectSearchOption[]) => void;
   placeholder?: string;
-  disabled?: boolean;
   className?: string;
-  allowCustom?: boolean; // New prop for custom creation
-  onNewItem?: (newItemValue: string) => void; // Callback for new item creation
+  disabled?: boolean;
+  allowCustom?: boolean; // New prop for allowing custom input
+  onNewItem?: (newItemName: string) => void; // Callback for new custom item
 }
 
 export const MultiSelectSearch: React.FC<MultiSelectSearchProps> = ({
@@ -41,68 +41,52 @@ export const MultiSelectSearch: React.FC<MultiSelectSearchProps> = ({
   selected,
   onSelectedChange,
   placeholder,
-  disabled,
   className,
+  disabled = false,
   allowCustom = false,
   onNewItem,
 }) => {
-  const [open, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
 
-  // Filtered options based on input value, excluding already selected ones
-  const filteredOptions = useMemo(() => {
-    const selectedValues = new Set(selected.map((s) => s.value));
+  const handleSelect = (option: MultiSelectSearchOption) => {
+    const isSelected = selected.some((item) => item.value === option.value);
+    if (isSelected) {
+      onSelectedChange(selected.filter((item) => item.value !== option.value));
+    } else {
+      onSelectedChange([...selected, option]);
+    }
+    setInputValue(""); // Clear input after selection
+  };
+
+  const handleRemove = (value: string) => {
+    onSelectedChange(selected.filter((item) => item.value !== value));
+  };
+
+  const handleCreateCustom = () => {
+    if (allowCustom && inputValue.trim()) {
+      const newOption: MultiSelectSearchOption = {
+        value: inputValue.trim(),
+        label: inputValue.trim(),
+      };
+      if (!selected.some(item => item.value === newOption.value)) {
+        onSelectedChange([...selected, newOption]);
+        onNewItem?.(newOption.value); // Call optional callback for new item
+      }
+      setInputValue("");
+    }
+  };
+
+  const filteredOptions = React.useMemo(() => {
+    const searchLower = inputValue.toLowerCase();
+    const currentSelectedValues = new Set(selected.map((s) => s.value));
+
     return options.filter(
       (option) =>
-        !selectedValues.has(option.value) &&
-        option.label.toLowerCase().includes(inputValue.toLowerCase())
+        !currentSelectedValues.has(option.value) &&
+        option.label.toLowerCase().includes(searchLower)
     );
   }, [options, selected, inputValue]);
-
-  // Determine if a custom option can be added
-  const canCreateCustom = useMemo(() => {
-    if (!allowCustom || !inputValue.trim()) return false;
-    const lowerInputValue = inputValue.toLowerCase();
-    // Check if it already exists in options or selected
-    return (
-      !options.some((o) => o.label.toLowerCase() === lowerInputValue) &&
-      !selected.some((s) => s.label.toLowerCase() === lowerInputValue)
-    );
-  }, [allowCustom, inputValue, options, selected]);
-
-  const handleSelect = (option: Option) => {
-    const newSelected = selected.some((s) => s.value === option.value)
-      ? selected.filter((s) => s.value !== option.value)
-      : [...selected, option];
-    onSelectedChange(newSelected);
-    setInputValue(""); // Clear input after selection
-    if (inputRef.current) inputRef.current.focus();
-  };
-
-  const handleCreateNew = () => {
-    if (!canCreateCustom || !inputValue.trim()) return;
-
-    const newValue = inputValue.trim();
-    const newOption: Option = { value: newValue, label: newValue };
-
-    // Optimistically update UI
-    onSelectedChange([...selected, newOption]);
-    setInputValue(""); // Clear input after creation
-    
-    // Call the external handler for persistence
-    if (onNewItem) {
-        onNewItem(newValue);
-    }
-    setOpen(false); // Close popover after creating and selecting
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && canCreateCustom && inputValue.trim()) {
-        e.preventDefault(); // Prevent form submission if in a form
-        handleCreateNew();
-    }
-  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -112,78 +96,73 @@ export const MultiSelectSearch: React.FC<MultiSelectSearchProps> = ({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between h-9 text-xs",
-            className,
-            disabled && "cursor-not-allowed opacity-70"
+            "w-full justify-between h-9 text-sm text-white border-zinc-800 bg-zinc-900 focus-visible:ring-blue-500",
+            disabled && "cursor-not-allowed opacity-50 bg-zinc-900/50",
+            className
           )}
           disabled={disabled}
         >
-          <div className="flex flex-wrap items-center gap-1">
-            {selected.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {selected.length === 0 ? (
+              <span className="text-zinc-500">{placeholder}</span>
+            ) : (
               selected.map((item) => (
                 <Badge
                   key={item.value}
                   variant="secondary"
-                  className="bg-zinc-800 text-zinc-300 hover:bg-zinc-700/80 cursor-pointer text-[10px] font-medium"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent popover from closing
-                    onSelectedChange(selected.filter((s) => s.value !== item.value));
-                  }}
+                  className="bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
                 >
                   {item.label}
-                  <X className="ml-1 h-3 w-3" />
+                  <X
+                    className="ml-1 h-3 w-3 cursor-pointer text-zinc-500 hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(item.value);
+                    }}
+                  />
                 </Badge>
               ))
-            ) : (
-              <span className="text-zinc-500">{placeholder || "Select options..."}</span>
             )}
           </div>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-zinc-900 border-zinc-800 text-white z-[60]" align="start">
-        <Command className="bg-zinc-900">
-          <CommandInput
-            ref={inputRef}
-            placeholder={placeholder || "Search options..."}
-            value={inputValue}
-            onValueChange={setInputValue}
-            onKeyDown={handleKeyDown}
-            className="h-9 bg-zinc-900 border-b border-zinc-800 text-white placeholder:text-zinc-500 focus:ring-0 focus:border-0"
-          />
-          <CommandList className="max-h-60">
-            <CommandEmpty className="py-2 text-zinc-400 text-sm text-center">
-                {allowCustom && inputValue.trim() ? (
-                    <Button
-                        variant="ghost"
-                        onClick={handleCreateNew}
-                        className="w-full text-left text-blue-400 hover:text-blue-300 gap-2 justify-start py-2 h-auto"
-                    >
-                        <Plus size={14} /> Create "{inputValue}"
-                    </Button>
-                ) : (
-                    "No results found."
-                )}
-            </CommandEmpty>
+      <PopoverContent
+        className="w-full p-0 bg-zinc-950 border-zinc-800"
+        align="start"
+        style={{ width: "var(--radix-popover-trigger-width)" }}
+      >
+        <Command className="bg-zinc-950 text-white">
+          <div className="relative flex items-center border-b border-zinc-800">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Search or add item..."
+              className="pl-9 h-10 w-full bg-zinc-950 border-none focus-visible:ring-0 text-white"
+            />
+          </div>
+          <CommandList>
             <CommandGroup>
+              {filteredOptions.length === 0 && inputValue.trim() && allowCustom && (
+                <CommandItem onSelect={handleCreateCustom} className="text-blue-500 cursor-pointer">
+                  <Plus className="mr-2 h-4 w-4" /> Create "{inputValue.trim()}"
+                </CommandItem>
+              )}
               {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
                   onSelect={() => handleSelect(option)}
-                  className="flex items-center justify-between text-sm py-2 px-2 cursor-pointer aria-selected:bg-zinc-800 hover:bg-zinc-800 text-white"
+                  className="text-white hover:bg-zinc-800 cursor-pointer"
                 >
                   {option.label}
-                  <Check
-                    className={cn(
-                      "ml-auto h-4 w-4",
-                      selected.some((s) => s.value === option.value)
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
                 </CommandItem>
               ))}
+              {filteredOptions.length === 0 && (!inputValue.trim() || !allowCustom) && (
+                <CommandItem disabled className="text-zinc-500">
+                  No results found.
+                </CommandItem>
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

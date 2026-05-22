@@ -74,7 +74,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   React.useEffect(() => {
     if (selectedAlbum && formData.syncWithAlbumCredits) {
       setFormData(prev => ({ ...prev, genres: selectedAlbum.genres }));
-    } else if (!selectedAlbum) {
+    } else if (!selectedAlbum && formData.syncWithAlbumCredits) { // If no album, but sync is somehow true
       setFormData(prev => ({ ...prev, genres: [], syncWithAlbumCredits: false }));
     }
   }, [selectedAlbum, formData.syncWithAlbumCredits]);

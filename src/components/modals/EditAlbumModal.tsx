@@ -22,7 +22,7 @@ import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import
 
 export const EditAlbumModal = ({ album }: { album: Album }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup, activeProfile, genres: allGenres } = useMusicStore();
+  const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup, activeProfile, genres: allGenres, addGenre } = useMusicStore();
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
   const albumGroups = groups.filter(g =>
@@ -203,6 +203,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
                     selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
                     onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
                     placeholder="Select genres..."
+                    allowCustom
+                    onNewItem={addGenre}
                 />
               </div>
             </TabsContent>

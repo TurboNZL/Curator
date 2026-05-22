@@ -6,7 +6,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, X } from 'lucide-react';
-import { Credit } from '@/types/music';
+import { Credit } from '../../server/types/music'; // Updated import path
 import { cn } from '@/lib/utils';
 import { MultiSelectSearch } from '../ui/MultiSelectSearch'; // Import MultiSelectSearch
 

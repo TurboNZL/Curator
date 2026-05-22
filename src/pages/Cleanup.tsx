@@ -25,7 +25,7 @@ import { GeniusLinkResolutionModal } from '@/components/modals/GeniusLinkResolut
 import { YoutubeMusicLinkResolutionModal } from '@/components/modals/YoutubeMusicLinkResolutionModal';
 import { ReleaseDateResolutionModal } from '@/components/modals/ReleaseDateResolutionModal';
 import { AlbumCreditsResolutionModal } from '@/components/modals/AlbumCreditsResolutionModal';
-import { Track, Album, Release, Credit } from '@/types/music';
+import { Track, Album, Release, Credit } from '../server/types/music';
 
 
 interface ImageUploadResolutionModalProps {
@@ -126,8 +126,14 @@ const Cleanup = () => {
     artist_image: true,
     album_cover: true,
     album_metadata: true, // Combines album credits and genres
+    thumbnail: true, // Added for future use, just in case
     release_date: true,
-    track_links: true, // Combines spotify, genius, youtube_music
+    track_spotify_link: true, // Specific Spotify link
+    track_genius_link: true, // Specific Genius link
+    track_youtube_music_link: true, // Specific YouTube Music link
+    album_spotify_links: true, // Grouped Spotify links
+    album_genius_links: true, // Grouped Genius links
+    album_youtube_music_links: true, // Grouped YouTube Music links
     track_metadata: true, // Any missing track genres or credits
   });
   
@@ -195,7 +201,7 @@ const Cleanup = () => {
 
   const allTasks = useMemo(() => {
     const generatedTasks: any[] = [];
-    const processedTrackIdsForSpotify = new Set<string>(); // Keep track of tracks already part of an album's Spotify task
+    const processedTrackIdsForGroupedLinks = new Set<string>(); 
 
     // Artist Image
     artists.filter(a => !a.image).forEach(a => {
@@ -215,17 +221,18 @@ const Cleanup = () => {
     // Album Metadata (Credits & Genres)
     albums.filter(al => al.artistCredits.length === 0 || al.genres.length === 0).forEach(al => {
       let missingItems = [];
-      // Removed general credits check: if (al.credits.length === 0) missingItems.push("general notes");
       if (al.artistCredits.length === 0) missingItems.push("artist roles");
       if (al.genres.length === 0) missingItems.push("genres");
       
-      generatedTasks.push({ 
-        type: 'album_metadata', 
-        entity: al, 
-        label: `Complete metadata for album ${al.title} (missing: ${missingItems.join(', ')})`, 
-        icon: FileText, 
-        color: 'text-indigo-500' 
-      });
+      if (missingItems.length > 0) {
+        generatedTasks.push({ 
+          type: 'album_metadata', 
+          entity: al, 
+          label: `Complete metadata for album ${al.title} (missing: ${missingItems.join(', ')})`, 
+          icon: FileText, 
+          color: 'text-indigo-500' 
+        });
+      }
     });
 
     // Release Date
@@ -234,11 +241,10 @@ const Cleanup = () => {
       generatedTasks.push({ type: 'release_date', entity: r, label: `Add date for release ${r.title} (${album?.title || 'Unknown Album'})`, icon: Calendar, color: 'text-orange-500' });
     });
 
-    // Track Links (Spotify, Genius, YouTube Music) - Grouped by album/release first
+    // Grouped Track Links (Album-level)
     albums.forEach(album => {
         let relevantRelease = album.defaultReleaseId ? releases.find(r => r.id === album.defaultReleaseId) : null;
         if (!relevantRelease && releases.some(r => r.albumId === album.id)) {
-            // Fallback to first release if no default and releases exist
             relevantRelease = releases.find(r => r.albumId === album.id);
         }
 
@@ -246,7 +252,6 @@ const Cleanup = () => {
         if (relevantRelease) {
             albumTrackIdsInOrder = relevantRelease.trackIds;
         } else {
-            // If no release or no tracks in release, use tracks directly linked to album
             const associatedAlbumTracks = tracks.filter(t => t.albumIds.some(aid => aid.albumId === album.id));
             albumTrackIdsInOrder = [...associatedAlbumTracks]
               .sort((a, b) => {
@@ -257,61 +262,97 @@ const Cleanup = () => {
               .map(t => t.id);
         }
 
-        const tracksInAlbumMissingLinks = albumTrackIdsInOrder
+        // Filter tracks that are missing links and haven't been processed yet by other album-level tasks
+        const tracksInAlbumMissingSpotify = albumTrackIdsInOrder
             .map(trackId => tracks.find(t => t.id === trackId))
-            .filter((t): t is Track => t !== undefined && (!t.spotifyUrl || !t.geniusUrl || !t.youtubeMusicUrl) && !processedTrackIdsForSpotify.has(t.id));
+            .filter((t): t is Track => t !== undefined && !t.spotifyUrl && !processedTrackIdsForGroupedLinks.has(t.id));
+        
+        const tracksInAlbumMissingGenius = albumTrackIdsInOrder
+            .map(trackId => tracks.find(t => t.id === trackId))
+            .filter((t): t is Track => t !== undefined && !t.geniusUrl && !processedTrackIdsForGroupedLinks.has(t.id));
 
-        if (tracksInAlbumMissingLinks.length > 0) {
-            tracksInAlbumMissingLinks.forEach(t => processedTrackIdsForSpotify.add(t.id));
-            const missingSpotifyCount = tracksInAlbumMissingLinks.filter(t => !t.spotifyUrl).length;
-            const missingGeniusCount = tracksInAlbumMissingLinks.filter(t => !t.geniusUrl).length;
-            const missingYoutubeCount = tracksInAlbumMissingLinks.filter(t => !t.youtubeMusicUrl).length;
+        const tracksInAlbumMissingYoutube = albumTrackIdsInOrder
+            .map(trackId => tracks.find(t => t.id === trackId))
+            .filter((t): t is Track => t !== undefined && !t.youtubeMusicUrl && !processedTrackIdsForGroupedLinks.has(t.id));
 
-            let missingLinkLabels = [];
-            if (missingSpotifyCount > 0) missingLinkLabels.push(`Spotify (${missingSpotifyCount})`);
-            if (missingGeniusCount > 0) missingLinkLabels.push(`Genius (${missingGeniusCount})`);
-            if (missingYoutubeCount > 0) missingLinkLabels.push(`YouTube Music (${missingYoutubeCount})`);
 
+        if (tracksInAlbumMissingSpotify.length > 0) {
+            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForGroupedLinks.add(t.id));
             generatedTasks.push({
-                type: 'track_links',
+                type: 'album_spotify_links',
                 entity: { 
                     albumId: album.id, 
                     albumTitle: album.title,
                     releaseId: relevantRelease?.id,
                     releaseTitle: relevantRelease?.title,
-                    tracks: tracksInAlbumMissingLinks 
+                    tracks: tracksInAlbumMissingSpotify 
                 },
-                label: `Add missing links for ${album.title} (missing: ${missingLinkLabels.join(', ')})`,
+                label: `Add Spotify URIs for ${album.title} (${tracksInAlbumMissingSpotify.length} tracks)`,
                 icon: Link,
                 color: 'text-green-500',
                 isGrouped: true,
-                linkTypes: { spotify: true, genius: true, youtube: true } // Indicate it's for all link types
+            });
+        }
+        if (tracksInAlbumMissingGenius.length > 0) {
+            tracksInAlbumMissingGenius.forEach(t => processedTrackIdsForGroupedLinks.add(t.id));
+            generatedTasks.push({
+                type: 'album_genius_links',
+                entity: { 
+                    albumId: album.id, 
+                    albumTitle: album.title,
+                    releaseId: relevantRelease?.id,
+                    releaseTitle: relevantRelease?.title,
+                    tracks: tracksInAlbumMissingGenius 
+                },
+                label: `Add Genius links for ${album.title} (${tracksInAlbumMissingGenius.length} tracks)`,
+                icon: Link,
+                color: 'text-yellow-500',
+                isGrouped: true,
+            });
+        }
+        if (tracksInAlbumMissingYoutube.length > 0) {
+            tracksInAlbumMissingYoutube.forEach(t => processedTrackIdsForGroupedLinks.add(t.id));
+            generatedTasks.push({
+                type: 'album_youtube_music_links',
+                entity: { 
+                    albumId: album.id, 
+                    albumTitle: album.title,
+                    releaseId: relevantRelease?.id,
+                    releaseTitle: relevantRelease?.title,
+                    tracks: tracksInAlbumMissingYoutube 
+                },
+                label: `Add YouTube Music links for ${album.title} (${tracksInAlbumMissingYoutube.length} tracks)`,
+                icon: Link,
+                color: 'text-red-500',
+                isGrouped: true,
             });
         }
     });
 
-    // Individual track links not associated with an album (or already processed by album task)
-    tracks.filter(t => (!t.spotifyUrl || !t.geniusUrl || !t.youtubeMusicUrl) && !processedTrackIdsForSpotify.has(t.id)).forEach(t => {
-      let missingLinkLabels = [];
-      if (!t.spotifyUrl) missingLinkLabels.push("Spotify");
-      if (!t.geniusUrl) missingLinkLabels.push("Genius");
-      if (!t.youtubeMusicUrl) missingLinkLabels.push("YouTube Music");
-
-      generatedTasks.push({ 
-        type: 'track_links', 
-        entity: t, 
-        label: `Add missing links for ${t.title} (missing: ${missingLinkLabels.join(', ')})`, 
-        icon: Link, 
-        color: 'text-green-500', 
-        isGrouped: false 
-      });
+    // Individual Track Links (not part of an album or already covered by album-level task)
+    tracks.filter(t => !processedTrackIdsForGroupedLinks.has(t.id)).forEach(t => {
+        if (!t.spotifyUrl) {
+            generatedTasks.push({ type: 'track_spotify_link', entity: t, label: `Add Spotify URI for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false });
+        }
+        if (!t.geniusUrl) {
+            generatedTasks.push({ type: 'track_genius_link', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500', isGrouped: false });
+        }
+        if (!t.youtubeMusicUrl) {
+            generatedTasks.push({ type: 'track_youtube_music_link', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500', isGrouped: false });
+        }
     });
 
-    // Track Metadata (e.g., missing genres, potentially artist credits if not syncing with album)
-    tracks.filter(t => t.genres.length === 0 || (!t.syncWithAlbumCredits && t.artistCredits.length === 0)).forEach(t => {
+    // Track Metadata (conditional based on syncWithAlbumCredits)
+    tracks.filter(t => {
+      const associatedAlbum = albums.find(al => t.albumIds.some(aId => aId.albumId === al.id));
+      const shouldCheckIndividualMetadata = !associatedAlbum || !t.syncWithAlbumCredits;
+      
+      // Only generate if not syncing with album OR no album, AND metadata is missing
+      return shouldCheckIndividualMetadata && (t.genres.length === 0 || t.artistCredits.length === 0);
+    }).forEach(t => {
       let missingItems = [];
       if (t.genres.length === 0) missingItems.push("genres");
-      if (!t.syncWithAlbumCredits && t.artistCredits.length === 0) missingItems.push("artist credits");
+      if (t.artistCredits.length === 0) missingItems.push("artist credits");
       
       if (missingItems.length > 0) {
         generatedTasks.push({ 
@@ -440,28 +481,47 @@ const Cleanup = () => {
   };
 
   const handleResolveTask = async (task: any) => {
-    if (task.type === 'track_links') {
-        // Determine if it's a grouped (album-level) task or individual track
-        if (task.isGrouped) {
-            setSpotifyResolutionTracks(task.entity.tracks);
-            setSpotifyResolutionAlbum({
-                albumId: task.entity.albumId,
-                albumTitle: task.entity.albumTitle,
-                releaseId: task.entity.releaseId,
-                releaseTitle: task.entity.releaseTitle,
-            });
-            setIsSpotifyResolutionModalOpen(true);
+    // Album-level link resolution
+    if (task.type === 'album_spotify_links') {
+        setSpotifyResolutionTracks(task.entity.tracks);
+        setSpotifyResolutionAlbum({
+            albumId: task.entity.albumId,
+            albumTitle: task.entity.albumTitle,
+            releaseId: task.entity.releaseId,
+            releaseTitle: task.entity.releaseTitle,
+        });
+        setIsSpotifyResolutionModalOpen(true);
+    } else if (task.type === 'album_genius_links') {
+        // For album-level grouped Genius links, we'll open EditTrackModal for each track.
+        // It might be better to have a similar group resolution modal for Genius/YouTube in the future.
+        // For now, we'll default to resolving the first track or opening a generic edit modal.
+        if (task.entity.tracks.length > 0) {
+            setSelectedTrackForGenius(task.entity.tracks[0]);
+            setIsGeniusResolutionModalOpen(true);
         } else {
-            // For individual track links, open the appropriate modal based on what's missing
-            const track = task.entity;
-            // The logic here needs to be more granular. Since the dropdown has all 3,
-            // we should likely open EditTrackModal for single track link resolution.
-            // For now, I'll keep the existing logic that assumes one specific link type.
-            // If multiple are missing, EditTrackModal is better.
-            setSelectedTrackForEdit(track);
-            setIsEditTrackModalOpen(true);
+            toast.info("No tracks found for this grouped Genius link task.");
         }
-    } else if (task.type === 'album_metadata') {
+    } else if (task.type === 'album_youtube_music_links') {
+        if (task.entity.tracks.length > 0) {
+            setSelectedTrackForYoutubeMusic(task.entity.tracks[0]);
+            setIsYoutubeMusicResolutionModalOpen(true);
+        } else {
+            toast.info("No tracks found for this grouped YouTube Music link task.");
+        }
+    } 
+    // Individual track link resolution
+    else if (task.type === 'track_spotify_link') {
+        setSelectedTrackForEdit(task.entity); // Open EditTrackModal which has all links
+        setIsEditTrackModalOpen(true);
+    } else if (task.type === 'track_genius_link') {
+        setSelectedTrackForGenius(task.entity);
+        setIsGeniusResolutionModalOpen(true);
+    } else if (task.type === 'track_youtube_music_link') {
+        setSelectedTrackForYoutubeMusic(task.entity);
+        setIsYoutubeMusicResolutionModalOpen(true);
+    }
+    // Other task types
+    else if (task.type === 'album_metadata') {
       setSelectedAlbumForCredits(task.entity);
       setIsAlbumCreditsResolutionModalOpen(true);
     } else if (task.type === 'release_date') {
@@ -475,11 +535,9 @@ const Cleanup = () => {
       setImageUploadEntity(task.entity);
       setImageUploadEntityType('album');
       setIsImageUploadModalOpen(true);
-    } else if (task.type === 'track_metadata') { // For track genres/credits
-      // This will open EditTrackModal for individual track metadata resolution
-      // The EditTrackModal already handles genres and artist credits
+    } else if (task.type === 'track_metadata') { 
       setSelectedTrackForEdit(task.entity);
-      setIsEditTrackModalOpen(true); // Assuming EditTrackModal is imported and manages this state
+      setIsEditTrackModalOpen(true);
     }
   };
 
@@ -506,8 +564,7 @@ const Cleanup = () => {
     fetchData();
   };
 
-  const handleAlbumCreditsResolution = async (albumId: string, artistCredits: Credit[]) => { // Removed credits: string[]
-    // Also include genres when resolving album metadata
+  const handleAlbumCreditsResolution = async (albumId: string, artistCredits: Credit[]) => {
     const albumToUpdate = albums.find(a => a.id === albumId);
     await updateAlbum(albumId, { artistCredits, genres: albumToUpdate?.genres || [] }); // Keep existing genres for now
     fetchData();

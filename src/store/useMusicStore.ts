@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, Credit, RoleCategory } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, Credit, RoleCategory } from '../server/types/music'; // Updated import path
 import { toast } from 'sonner';
 
 interface MusicState {
@@ -750,7 +750,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
-    set({ artists: [], albums: [], tracks: [], releases: [], playlists: [], timeline: [], groups: [], playbackLogs: [], genres: [], roleCategories: [] });
+    set({ artists: [], albums: [], tracks: [], [], playlists: [], timeline: [], groups: [], playbackLogs: [], genres: [], roleCategories: [] });
   },
 
   clearUnlinkedFiles: async () => {

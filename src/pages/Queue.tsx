@@ -7,7 +7,7 @@ import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from '
 import { Button } from '@/components/ui/button';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
-import { Track } from '@/types/music';
+import { Track } from '../server/types/music';
 
 const Queue = () => {
   const {

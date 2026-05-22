@@ -14,7 +14,7 @@ import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 import { EditTrackModal } from '../modals/EditTrackModal';
 import { toast } from 'sonner';
 import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; 
-import { Credit } from '@/types/music'; 
+import { Credit } from '../../server/types/music'; 
 
 const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; 
 

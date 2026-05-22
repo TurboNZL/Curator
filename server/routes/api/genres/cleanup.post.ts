@@ -1,8 +1,20 @@
 import { defineHandler } from "nitro";
-import { db } from '../../../db'; // Corrected path
-import { genres, trackGenres, roleCategories, albums, tracks } from '../../../db/schema';
+import { db } from '../../db'; 
+import { genres, trackGenres, roleCategories, albums, tracks } from '../../db/schema';
 import { inArray, and, eq, sql } from 'drizzle-orm';
-import { Credit } from '../../../src/types/music'; // Import Credit type
+import { Credit } from '../../types/music'; // Updated import path
+
+// Helper to safely parse JSON strings into arrays, defaulting to empty array on error or null
+const safeParseArray = <T>(jsonString: string | null | undefined): T[] => {
+  if (typeof jsonString !== 'string' || !jsonString) return [];
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn("Error parsing JSON string, defaulting to empty array:", e, jsonString);
+    return [];
+  }
+};
 
 export default defineHandler(async (event) => {
   if (event.method === 'POST') {
@@ -27,15 +39,12 @@ export default defineHandler(async (event) => {
     // Extract genre IDs from album.genres (JSON strings) by resolving names to IDs
     const usedGenreIdsFromAlbums = new Set<string>();
     allAlbums.forEach(album => {
-      try {
-        const albumGenres = JSON.parse(album.genres || '[]') as string[];
-        albumGenres.forEach(genreName => {
-            const foundGenre = allGenresInDb.find(g => g.name === genreName);
-            if (foundGenre) usedGenreIdsFromAlbums.add(foundGenre.id);
-        });
-      } catch (e) {
-        console.warn(`Error parsing genres for album ${album.id}:`, e);
-      }
+      // Use safeParseArray for album.genres
+      const albumGenres = safeParseArray<string>(album.genres);
+      albumGenres.forEach(genreName => {
+        const foundGenre = allGenresInDb.find(g => g.name === genreName);
+        if (foundGenre) usedGenreIdsFromAlbums.add(foundGenre.id);
+      });
     });
 
     const allUsedGenreIds = Array.from(new Set([...usedGenreIdsFromTracks, ...Array.from(usedGenreIdsFromAlbums)]));
@@ -58,22 +67,16 @@ export default defineHandler(async (event) => {
 
     // Check tracks for used role categories
     allTracks.forEach(track => {
-      try {
-        const artistCredits = JSON.parse(track.artistCredits || '[]') as Credit[];
-        artistCredits.forEach(credit => credit.role.forEach(role => usedRoleCategoryNames.add(role)));
-      } catch (e) {
-        console.warn(`Error parsing artistCredits for track ${track.id}:`, e);
-      }
+      // Use safeParseArray for track.artistCredits
+      const artistCredits = safeParseArray<Credit>(track.artistCredits);
+      artistCredits.forEach(credit => credit.role.forEach(role => usedRoleCategoryNames.add(role)));
     });
 
     // Check albums for used role categories
     allAlbums.forEach(album => {
-      try {
-        const artistCredits = JSON.parse(album.artistCredits || '[]') as Credit[];
-        artistCredits.forEach(credit => credit.role.forEach(role => usedRoleCategoryNames.add(role)));
-      } catch (e) {
-        console.warn(`Error parsing artistCredits for album ${album.id}:`, e);
-      }
+      // Use safeParseArray for album.artistCredits
+      const artistCredits = safeParseArray<Credit>(album.artistCredits);
+      artistCredits.forEach(credit => credit.role.forEach(role => usedRoleCategoryNames.add(role)));
     });
 
     const unusedRemovableRoleCategories = removableRoleCategories.filter(rc => !usedRoleCategoryNames.has(rc.name));
@@ -93,4 +96,5 @@ export default defineHandler(async (event) => {
       return { success: true, message: "No unused categories or genres found for cleanup." };
     }
   }
+  return { success: false, message: 'Method Not Allowed' };
 });

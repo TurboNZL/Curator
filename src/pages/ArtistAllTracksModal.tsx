@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
-import { Track } from '@/types/music';
+import { Track } from '../../server/types/music';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
@@ -44,7 +44,11 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
   };
 
   const allRatedArtistTracks = useMemo(() => {
-    const allArtistTracks = tracks.filter(t => t.artistId === artistId);
+    // Filter tracks where the given artistId is the primary artist OR present in artistCredits with a Lead artist role
+    const allArtistTracks = tracks.filter(t => 
+      t.artistId === artistId || 
+      t.artistCredits?.some(credit => credit.artistId === artistId && credit.role.includes('Lead artist'))
+    );
     
     return allArtistTracks
       .map(t => ({ ...t, effectiveRating: getEffectiveRating(t) }))

@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Album, Release, Track } from '@/types/music'; // Import Album and Release types
+import { Album, Release, Track } from '../server/types/music'; // Updated import path
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

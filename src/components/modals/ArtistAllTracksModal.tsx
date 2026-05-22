@@ -7,14 +7,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Music, Star, Play, MoreVertical } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '@/components/ui/Rating';
-import { Track } from '@/types/music';
+import { Track } from '../../server/types/music';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ interface ArtistAllTracksModalProps {
 }
 
 export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore();
+  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
@@ -65,6 +65,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
 
   const getAlbumArt = (track: Track) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
+    // Use the new helper here
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
@@ -85,7 +86,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
               <p className="text-zinc-600 text-sm mt-1">Start rating tracks to see them here!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 pr-4">
+            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
                   <TrackRightClickMenu key={track.id} track={track}>
