@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog } from '../types/music';
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, ArtistCredit } from '../types/music';
 import { toast } from 'sonner';
 
 interface MusicState {
@@ -13,6 +13,7 @@ interface MusicState {
   releaseTypes: ReleaseType[];
   timeline: TimelineEntry[];
   playbackLogs: PlaybackLog[];
+  genres: string[]; // NEW: List of all unique genres
   
   userQueue: string[];
   activeQueue: string[];
@@ -52,12 +53,12 @@ interface MusicState {
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
-  addAlbum: (album: Omit<Album, 'id' | 'artistCredits'> & { artistCredits: Credit[] }) => Promise<Album>;
-  updateAlbum: (id: string, data: Partial<Omit<Album, 'artistCredits'> & { artistCredits?: Credit[] }>) => Promise<void>;
+  addAlbum: (album: Omit<Album, 'id' | 'artistCredits'> & { artistCredits: ArtistCredit[] }) => Promise<Album>;
+  updateAlbum: (id: string, data: Partial<Omit<Album, 'artistCredits'> & { artistCredits?: ArtistCredit[] }>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite' | 'artistCredits'> & { artistCredits: Credit[] }[]) => Promise<Track[]>;
-  updateTrack: (id: string, data: Partial<Omit<Track, 'artistCredits'> & { artistCredits?: Credit[] }>) => Promise<void>;
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'syncWithAlbumCredits' | 'isFavorite' | 'artistCredits'> & { artistCredits: ArtistCredit[] }[]) => Promise<Track[]>;
+  updateTrack: (id: string, data: Partial<Omit<Track, 'artistCredits'> & { artistCredits?: ArtistCredit[] }>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
   decrementMemories: (id: string) => Promise<void>;
@@ -83,6 +84,7 @@ interface MusicState {
   uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
   resetDatabase: () => Promise<void>;
   clearUnlinkedFiles: () => Promise<void>;
+  clearUnusedGenres: () => Promise<void>; // NEW: clearUnusedGenres
   
   getRankedTenStarTracks: () => Track[];
 }
@@ -130,6 +132,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   releaseTypes: [],
   timeline: [],
   playbackLogs: [],
+  genres: [], // Initialize genres as empty array
   userQueue: [],
   activeQueue: [],
   currentTrackId: null,
@@ -157,7 +160,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         }
       };
 
-      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, groups, releaseTypes] = await Promise.all([
+      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, groups, releaseTypes, allGenres] = await Promise.all([
         fetchJson('/api/artists'),
         fetchJson('/api/albums'),
         fetchJson('/api/tracks'),
@@ -168,6 +171,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         fetchJson('/api/profiles'),
         fetchJson('/api/groups'),
         fetchJson('/api/release-types'),
+        fetchJson('/api/genres'), // NEW: Fetch genres
       ]);
       
       const activeProfile = profiles && profiles[0] ? {
@@ -183,21 +187,18 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           ...al,
           primaryCover: al.primaryCover || null,
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
-          artistCredits: parseJsonOrDefault(al.artistCredits, []),
-          credits: parseJsonOrDefault(al.credits, []) // Ensure credits are parsed here
+          artistCredits: parseJsonOrDefault(al.artistCredits, []), 
+          credits: parseJsonOrDefault(al.credits, []) 
         })),
         tracks: (tracks || []).map((t: any) => ({
           ...t,
           genres: parseJsonOrDefault(t.genres, []),
-          producers: parseJsonOrDefault(t.producers, []),
-          writers: parseJsonOrDefault(t.writers, []),
-          credits: parseJsonOrDefault(t.credits, []),
           queueRules: parseJsonOrDefault(t.queueRules, {}),
           artistCredits: parseJsonOrDefault(t.artistCredits, []),
           albumIds: parseJsonOrDefault(t.albumIds, []),
           isFavorite: !!t.isFavorite,
           bitrate: t.bitrate || 'Unknown',
-          syncWithAlbumCredits: !!t.sync_with_album_credits // Parse syncWithAlbumCredits from DB
+          syncWithAlbumCredits: !!t.sync_with_album_credits 
         })),
         releases: releases || [],
         groups: (groups || []).map((g: any) => ({
@@ -209,6 +210,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         releaseTypes: releaseTypes || [],
         timeline: (timeline || []).map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
         playbackLogs: (logs || []).map((log: any) => ({ ...log, timestamp: new Date(log.timestamp), isSkip: !!log.isSkip })),
+        genres: allGenres || [], // NEW: Set genres
         isLoading: false
       });
     } catch (error) {
@@ -453,8 +455,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       ...newAlbum,
       primaryCover: newAlbum.primaryCover || null,
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []),
-      artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), // Ensure credits are parsed
-      credits: parseJsonOrDefault(newAlbum.credits, []) // Ensure credits are parsed
+      artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), 
+      credits: parseJsonOrDefault(newAlbum.credits, []) 
     };
     set(state => ({ albums: [...state.albums, parsedNewAlbum] }));
     return parsedNewAlbum;
@@ -490,9 +492,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           ...trackData,
           artistIds: trackData.artistIds,
           genres: trackData.genres,
-          producers: trackData.producers,
-          writers: trackData.writers,
-          credits: trackData.credits,
           queueRules: trackData.queueRules,
           bitrate: trackData.bitrate,
         })
@@ -714,6 +713,17 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       toast.error(data.message);
     }
     return data;
+  },
+
+  clearUnusedGenres: async () => {
+    try {
+      const res = await fetch('/api/genres/cleanup', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to clear unused genres');
+      await get().fetchData(); // Re-fetch data to update the genre list
+      toast.success("Unused genres cleared.");
+    } catch (err) {
+      toast.error("Failed to clear unused genres.");
+    }
   },
 
   getRankedTenStarTracks: () => {

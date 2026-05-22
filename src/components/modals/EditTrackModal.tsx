@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input }:// NO NEED TO IMPORT `Input` as it's not being used in this file
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap } from 'lucide-react';
@@ -18,6 +18,7 @@ import { Card } from '../ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { ArtistCreditSelect } from '@/components/shared/ArtistCreditSelect';
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // NEW IMPORT
 
 interface EditTrackModalProps {
   track: Track;
@@ -38,10 +39,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     artistCredits: track.artistCredits || [], // Updated to new credit structure
     albumId: track.albumIds[0]?.albumId || '',
     initialRating: track.initialRating?.toString() || '',
-    genres: track.genres.join(', '),
-    producers: track.producers.join(', '),
-    writers: track.writers.join(', '),
-    credits: track.credits.join(', '),
+    genres: track.genres || [], // Now an array of strings
     bitrate: track.bitrate || '320kbps', // Still stored, but not editable directly
     audioUrl: track.localFilePath || '',
     spotifyUrl: track.spotifyUrl || '',
@@ -53,6 +51,10 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
   const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
+
+  // Genre options (dummy for now, will be dynamic later)
+  const allGenres = useMusicStore(state => state.genres);
+  const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
 
 
   const cleanSpotifyUrl = (url: string) => {
@@ -75,10 +77,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
       artistCredits: formData.artistCredits,
       albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
-      genres: formData.syncWithAlbumCredits ? [] : formData.genres.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
-      producers: formData.syncWithAlbumCredits ? [] : formData.producers.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
-      writers: formData.syncWithAlbumCredits ? [] : formData.writers.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
-      credits: formData.syncWithAlbumCredits ? [] : formData.credits.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      genres: formData.syncWithAlbumCredits ? [] : formData.genres, // Save genres as array
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
@@ -135,7 +134,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Links & Rating</TabsTrigger>
+              <TabsTrigger value="links-rating" className="text-[10px] font-black uppercase tracking-widest">Links & Rating</TabsTrigger>
               <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
@@ -179,7 +178,19 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
               <ArtistCreditSelect
                 value={formData.artistCredits}
                 onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
+                disabled={formData.syncWithAlbumCredits}
               />
+              
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
+                <MultiSelectSearch
+                    options={genreOptions}
+                    selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
+                    onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
+                    placeholder="Select genres..."
+                    disabled={formData.syncWithAlbumCredits}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -189,7 +200,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
               </div>
             </TabsContent>
 
-            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+            <TabsContent value="links-rating" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10)</Label>
                 <Input type="number" step="0.1" value={formData.initialRating} onChange={(e) => setFormData({...formData, initialRating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
@@ -207,43 +218,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">YouTube Music Link</Label>
                 <Input value={formData.youtubeMusicUrl} onChange={(e) => setFormData({...formData, youtubeMusicUrl: e.target.value})} className="bg-zinc-900 border-zinc-800" />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres (comma separated)</Label>
-                <Input 
-                  value={formData.genres} 
-                  onChange={(e) => setFormData({...formData, genres: e.target.value})} 
-                  className="bg-zinc-900 border-zinc-800" 
-                  disabled={formData.syncWithAlbumCredits}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Producers (comma separated)</Label>
-                <Input 
-                  value={formData.producers} 
-                  onChange={(e) => setFormData({...formData, producers: e.target.value})} 
-                  className="bg-zinc-900 border-zinc-800" 
-                  disabled={formData.syncWithAlbumCredits}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Writers (comma separated)</Label>
-                <Input 
-                  value={formData.writers} 
-                  onChange={(e) => setFormData({...formData, writers: e.target.value})} 
-                  className="bg-zinc-900 border-zinc-800" 
-                  disabled={formData.syncWithAlbumCredits}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Credits (comma separated)</Label>
-                <Textarea 
-                  value={formData.credits} 
-                  onChange={(e) => setFormData({...formData, credits: e.target.value})} 
-                  className="bg-zinc-900 border-zinc-800 min-h-[120px]" 
-                  disabled={formData.syncWithAlbumCredits}
-                />
               </div>
             </TabsContent>
 
