@@ -35,7 +35,6 @@ export interface Album {
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
   pendingFiles: { url: string; name: string }[];
-  credits: string[]; // Added album-level credits
 }
 
 export interface Release {

@@ -181,8 +181,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
               />
 
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bitrate</Label>
