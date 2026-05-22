@@ -343,7 +343,7 @@ const Playlists = () => {
                 <Input
                   placeholder="Search tracks to add..."
                   value={trackSearchTerm}
-                  onChange={(e) => setTrackSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-40 bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500 h-8 text-xs"
                 />
               </div>
