@@ -4,7 +4,7 @@ import React, { useCallback } from 'react'; // Added useCallback
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock, User as UserIcon } from 'lucide-react'; // Added UserIcon
-import { Track, Album, Artist } from '@/types/music';
+import { Track, Album, Artist } from '@/../server/types/music';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD

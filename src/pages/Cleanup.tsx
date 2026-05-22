@@ -25,7 +25,7 @@ import { GeniusLinkResolutionModal } from '@/components/modals/GeniusLinkResolut
 import { YoutubeMusicLinkResolutionModal } from '@/components/modals/YoutubeMusicLinkResolutionModal';
 import { ReleaseDateResolutionModal } from '@/components/modals/ReleaseDateResolutionModal';
 import { AlbumCreditsResolutionModal } from '@/components/modals/AlbumCreditsResolutionModal';
-import { Track, Album, Release, Credit } from '../server/types/music'; // Corrected import path
+import { Track, Album, Release, Credit } from '@/../server/types/music'; // Corrected import path
 
 
 interface ImageUploadResolutionModalProps {
@@ -859,7 +859,7 @@ const Cleanup = () => {
 
       {imageUploadEntity && imageUploadEntityType && (
         <ImageUploadResolutionModal
-          isOpen={isImageUploadModalModalOpen}
+          isOpen={isImageUploadModalOpen}
           onClose={() => setIsImageUploadModalOpen(false)}
           entity={imageUploadEntity}
           entityType={imageUploadEntityType}

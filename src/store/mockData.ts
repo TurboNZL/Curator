@@ -1,4 +1,4 @@
-import { Artist, Album, Track, TimelineEntry } from '../server/types/music';
+import { Artist, Album, Track, TimelineEntry } from '@/../server/types/music';
 
 export const MOCK_ARTISTS: Artist[] = [
   {
