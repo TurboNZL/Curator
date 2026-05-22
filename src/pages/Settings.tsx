@@ -290,4 +290,4 @@ const Settings = () => {
   );
 };
 
-export default Cleanup;
+export default Settings;
