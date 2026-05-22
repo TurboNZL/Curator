@@ -27,7 +27,6 @@ import { ProducersResolutionModal } from '@/components/modals/ProducersResolutio
 import { GenresResolutionModal } from '@/components/modals/GenresResolutionModal';
 import { ReleaseDateResolutionModal } from '@/components/modals/ReleaseDateResolutionModal';
 import { AlbumCreditsResolutionModal } from '@/components/modals/AlbumCreditsResolutionModal';
-import { TrackCreditsResolutionModal } from '@/components/modals/TrackCreditsResolutionModal'; // Import new modal
 import { Track, Album, Release } from '@/types/music'; // Import types
 
 
@@ -124,9 +123,6 @@ const Cleanup = () => {
 
   const [isAlbumCreditsResolutionModalOpen, setIsAlbumCreditsResolutionModalOpen] = useState(false);
   const [selectedAlbumForCredits, setSelectedAlbumForCredits] = useState<Album | null>(null);
-  
-  const [isTrackCreditsResolutionModalOpen, setIsTrackCreditsResolutionModalOpen] = useState(false); // New state for Track Credits Modal
-  const [selectedTrackForCredits, setSelectedTrackForCredits] = useState<Track | null>(null); // New state for Track Credits Modal
 
 
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
@@ -215,7 +211,7 @@ const Cleanup = () => {
 
   const allTasks = useMemo(() => {
     const generatedTasks: any[] = [];
-    const spotifyTasksForAlbums: any[] = []; 
+    const spotifyTasksForAlbums: any[] = []; // Declare spotifyTasksForAlbums here
 
     // Artist Image
     artists.filter(a => !a.image).forEach(a => {
@@ -452,7 +448,7 @@ const Cleanup = () => {
             // For individual Spotify URI resolution, we can reuse GeniusLinkResolutionModal logic
             // or if a more specific one is needed, create SpotifyLinkResolutionModal for individual tracks
             setSelectedTrackForGenius(task.entity); // Temp assignment
-            setIsGeniusResolutionModalOpen(true); // Reusing for generic link resolution for now (will point to proper Spotify modal later if needed)
+            setIsGeniusResolutionModalOpen(true); // Reusing for generic link resolution for now
         }
     } else if (task.type === 'genius_uri') {
       setSelectedTrackForGenius(task.entity);
@@ -470,12 +466,15 @@ const Cleanup = () => {
       // Re-using ProducersResolutionModal structure for writers
       setSelectedTrackForProducers(task.entity); // Use same state for now
       setIsProducersResolutionModalOpen(true); // Potentially create a new WritersModal
-    } else if (task.type === 'album_credits') { // Changed to specifically handle album credits
+    } else if (task.type === 'track_credits' || task.type === 'album_credits') {
+      if (task.entity.id) { // Check if it's an album
         setSelectedAlbumForCredits(task.entity);
         setIsAlbumCreditsResolutionModalOpen(true);
-    } else if (task.type === 'track_credits') { // New handling for track credits
-        setSelectedTrackForCredits(task.entity);
-        setIsTrackCreditsResolutionModalOpen(true);
+      } else {
+        // Track-specific credits.
+        setSelectedAlbumForCredits(task.entity); 
+        setIsAlbumCreditsResolutionModalOpen(true);
+      }
     } else if (task.type === 'release_date') {
       setSelectedReleaseForDate(task.entity);
       setIsReleaseDateResolutionModalOpen(true);
@@ -535,11 +534,6 @@ const Cleanup = () => {
 
   const handleAlbumCreditsResolution = async (albumId: string, credits: string[]) => {
     await updateAlbum(albumId, { credits });
-    fetchData();
-  };
-  
-  const handleTrackCreditsResolution = async (trackId: string, credits: string[]) => { // New handler
-    await updateTrack(trackId, { credits });
     fetchData();
   };
 
@@ -827,15 +821,6 @@ const Cleanup = () => {
           onClose={() => setIsAlbumCreditsResolutionModalOpen(false)}
           album={selectedAlbumForCredits} 
           onResolve={handleAlbumCreditsResolution}
-        />
-      )}
-      
-      {selectedTrackForCredits && (
-        <TrackCreditsResolutionModal
-          isOpen={isTrackCreditsResolutionModalOpen}
-          onClose={() => setIsTrackCreditsResolutionModalOpen(false)}
-          track={selectedTrackForCredits}
-          onResolve={handleTrackCreditsResolution}
         />
       )}
 
