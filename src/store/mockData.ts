@@ -9,7 +9,7 @@ export const MOCK_ARTISTS: Artist[] = [
       { id: 'e1', artistId: 'a1', name: 'The College Trilogy', description: '2004-2007: Soul-sampling era' },
       { id: 'e2', artistId: 'a1', name: 'Experimental / Yeezus', description: '2013-2015: Industrial and harsh sounds' }
     ],
-    groups: []
+    // Removed groups: []
   },
   {
     id: 'a2',
@@ -19,7 +19,7 @@ export const MOCK_ARTISTS: Artist[] = [
       { id: 'e3', artistId: 'a2', name: 'Alternative Rock', description: '90s era' },
       { id: 'e4', artistId: 'a2', name: 'Electronic / IDM', description: 'Kid A / Amnesiac period' }
     ],
-    groups: []
+    // Removed groups: []
   }
 ];
 
@@ -28,23 +28,25 @@ export const MOCK_ALBUMS: Album[] = [
     id: 'al1',
     title: 'The College Dropout',
     artistId: 'a1',
-    artistIds: ['a1'], // Added
+    // Removed artistIds: ['a1'],
     eraId: 'e1',
     primaryCover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
-    pendingFiles: [], // Added
-    credits: [], // Added
-    artistCredits: [{ artistId: 'a1', role: 'Lead artist' }] // NEW: Album artist credits
+    pendingFiles: [],
+    credits: [],
+    artistCredits: [{ artistId: 'a1', role: ['Lead artist'] }], // NEW: Album artist credits (role: string[])
+    genres: [], // Added genres
   },
   {
     id: 'al2',
     title: 'Kid A',
     artistId: 'a2',
-    artistIds: ['a2'], // Added
+    // Removed artistIds: ['a2'],
     eraId: 'e4',
     primaryCover: 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=400&h=400&fit=crop',
-    pendingFiles: [], // Added
-    credits: [], // Added
-    artistCredits: [{ artistId: 'a2', role: 'Lead artist' }] // NEW: Album artist credits
+    pendingFiles: [],
+    credits: [],
+    artistCredits: [{ artistId: 'a2', role: ['Lead artist'] }], // NEW: Album artist credits (role: string[])
+    genres: [], // Added genres
   }
 ];
 

@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useMemo, useState, useCallback } from 'react'; // Added useCallback and useState
+import React, { useMemo, useState, useCallback } from 'react'; 
 import { useSearchParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { Music, Disc, User, Search, Play, MoreVertical } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
-import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '@/components/ui/Rating'; 
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
-import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; 
 import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
@@ -35,7 +35,7 @@ const SearchResults = () => {
     }
 
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -52,10 +52,14 @@ const SearchResults = () => {
     return {
       tracks: tracks.filter(t => 
         t.title.toLowerCase().includes(query) || 
-        getTrackDisplayArtists(t).toLowerCase().includes(query) || // Use helper for search
+        getTrackDisplayArtists(t).toLowerCase().includes(query) || 
         albums.find(al => trackHasAlbum(t, al.id))?.title.toLowerCase().includes(query)
       ),
-      albums: albums.filter(a => a.title.toLowerCase().includes(query) || artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(query)),
+      albums: albums.filter(a => 
+        a.title.toLowerCase().includes(query) || 
+        artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(query) ||
+        a.artistCredits?.some(credit => artists.find(art => art.id === credit.artistId)?.name.toLowerCase().includes(query)) // Search in artistCredits
+      ),
       artists: artists.filter(a => a.name.toLowerCase().includes(query))
     };
   }, [query, tracks, albums, artists, getTrackDisplayArtists]);
@@ -147,7 +151,6 @@ const SearchResults = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
                             track={track}
                             size="sm"

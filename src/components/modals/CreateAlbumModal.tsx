@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Plus, Disc, Trash2, X } from 'lucide-react';
+import { Plus, Disc, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ImageUpload } from '../ui/ImageUpload';
-import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; // Import ArtistCreditSelect
-import { Credit } from '@/types/music'; // Import Credit type
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import MultiSelectSearch
+import { Credit } from '@/types/music';
 
 interface CreateAlbumModalProps {
   open: boolean;
@@ -18,17 +19,32 @@ interface CreateAlbumModalProps {
 }
 
 export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) => {
-  const { artists, addAlbum, addRelease } = useMusicStore();
+  const { artists, addAlbum, addRelease, genres: allGenres } = useMusicStore(); // Renamed to allGenres to avoid conflict
   
   const [formData, setFormData] = useState({
     title: '',
-    artistId: '', // Primary artist
-    artistIds: [] as string[], // Additional artists
-    artistCredits: [] as Credit[], // NEW: Album artist credits
+    artistCredits: [] as Credit[], // Now using artistCredits directly
     primaryCover: '', 
-    credits: [] as string[], // General album notes
+    credits: [] as string[], // General album notes (was Input, now needs to be Textarea or just array)
+    genres: [] as string[], // Added genres
     releases: [] as { title: string; date: string }[]
   });
+
+  const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
+
+  // Reset form data when the modal opens
+  React.useEffect(() => {
+    if (open) {
+      setFormData({ 
+        title: '', 
+        artistCredits: [{ artistId: '', role: ['Lead artist'] }], // Initialize with one empty lead artist credit
+        primaryCover: '', 
+        credits: [],
+        genres: [],
+        releases: [] 
+      }); 
+    }
+  }, [open]);
 
   const handleAddReleaseRow = () => {
     setFormData(prev => ({
@@ -54,37 +70,37 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Album title is required");
-    if (!formData.artistId) return toast.error("Primary artist is required");
+    if (formData.artistCredits.length === 0 || formData.artistCredits[0].artistId === '') return toast.error("At least one lead artist is required");
 
     try {
-      let finalPrimaryArtistId = formData.artistId;
+      let finalPrimaryArtistId = '';
+      const primaryArtistCredit = formData.artistCredits.find(ac => ac.role.includes('Lead artist'));
+
+      if (primaryArtistCredit) {
+          let existingPrimaryArtist = artists.find(a => a.id === primaryArtistCredit.artistId);
+          if (!existingPrimaryArtist) {
+              const res = await fetch('/api/artists', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: primaryArtistCredit.artistId }) // artistId acts as name if new
+              });
+              const newArtist = await res.json();
+              finalPrimaryArtistId = newArtist.id;
+          } else {
+              finalPrimaryArtistId = existingPrimaryArtist.id;
+          }
+      } else {
+          return toast.error("A lead artist must be specified in artist credits.");
+      }
       
-      const existingPrimaryArtist = artists.find(a => a.id === formData.artistId);
-      if (!existingPrimaryArtist) {
-        const res = await fetch('/api/artists', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: formData.artistId, groups: '[]' })
-        });
-        const newArtist = await res.json();
-        finalPrimaryArtistId = newArtist.id;
-      }
-
-      // Ensure primary artist is also in artistCredits if not already there
-      const finalArtistCredits = [...formData.artistCredits];
-      if (!finalArtistCredits.some(credit => credit.artistId === finalPrimaryArtistId)) {
-        finalArtistCredits.unshift({ artistId: finalPrimaryArtistId, role: 'Lead artist' });
-      }
-
-
       const newAlbum = await addAlbum({
         title: formData.title,
-        artistId: finalPrimaryArtistId,
-        artistIds: [finalPrimaryArtistId, ...formData.artistIds.filter(id => id !== finalPrimaryArtistId)], 
+        artistId: finalPrimaryArtistId, // Derive primary artist from credits
         primaryCover: formData.primaryCover || null, 
         pendingFiles: [], 
-        credits: formData.credits, // General album credits
-        artistCredits: finalArtistCredits, // NEW: Album artist credits
+        credits: formData.credits,
+        artistCredits: formData.artistCredits,
+        genres: formData.genres, // Add genres
       });
 
       for (const rel of formData.releases) {
@@ -99,13 +115,12 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
 
       toast.success(`"${formData.title}" created with ${formData.releases.length} releases`);
       onOpenChange(false); 
-      setFormData({ 
+      setFormData({ // Reset form
         title: '', 
-        artistId: '', 
-        artistIds: [],
-        artistCredits: [],
+        artistCredits: [{ artistId: '', role: ['Lead artist'] }],
         primaryCover: '', 
         credits: [],
+        genres: [],
         releases: [] 
       }); 
     } catch (error) {
@@ -114,16 +129,6 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
     }
   };
 
-  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const addArtist = (id: string) => {
-    if (!formData.artistIds.includes(id)) {
-      setFormData(prev => ({ ...prev, artistIds: [...prev.artistIds, id] }));
-    }
-  };
-
-  const removeArtist = (id: string) => {
-    setFormData(prev => ({ ...prev, artistIds: prev.artistIds.filter(aid => aid !== id) }));
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,45 +149,6 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
-              <SearchableSelect 
-                options={artistOptions} 
-                value={formData.artistId} 
-                onValueChange={(val) => setFormData({...formData, artistId: val})}
-                placeholder="Search or type artist..."
-                allowCustom
-                className="bg-zinc-900 border-zinc-800"
-                contentClassName="bg-zinc-950 border-zinc-800"
-                itemClassName="text-white hover:bg-zinc-800"
-              />
-            </div>
-             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Artists</Label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {formData.artistIds.map(aid => {
-                  const a = artists.find(art => art.id === aid);
-                  return (
-                    <div key={aid} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
-                      <span>{a?.name || aid}</span>
-                      <button type="button" onClick={() => removeArtist(aid)} className="text-zinc-600 hover:text-red-500">
-                        <X size={10} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              <SearchableSelect
-                options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))}
-                value=""
-                onValueChange={addArtist}
-                placeholder="Add another artist..."
-                allowCustom
-                className="bg-zinc-900 border-zinc-800"
-                contentClassName="bg-zinc-950 border-zinc-800"
-                itemClassName="text-white hover:bg-zinc-800"
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="title" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Title</Label>
               <Input 
                 id="title" 
@@ -192,12 +158,12 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
                 className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
               />
             </div>
-            {/* New: ArtistCreditSelect for album-level artist roles */}
+            {/* New: ArtistCreditSelect for album-level artist roles, replaces old artist select boxes */}
             <ArtistCreditSelect
               value={formData.artistCredits}
               onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
             />
-            {/* Existing: General Album Credits */}
+            {/* General Album Credits */}
             <div className="space-y-2">
               <Label htmlFor="credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">General Album Notes (comma separated)</Label>
               <Input 
@@ -206,6 +172,16 @@ export const CreateAlbumModal = ({ open, onOpenChange }: CreateAlbumModalProps) 
                 onChange={(e) => setFormData({...formData, credits: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} // Parse back to array
                 placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean" 
                 className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
+              />
+            </div>
+            {/* New: Genres MultiSelectSearch */}
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
+              <MultiSelectSearch
+                options={genreOptions}
+                selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
+                onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
+                placeholder="Select genres..."
               />
             </div>
           </div>

@@ -14,7 +14,7 @@ interface MusicState {
   timeline: TimelineEntry[];
   playbackLogs: PlaybackLog[];
   genres: string[];
-  roleCategories: RoleCategory[]; // NEW: List of all role categories
+  roleCategories: RoleCategory[]; 
   
   userQueue: string[];
   activeQueue: string[];
@@ -50,15 +50,15 @@ interface MusicState {
   shuffleActiveQueue: () => void;
   shuffleUserQueue: () => void;
   
-  addArtist: (artist: Omit<Artist, 'id' | 'eras' | 'groups' | 'bio'>) => Promise<Artist>; 
+  addArtist: (artist: Omit<Artist, 'id' | 'eras'>) => Promise<Artist>; // Removed 'groups'
   updateArtist: (id: string, data: Partial<Artist>) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>;
   
-  addAlbum: (album: Omit<Album, 'id'>) => Promise<Album>;
+  addAlbum: (album: Omit<Album, 'id'>) => Promise<Album>; // Removed 'artistIds'
   updateAlbum: (id: string, data: Partial<Album>) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   
-  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'isFavorite'>[]) => Promise<Track[]>; // Simplified Omit
+  addTracks: (tracks: Omit<Track, 'id' | 'eloScore' | 'comparisons' | 'memories' | 'isFavorite'>[]) => Promise<Track[]>; // Removed 'artistIds'
   updateTrack: (id: string, data: Partial<Track>) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   incrementMemories: (id: string) => Promise<void>;
@@ -78,7 +78,7 @@ interface MusicState {
   addGroupMember: (groupId: string, entityType: string, entityId: string, showOnEntityPage?: boolean) => Promise<void>;
   removeGroupMember: (groupId: string, entityType: string, entityId: string) => Promise<void>;
   
-  addRoleCategory: (name: string) => Promise<void>; // NEW: Add role category
+  addRoleCategory: (name: string) => Promise<void>; 
   
   vote: (data: { trackAId: string, trackBId: string, winnerId?: string, isEqual?: boolean }) => Promise<void>;
   updateSettings: (settings: Partial<Profile['settings']>) => Promise<void>;
@@ -87,7 +87,7 @@ interface MusicState {
   uploadFile: (file: File, type: 'audio' | 'image') => Promise<string>;
   resetDatabase: () => Promise<void>;
   clearUnlinkedFiles: () => Promise<void>;
-  clearUnusedCategoriesAndGenres: () => Promise<void>; // NEW: Combined cleanup
+  clearUnusedCategoriesAndGenres: () => Promise<void>; 
   
   getRankedTenStarTracks: () => Track[];
 }
@@ -105,12 +105,10 @@ const DEFAULT_PROFILE: Profile = {
 const parseJsonOrDefault = (value: any, defaultValue: any) => {
   if (value === undefined || value === null) return defaultValue;
 
-  // If already an object/array, return it directly
   if (typeof value !== 'string') return value;
 
   try {
     const parsed = JSON.parse(value);
-    // Ensure the parsed value matches the expected type, otherwise return default
     if (Array.isArray(defaultValue)) {
       return Array.isArray(parsed) ? parsed : defaultValue;
     }
@@ -136,7 +134,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   timeline: [],
   playbackLogs: [],
   genres: [],
-  roleCategories: [], // NEW: Initialize roleCategories
+  roleCategories: [], 
   
   userQueue: [],
   activeQueue: [],
@@ -177,7 +175,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         fetchJson('/api/groups'),
         fetchJson('/api/release-types'),
         fetchJson('/api/genres'),
-        fetchJson('/api/role-categories'), // NEW: Fetch role categories
+        fetchJson('/api/role-categories'),
       ]);
       
       const activeProfile = profiles && profiles[0] ? {
@@ -188,20 +186,21 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
       set({
         activeProfile,
-        artists: (artists || []).map((a: any) => ({ ...a, groups: parseJsonOrDefault(a.groups, []), eras: [] })),
+        artists: (artists || []).map((a: any) => ({ ...a, eras: [] })), // Removed groups from Artist parsing
         albums: (albums || []).map((al: any) => ({
           ...al,
-          artistIds: parseJsonOrDefault(al.artistIds, []),
+          // Removed artistIds parsing
           primaryCover: al.primaryCover || null,
           pendingFiles: parseJsonOrDefault(al.pendingFiles, []),
-          credits: parseJsonOrDefault(al.credits, []), // General album-level credits
-          artistCredits: parseJsonOrDefault(al.artistCredits, []), // NEW: Album artist-specific credits
+          credits: parseJsonOrDefault(al.credits, []), 
+          artistCredits: parseJsonOrDefault(al.artistCredits, []), // Artist credits (role: string[])
+          genres: parseJsonOrDefault(al.genres, []), // Parse genres for Album
         })),
         tracks: (tracks || []).map((t: any) => ({
           ...t,
-          genres: t.genres || [], // API now returns array directly
-          artistCredits: parseJsonOrDefault(t.artistCredits, []), // NEW: Track artist-specific credits
-          // Removed producers, writers, credits parsing here
+          genres: t.genres || [], 
+          artistCredits: parseJsonOrDefault(t.artistCredits, []), // Artist credits (role: string[])
+          // Removed artistIds parsing
           queueRules: parseJsonOrDefault(t.queueRules, {}),
           albumIds: parseJsonOrDefault(t.albumIds, []),
           isFavorite: !!t.isFavorite,
@@ -219,7 +218,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         timeline: (timeline || []).map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
         playbackLogs: (logs || []).map((log: any) => ({ ...log, timestamp: new Date(log.timestamp), isSkip: !!log.isSkip })),
         genres: allGenres || [],
-        roleCategories: roleCategories || [], // NEW: Set role categories
+        roleCategories: roleCategories || [],
         isLoading: false
       });
     } catch (error) {
@@ -428,7 +427,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       body: JSON.stringify(artistData)
     });
     const newArtist = await res.json();
-    const parsedNewArtist = { ...newArtist, eras: [], groups: parseJsonOrDefault(newArtist.groups, []) };
+    const parsedNewArtist = { ...newArtist, eras: [] }; // Removed groups from Artist parsing
     set(state => ({ artists: [...state.artists, parsedNewArtist] }));
     return parsedNewArtist;
   },
@@ -459,19 +458,20 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...albumData,
-        artistIds: JSON.stringify(albumData.artistIds || []), // Stringify array for DB
-        credits: JSON.stringify(albumData.credits || []), // Stringify array for DB
-        artistCredits: JSON.stringify(albumData.artistCredits || []), // NEW: Stringify album artist credits
+        // Removed artistIds
+        credits: JSON.stringify(albumData.credits || []),
+        artistCredits: JSON.stringify(albumData.artistCredits || []), // Album artist credits (role: string[])
+        genres: JSON.stringify(albumData.genres || []), // Stringify genres for DB
       })
     });
     const newAlbum = await res.json();
-    // Parse back for client state consistency
     const parsedNewAlbum = { 
       ...newAlbum,
-      artistIds: parseJsonOrDefault(newAlbum.artistIds, []),
+      // Removed artistIds
       pendingFiles: parseJsonOrDefault(newAlbum.pendingFiles, []),
       credits: parseJsonOrDefault(newAlbum.credits, []),
-      artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), // NEW: Parse album artist credits
+      artistCredits: parseJsonOrDefault(newAlbum.artistCredits, []), // Parse album artist credits (role: string[])
+      genres: parseJsonOrDefault(newAlbum.genres, []), // Parse genres for Album
     };
     set(state => ({ albums: [...state.albums, parsedNewAlbum] }));
     return parsedNewAlbum;
@@ -479,9 +479,10 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   updateAlbum: async (id, data) => {
     const updateData: Partial<any> = { ...data };
-    if (updateData.artistIds !== undefined) updateData.artistIds = JSON.stringify(updateData.artistIds);
+    // Removed artistIds
     if (updateData.credits !== undefined) updateData.credits = JSON.stringify(updateData.credits);
-    if (updateData.artistCredits !== undefined) updateData.artistCredits = JSON.stringify(updateData.artistCredits); // NEW: Stringify album artist credits
+    if (updateData.artistCredits !== undefined) updateData.artistCredits = JSON.stringify(updateData.artistCredits); // Album artist credits (role: string[])
+    if (updateData.genres !== undefined) updateData.genres = JSON.stringify(updateData.genres); // Stringify genres for DB
 
     await fetch(`/api/albums/${id}`, {
       method: 'PUT',
@@ -510,10 +511,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...trackData,
-          artistIds: JSON.stringify(trackData.artistIds || []), // Stringify for DB
-          artistCredits: JSON.stringify(trackData.artistCredits || []), // NEW: Stringify track artist credits
-          genres: trackData.genres || [], // Already array, send as is to API logic for trackGenres
-          // Removed producers, writers, credits as direct fields
+          // Removed artistIds
+          artistCredits: JSON.stringify(trackData.artistCredits || []), // Artist credits (role: string[])
+          genres: trackData.genres || [], 
           queueRules: JSON.stringify(trackData.queueRules || {}),
         })
       });
@@ -530,10 +530,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   updateTrack: async (id, data) => {
     const updateData: Partial<any> = { ...data };
-    if (updateData.artistIds !== undefined) updateData.artistIds = JSON.stringify(updateData.artistIds);
-    if (updateData.artistCredits !== undefined) updateData.artistCredits = JSON.stringify(updateData.artistCredits); // NEW: Stringify track artist credits
-    if (updateData.genres !== undefined) updateData.genres = updateData.genres; // Send as array to API logic for trackGenres
-    // Removed producers, writers, credits
+    // Removed artistIds
+    if (updateData.artistCredits !== undefined) updateData.artistCredits = JSON.stringify(updateData.artistCredits); // Artist credits (role: string[])
+    if (updateData.genres !== undefined) updateData.genres = updateData.genres; 
     if (updateData.queueRules !== undefined) updateData.queueRules = JSON.stringify(updateData.queueRules);
 
     await fetch(`/api/tracks/${id}`, {
@@ -702,7 +701,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name })
     });
-    await get().fetchData(); // Re-fetch all data to include the new role
+    await get().fetchData();
   },
 
   vote: async (voteData) => {
@@ -754,9 +753,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   clearUnusedCategoriesAndGenres: async () => {
     try {
-      const res = await fetch('/api/genres/cleanup', { method: 'POST' }); // This endpoint now handles both
+      const res = await fetch('/api/genres/cleanup', { method: 'POST' });
       if (!res.ok) throw new Error('Failed to clear unused categories and genres');
-      await get().fetchData(); // Re-fetch data to update lists
+      await get().fetchData();
       toast.success("Unused categories and genres cleared.");
     } catch (err) {
       toast.error("Failed to clear unused categories and genres.");

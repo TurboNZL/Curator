@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useCallback } from 'react'; // Added useCallback
+import React, { useCallback } from 'react'; 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock, User as UserIcon } from 'lucide-react'; // Added UserIcon
+import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock, User as UserIcon } from 'lucide-react'; 
 import { Track, Album, Artist } from '@/types/music';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '../ui/Rating'; 
 
 interface StatsForNerdsModalProps {
   track?: Track;
@@ -25,7 +25,7 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
     if (!t.artistCredits || t.artistCredits.length === 0) return primaryArtist?.name || "Unknown Artist";
     
     const leadArtists = t.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -40,7 +40,7 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
     return t.artistCredits
       .map((credit: any) => {
         const artist = artists.find(a => a.id === credit.artistId);
-        return artist ? `${artist.name} (${credit.role})` : `Unknown Artist (${credit.role})`;
+        return artist ? `${artist.name} (${credit.role.join(', ')})` : `Unknown Artist (${credit.role.join(', ')})`; // Join roles
       })
       .filter(Boolean);
   }, [artists]);
@@ -103,7 +103,6 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
                   </div>
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-tight">Balanced Rating</span>
                 </div>
-                {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                 <Rating track={track} showEditor={false} size="sm" />
               </div>
               <StatRow icon={Swords} label="Comparisons" value={track.comparisons.toString()} />

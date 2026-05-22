@@ -4,50 +4,48 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Music, RefreshCw, FileAudio, X } from 'lucide-react';
+import { Music, RefreshCw, FileAudio } from 'lucide-react'; // Removed X icon
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; // Import ArtistCreditSelect
-import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import MultiSelectSearch
-import { Credit } from '@/types/music'; // Import Credit type
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; 
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; 
+import { Credit } from '@/types/music'; 
 
 interface CreateTrackModalProps {
-  albumId?: string; // These props are now optional for initial form state
-  artistId?: string; // These props are now optional for initial form state
+  albumId?: string; 
+  artistId?: string; 
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initialArtistId = '', open, onOpenChange }: CreateTrackModalProps) => {
   const [reopen, setReopen] = useState(false);
-  const { artists, albums, addTracks, updateAlbum } = useMusicStore();
+  const { artists, albums, addTracks, updateAlbum, genres: allGenres } = useMusicStore(); // Renamed to allGenres
   
   const [formData, setFormData] = useState({
     title: '',
-    artistId: initialArtistId, // Primary artist
-    artistIds: [] as string[], // Additional artists
-    artistCredits: [] as Credit[], // NEW: Artist credits
+    artistCredits: [] as Credit[], 
     albumId: initialAlbumId,
     rating: '',
-    genres: [] as string[], // NEW: Genres as array
-    bitrate: '320kbps', // Bitrate still stored, but not editable directly
+    genres: [] as string[],
+    bitrate: '320kbps', 
     audioUrl: '',
     spotifyUrl: '',
     geniusUrl: '',
     youtubeMusicUrl: ''
   });
 
+  const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
+
   // Reset form data when the modal opens or initial props change
   React.useEffect(() => {
     if (open) {
       setFormData({
         title: '',
-        artistId: initialArtistId,
-        artistIds: [],
-        artistCredits: [], // Reset artistCredits
+        artistCredits: initialArtistId ? [{ artistId: initialArtistId, role: ['Lead artist'] }] : [], // Initialize artistCredits
         albumId: initialAlbumId,
         rating: '',
         genres: [],
@@ -63,9 +61,6 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   const selectedAlbum = useMemo(() => albums.find(a => a.id === formData.albumId), [albums, formData.albumId]);
   const pendingFiles = selectedAlbum?.pendingFiles || [];
 
-  const allGenres = useMusicStore(state => state.genres);
-  const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
-
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
     try {
@@ -80,44 +75,36 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Track title is required");
-    if (!formData.artistId) return toast.error("Primary artist is required");
+    if (formData.artistCredits.length === 0 || formData.artistCredits[0].artistId === '') return toast.error("At least one lead artist is required in artist credits");
 
-    let finalPrimaryArtistId = formData.artistId;
-    let finalArtistIds = [...formData.artistIds];
+    let finalPrimaryArtistId = '';
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role.includes('Lead artist'));
 
-    const existingPrimaryArtist = artists.find(a => a.id === formData.artistId);
-    if (!existingPrimaryArtist) {
-      // If primary artist is a new name, create it
-      const res = await fetch('/api/artists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formData.artistId, groups: '[]' })
-      });
-      const newArtist = await res.json();
-      finalPrimaryArtistId = newArtist.id;
-    }
-
-    // Ensure the primary artist from artistCredits is also in the track's primary artistId
-    // If no 'Lead artist' exists, default to existing track.artistId
-    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role === 'Lead artist');
-    const primaryArtistIdFromCredits = primaryArtistCredit ? primaryArtistCredit.artistId : finalPrimaryArtistId;
-    
-    // Ensure primary artist is also in artistCredits if not already there
-    const finalArtistCredits = [...formData.artistCredits];
-    if (!finalArtistCredits.some(credit => credit.artistId === primaryArtistIdFromCredits)) {
-      finalArtistCredits.unshift({ artistId: primaryArtistIdFromCredits, role: 'Lead artist' });
+    if (primaryArtistCredit) {
+        let existingPrimaryArtist = artists.find(a => a.id === primaryArtistCredit.artistId);
+        if (!existingPrimaryArtist) {
+            const res = await fetch('/api/artists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: primaryArtistCredit.artistId }) // artistId acts as name if new
+            });
+            const newArtist = await res.json();
+            finalPrimaryArtistId = newArtist.id;
+        } else {
+            finalPrimaryArtistId = existingPrimaryArtist.id;
+        }
+    } else {
+        return toast.error("A lead artist must be specified in artist credits.");
     }
 
     const newTrack = {
       title: formData.title,
-      artistId: primaryArtistIdFromCredits, // Set primary artist from credits
-      artistIds: finalArtistIds,
-      artistCredits: finalArtistCredits, // NEW: Artist credits
+      artistId: finalPrimaryArtistId, // Set primary artist from credits
+      artistCredits: formData.artistCredits,
       albumIds: formData.albumId && formData.albumId !== 'none' ? [{ albumId: formData.albumId, order: 0 }] : [],
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
       initialRating: formData.rating ? parseFloat(formData.rating) : undefined,
-      genres: formData.genres, // NEW: Genres as array
-      // Removed producers, writers, credits
+      genres: formData.genres,
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
@@ -133,7 +120,6 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
 
     await addTracks([newTrack]);
 
-    // If we used a pending file, remove it from the album
     if (selectedAlbum && pendingFiles.some(f => f.url === formData.audioUrl)) {
       await updateAlbum(selectedAlbum.id, {
         pendingFiles: pendingFiles.filter(f => f.url !== formData.audioUrl)
@@ -143,14 +129,12 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     toast.success(`"${formData.title}" indexed successfully`);
     
     if (!reopen) {
-      onOpenChange(false); // Close modal
+      onOpenChange(false);
     }
     
     setFormData({ 
       title: '', 
-      artistId: finalPrimaryArtistId, // Keep primary artist for convenience if reopening
-      artistIds: [],
-      artistCredits: [], // Reset artistCredits
+      artistCredits: [{ artistId: finalPrimaryArtistId, role: ['Lead artist'] }], // Keep primary artist for convenience if reopening
       albumId: formData.albumId, 
       rating: '', 
       genres: [], 
@@ -162,18 +146,12 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     });
   };
 
-  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const albumOptions = albums.filter(al => al.artistId === formData.artistId).map(al => ({ value: al.id, label: al.title }));
+  const albumOptions = useMemo(() => albums.filter(al => {
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role.includes('Lead artist'));
+    const currentPrimaryArtistId = primaryArtistCredit?.artistId;
+    return al.artistId === currentPrimaryArtistId;
+  }).map(al => ({ value: al.id, label: al.title })), [albums, formData.artistCredits]);
 
-  const addArtist = (id: string) => {
-    if (!formData.artistIds.includes(id)) {
-      setFormData(prev => ({ ...prev, artistIds: [...prev.artistIds, id] }));
-    }
-  };
-
-  const removeArtist = (id: string) => {
-    setFormData(prev => ({ ...prev, artistIds: prev.artistIds.filter(aid => aid !== id) }));
-  };
 
   const autofillAllTracks = async () => {
     if (!selectedAlbum || pendingFiles.length === 0) {
@@ -181,21 +159,21 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       return;
     }
   
-    if (!formData.artistId) {
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role.includes('Lead artist'));
+    if (!primaryArtistCredit || !primaryArtistCredit.artistId) {
       toast.error("Please select a primary artist for the album first.");
       return;
     }
+    const albumPrimaryArtistId = primaryArtistCredit.artistId;
   
     const tracksToCreate = pendingFiles.map(file => {
       const cleanTitle = file.name.split('.')[0].replace(/_/g, ' ');
-      // Default artistCredits for autofilled tracks
-      const defaultArtistCredits: Credit[] = [{ artistId: formData.artistId, role: 'Lead artist' }];
+      const defaultArtistCredits: Credit[] = [{ artistId: albumPrimaryArtistId, role: ['Lead artist'] }];
 
       return {
         title: cleanTitle,
-        artistId: formData.artistId,
-        artistIds: formData.artistIds,
-        artistCredits: defaultArtistCredits, // NEW: Add default artistCredits
+        artistId: albumPrimaryArtistId,
+        artistCredits: defaultArtistCredits, 
         albumIds: [{ albumId: selectedAlbum.id, order: 0 }],
         rating: undefined,
         initialRating: undefined,
@@ -275,19 +253,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
-              <SearchableSelect 
-                options={artistOptions} 
-                value={formData.artistId} 
-                onValueChange={(val) => setFormData({...formData, artistId: val})}
-                placeholder="Search or type artist..."
-                allowCustom
-                className="bg-zinc-900 border-zinc-800"
-                contentClassName="bg-zinc-950 border-zinc-800"
-                itemClassName="text-white hover:bg-zinc-800"
-              />
-            </div>
+            {/* Album selection */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album (Optional)</Label>
               <SearchableSelect 
@@ -301,46 +267,14 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 itemClassName="text-white hover:bg-zinc-800"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Artists</Label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.artistIds.map(aid => {
-                const a = artists.find(art => art.id === aid);
-                return (
-                  <div key={aid} className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-bold text-zinc-400">
-                    <span>{a?.name || aid}</span>
-                    <button type="button" onClick={() => removeArtist(aid)} className="text-zinc-600 hover:text-red-500">
-                      <X size={10} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            <SearchableSelect
-              options={artistOptions.filter(opt => opt.value !== formData.artistId && !formData.artistIds.includes(opt.value))}
-              value=""
-              onValueChange={addArtist}
-              placeholder="Add another artist..."
-              allowCustom
-              className="bg-zinc-900 border-zinc-800"
-              contentClassName="bg-zinc-950 border-zinc-800"
-              itemClassName="text-white hover:bg-zinc-800"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+             {/* Track Title and Initial Rating */}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Track Title</Label>
               <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10, empty for unrated)</Label>
-              <Input type="number" step="0.1" value={formData.rating} onChange={(e) => setFormData({...formData, rating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
-            </div>
           </div>
 
+          {/* Artist Credits */}
           <ArtistCreditSelect
             value={formData.artistCredits}
             onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}

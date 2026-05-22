@@ -13,8 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/compon
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
 interface ArtistAllTracksModalProps {
   open: boolean;
@@ -24,7 +24,7 @@ interface ArtistAllTracksModalProps {
 }
 
 export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open, onOpenChange, artistId, artistName }) => {
-  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
+  const { tracks, artists, albums, releases, setCurrentTrack, activeProfile } = useMusicStore();
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<Track | null>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
@@ -44,7 +44,11 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
   };
 
   const allRatedArtistTracks = useMemo(() => {
-    const allArtistTracks = tracks.filter(t => t.artistId === artistId);
+    // Filter tracks where the given artistId is the primary artist OR present in artistCredits with a Lead artist role
+    const allArtistTracks = tracks.filter(t => 
+      t.artistId === artistId || 
+      t.artistCredits?.some(credit => credit.artistId === artistId && credit.role.includes('Lead artist'))
+    );
     
     return allArtistTracks
       .map(t => ({ ...t, effectiveRating: getEffectiveRating(t) }))
@@ -61,7 +65,6 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
 
   const getAlbumArt = (track: Track) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    // Use the new helper here
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
@@ -82,7 +85,7 @@ export const ArtistAllTracksModal: React.FC<ArtistAllTracksModalProps> = ({ open
               <p className="text-zinc-600 text-sm mt-1">Start rating tracks to see them here!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
+            <ScrollArea className="flex-1 pr-4">
               <div className="space-y-3">
                 {allRatedArtistTracks.map((track, i) => (
                   <TrackRightClickMenu key={track.id} track={track}>

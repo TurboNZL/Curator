@@ -22,8 +22,9 @@ export default defineHandler(async (event) => {
     if (body.artistId !== undefined)
       updateData.artistId = body.artistId;
 
-    if (body.artistIds !== undefined)
-      updateData.artistIds = JSON.stringify(body.artistIds);
+    // Removed body.artistIds handling
+    // if (body.artistIds !== undefined)
+    //   updateData.artistIds = JSON.stringify(body.artistIds);
 
     if (body.primaryCover !== undefined)
       updateData.primaryCover = body.primaryCover;
@@ -38,7 +39,10 @@ export default defineHandler(async (event) => {
       updateData.credits = JSON.stringify(body.credits); // Handle general credits
 
     if (body.artistCredits !== undefined)
-      updateData.artistCredits = JSON.stringify(body.artistCredits); // NEW: Handle album artist credits
+      updateData.artistCredits = JSON.stringify(body.artistCredits); // Handle album artist credits (role: string[])
+    
+    if (body.genres !== undefined)
+      updateData.genres = JSON.stringify(body.genres); // Handle genres
 
     await db.update(albums)
       .set(updateData)

@@ -30,13 +30,11 @@ export default defineHandler(async (event) => {
         return {
           ...track,
           genres: trackGenreNames, // Use fetched genre names
-          artistCredits: parseJson(track.artistCredits), // NEW: Parse artistCredits
-          // Removed producers, writers, credits as direct track fields
-          queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
+          artistCredits: parseJson(track.artistCredits), // Parse artistCredits (role: string[])
           isFavorite: !!track.is_favorite,
           albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
-          artistIds: parseJson(track.artistIds),
-          syncWithAlbumCredits: !!track.syncWithAlbumCredits, // Corrected: Use camelCase property
+          // Removed artistIds parsing
+          syncWithAlbumCredits: !!track.syncWithAlbumCredits, 
         };
       });
     } catch (error) {
@@ -53,8 +51,8 @@ export default defineHandler(async (event) => {
       id,
       title: body.title,
       artistId: body.artistId,
-      artistIds: JSON.stringify(body.artistIds || []),
-      artistCredits: JSON.stringify(body.artistCredits || []), // NEW: Store artistCredits
+      // Removed artistIds: JSON.stringify(body.artistIds || []),
+      artistCredits: JSON.stringify(body.artistCredits || []), // Store artistCredits (role: string[])
       rating: body.rating || 0,
       initialRating: body.initialRating || 0,
       eloScore: body.eloScore || 1000,
@@ -63,8 +61,6 @@ export default defineHandler(async (event) => {
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
-      // genres are handled separately via trackGenres
-      // Removed producers, writers, credits as direct track fields
       bitrate: body.bitrate || '320kbps',
       bpm: body.bpm,
       key: body.key,
@@ -103,13 +99,12 @@ export default defineHandler(async (event) => {
 
     return {
       ...newTrack,
-      genres: body.genres || [], // Return the genre names that were passed in
-      artistCredits: body.artistCredits || [], // NEW: Return artistCredits
-      // Removed producers, writers, credits from return
+      genres: body.genres || [],
+      artistCredits: body.artistCredits || [], // Return artistCredits (role: string[])
       queueRules: body.queueRules || {},
-      isFavorite: !!newTrack.isFavorite, // Ensure it's a boolean for the return type
+      isFavorite: !!newTrack.isFavorite, 
       albumIds: body.albumIds || [],
-      artistIds: body.artistIds || [],
+      // Removed artistIds from return
       syncWithAlbumCredits: !!body.syncWithAlbumCredits, 
     };
   }

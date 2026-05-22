@@ -12,7 +12,7 @@ import { CreateReleaseModal } from '@/components/modals/CreateReleaseModal';
 import { EditAlbumModal } from '@/components/modals/EditAlbumModal';
 import { EditReleaseModal } from '@/components/modals/EditReleaseModal';
 import { Card } from '@/components/ui/card';
-import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '@/components/ui/Rating'; 
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -29,7 +29,7 @@ const AlbumDetail = () => {
   const { id } = useParams();
   
   const album = albums.find(a => a.id === id);
-  const artist = artists.find(a => a.id === album?.artistId);
+  const artist = artists.find(a => a.id === album?.artistId); // Primary artist for the album
   const albumReleases = releases.filter(r => r.albumId === id);
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
   
@@ -106,7 +106,7 @@ const AlbumDetail = () => {
         .map(trackId =>
           tracksForAlbum.find(t => t.id === trackId)
         )
-        .filter(Boolean) as typeof tracks; // Type assertion
+        .filter(Boolean) as typeof tracks;
     } else {
       tracksForAlbum.sort((a, b) => {
         const aOrder =
@@ -145,15 +145,18 @@ const AlbumDetail = () => {
   const handleSetDefaultRelease = async (releaseId: string) => {
     if (!album) return;
     await updateAlbum(album.id, { defaultReleaseId: releaseId });
-    setSelectedReleaseId(releaseId); // Also update UI state to match new default
-    setTemporaryDisplayCoverUrl(null); // Clear temporary override when setting default
+    setSelectedReleaseId(releaseId); 
+    setTemporaryDisplayCoverUrl(null); 
     toast.success("Default release set!");
   };
 
   const getTrackDisplayArtists = useCallback((track: any) => {
-    if (!track || !track.artistCredits) return "Unknown Artist";
+    if (!track || !track.artistCredits) {
+      const primaryArtist = artists.find(a => a.id === track.artistId);
+      return primaryArtist?.name || "Unknown Artist";
+    }
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
     return leadArtists.length > 0 ? leadArtists.join(', ') : artists.find(a => a.id === track.artistId)?.name || "Unknown Artist";
@@ -162,7 +165,6 @@ const AlbumDetail = () => {
 
   if (!album) return <div className="p-8">Album not found.</div>;
 
-  // Determine the cover to display
   const finalDisplayCover = useMemo(() => {
     if (temporaryDisplayCoverUrl) {
       return temporaryDisplayCoverUrl;
@@ -196,6 +198,15 @@ const AlbumDetail = () => {
             <span className="flex items-center gap-1.5 text-zinc-400 text-sm font-medium">
               <Star size={16} className="text-zinc-600"/> Avg. Rating: {avgAlbumRating}
             </span>
+            {album.genres && album.genres.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {album.genres.map(genre => (
+                  <Badge key={genre} variant="secondary" className="text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400 border-zinc-700">
+                    {genre}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="flex gap-3">
@@ -237,22 +248,22 @@ const AlbumDetail = () => {
                 <TableRow className="border-zinc-900 hover:bg-transparent">
                   <TableHead className="w-10 text-zinc-600 text-[10px] font-black uppercase">#</TableHead>
                   <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Title</TableHead>
-                  <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead> {/* Added Artist column */}
+                  <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead>
                   <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
                   <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {albumTracks.map((track, index) => {
-                  const displayArtists = getTrackDisplayArtists(track); // Use the new helper
+                  const displayArtists = getTrackDisplayArtists(track);
                   const displayCredits = (track.syncWithAlbumCredits && album?.artistCredits)
                     ? album.artistCredits
-                        .filter(credit => credit.role !== 'Lead artist' && credit.artistId !== track.artistId)
-                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role})`)
+                        .filter(credit => !credit.role.includes('Lead artist') && credit.artistId !== track.artistId)
+                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role.join(', ')})`) // Join roles
                         .join(', ')
                     : track.artistCredits
-                        .filter(credit => credit.role !== 'Lead artist' && credit.artistId !== track.artistId)
-                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role})`)
+                        .filter(credit => !credit.role.includes('Lead artist') && credit.artistId !== track.artistId)
+                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role.join(', ')})`) // Join roles
                         .join(', ');
 
                   return (
@@ -267,9 +278,8 @@ const AlbumDetail = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-zinc-400 text-xs font-medium">{displayArtists}</TableCell> {/* Display lead artists */}
+                        <TableCell className="text-zinc-400 text-xs font-medium">{displayArtists}</TableCell>
                         <TableCell>
-                          {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
                             track={track}
                             showEditor={true} 
@@ -321,7 +331,7 @@ const AlbumDetail = () => {
                     )}
                     onClick={() => {
                       setShowAllTracks(!showAllTracks);
-                      setTemporaryDisplayCoverUrl(null); // Clear temporary override when toggling track view
+                      setTemporaryDisplayCoverUrl(null); 
                     }}
                     title={showAllTracks ? "Show Release Tracks" : "Show All Tracks"}
                   >
@@ -356,7 +366,7 @@ const AlbumDetail = () => {
                     <button 
                       onClick={() => {
                         setSelectedReleaseId(release.id);
-                        setTemporaryDisplayCoverUrl(release.coverImage || null); // Set temporary cover
+                        setTemporaryDisplayCoverUrl(release.coverImage || null); 
                         setShowAllTracks(false);
                       }}
                       className={cn(

@@ -11,14 +11,13 @@ export default defineHandler(async (event) => {
   }
 
   if (method === 'POST') {
-    const body = await readBody(event);
+    const body = await readBody(event) as any; // Cast body to any
     const id = Math.random().toString(36).substring(7);
     const newArtist = {
       id,
       name: body.name,
       image: body.image,
-      bio: body.bio,
-      groups: JSON.stringify(body.groups || []),
+      // Removed groups: JSON.stringify(body.groups || []),
     };
     await db.insert(artists).values(newArtist);
     return newArtist;

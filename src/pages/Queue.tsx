@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useCallback } from 'react'; 
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from 'lucide-react';
@@ -16,7 +16,7 @@ const Queue = () => {
     tracks = [],
     artists = [],
     albums = [],
-    releases = [], // Added releases
+    releases = [], 
     currentTrackId,
     setCurrentTrack,
     removeFromUserQueue,
@@ -28,7 +28,7 @@ const Queue = () => {
     reorderUserQueue,
     fetchData,
     isLoading,
-    activeProfile // Added activeProfile
+    activeProfile 
   } = useMusicStore();
 
   const [draggedIndex, setDragIndex] = useState<number | null>(null);
@@ -67,7 +67,7 @@ const Queue = () => {
     }
 
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -81,7 +81,6 @@ const Queue = () => {
 
   const getTrackData = (id: string) => {
     const track = tracks.find(t => t.id === id);
-    // Use getTrackDisplayArtists to get the display artist name
     const artistName = track ? getTrackDisplayArtists(track) : 'Unknown Artist';
     const album = albums.find(al => track?.albumIds?.some(aId => aId.albumId === al.id));
     return { track, artistName, album };
@@ -132,7 +131,6 @@ const Queue = () => {
         </div>
       </div>
 
-      {/* Now Playing */}
       <section className="space-y-4">
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Now Playing</h2>
         {currentTrackData?.track ? (
@@ -157,7 +155,6 @@ const Queue = () => {
         )}
       </section>
 
-      {/* User Queue (Manual) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Next in Queue</h2>
@@ -193,8 +190,8 @@ const Queue = () => {
                     track={track}
                     artistName={artistName}
                     album={album}
-                    releases={releases} // Pass releases
-                    activeProfile={activeProfile} // Pass activeProfile
+                    releases={releases}
+                    activeProfile={activeProfile}
                     onRemove={() => removeFromUserQueue(index)}
                     onPlay={() => {
                       removeFromUserQueue(index);
@@ -208,7 +205,6 @@ const Queue = () => {
         </div>
       </section>
 
-      {/* Active Queue (Album/Playlist) */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Playing From Source</h2>
@@ -237,8 +233,8 @@ const Queue = () => {
                   track={track}
                   artistName={artistName}
                   album={album}
-                  releases={releases} // Pass releases
-                  activeProfile={activeProfile} // Pass activeProfile
+                  releases={releases}
+                  activeProfile={activeProfile}
                   onRemove={() => {}}
                   onPlay={() => {
                     setCurrentTrack(id);

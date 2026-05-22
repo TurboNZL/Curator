@@ -1,6 +1,6 @@
 import { defineHandler } from "nitro";
-import { db } from '../../db';
-import { genres, trackGenres, roleCategories } from '../../db/schema';
+import { db } from '../../../db'; // Corrected path
+import { genres, trackGenres, roleCategories } from '../../../db/schema';
 import { inArray, and, eq } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {

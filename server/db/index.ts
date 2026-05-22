@@ -20,16 +20,13 @@ export const db = drizzle(client, { schema });
 export async function initDb() {
   const tables = [
     `CREATE TABLE IF NOT EXISTS profiles (id TEXT PRIMARY KEY, name TEXT NOT NULL, theme TEXT NOT NULL DEFAULT 'dark', accent_color TEXT NOT NULL DEFAULT '#3b82f6', playback_mode TEXT NOT NULL DEFAULT 'local', settings TEXT, playback_rules TEXT)`,
-    `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT, groups TEXT)`,
+    `CREATE TABLE IF NOT EXISTS artists (id TEXT PRIMARY KEY, name TEXT NOT NULL, image TEXT)`, // Removed groups
     `CREATE TABLE IF NOT EXISTS eras (id TEXT PRIMARY KEY, name TEXT NOT NULL, artist_id TEXT NOT NULL, description TEXT)`,
-    // Updated albums table creation to remove 'covers' column and add 'artist_credits'
-    `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, artist_ids TEXT, era_id TEXT, primary_cover TEXT, default_release_id TEXT, pending_files TEXT, credits TEXT, artist_credits TEXT)`,
-
+    `CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, era_id TEXT, primary_cover TEXT, default_release_id TEXT, pending_files TEXT, credits TEXT, artist_credits TEXT, genres TEXT)`, // Removed artist_ids, Added genres
     `CREATE TABLE IF NOT EXISTS release_types (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE)`,
     `CREATE TABLE IF NOT EXISTS releases (id TEXT PRIMARY KEY, album_id TEXT NOT NULL, title TEXT NOT NULL, cover_image TEXT, release_date TEXT, spotify_uri TEXT)`,
     `CREATE TABLE IF NOT EXISTS release_tracks (release_id TEXT NOT NULL, track_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(release_id, track_id))`,
-    // Updated tracks table creation to remove direct genre/producer/writer/credits columns and add 'artist_credits'
-    `CREATE TABLE IF NOT EXISTS tracks (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, artist_ids TEXT, artist_credits TEXT, rating REAL, initial_rating REAL, elo_score REAL NOT NULL DEFAULT 1000, comparisons INTEGER NOT NULL DEFAULT 0, local_file_path TEXT, spotify_url TEXT, genius_url TEXT, youtube_music_url TEXT, bitrate TEXT, bpm INTEGER, key TEXT, memories INTEGER NOT NULL DEFAULT 0, queue_rules TEXT, sync_with_album_credits INTEGER NOT NULL DEFAULT TRUE, is_favorite INTEGER NOT NULL DEFAULT 0)`,
+    `CREATE TABLE IF NOT EXISTS tracks (id TEXT PRIMARY KEY, title TEXT NOT NULL, artist_id TEXT NOT NULL, artist_credits TEXT, rating REAL, initial_rating REAL, elo_score REAL NOT NULL DEFAULT 1000, comparisons INTEGER NOT NULL DEFAULT 0, local_file_path TEXT, spotify_url TEXT, genius_url TEXT, youtube_music_url TEXT, bitrate TEXT, bpm INTEGER, key TEXT, memories INTEGER NOT NULL DEFAULT 0, queue_rules TEXT, sync_with_album_credits INTEGER NOT NULL DEFAULT TRUE, is_favorite INTEGER NOT NULL DEFAULT 0)`, // Removed artist_ids
     `CREATE TABLE IF NOT EXISTS track_genres (track_id TEXT NOT NULL, genre_id TEXT NOT NULL, PRIMARY KEY(track_id, genre_id))`,
     `CREATE TABLE IF NOT EXISTS genres (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE)`,
     `CREATE TABLE IF NOT EXISTS role_categories (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, is_removable INTEGER NOT NULL DEFAULT 1)`,
@@ -54,7 +51,6 @@ export async function initDb() {
 
   // Migration: Ensure new columns exist, and remove old ones
   const migrations = [
-    // Removed ALTER TABLE for 'covers' column
     `ALTER TABLE profiles ADD COLUMN settings TEXT`,
     `ALTER TABLE tracks ADD COLUMN elo_score REAL NOT NULL DEFAULT 1000`,
     `ALTER TABLE tracks ADD COLUMN comparisons INTEGER NOT NULL DEFAULT 0`,
@@ -64,11 +60,6 @@ export async function initDb() {
     `ALTER TABLE tracks ADD COLUMN bpm INTEGER`,
     `ALTER TABLE tracks ADD COLUMN key TEXT`,
     `ALTER TABLE tracks ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0`,
-    // Removed these in schema, now handled by artist_credits
-    // `ALTER TABLE tracks ADD COLUMN writers TEXT`,
-    // `ALTER TABLE tracks ADD COLUMN credits TEXT`,
-    // `ALTER TABLE tracks ADD COLUMN genres TEXT`,
-    // `ALTER TABLE tracks ADD COLUMN producers TEXT`,
     `ALTER TABLE tracks ADD COLUMN queue_rules TEXT`,
     `ALTER TABLE playback_logs ADD COLUMN source_type TEXT`,
     `ALTER TABLE playback_logs ADD COLUMN source_id TEXT`,
@@ -76,12 +67,9 @@ export async function initDb() {
     `ALTER TABLE albums ADD COLUMN default_release_id TEXT`,
     `ALTER TABLE albums ADD COLUMN pending_files TEXT`,
     `ALTER TABLE tracks ADD COLUMN memories INTEGER NOT NULL DEFAULT 0`,
-
     `ALTER TABLE profiles ADD COLUMN playback_rules TEXT`,
     `ALTER TABLE groups ADD COLUMN is_artist_only INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE groups ADD COLUMN label TEXT`,
-    `ALTER TABLE albums ADD COLUMN artist_ids TEXT`,
-    `ALTER TABLE tracks ADD COLUMN artist_ids TEXT`,
     `ALTER TABLE group_members ADD COLUMN show_on_entity_page INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE albums ADD COLUMN credits TEXT`, // General album notes
     `ALTER TABLE albums ADD COLUMN artist_credits TEXT`, // NEW: Album artist credits
@@ -91,6 +79,7 @@ export async function initDb() {
     `ALTER TABLE tracks ADD COLUMN sync_with_album_credits INTEGER NOT NULL DEFAULT TRUE`,
     `ALTER TABLE release_tracks ADD COLUMN "order" INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE albums ADD COLUMN primary_cover TEXT`,
+    `ALTER TABLE albums ADD COLUMN genres TEXT`, // Add genres column to albums
   ];
 
   for (const migration of migrations) {
@@ -98,7 +87,6 @@ export async function initDb() {
       await client.execute(migration);
     } catch (e) {
       // Ignore errors if columns already exist (for ALTER TABLE statements)
-      // For removed columns, this will just not apply
     }
   }
 

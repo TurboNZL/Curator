@@ -7,7 +7,13 @@ export default defineHandler(async (event) => {
   const method = event.method;
 
   if (method === 'GET') {
-    return await db.select().from(albums);
+    const allAlbums = await db.select().from(albums);
+    return allAlbums.map(album => ({
+      ...album,
+      credits: JSON.parse(album.credits || '[]'),
+      artistCredits: JSON.parse(album.artistCredits || '[]'),
+      genres: JSON.parse(album.genres || '[]'), // Parse genres
+    }));
   }
 
   if (method === 'POST') {
@@ -21,8 +27,8 @@ export default defineHandler(async (event) => {
       primaryCover: body.primaryCover || null, 
       pendingFiles: JSON.stringify(body.pendingFiles || []),
       credits: JSON.stringify(body.credits || []), // General album credits
-      artistIds: JSON.stringify(body.artistIds || []),
-      artistCredits: JSON.stringify(body.artistCredits || []), // NEW: Album artist credits
+      artistCredits: JSON.stringify(body.artistCredits || []), // Album artist credits (role: string[])
+      genres: JSON.stringify(body.genres || []), // Stringify genres for DB
     };
 
     await db.insert(albums).values(newAlbum);
@@ -30,8 +36,8 @@ export default defineHandler(async (event) => {
       ...newAlbum, 
       pendingFiles: body.pendingFiles || [],
       credits: body.credits || [],
-      artistIds: body.artistIds || [],
       artistCredits: body.artistCredits || [], // Parse back for return
+      genres: body.genres || [], // Parse back for return
     };
   }
 });

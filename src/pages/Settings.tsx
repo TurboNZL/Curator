@@ -10,7 +10,7 @@ import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch'; // Added Switch import
+import { Switch } from '@/components/ui/switch';
 
 const Settings = () => {
   const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase, clearUnlinkedFiles, clearUnusedCategoriesAndGenres, addRoleCategory, roleCategories } = useMusicStore();
@@ -56,7 +56,6 @@ const Settings = () => {
         <p className="text-zinc-500 text-sm mt-1">Configure your curation environment and playback rules.</p>
       </div>
 
-      {/* Default Images */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
           <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
@@ -86,7 +85,6 @@ const Settings = () => {
         </div>
       </section>
 
-      {/* Playback Rules */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
           <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
@@ -175,7 +173,6 @@ const Settings = () => {
         </div>
       </section>
       
-      {/* NEW: Role Category Management */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
           <div className="p-2 bg-pink-500/10 rounded-lg text-pink-500">
@@ -194,7 +191,7 @@ const Settings = () => {
                 placeholder="New role category name"
                 value={newRoleCategoryName}
                 onChange={(e) => setNewRoleCategoryName(e.target.value)}
-                className="flex-1 bg-zinc-900 border-zinc-800 focus-visible:ring-pink-500"
+                className="flex-1 bg-zinc-900 border-zinc-800 focus-visible:ring-pink-500 text-white" // Added text-white
               />
               <Button onClick={handleAddRoleCategory} className="bg-pink-600 hover:bg-pink-500 text-[10px] font-black uppercase tracking-widest h-9">
                 <Plus size={12} className="mr-1" /> Add Role
@@ -216,7 +213,6 @@ const Settings = () => {
         </Card>
       </section>
 
-      {/* Database Management */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
           <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
@@ -245,7 +241,6 @@ const Settings = () => {
           </Button>
         </Card>
 
-        {/* File Cleanup Card */}
         <Card className="bg-zinc-900/50 border-zinc-800 p-8 space-y-6">
           <div className="space-y-2">
             <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
@@ -266,7 +261,6 @@ const Settings = () => {
           </Button>
         </Card>
 
-        {/* Updated: Category & Genre Cleanup Card */}
         <Card className="bg-zinc-900/50 border-zinc-800 p-8 space-y-6">
           <div className="space-y-2">
             <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">

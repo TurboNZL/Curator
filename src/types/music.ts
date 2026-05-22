@@ -1,6 +1,6 @@
 export interface Credit {
   artistId: string;
-  role: string;
+  role: string[]; // Changed from string to string[]
 }
 
 export interface Profile {
@@ -22,7 +22,7 @@ export interface Artist {
   id: string;
   name: string;
   image?: string;
-  groups: string[];
+  // Removed groups: string[];
   eras: any[]; // Based on mock data, could be further refined
   bio?: string;
 }
@@ -31,13 +31,14 @@ export interface Album {
   id: string;
   title: string;
   artistId: string; // Primary artist ID
-  artistIds: string[]; // Additional artist IDs
+  // Removed artistIds: string[]; // Additional artist IDs
   credits: string[]; // Album-level general credits (e.g., Mixed by, Mastered by)
   artistCredits: Credit[]; // Album-level artist-specific credits with roles
   eraId?: string;
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
   pendingFiles: { url: string; name: string }[];
+  genres: string[]; // Added genres to Album
 }
 
 export interface Release {
@@ -54,7 +55,7 @@ export interface Track {
   id: string;
   title: string;
   artistId: string; // Primary artist
-  artistIds: string[]; // Additional artist IDs
+  // Removed artistIds: string[]; // Additional artist IDs
   artistCredits: Credit[]; // Track-level artist-specific credits with roles
   rating?: number; // Balanced rating (0-10)
   initialRating?: number; // Unbalanced rating
@@ -65,9 +66,6 @@ export interface Track {
   geniusUrl?: string;
   youtubeMusicUrl?: string;
   genres: string[]; // Now fetched via trackGenres join table
-  // Removed producers: string[];
-  // Removed writers: string[];
-  // Removed credits: string[];
   bitrate?: string;
   bpm?: number;
   key?: string;

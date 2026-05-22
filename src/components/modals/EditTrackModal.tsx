@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // Added useMemo, useEffect
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap, Star } from 'lucide-react'; // Added Star icon
+import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap, Star } from 'lucide-react'; 
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
-import { Track, Credit } from '@/types/music'; // Import Credit type
+import { Track, Credit } from '@/types/music'; 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -21,13 +21,13 @@ import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch';
 
 interface EditTrackModalProps {
   track: Track;
-  children?: React.ReactElement; // Allow children for trigger, but modal is controlled
+  children?: React.ReactElement; 
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => {
-  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup } = useMusicStore();
+  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, genres: allGenres } = useMusicStore(); // Added allGenres
   
   const trackGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === track.id && m.entityType === 'track' && m.showOnEntityPage)
@@ -35,6 +35,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
   
   const [formData, setFormData] = useState({
     title: track.title,
+    artistId: track.artistId, // Keep for now as it's required by the API, but derived from credits
     artistCredits: track.artistCredits || [],
     albumId: track.albumIds[0]?.albumId || '',
     initialRating: track.initialRating?.toString() || '',
@@ -47,12 +48,11 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     syncWithAlbumCredits: track.syncWithAlbumCredits,
   });
 
-  const albumOptions = albums.filter(a => a.artistId === track.artistId).map(a => ({ value: a.id, label: a.title }));
+  const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
+
+  const albumOptions = useMemo(() => albums.filter(a => a.artistId === track.artistId).map(a => ({ value: a.id, label: a.title })), [albums, track.artistId]);
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
-
-  const allGenres = useMusicStore(state => state.genres);
-  const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -65,22 +65,45 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     }
   };
 
+  // Reset form data when modal opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        title: track.title,
+        artistId: track.artistId,
+        artistCredits: track.artistCredits.length > 0 
+          ? track.artistCredits 
+          : (track.artistId ? [{ artistId: track.artistId, role: ['Lead artist'] }] : []),
+        albumId: track.albumIds[0]?.albumId || '',
+        initialRating: track.initialRating?.toString() || '',
+        genres: track.genres || [],
+        bitrate: track.bitrate || '320kbps',
+        audioUrl: track.localFilePath || '',
+        spotifyUrl: track.spotifyUrl || '',
+        geniusUrl: track.geniusUrl || '',
+        youtubeMusicUrl: track.youtubeMusicUrl || '', 
+        syncWithAlbumCredits: track.syncWithAlbumCredits,
+      });
+    }
+  }, [open, track]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title) return toast.error("Track title is required");
+    if (formData.artistCredits.length === 0 || formData.artistCredits[0].artistId === '') return toast.error("At least one lead artist is required in artist credits");
 
-    // Ensure the primary artist from artistCredits is also in the track's primary artistId
-    // If no 'Lead artist' exists, default to existing track.artistId
-    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role === 'Lead artist');
-    const primaryArtistIdFromCredits = primaryArtistCredit ? primaryArtistCredit.artistId : track.artistId;
+    // Derive primaryArtistId from artistCredits
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role.includes('Lead artist'));
+    const derivedPrimaryArtistId = primaryArtistCredit?.artistId || track.artistId;
+
 
     await updateTrack(track.id, {
       title: formData.title,
-      artistId: primaryArtistIdFromCredits, // Update primary artist from credits
+      artistId: derivedPrimaryArtistId, // Update primary artist from credits
       artistCredits: formData.artistCredits,
       albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
-      genres: formData.syncWithAlbumCredits ? [] : formData.genres,
+      genres: formData.genres, // Genres are always editable here
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
@@ -159,6 +182,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 />
               </div>
 
+              {/* Artist Credit Select */}
               <ArtistCreditSelect
                 value={formData.artistCredits}
                 onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
@@ -172,7 +196,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                     selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
                     onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
                     placeholder="Select genres..."
-                    disabled={formData.syncWithAlbumCredits}
                 />
               </div>
 

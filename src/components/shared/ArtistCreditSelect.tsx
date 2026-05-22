@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, X } from 'lucide-react';
 import { Credit } from '@/types/music';
-import { cn } from '@/lib/utils'; // Import cn for conditional classnames
+import { cn } from '@/lib/utils';
+import { MultiSelectSearch } from '../ui/MultiSelectSearch'; // Import MultiSelectSearch
 
 interface ArtistCreditSelectProps {
   value: Credit[];
@@ -16,16 +17,17 @@ interface ArtistCreditSelectProps {
 export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, onChange, disabled = false }) => {
   const { artists, roleCategories } = useMusicStore();
 
-  const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const roleOptions = roleCategories.map(rc => ({ value: rc.name, label: rc.name }));
+  const artistOptions = useMemo(() => artists.map(a => ({ value: a.id, label: a.name })), [artists]);
+  const roleOptions = useMemo(() => roleCategories.map(rc => ({ value: rc.name, label: rc.name })), [roleCategories]);
 
   const handleAddCredit = () => {
-    onChange([...value, { artistId: '', role: 'Lead artist' }]);
+    onChange([...value, { artistId: '', role: ['Lead artist'] }]); // Default to 'Lead artist' role (as array)
   };
 
-  const handleUpdateCredit = (index: number, field: 'artistId' | 'role', newValue: string) => {
+  const handleUpdateCredit = (index: number, field: 'artistId' | 'role', newValue: string | string[]) => {
     const newCredits = [...value];
-    newCredits[index] = { ...newCredits[index], [field]: newValue };
+    // Ensure role is always an array for consistency
+    newCredits[index] = { ...newCredits[index], [field]: Array.isArray(newValue) ? newValue : [newValue] };
     onChange(newCredits);
   };
 
@@ -53,16 +55,13 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
             />
           </div>
           <div className="w-32">
-            <SearchableSelect
+            <MultiSelectSearch // Changed to MultiSelectSearch
               options={roleOptions}
-              value={credit.role}
-              onValueChange={(val) => handleUpdateCredit(index, 'role', val)}
-              placeholder="Select role..."
-              allowCustom
+              selected={credit.role.map(r => ({ value: r, label: r }))} // Map string[] to selected format
+              onSelectedChange={(selectedItems) => handleUpdateCredit(index, 'role', selectedItems.map(item => item.value))} // Map back to string[]
+              placeholder="Select role(s)..."
               disabled={disabled}
               className={cn("bg-zinc-900 border-zinc-800", disabled && "bg-zinc-900/50 cursor-not-allowed")}
-              contentClassName="bg-zinc-950 border-zinc-800"
-              itemClassName="text-white hover:bg-zinc-800"
             />
           </div>
           <Button
@@ -80,7 +79,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
       <Button
         type="button"
         variant="outline"
-        className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest hover:bg-zinc-800"
+        className="w-full border-zinc-800 bg-zinc-800 hover:bg-zinc-700 text-[10px] font-black uppercase h-9 tracking-widest text-white" // Styled button for dark theme
         onClick={handleAddCredit}
         disabled={disabled}
       >

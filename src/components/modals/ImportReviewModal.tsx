@@ -38,40 +38,45 @@ interface ImportReviewModalProps {
 }
 
 export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, onClose, initialData }) => {
-  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData, genres } = useMusicStore();
+  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData, genres: allGenres } = useMusicStore();
   const [isSaving, setIsSaving] = useState(false);
 
   const [albumFormData, setAlbumFormData] = useState({
     title: initialData.suggestedAlbumTitle,
-    artistId: initialData.suggestedArtistId || '',
-    artistNameInput: initialData.suggestedArtistName,
+    artistCredits: [] as Credit[], // Now using artistCredits directly
     primaryCover: initialData.suggestedAlbumCover, 
     releaseDate: '',
-    artistCredits: [] as Credit[], // NEW: Album artist credits
+    genres: [] as string[], // Added genres
   });
 
   const [tracksFormData, setTracksFormData] = useState<ImportedTrackData[]>(initialData.suggestedTracks);
 
-  const allGenres = useMusicStore(state => state.genres);
-  const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]); // To allow setting genres for all tracks
+  const genreOptions = useMemo(() => allGenres.map(genre => ({ value: genre, label: genre })), [allGenres]);
 
   useEffect(() => {
     if (isOpen) {
-      if (initialData.suggestedArtistId) {
-        setAlbumFormData(prev => ({ ...prev, artistId: initialData.suggestedArtistId, artistNameInput: initialData.suggestedArtistName }));
-        setAlbumFormData(prev => ({ ...prev, artistCredits: [{ artistId: initialData.suggestedArtistId, role: 'Lead artist' }] }));
-      } else if (initialData.suggestedArtistName) {
-        const foundArtist = artists.find(a => a.name.toLowerCase() === initialData.suggestedArtistName.toLowerCase());
+      const initialArtistId = initialData.suggestedArtistId;
+      const initialArtistName = initialData.suggestedArtistName;
+      let defaultArtistCredit: Credit[] = [];
+
+      if (initialArtistId) {
+        defaultArtistCredit = [{ artistId: initialArtistId, role: ['Lead artist'] }];
+      } else if (initialArtistName) {
+        const foundArtist = artists.find(a => a.name.toLowerCase() === initialArtistName.toLowerCase());
         if (foundArtist) {
-          setAlbumFormData(prev => ({ ...prev, artistId: foundArtist.id, artistNameInput: foundArtist.name }));
-          setAlbumFormData(prev => ({ ...prev, artistCredits: [{ artistId: foundArtist.id, role: 'Lead artist' }] }));
-        } else {
-          setAlbumFormData(prev => ({ ...prev, artistId: '', artistNameInput: initialData.suggestedArtistName }));
-          setAlbumFormData(prev => ({ ...prev, artistCredits: [] }));
+          defaultArtistCredit = [{ artistId: foundArtist.id, role: ['Lead artist'] }];
         }
       }
-      setSelectedGenres([]); // Reset genres
+      
+      setAlbumFormData(prev => ({ 
+        ...prev, 
+        artistCredits: defaultArtistCredit,
+        title: initialData.suggestedAlbumTitle, // Reset title in case it changed
+        primaryCover: initialData.suggestedAlbumCover, // Reset cover
+        releaseDate: '', // Reset release date
+        genres: [], // Reset genres
+      }));
+      setTracksFormData(initialData.suggestedTracks);
     }
   }, [artists, initialData, isOpen]);
 
@@ -87,59 +92,45 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
   const handleSaveImport = async () => {
     setIsSaving(true);
     try {
-      let finalArtistId = albumFormData.artistId;
-      let artistNameForToast = albumFormData.artistNameInput;
+      if (!albumFormData.title) throw new Error("Album title is required.");
+      if (albumFormData.artistCredits.length === 0 || albumFormData.artistCredits[0].artistId === '') throw new Error("At least one lead artist is required.");
 
-      if (!finalArtistId || !artists.some(a => a.id === finalArtistId)) {
-        const nameToUse = albumFormData.artistNameInput;
-        const existingArtistByName = artists.find(a => a.name.toLowerCase() === nameToUse.toLowerCase());
-        
-        if (existingArtistByName) {
-          finalArtistId = existingArtistByName.id;
-          artistNameForToast = existingArtistByName.name;
-        } else {
-          if (!nameToUse) throw new Error("Artist name is required to create a new artist.");
-          const newArtist = await addArtist({ name: nameToUse });
+      let finalArtistId = '';
+      const primaryArtistCredit = albumFormData.artistCredits.find(ac => ac.role.includes('Lead artist'));
+
+      if (primaryArtistCredit) {
+        let existingPrimaryArtist = artists.find(a => a.id === primaryArtistCredit.artistId);
+        if (!existingPrimaryArtist) {
+          const newArtist = await addArtist({ name: primaryArtistCredit.artistId }); // artistId acts as name if new
           finalArtistId = newArtist.id;
-          artistNameForToast = newArtist.name;
-          toast.success(`Artist "${artistNameForToast}" created.`);
+          toast.success(`Artist "${newArtist.name}" created.`);
+        } else {
+          finalArtistId = existingPrimaryArtist.id;
         }
       } else {
-        artistNameForToast = artists.find(a => a.id === finalArtistId)?.name || artistNameForToast;
+        throw new Error("A lead artist must be specified in artist credits.");
       }
-
-      if (!finalArtistId) {
-        throw new Error("Artist could not be created or identified.");
-      }
-
-      // Ensure primary artist is also in album artistCredits if not already there
-      const finalAlbumArtistCredits = [...albumFormData.artistCredits];
-      if (!finalAlbumArtistCredits.some(credit => credit.artistId === finalArtistId)) {
-        finalAlbumArtistCredits.unshift({ artistId: finalArtistId, role: 'Lead artist' });
-      }
-
+      
       const newAlbum = await addAlbum({
         title: albumFormData.title,
         artistId: finalArtistId,
-        artistIds: [finalArtistId],
         primaryCover: albumFormData.primaryCover || null, 
         pendingFiles: [], 
         credits: [],
-        artistCredits: finalAlbumArtistCredits, // NEW: Album artist credits
+        artistCredits: albumFormData.artistCredits, // Album artist credits (role: string[])
+        genres: albumFormData.genres, // Add genres
       });
       toast.success(`Album "${albumFormData.title}" created.`);
 
       const tracksToCreate = tracksFormData.map((track, index) => ({
         ...track,
         artistId: finalArtistId,
-        artistIds: [finalArtistId], 
-        albumIds: [{ albumId: newAlbum.id, order: index }], // Use index for order
-        genres: selectedGenres, // Apply selected genres to all tracks
-        producers: [], writers: [], credits: [], // Removed as direct fields
+        albumIds: [{ albumId: newAlbum.id, order: index }], 
+        genres: albumFormData.genres, // Apply album genres to all tracks
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {},
         bitrate: track.bitrate,
-        artistCredits: [{ artistId: finalArtistId, role: 'Lead artist' }], // Add default artistCredits for tracks
-        syncWithAlbumCredits: true, // Default to true
+        artistCredits: [{ artistId: finalArtistId, role: ['Lead artist'] }], // Add default artistCredits for tracks (role: string[])
+        syncWithAlbumCredits: true,
       }));
       const createdTracks = await addTracks(tracksToCreate);
       toast.success(`Added ${tracksToCreate.length} tracks to "${newAlbum.title}".`);
@@ -161,18 +152,6 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleArtistSelectChange = (value: string) => {
-    const existingArtist = artists.find(a => a.id === value);
-    const newArtistId = existingArtist ? existingArtist.id : value;
-
-    setAlbumFormData(prev => ({
-      ...prev,
-      artistId: newArtistId,
-      artistNameInput: existingArtist ? existingArtist.name : value,
-      artistCredits: [{ artistId: newArtistId, role: 'Lead artist' }] // Set default lead artist for album
-    }));
   };
 
   return (
@@ -216,19 +195,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                     className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
-                  <SearchableSelect
-                    options={artistOptions}
-                    value={albumFormData.artistId}
-                    onValueChange={handleArtistSelectChange}
-                    placeholder="Search or type artist..."
-                    allowCustom
-                    className="bg-zinc-900 border-zinc-800"
-                    contentClassName="bg-zinc-950 border-zinc-800"
-                    itemClassName="text-white hover:bg-zinc-800"
-                  />
-                </div>
+                {/* Artist Credit Select replaces old primary/additional artist inputs */}
                 <ArtistCreditSelect
                   value={albumFormData.artistCredits}
                   onChange={(credits) => setAlbumFormData(prev => ({ ...prev, artistCredits: credits }))}
@@ -243,21 +210,22 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                     className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
                   />
                 </div>
+                 {/* Genres MultiSelectSearch */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres (Applies to Album & all tracks)</Label>
+                  <MultiSelectSearch
+                    options={genreOptions}
+                    selected={albumFormData.genres.map(genre => ({ value: genre, label: genre }))}
+                    onSelectedChange={(selectedItems) => setAlbumFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
+                    placeholder="Select genres..."
+                  />
+                </div>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="tracks" className="flex-1 p-6 space-y-4 mt-0 overflow-y-auto">
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Edit individual track titles if needed. Genres set below will apply to all tracks.</p>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres (Applies to all imported tracks)</Label>
-              <MultiSelectSearch
-                options={genreOptions}
-                selected={selectedGenres.map(genre => ({ value: genre, label: genre }))}
-                onSelectedChange={(selectedItems) => setSelectedGenres(selectedItems.map(item => item.value))}
-                placeholder="Select genres..."
-              />
-            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Edit individual track titles if needed. Genres will be inherited from the album.</p>
             <ScrollArea className="h-[calc(90vh-400px)] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
               <div className="space-y-2">
                 {tracksFormData.map((track, index) => (
@@ -291,7 +259,7 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
           </Button>
           <Button
             onClick={handleSaveImport}
-            disabled={isSaving || !albumFormData.title || (!albumFormData.artistId && !albumFormData.artistNameInput) || tracksFormData.length === 0}
+            disabled={isSaving || !albumFormData.title || albumFormData.artistCredits.length === 0 || albumFormData.artistCredits[0].artistId === '' || tracksFormData.length === 0}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-[10px] px-8"
           >
             {isSaving ? (

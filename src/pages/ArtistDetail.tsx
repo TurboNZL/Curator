@@ -4,15 +4,15 @@ import { Card } from '@/components/ui/card';
 import { Music2, Play, Star, TrendingUp, Link as LinkIcon, User, Disc, Music, Layers, Edit2, Plus, Users, MoreVertical } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { EditArtistModal } from '@/components/modals/EditArtistModal';
-import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '@/components/ui/Rating'; 
 import { RelationalBioModal } from '@/components/modals/RelationalBioModal';
-import { useState, useMemo, useCallback } from 'react'; // Added useCallback
+import { useState, useMemo, useCallback } from 'react'; 
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
-import { EditTrackModal } from '@/components/modals/EditTrackModal'; // Imported EditTrackModal
+import { EditTrackModal } from '@/components/modals/EditTrackModal'; 
 import { ArtistAllTracksModal } from '@/components/modals/ArtistAllTracksModal';
 import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
@@ -26,7 +26,9 @@ const ArtistDetail = () => {
   const defaultImage = activeProfile.settings?.defaultArtistImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop';
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop';
   
-  const artistAlbums = albums.filter(al => al.artistId === id || al.artistIds.includes(id));
+  const artistAlbums = albums.filter(al => 
+    al.artistId === id || al.artistCredits?.some(credit => credit.artistId === id && credit.role.includes('Lead artist'))
+  );
   
   const artistTracks = useMemo(() => {
     const getEffectiveRating = (track: any) => {
@@ -39,7 +41,11 @@ const ArtistDetail = () => {
         return -1;
     };
 
-    const allArtistTracks = tracks.filter(t => t.artistId === id || t.artistIds.includes(id));
+    // Filter tracks where the given artistId is the primary artist OR present in artistCredits with a Lead artist role
+    const allArtistTracks = tracks.filter(t => 
+      t.artistId === id || 
+      t.artistCredits?.some(credit => credit.artistId === id && credit.role.includes('Lead artist'))
+    );
 
     const sorted = [...allArtistTracks].sort((a, b) => {
         const ratingA = getEffectiveRating(a);
@@ -89,13 +95,13 @@ const ArtistDetail = () => {
 
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
-  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); // State for Add to Playlist
+  const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
   const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<any>(null);
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [isArtistAllTracksModalOpen, setIsArtistAllTracksModalOpen] = useState(false); // State for ArtistAllTracksModal
+  const [isArtistAllTracksModalOpen, setIsArtistAllTracksModalOpen] = useState(false);
 
   const getTrackDisplayArtists = useCallback((track: any) => {
     if (!track || !track.artistCredits) {
@@ -104,14 +110,13 @@ const ArtistDetail = () => {
     }
 
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
     if (leadArtists.length > 0) {
       return leadArtists.join(', ');
     }
-    // Fallback to primary artist if no 'Lead artist' role found
     const primaryArtist = artists.find(a => a.id === track.artistId);
     return primaryArtist?.name || "Unknown Artist";
   }, [artists]);
@@ -146,7 +151,6 @@ const ArtistDetail = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">Discography</h2>
-              {/* Removed Add Album Button */}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {artistAlbums.map(album => (
@@ -189,10 +193,10 @@ const ArtistDetail = () => {
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-[10px] font-mono text-zinc-600">{i + 1}</span>
                       <span className="text-xs font-bold text-white truncate group-hover:text-blue-400">{track.title}</span>
-                      {track.artistCredits && track.artistCredits.length > 1 && ( // Display additional artists if available
+                      {track.artistCredits && track.artistCredits.length > 1 && ( 
                         <span className="text-[8px] text-zinc-500 italic truncate max-w-[100px]">
                           {track.artistCredits
-                            .filter(credit => credit.artistId !== track.artistId && credit.role !== 'Lead artist')
+                            .filter(credit => credit.artistId !== track.artistId && !credit.role.includes('Lead artist'))
                             .map(credit => artists.find(a => a.id === credit.artistId)?.name || 'Unknown')
                             .join(', ')
                           }
@@ -200,7 +204,6 @@ const ArtistDetail = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-1 ml-2">
-                      {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                       <Rating
                         track={track}
                         showEditor={false}

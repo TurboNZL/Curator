@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'; // Added useCallback
+import React, { useState, useRef, useEffect, useCallback } from 'react'; 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,9 +10,9 @@ import { toast } from 'sonner';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
 import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
-import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '../ui/Rating'; 
 
-const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
+const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; 
 
 interface LowQualityTracksModalProps {
   open: boolean;
@@ -47,7 +47,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
     if (!t.artistCredits || t.artistCredits.length === 0) return primaryArtist?.name || "Unknown Artist";
     
     const leadArtists = t.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -144,13 +144,13 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
               <p className="text-zinc-600 text-sm mt-1">Your library is in pristine condition!</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 pr-4"> {/* Adjusted ScrollArea to take available height */}
+            <ScrollArea className="flex-1 pr-4"> 
               <div className="space-y-3">
                 {lowQualityTracks.map((track) => (
                   <TrackRightClickMenu key={track.id} track={track}>
                     <div className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg group">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{track.id}</span> {/* Using track.id instead of index + 1 */}
+                        <span className="text-xs font-mono text-zinc-600 w-4 shrink-0">{track.id}</span> 
                         <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800 shrink-0">
                           <img src={getAlbumArt(track)} alt="" className="w-full h-full object-cover" />
                         </div>
@@ -161,7 +161,6 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                         <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                       </div>
                       <div className="flex items-center gap-1 ml-4 shrink-0">
-                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating track={track} size="sm" showEditor={false} /> 
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); playSnippet(track); }}>
                           {playingId === track.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}

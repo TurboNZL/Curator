@@ -14,7 +14,7 @@ export const artists = sqliteTable('artists', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   image: text('image'),
-  groups: text('groups'), // JSON string array
+  // Removed groups: text('groups'), // JSON string array
 });
 
 export const eras = sqliteTable('eras', {
@@ -28,13 +28,14 @@ export const albums = sqliteTable('albums', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(), // Primary artist
-  artistIds: text('artist_ids'), // JSON string array for multiple artists
+  // Removed artistIds: text('artist_ids'), // JSON string array for multiple artists
   credits: text('credits'), // JSON string array for album-level general credits
-  artistCredits: text('artist_credits'), // JSON string array for album-level artist-specific credits with roles
+  artistCredits: text('artist_credits'), // JSON string array for album-level artist-specific credits with roles (role now string[])
   eraId: text('era_id'),
   primaryCover: text('primary_cover'), // New column for the album's primary cover
   defaultReleaseId: text('default_release_id'),
   pendingFiles: text('pending_files'), // JSON string array
+  genres: text('genres'), // Added genres to albums
 });
 
 export const releaseTypes = sqliteTable('release_types', {
@@ -63,8 +64,8 @@ export const tracks = sqliteTable('tracks', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(), // Primary artist
-  artistIds: text('artist_ids'), // JSON string array for multiple artists
-  artistCredits: text('artist_credits'), // JSON string array for track-level artist-specific credits with roles
+  // Removed artistIds: text('artist_ids'), // JSON string array for multiple artists
+  artistCredits: text('artist_credits'), // JSON string array for track-level artist-specific credits with roles (role now string[])
   rating: real('rating'), // Balanced rating (0-10), nullable for unrated
   initialRating: real('initial_rating'), // Unbalanced rating, nullable for unrated
   eloScore: real('elo_score').notNull().default(1000), // Internal ELO for calculation
@@ -73,10 +74,6 @@ export const tracks = sqliteTable('tracks', {
   spotifyUrl: text('spotify_url'),
   geniusUrl: text('genius_url'),
   youtubeMusicUrl: text('youtube_music_url'),
-  // Removed genres: text('genres'),
-  // Removed producers: text('producers'),
-  // Removed writers: text('writers'),
-  // Removed credits: text('credits'),
   bitrate: text('bitrate'),
   bpm: integer('bpm'),
   key: text('key'),

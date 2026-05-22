@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import the helper
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Credit } from '@/types/music';
@@ -114,6 +114,7 @@ const Playlists = () => {
     return tracks.filter(t => 
       t.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
       artists.some(a => a.id === t.artistId && a.name.toLowerCase().includes(trackSearchTerm.toLowerCase())) ||
+      t.artistCredits?.some(credit => artists.find(a => a.id === credit.artistId)?.name.toLowerCase().includes(trackSearchTerm.toLowerCase())) || // Search in artistCredits
       albums.some(al => trackHasAlbum(t, al.id))
     );
   }, [tracks, artists, albums, trackSearchTerm]);
@@ -162,7 +163,7 @@ const Playlists = () => {
     }
 
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist')) // Changed to .includes()
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -176,7 +177,6 @@ const Playlists = () => {
 
   const getTrackDetails = (trackId: string) => {
     const track = tracks.find(t => t.id === trackId);
-    // Use getTrackDisplayArtists to get the display artist name
     const artistName = track ? getTrackDisplayArtists(track) : 'Unknown Artist';
     const album = albums.find(al => track && trackHasAlbum(track, al.id));
     return { track, artistName, album };
@@ -252,7 +252,6 @@ const Playlists = () => {
         )}
       </div>
 
-      {/* Create Playlist Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-md">
           <DialogHeader>
@@ -299,7 +298,6 @@ const Playlists = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Playlist Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>

@@ -110,37 +110,31 @@ const Cleanup = () => {
   const [isYoutubeMusicResolutionModalOpen, setIsYoutubeMusicResolutionModalOpen] = useState(false);
   const [selectedTrackForYoutubeMusic, setSelectedTrackForYoutubeMusic] = useState<Track | null>(null);
 
-  // Removed isProducersResolutionModalOpen and selectedTrackForProducers
-  // Removed isGenresResolutionModalOpen and selectedTrackForGenres
-
   const [isReleaseDateResolutionModalOpen, setIsReleaseDateResolutionModalOpen] = useState(false);
   const [selectedReleaseForDate, setSelectedReleaseForDate] = useState<Release | null>(null);
 
   const [isAlbumCreditsResolutionModalOpen, setIsAlbumCreditsResolutionModalOpen] = useState(false);
   const [selectedAlbumForCredits, setSelectedAlbumForCredits] = useState<Album | null>(null);
 
-
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
   const [imageUploadEntity, setImageUploadEntity] = useState<any>(null);
   const [imageUploadEntityType, setImageUploadEntityType] = useState<'artist' | 'album' | null>(null);
   const [isLowQualityOpen, setIsLowQualityOpen] = useState(false);
 
+  // Updated filters based on new structure
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
     album_cover: true,
-    album_credits: true, // Renamed from credits_and_metadata for clarity for albums
-    spotify_uri: true,
-    genius_uri: true,
-    youtube_music_uri: true,
+    album_metadata: true, // Combines album credits and genres
     release_date: true,
-    // Removed specific filters for producers, writers, genres, track_credits as they are now under general track metadata and ArtistCredits.
+    track_links: true, // Combines spotify, genius, youtube_music
+    track_metadata: true, // Any missing track genres or credits
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
   const location = useLocation();
 
-  // Pagination for tasks
   const tasksPerPage = 20;
   const [visibleTaskCount, setVisibleTaskCount] = useState(tasksPerPage);
 
@@ -201,7 +195,7 @@ const Cleanup = () => {
 
   const allTasks = useMemo(() => {
     const generatedTasks: any[] = [];
-    const spotifyTasksForAlbums: any[] = [];
+    const processedTrackIdsForSpotify = new Set<string>(); // Keep track of tracks already part of an album's Spotify task
 
     // Artist Image
     artists.filter(a => !a.image).forEach(a => {
@@ -218,16 +212,21 @@ const Cleanup = () => {
       generatedTasks.push({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' });
     });
 
-    // Album General Credits (Textarea field)
-    albums.filter(al => al.credits.length === 0).forEach(al => {
-      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add general notes for album ${al.title}`, icon: FileText, color: 'text-gray-500' });
+    // Album Metadata (Credits & Genres)
+    albums.filter(al => al.credits.length === 0 || al.artistCredits.length === 0 || al.genres.length === 0).forEach(al => {
+      let missingItems = [];
+      if (al.credits.length === 0) missingItems.push("general notes");
+      if (al.artistCredits.length === 0) missingItems.push("artist roles");
+      if (al.genres.length === 0) missingItems.push("genres");
+      
+      generatedTasks.push({ 
+        type: 'album_metadata', 
+        entity: al, 
+        label: `Complete metadata for album ${al.title} (missing: ${missingItems.join(', ')})`, 
+        icon: FileText, 
+        color: 'text-indigo-500' 
+      });
     });
-
-    // Album Artist Credits (ArtistCreditSelect field) - This is considered 'metadata' for the album
-    albums.filter(al => al.artistCredits.length === 0).forEach(al => {
-      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add artist roles for album ${al.title}`, icon: Users, color: 'text-indigo-500' }); // Using Users icon
-    });
-
 
     // Release Date
     releases.filter(r => !r.releaseDate).forEach(r => {
@@ -235,12 +234,11 @@ const Cleanup = () => {
       generatedTasks.push({ type: 'release_date', entity: r, label: `Add date for release ${r.title} (${album?.title || 'Unknown Album'})`, icon: Calendar, color: 'text-orange-500' });
     });
 
-    const processedTrackIdsForSpotify = new Set<string>();
-
-    // Spotify URIs (Grouped by album/release first)
+    // Track Links (Spotify, Genius, YouTube Music) - Grouped by album/release first
     albums.forEach(album => {
         let relevantRelease = album.defaultReleaseId ? releases.find(r => r.id === album.defaultReleaseId) : null;
         if (!relevantRelease && releases.some(r => r.albumId === album.id)) {
+            // Fallback to first release if no default and releases exist
             relevantRelease = releases.find(r => r.albumId === album.id);
         }
 
@@ -248,6 +246,7 @@ const Cleanup = () => {
         if (relevantRelease) {
             albumTrackIdsInOrder = relevantRelease.trackIds;
         } else {
+            // If no release or no tracks in release, use tracks directly linked to album
             const associatedAlbumTracks = tracks.filter(t => t.albumIds.some(aid => aid.albumId === album.id));
             albumTrackIdsInOrder = [...associatedAlbumTracks]
               .sort((a, b) => {
@@ -258,48 +257,75 @@ const Cleanup = () => {
               .map(t => t.id);
         }
 
-        const tracksInAlbumMissingSpotify = albumTrackIdsInOrder
+        const tracksInAlbumMissingLinks = albumTrackIdsInOrder
             .map(trackId => tracks.find(t => t.id === trackId))
-            .filter((t): t is Track => t !== undefined && !t.spotifyUrl && !processedTrackIdsForSpotify.has(t.id));
+            .filter((t): t is Track => t !== undefined && (!t.spotifyUrl || !t.geniusUrl || !t.youtubeMusicUrl) && !processedTrackIdsForSpotify.has(t.id));
 
-        if (tracksInAlbumMissingSpotify.length > 0) {
-            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForSpotify.add(t.id));
-            spotifyTasksForAlbums.push({
-                type: 'spotify_uri',
+        if (tracksInAlbumMissingLinks.length > 0) {
+            tracksInAlbumMissingLinks.forEach(t => processedTrackIdsForSpotify.add(t.id));
+            const missingSpotifyCount = tracksInAlbumMissingLinks.filter(t => !t.spotifyUrl).length;
+            const missingGeniusCount = tracksInAlbumMissingLinks.filter(t => !t.geniusUrl).length;
+            const missingYoutubeCount = tracksInAlbumMissingLinks.filter(t => !t.youtubeMusicUrl).length;
+
+            let missingLinkLabels = [];
+            if (missingSpotifyCount > 0) missingLinkLabels.push(`Spotify (${missingSpotifyCount})`);
+            if (missingGeniusCount > 0) missingLinkLabels.push(`Genius (${missingGeniusCount})`);
+            if (missingYoutubeCount > 0) missingLinkLabels.push(`YouTube Music (${missingYoutubeCount})`);
+
+            generatedTasks.push({
+                type: 'track_links',
                 entity: { 
                     albumId: album.id, 
                     albumTitle: album.title,
                     releaseId: relevantRelease?.id,
                     releaseTitle: relevantRelease?.title,
-                    tracks: tracksInAlbumMissingSpotify 
+                    tracks: tracksInAlbumMissingLinks 
                 },
-                label: `Add Spotify links for ${album.title}: ${tracksInAlbumMissingSpotify.length} tracks`,
+                label: `Add missing links for ${album.title} (missing: ${missingLinkLabels.join(', ')})`,
                 icon: Link,
                 color: 'text-green-500',
                 isGrouped: true,
+                linkTypes: { spotify: true, genius: true, youtube: true } // Indicate it's for all link types
             });
         }
     });
 
-    const individualSpotifyTasks = tracks.filter(t => !t.spotifyUrl && !processedTrackIdsForSpotify.has(t.id)).map(t => ({
-      type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false
-    }));
+    // Individual track links not associated with an album (or already processed by album task)
+    tracks.filter(t => (!t.spotifyUrl || !t.geniusUrl || !t.youtubeMusicUrl) && !processedTrackIdsForSpotify.has(t.id)).forEach(t => {
+      let missingLinkLabels = [];
+      if (!t.spotifyUrl) missingLinkLabels.push("Spotify");
+      if (!t.geniusUrl) missingLinkLabels.push("Genius");
+      if (!t.youtubeMusicUrl) missingLinkLabels.push("YouTube Music");
 
-    generatedTasks.push(...spotifyTasksForAlbums, ...individualSpotifyTasks);
-
-
-    // Genius URI
-    tracks.filter(t => !t.geniusUrl).forEach(t => {
-      generatedTasks.push({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' });
+      generatedTasks.push({ 
+        type: 'track_links', 
+        entity: t, 
+        label: `Add missing links for ${t.title} (missing: ${missingLinkLabels.join(', ')})`, 
+        icon: Link, 
+        color: 'text-green-500', 
+        isGrouped: false 
+      });
     });
 
-    // YouTube Music URI
-    tracks.filter(t => !t.youtubeMusicUrl).forEach(t => {
-      generatedTasks.push({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' });
+    // Track Metadata (e.g., missing genres, potentially artist credits if not syncing with album)
+    tracks.filter(t => t.genres.length === 0 || (!t.syncWithAlbumCredits && t.artistCredits.length === 0)).forEach(t => {
+      let missingItems = [];
+      if (t.genres.length === 0) missingItems.push("genres");
+      if (!t.syncWithAlbumCredits && t.artistCredits.length === 0) missingItems.push("artist credits");
+      
+      if (missingItems.length > 0) {
+        generatedTasks.push({ 
+          type: 'track_metadata', 
+          entity: t, 
+          label: `Complete metadata for track ${t.title} (missing: ${missingItems.join(', ')})`, 
+          icon: Music, 
+          color: 'text-purple-400' 
+        });
+      }
     });
 
     return generatedTasks;
-  }, [tracks, artists, albums, releases, activeProfile]);
+  }, [tracks, artists, albums, releases]);
 
 
   const filteredAndSortedTasks = useMemo(() => {
@@ -414,7 +440,8 @@ const Cleanup = () => {
   };
 
   const handleResolveTask = async (task: any) => {
-    if (task.type === 'spotify_uri') {
+    if (task.type === 'track_links') {
+        // Determine if it's a grouped (album-level) task or individual track
         if (task.isGrouped) {
             setSpotifyResolutionTracks(task.entity.tracks);
             setSpotifyResolutionAlbum({
@@ -425,16 +452,20 @@ const Cleanup = () => {
             });
             setIsSpotifyResolutionModalOpen(true);
         } else {
-            setSelectedTrackForGenius(task.entity); // Reusing for generic link resolution for now
-            setIsGeniusResolutionModalOpen(true);
+            // For individual track links, open the appropriate modal based on what's missing
+            const track = task.entity;
+            if (!track.spotifyUrl) {
+                setSelectedTrackForGenius(track); // Reusing for Spotify too
+                setIsGeniusResolutionModalOpen(true);
+            } else if (!track.geniusUrl) {
+                setSelectedTrackForGenius(track);
+                setIsGeniusResolutionModalOpen(true);
+            } else if (!track.youtubeMusicUrl) {
+                setSelectedTrackForYoutubeMusic(track);
+                setIsYoutubeMusicResolutionModalOpen(true);
+            }
         }
-    } else if (task.type === 'genius_uri') {
-      setSelectedTrackForGenius(task.entity);
-      setIsGeniusResolutionModalOpen(true);
-    } else if (task.type === 'youtube_music_uri') {
-      setSelectedTrackForYoutubeMusic(task.entity);
-      setIsYoutubeMusicResolutionModalOpen(true);
-    } else if (task.type === 'album_credits') { // For both general notes and artist roles
+    } else if (task.type === 'album_metadata') {
       setSelectedAlbumForCredits(task.entity);
       setIsAlbumCreditsResolutionModalOpen(true);
     } else if (task.type === 'release_date') {
@@ -448,6 +479,11 @@ const Cleanup = () => {
       setImageUploadEntity(task.entity);
       setImageUploadEntityType('album');
       setIsImageUploadModalOpen(true);
+    } else if (task.type === 'track_metadata') { // For track genres/credits
+      // This will open EditTrackModal for individual track metadata resolution
+      // The EditTrackModal already handles genres and artist credits
+      setSelectedTrackForEdit(task.entity);
+      setIsEditTrackModalOpen(true); // Assuming EditTrackModal is imported and manages this state
     }
   };
 
@@ -475,7 +511,9 @@ const Cleanup = () => {
   };
 
   const handleAlbumCreditsResolution = async (albumId: string, credits: string[], artistCredits: Credit[]) => {
-    await updateAlbum(albumId, { credits, artistCredits });
+    // Also include genres when resolving album metadata
+    const albumToUpdate = albums.find(a => a.id === albumId);
+    await updateAlbum(albumId, { credits, artistCredits, genres: albumToUpdate?.genres || [] }); // Keep existing genres for now
     fetchData();
   };
 
@@ -503,6 +541,9 @@ const Cleanup = () => {
       [type]: !prev[type],
     }));
   };
+
+  const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false); // State for EditTrackModal
+  const [selectedTrackForEdit, setSelectedTrackForEdit] = useState<Track | null>(null);
 
   return (
     <div className="space-y-12 pb-20">
@@ -710,7 +751,6 @@ const Cleanup = () => {
         </div>
       </Card>
 
-      {/* Modals for task resolution */}
       {spotifyResolutionAlbum && (
         <SpotifyUriGroupResolutionModal
           isOpen={isSpotifyResolutionModalOpen}
@@ -754,6 +794,13 @@ const Cleanup = () => {
           onClose={() => setIsAlbumCreditsResolutionModalOpen(false)}
           album={selectedAlbumForCredits} 
           onResolve={handleAlbumCreditsResolution}
+        />
+      )}
+      {selectedTrackForEdit && (
+        <EditTrackModal
+          track={selectedTrackForEdit}
+          open={isEditTrackModalOpen}
+          onOpenChange={setIsEditTrackModalOpen}
         />
       )}
 

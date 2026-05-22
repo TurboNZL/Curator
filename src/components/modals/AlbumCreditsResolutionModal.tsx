@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Text, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Album, Credit } from '@/types/music'; // Import Credit type
-import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; // Import ArtistCreditSelect
+import { Album, Credit } from '@/types/music'; 
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
 
 interface AlbumCreditsResolutionModalProps {
   isOpen: boolean;
@@ -25,7 +25,11 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
   useEffect(() => {
     if (isOpen && album) {
       setGeneralCreditsText(album.credits.join(', '));
-      setArtistSpecificCredits(album.artistCredits || []);
+      // Ensure artistCredits are initialized with role as string[]
+      setArtistSpecificCredits(album.artistCredits.map(credit => ({
+        ...credit,
+        role: Array.isArray(credit.role) ? credit.role : [credit.role as string], // Ensure role is array
+      })) || []);
     }
   }, [isOpen, album]);
 

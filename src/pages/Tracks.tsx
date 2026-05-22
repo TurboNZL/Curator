@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from 'react'; // Added useCallback
+import { useEffect, useState, useMemo, useCallback } from 'react'; 
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Plus, MoreVertical } from 'lucide-react'; 
 import { Input } from '@/components/ui/input';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { Rating } from '@/components/ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
+import { Rating } from '@/components/ui/Rating'; 
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
-import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
-import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
+import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
+import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
+import { CreateTrackModal } from '@/components/modals/CreateTrackModal';
 import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
 
@@ -42,7 +42,7 @@ const Tracks = () => {
     }
 
     const leadArtists = track.artistCredits
-      .filter((credit: any) => credit.role === 'Lead artist')
+      .filter((credit: any) => credit.role.includes('Lead artist'))
       .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
       .filter(Boolean);
 
@@ -58,7 +58,7 @@ const Tracks = () => {
     if (!Array.isArray(tracks)) return [];
     return tracks.filter(t => {
       if (!t) return false;
-      const artistName = getTrackDisplayArtists(t); // Use helper for search
+      const artistName = getTrackDisplayArtists(t);
       const album = albums?.find(al => trackHasAlbum(t, al.id));
       const searchLower = search.toLowerCase();
       return (
@@ -227,7 +227,6 @@ const Tracks = () => {
                       <TableCell className="text-zinc-400 text-xs font-medium">{artistName || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
-                        {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                         <Rating
                           track={track}
                           showEditor={true} 
