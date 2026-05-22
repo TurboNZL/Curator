@@ -72,7 +72,7 @@ export const tracks = sqliteTable('tracks', {
   spotifyUrl: text('spotify_url'),
   geniusUrl: text('genius_url'),
   youtubeMusicUrl: text('youtube_music_url'),
-  genres: text('genres'), // JSON string array
+  // genres: text('genres'), // REMOVED: Now stored in separate table and linked
   producers: text('producers'), // JSON string array
   writers: text('writers'), // JSON string array
   credits: text('credits'), // JSON string array
@@ -82,6 +82,18 @@ export const tracks = sqliteTable('tracks', {
   memories: integer('memories').notNull().default(0),
   queueRules: text('queue_rules'), // JSON: { nextTrackId?: string, forbiddenStandalone?: boolean }
   syncWithAlbumCredits: integer('sync_with_album_credits', { mode: 'boolean' }).notNull().default(true),
+});
+
+export const trackGenres = sqliteTable('track_genres', {
+  trackId: text('track_id').notNull(),
+  genreId: text('genre_id').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.trackId, table.genreId] }),
+}));
+
+export const genres = sqliteTable('genres', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
 });
 
 export const groups = sqliteTable('groups', {
