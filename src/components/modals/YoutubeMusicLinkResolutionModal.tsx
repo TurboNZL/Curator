@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Youtube, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Track } from '../../server/types/music'; // Corrected import path
+import { Track }  from '@/../server/types/music'; // Corrected import path
 
 interface YoutubeMusicLinkResolutionModalProps {
   isOpen: boolean;

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Star, GripVertical, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Track } from '../../server/types/music'; // Corrected import path
+import { Track }  from '@/../server/types/music'; // Corrected import path
 import { useMusicStore } from '@/store/useMusicStore';
 import { Button } from './button';
 import { toast } from 'sonner';

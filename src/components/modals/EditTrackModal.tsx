@@ -8,7 +8,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap, Star } from 'lucide-react'; 
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
-import { Track, Credit } from '../../server/types/music'; // Corrected import path
+import { Track, Credit }  from '@/../server/types/music'; // Corrected import path
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';

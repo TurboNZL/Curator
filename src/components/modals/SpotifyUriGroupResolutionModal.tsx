@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Link, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Track } from '../../server/types/music'; // Corrected import path
+import { Track }  from '@/../server/types/music'; // Corrected import path
 
 interface SpotifyUriGroupResolutionModalProps {
   isOpen: boolean;

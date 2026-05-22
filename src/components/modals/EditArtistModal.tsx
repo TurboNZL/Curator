@@ -7,7 +7,7 @@ import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, User, Trash2, Plus, Link as LinkIcon, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { Artist } from '../../server/types/music'; // Corrected import path
+import { Artist }  from '@/../server/types/music'; // Corrected import path
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';

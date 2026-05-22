@@ -4,7 +4,7 @@ import React from 'react';
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Music, Plus, Trash2, Info, Edit2, Zap, Bookmark, Play, Minus } from 'lucide-react'; // Added Play and Minus
 import { useMusicStore } from "@/store/useMusicStore";
-import { Track } from '../../server/types/music'; // Corrected import path
+import { Track }  from '@/../server/types/music'; // Corrected import path
 
 interface TrackDropdownMenuItemsProps {
   track: Track;

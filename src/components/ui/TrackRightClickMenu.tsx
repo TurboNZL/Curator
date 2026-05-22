@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Play, Music, Plus, Trash2, Info, Edit2, Zap, Bookmark, Minus } from "lucide-react";
 import { useMusicStore } from "@/store/useMusicStore";
-import { Track } from '../../server/types/music'; // Corrected import path
+import { Track }  from '@/../server/types/music'; // Corrected import path
 import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from "../modals/StatsForNerdsModal";
 import { EditTrackModal } from "../modals/EditTrackModal";

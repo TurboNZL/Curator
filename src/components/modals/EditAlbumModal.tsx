@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap, Calendar, Text } from 'lucide-react'; 
 import { toast } from 'sonner';
-import { Album, Credit } from '../../server/types/music'; // Corrected import path
+import { Album, Credit }  from '@/../server/types/music'; // Corrected import path
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';

@@ -16,7 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Credit } from '../../server/types/music'; // Corrected import path
+import { Credit }  from '@/../server/types/music'; // Corrected import path
 
 const Playlists = () => {
   const { playlists, tracks, artists, albums, addPlaylist, updatePlaylist, deletePlaylist, setCurrentTrack, fetchData, activeProfile, releases } = useMusicStore();

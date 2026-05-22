@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ImageUpload } from '../ui/ImageUpload';
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
 import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import MultiSelectSearch
-import { Credit } from '../../server/types/music'; // Corrected import path
+import { Credit }  from '@/../server/types/music'; // Corrected import path
 
 interface CreateAlbumModalProps {
   open: boolean;

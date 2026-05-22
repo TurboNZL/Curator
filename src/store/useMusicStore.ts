@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, Credit, RoleCategory } from '../../server/types/music'; // Corrected import path
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, Credit, RoleCategory }  from '@/../server/types/music'; // Corrected import path
 import { toast } from 'sonner';
 
 interface MusicState {

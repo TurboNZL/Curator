@@ -8,7 +8,7 @@ import { Edit2, FileAudio, Check, Trash2, GripVertical, Plus, Layers, Link as Li
 
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { Release } from '../../server/types/music'; // Corrected import path
+import { Release }  from '@/../server/types/music'; // Corrected import path
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
