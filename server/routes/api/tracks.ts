@@ -1,8 +1,8 @@
 import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
-import { tracks, albumTracks } from '../../db/schema';
-import type { InferSelectModel } from 'drizzle-orm';
+import { tracks, albumTracks, genres, trackGenres } from '../../db/schema';
+import { InferSelectModel, eq } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
   const method = event.method;
@@ -11,6 +11,8 @@ export default defineHandler(async (event) => {
     try {
       const allTracks = await db.select().from(tracks);
       const relations = await db.select().from(albumTracks);
+      const allTrackGenres = await db.select().from(trackGenres);
+      const allGenres = await db.select().from(genres);
       
       type TrackSelectWithDbFields = InferSelectModel<typeof tracks> & { is_favorite?: number | boolean, sync_with_album_credits?: number | boolean };
 
@@ -22,9 +24,12 @@ export default defineHandler(async (event) => {
           return val || [];
         };
 
+        const trackGenreIds = allTrackGenres.filter(tg => tg.trackId === track.id).map(tg => tg.genreId);
+        const trackGenreNames = allGenres.filter(g => trackGenreIds.includes(g.id)).map(g => g.name);
+
         return {
           ...track,
-          genres: parseJson(track.genres),
+          genres: trackGenreNames, // Use fetched genre names
           producers: parseJson(track.producers),
           writers: parseJson(track.writers),
           credits: parseJson(track.credits),
@@ -58,7 +63,7 @@ export default defineHandler(async (event) => {
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
-      genres: JSON.stringify(body.genres || []),
+      // genres are handled separately
       producers: JSON.stringify(body.producers || []),
       writers: JSON.stringify(body.writers || []),
       credits: JSON.stringify(body.credits || []),
@@ -67,10 +72,26 @@ export default defineHandler(async (event) => {
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
       queueRules: JSON.stringify(body.queueRules || {}),
-      syncWithAlbumCredits: body.syncWithAlbumCredits, // Corrected: Pass boolean directly
+      syncWithAlbumCredits: body.syncWithAlbumCredits, 
     };
 
     await db.insert(tracks).values(newTrack);
+
+    // Handle genres
+    if (body.genres && Array.isArray(body.genres)) {
+      for (const genreName of body.genres) {
+        let genre = await db.select().from(genres).where(eq(genres.name, genreName)).limit(1);
+        let genreId: string;
+
+        if (genre.length > 0) {
+          genreId = genre[0].id;
+        } else {
+          genreId = Math.random().toString(36).substring(7);
+          await db.insert(genres).values({ id: genreId, name: genreName });
+        }
+        await db.insert(trackGenres).values({ trackId: id, genreId });
+      }
+    }
 
     if (body.albumTracks && Array.isArray(body.albumTracks)) {
       for (const albumTrack of body.albumTracks) {
@@ -84,7 +105,7 @@ export default defineHandler(async (event) => {
 
     return {
       ...newTrack,
-      genres: body.genres || [],
+      genres: body.genres || [], // Return the genre names that were passed in
       producers: body.producers || [],
       writers: body.writers || [],
       credits: body.credits || [],
@@ -92,7 +113,7 @@ export default defineHandler(async (event) => {
       isFavorite: !!body.isFavorite,
       albumIds: body.albumIds || [],
       artistIds: body.artistIds || [],
-      syncWithAlbumCredits: !!body.syncWithAlbumCredits, // Return parsed new field
+      syncWithAlbumCredits: !!body.syncWithAlbumCredits, 
     };
   }
 });
