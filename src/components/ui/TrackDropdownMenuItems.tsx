@@ -2,18 +2,18 @@
 
 import React from 'react';
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Play, Edit2, List, Plus, Minus, Info, Link as LinkIcon, Trash2 } from 'lucide-react';
-import { useMusicStore } from '@/store/useMusicStore';
+import { Plus, Edit2, Info, Trash2, Heart, PlusCircle, MinusCircle, ListMusic } from 'lucide-react';
 import { Track } from '@/types/music';
+import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
 
 interface TrackDropdownMenuItemsProps {
   track: Track;
-  setSelectedTrackForPlaylistAdd: (track: Track | null) => void;
+  setSelectedTrackForPlaylistAdd: (track: Track) => void;
   setIsCreatePlaylistAddModalOpen: (isOpen: boolean) => void;
-  setSelectedTrackForEdit: (track: Track | null) => void;
+  setSelectedTrackForEdit: (track: Track) => void;
   setIsEditTrackModalOpen: (isOpen: boolean) => void;
-  setSelectedTrackForStats: (track: Track | null) => void;
+  setSelectedTrackForStats: (track: Track) => void;
   setIsStatsModalOpen: (isOpen: boolean) => void;
 }
 
@@ -26,82 +26,62 @@ export const TrackDropdownMenuItems: React.FC<TrackDropdownMenuItemsProps> = ({
   setSelectedTrackForStats,
   setIsStatsModalOpen,
 }) => {
-  const { setCurrentTrack, addToUserQueue, incrementMemories, decrementMemories, deleteTrack } = useMusicStore();
+  const { addToUserQueue, incrementMemories, decrementMemories, deleteTrack, updateTrack } = useMusicStore();
 
-  const handleCopyLink = (url?: string) => {
-    if (url) {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
-    } else {
-      toast.error("No link available for this item.");
+  const handleAddToQueue = () => {
+    addToUserQueue(track.id);
+    toast.success(`"${track.title}" added to queue.`);
+  };
+
+  const handleIncrementMemories = () => {
+    incrementMemories(track.id);
+    toast.success(`Memory count for "${track.title}" increased.`);
+  };
+
+  const handleDecrementMemories = () => {
+    decrementMemories(track.id);
+    toast.success(`Memory count for "${track.title}" decreased.`);
+  };
+
+  const handleDeleteTrack = async () => {
+    if (confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
+      await deleteTrack(track.id);
+      toast.success(`"${track.title}" deleted.`);
     }
+  };
+
+  const handleToggleFavorite = async () => {
+    await updateTrack(track.id, { isFavorite: !track.isFavorite });
+    toast.success(`"${track.title}" ${track.isFavorite ? 'removed from' : 'added to'} favorites.`);
   };
 
   return (
     <>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
-        className="text-xs font-medium"
-      >
-        <Play size={14} className="mr-2" /> Play
+      <DropdownMenuItem onClick={handleAddToQueue} className="text-xs font-medium">
+        <Plus size={14} className="mr-2" /> Add to Queue
       </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }}
-        className="text-xs font-medium"
-      >
+      <DropdownMenuItem onClick={handleToggleFavorite} className="text-xs font-medium">
+        <Heart size={14} className="mr-2" /> {track.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => { setSelectedTrackForPlaylistAdd(track); setIsCreatePlaylistAddModalOpen(true); }} className="text-xs font-medium">
+        <ListMusic size={14} className="mr-2" /> Add to Playlist
+      </DropdownMenuItem>
+      <DropdownMenuSeparator className="bg-zinc-800" />
+      <DropdownMenuItem onClick={handleIncrementMemories} className="text-xs font-medium">
+        <PlusCircle size={14} className="mr-2" /> Add Memory
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={handleDecrementMemories} disabled={track.memories <= 0} className="text-xs font-medium">
+        <MinusCircle size={14} className="mr-2" /> Remove Memory
+      </DropdownMenuItem>
+      <DropdownMenuSeparator className="bg-zinc-800" />
+      <DropdownMenuItem onClick={() => { setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }} className="text-xs font-medium">
         <Edit2 size={14} className="mr-2" /> Edit Track
       </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); addToUserQueue(track.id); toast.success(`"${track.title}" added to queue.`); }}
-        className="text-xs font-medium"
-      >
-        <List size={14} className="mr-2" /> Add to Queue
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); incrementMemories(track.id); toast.success(`Memory added for "${track.title}".`); }}
-        className="text-xs font-medium"
-      >
-        <Plus size={14} className="mr-2" /> Add Memory
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); decrementMemories(track.id); toast.success(`Memory removed for "${track.title}".`); }}
-        disabled={track.memories === 0}
-        className="text-xs font-medium"
-      >
-        <Minus size={14} className="mr-2" /> Remove Memory
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); setSelectedTrackForPlaylistAdd(track); setIsCreatePlaylistAddModalOpen(true); }}
-        className="text-xs font-medium"
-      >
-        <Plus size={14} className="mr-2" /> Add to Playlist
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); setSelectedTrackForStats(track); setIsStatsModalOpen(true); }}
-        className="text-xs font-medium"
-      >
+      <DropdownMenuItem onClick={() => { setSelectedTrackForStats(track); setIsStatsModalOpen(true); }} className="text-xs font-medium">
         <Info size={14} className="mr-2" /> Stats for Nerds
       </DropdownMenuItem>
-      {track.spotifyUrl && (
-        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.spotifyUrl); }} className="text-xs font-medium">
-          <LinkIcon size={14} className="mr-2" /> Copy Spotify Link
-        </DropdownMenuItem>
-      )}
-      {track.geniusUrl && (
-        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.geniusUrl); }} className="text-xs font-medium">
-          <LinkIcon size={14} className="mr-2" /> Copy Genius Link
-        </DropdownMenuItem>
-      )}
-      {track.youtubeMusicUrl && (
-        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopyLink(track.youtubeMusicUrl); }} className="text-xs font-medium">
-          <LinkIcon size={14} className="mr-2" /> Copy YouTube Music Link
-        </DropdownMenuItem>
-      )}
       <DropdownMenuSeparator className="bg-zinc-800" />
-      <DropdownMenuItem
-        onClick={(e) => { e.stopPropagation(); if (confirm(`Are you sure you want to delete "${track.title}"?`)) { deleteTrack(track.id); } }}
-        className="text-xs font-medium text-red-500"
-      >
+      <DropdownMenuItem onClick={handleDeleteTrack} className="text-xs font-medium text-red-500">
         <Trash2 size={14} className="mr-2" /> Delete Track
       </DropdownMenuItem>
     </>

@@ -1,9 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback } from 'react'; // Added useCallback
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock } from 'lucide-react';
+import { Info, FileAudio, Database, HardDrive, Calendar, Globe, ExternalLink, Activity, Music, Star, Swords, Play, Clock, User as UserIcon } from 'lucide-react'; // Added UserIcon
 import { Track, Album, Artist } from '@/types/music';
 import { cn, trackHasAlbum } from '@/lib/utils';
 import { useMusicStore } from '@/store/useMusicStore';
@@ -20,7 +20,31 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
   const { playbackLogs, artists, albums } = useMusicStore();
   if (!track) return null;
 
-  const artist = artists.find(a => a.id === track.artistId);
+  const getTrackDisplayArtists = useCallback((t: any) => {
+    const primaryArtist = artists.find(a => a.id === t.artistId);
+    if (!t.artistCredits || t.artistCredits.length === 0) return primaryArtist?.name || "Unknown Artist";
+    
+    const leadArtists = t.artistCredits
+      .filter((credit: any) => credit.role === 'Lead artist')
+      .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+
+    if (leadArtists.length > 0) {
+      return leadArtists.join(', ');
+    }
+    return primaryArtist?.name || "Unknown Artist";
+  }, [artists]);
+
+  const getTrackAllCredits = useCallback((t: any) => {
+    if (!t.artistCredits || t.artistCredits.length === 0) return [];
+    return t.artistCredits
+      .map((credit: any) => {
+        const artist = artists.find(a => a.id === credit.artistId);
+        return artist ? `${artist.name} (${credit.role})` : `Unknown Artist (${credit.role})`;
+      })
+      .filter(Boolean);
+  }, [artists]);
+
   const album = albums.find(al => track.albumIds?.some(trackAlbum => trackAlbum.albumId === al.id));
 
   const trackPlaybackLogs = playbackLogs.filter(log => log.trackId === track.id);
@@ -46,6 +70,8 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
     { label: 'Genius', url: track.geniusUrl, color: 'text-yellow-500' },
     { label: 'YouTube Music', url: track.youtubeMusicUrl, color: 'text-red-500' },
   ].filter(l => l.url);
+
+  const trackArtists = getTrackAllCredits(track);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,20 +135,29 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Entity Relations</h4>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Artist</span>
-                <span className="text-white font-bold">{artist?.name || 'Unknown'}</span>
+                <span className="text-zinc-500">Artists</span>
+                <span className="text-white font-bold truncate max-w-[250px]">{getTrackDisplayArtists(track) || 'Unknown'}</span>
               </div>
+              {trackArtists.length > 0 && (
+                <div className="space-y-1">
+                  {trackArtists.map((credit, i) => (
+                    <div key={i} className="flex justify-between text-xs items-center">
+                        <span className="text-zinc-500 flex items-center gap-2">
+                            <UserIcon size={12} className="text-zinc-600" />
+                            {credit.split('(')[0].trim()}
+                        </span>
+                        <span className="text-white font-bold">{credit.split('(')[1].replace(')', '').trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex justify-between text-xs">
                 <span className="text-zinc-500">Album</span>
                 <span className="text-white font-bold">{album?.title || 'Single'}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Producers</span>
-                <span className="text-white font-bold truncate max-w-[250px]">{track.producers.join(', ') || 'None'}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Writers</span>
-                <span className="text-white font-bold truncate max-w-[250px]">{track.writers.join(', ') || 'None'}</span>
+                <span className="text-zinc-500">Genres</span>
+                <span className="text-white font-bold truncate max-w-[250px]">{track.genres.join(', ') || 'None'}</span>
               </div>
             </div>
           </div>

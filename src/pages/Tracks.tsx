@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react'; // Added useCallback
 import { useMusicStore } from '@/store/useMusicStore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, ListMusic, ArrowUpDown, Brain, SortAsc, SortDesc, Play, Music, Star, Loader2, Plus, MoreVertical } from 'lucide-react'; 
@@ -15,11 +15,10 @@ import { cn } from '@/lib/utils';
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal'; // Import CreatePlaylistAddModal
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal'; // Import StatsForNerdsModal
 import { CreateTrackModal } from '@/components/modals/CreateTrackModal'; // Import CreateTrackModal
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
 
 
 const Tracks = () => {
-  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
+  const { tracks = [], artists = [], albums = [], releases = [], setCurrentTrack, fetchData, isLoading, activeProfile } = useMusicStore();
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'title', direction: 'asc' as 'asc' | 'desc' });
   const [isEditTrackModalOpen, setIsEditTrackModalOpen] = useState(false);
@@ -28,27 +27,46 @@ const Tracks = () => {
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
-  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); // State for CreateTrackModal
+  const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false);
 
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  const getTrackDisplayArtists = useCallback((track: any) => {
+    if (!track || !track.artistCredits) {
+      const primaryArtist = artists.find(a => a.id === track.artistId);
+      return primaryArtist?.name || "Unknown Artist";
+    }
+
+    const leadArtists = track.artistCredits
+      .filter((credit: any) => credit.role === 'Lead artist')
+      .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+
+    if (leadArtists.length > 0) {
+      return leadArtists.join(', ');
+    }
+    const primaryArtist = artists.find(a => a.id === track.artistId);
+    return primaryArtist?.name || "Unknown Artist";
+  }, [artists]);
+
+
   const filteredTracks = useMemo(() => {
     if (!Array.isArray(tracks)) return [];
     return tracks.filter(t => {
       if (!t) return false;
-      const artist = artists?.find(a => a.id === t.artistId);
+      const artistName = getTrackDisplayArtists(t); // Use helper for search
       const album = albums?.find(al => trackHasAlbum(t, al.id));
       const searchLower = search.toLowerCase();
       return (
         (t.title || '').toLowerCase().includes(searchLower) ||
-        (artist?.name || '').toLowerCase().includes(searchLower) ||
+        (artistName || '').toLowerCase().includes(searchLower) ||
         (album?.title || '').toLowerCase().includes(searchLower)
       );
     });
-  }, [tracks, search, artists, albums]);
+  }, [tracks, search, albums, getTrackDisplayArtists]);
 
   const sortedTracks = useMemo(() => {
     const sorted = [...filteredTracks].sort((a, b) => {
@@ -181,9 +199,9 @@ const Tracks = () => {
             <TableBody>
               {sortedTracks.map((track, i) => {
                 if (!track) return null;
-                const artist = artists?.find(a => a.id === track.artistId);
+                const artistName = getTrackDisplayArtists(track);
                 const album = albums?.find(al => trackHasAlbum(track, al.id));
-                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage); // Use the new helper
+                const cover = getAlbumDisplayCover(album, releases, defaultAlbumImage);
                 
                 return (
                   <TrackRightClickMenu key={track.id} track={track}>
@@ -205,7 +223,7 @@ const Tracks = () => {
                           <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-zinc-400 text-xs font-medium">{artist?.name || 'Unknown'}</TableCell>
+                      <TableCell className="text-zinc-400 text-xs font-medium">{artistName || 'Unknown'}</TableCell>
                       <TableCell className="text-zinc-500 text-xs">{album?.title || 'Single'}</TableCell>
                       <TableCell>
                         {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}

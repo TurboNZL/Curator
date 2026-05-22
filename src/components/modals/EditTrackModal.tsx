@@ -5,17 +5,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap } from 'lucide-react';
+import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap, Star } from 'lucide-react'; // Added Star icon
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
-import { Track } from '@/types/music';
+import { Track, Credit } from '@/types/music'; // Import Credit type
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input'; // Re-adding Input because it is used for title, rating and links
+import { Input } from '@/components/ui/input';
 import { ArtistCreditSelect } from '@/components/shared/ArtistCreditSelect';
 import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch';
 
@@ -27,7 +27,7 @@ interface EditTrackModalProps {
 }
 
 export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrackModalProps) => {
-  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup, uploadFile } = useMusicStore();
+  const { updateTrack, deleteTrack, albums, artists, groups, deleteGroup } = useMusicStore();
   
   const trackGroups = groups.filter(g =>
     g.members?.some(m => m.entityId === track.id && m.entityType === 'track' && m.showOnEntityPage)
@@ -35,26 +35,24 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
   
   const [formData, setFormData] = useState({
     title: track.title,
-    artistCredits: track.artistCredits || [], // Updated to new credit structure
+    artistCredits: track.artistCredits || [],
     albumId: track.albumIds[0]?.albumId || '',
     initialRating: track.initialRating?.toString() || '',
-    genres: track.genres || [], // Now an array of strings
-    bitrate: track.bitrate || '320kbps', // Still stored, but not editable directly
+    genres: track.genres || [],
+    bitrate: track.bitrate || '320kbps',
     audioUrl: track.localFilePath || '',
     spotifyUrl: track.spotifyUrl || '',
     geniusUrl: track.geniusUrl || '',
     youtubeMusicUrl: track.youtubeMusicUrl || '', 
-    syncWithAlbumCredits: track.syncWithAlbumCredits, // New field
+    syncWithAlbumCredits: track.syncWithAlbumCredits,
   });
 
   const albumOptions = albums.filter(a => a.artistId === track.artistId).map(a => ({ value: a.id, label: a.title }));
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
 
-  // Genre options (dummy for now, will be dynamic later)
   const allGenres = useMusicStore(state => state.genres);
   const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
-
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -71,18 +69,24 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     e.preventDefault();
     if (!formData.title) return toast.error("Track title is required");
 
+    // Ensure the primary artist from artistCredits is also in the track's primary artistId
+    // If no 'Lead artist' exists, default to existing track.artistId
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role === 'Lead artist');
+    const primaryArtistIdFromCredits = primaryArtistCredit ? primaryArtistCredit.artistId : track.artistId;
+
     await updateTrack(track.id, {
       title: formData.title,
+      artistId: primaryArtistIdFromCredits, // Update primary artist from credits
       artistCredits: formData.artistCredits,
       albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
-      genres: formData.syncWithAlbumCredits ? [] : formData.genres, // Save genres as array
+      genres: formData.syncWithAlbumCredits ? [] : formData.genres,
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
       youtubeMusicUrl: formData.youtubeMusicUrl,
-      syncWithAlbumCredits: formData.syncWithAlbumCredits, // Save new field
+      syncWithAlbumCredits: formData.syncWithAlbumCredits,
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -98,29 +102,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     }
   };
 
-  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const uploadPromises = Array.from(files).map(async file => {
-      const url = await uploadFile(file, 'audio');
-      const cleanName = file.name.replace(/_/g, ' ');
-      return { url, name: cleanName };
-    });
-
-    try {
-      toast.promise(Promise.all(uploadPromises), {
-        loading: 'Uploading audio files...',
-        success: (newFiles) => {
-          return `Uploaded ${newFiles.length} files`;
-        },
-        error: 'Failed to upload some files'
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -133,7 +114,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
             </div>
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
-              <TabsTrigger value="links-rating" className="text-[10px] font-black uppercase tracking-widest">Links & Rating</TabsTrigger>
+              <TabsTrigger value="links" className="text-[10px] font-black uppercase tracking-widest">Links & Rating</TabsTrigger>
               <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
@@ -157,14 +138,18 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                     value={formData.albumId}
                     onValueChange={(val) => setFormData({...formData, albumId: val})}
                     placeholder="Select album..."
+                    className="bg-zinc-900 border-zinc-800"
+                    contentClassName="bg-zinc-950 border-zinc-800"
+                    itemClassName="text-white hover:bg-zinc-800"
                   />
                 </div>
               </div>
+              
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Zap size={14} className="text-orange-500" />
+                  <Zap size={14} className="text-blue-500" />
                   <Label htmlFor="sync-credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                    Sync with Album Credits
+                    Sync with Album Credits (if applicable)
                   </Label>
                 </div>
                 <Switch
@@ -191,15 +176,13 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bitrate</Label>
                   <Input value={formData.bitrate || 'Unknown'} disabled className="bg-zinc-900 border-zinc-800 text-zinc-400" />
-                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="links-rating" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+            <TabsContent value="links" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10)</Label>
                 <Input type="number" step="0.1" value={formData.initialRating} onChange={(e) => setFormData({...formData, initialRating: e.target.value})} className="bg-zinc-900 border-zinc-800" />

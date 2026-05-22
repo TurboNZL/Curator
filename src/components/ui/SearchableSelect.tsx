@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, PlusCircle, Search as SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,64 +18,56 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Input } from "./input";
+import { Label } from "./label";
+
+interface SearchableSelectOption {
+  value: string;
+  label: string;
+}
 
 interface SearchableSelectProps {
-  options: { value: string; label: string }[];
+  options: SearchableSelectOption[];
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
   allowCustom?: boolean;
-  disabled?: boolean; // Added disabled prop
+  disabled?: boolean;
   className?: string;
+  contentClassName?: string;
+  itemClassName?: string;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   options,
   value,
   onValueChange,
-  placeholder = "Select an item...",
+  placeholder = "Select option...",
   allowCustom = false,
-  disabled = false, // Default to false
+  disabled = false,
   className,
+  contentClassName,
+  itemClassName,
 }) => {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(
-    options.find((option) => option.value === value)?.label || "",
-  );
+  const [inputValue, setInputValue] = React.useState("");
 
   React.useEffect(() => {
-    // When the external value changes, update the internal input value
-    const selectedOption = options.find((option) => option.value === value);
-    setInputValue(selectedOption?.label || "");
+    // Set input value to current label when value changes from outside
+    const currentOption = options.find((option) => option.value === value);
+    setInputValue(currentOption ? currentOption.label : value || "");
   }, [value, options]);
 
-  const handleSelect = (currentValue: string) => {
-    // If the selected item is one of the options
-    const selectedOption = options.find((option) => option.value === currentValue);
-    if (selectedOption) {
-      onValueChange(selectedOption.value);
-      setInputValue(selectedOption.label);
-    } else if (allowCustom) {
-      // If custom values are allowed and the current value is new
-      onValueChange(currentValue);
-      setInputValue(currentValue);
-    } else {
-      // If not found and custom not allowed, reset
-      onValueChange("");
-      setInputValue("");
-    }
+  const handleSelect = (selectedValue: string) => {
+    onValueChange(selectedValue);
     setOpen(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    // If custom is allowed, treat input value as a potential custom selection
-    // But don't call onValueChange until selection or blur for better control
+  const handleCustomSubmit = () => {
+    if (inputValue.trim() && allowCustom) {
+      handleSelect(inputValue.trim()); // Use input value as both value and label for custom
+    }
   };
-
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
-  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -85,56 +77,63 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800",
-            disabled && "opacity-50 cursor-not-allowed",
-            className
+            "w-full justify-between font-normal text-sm bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800 hover:text-white",
+            className,
+            disabled && "opacity-50 cursor-not-allowed"
           )}
           disabled={disabled}
         >
-          {inputValue ? (
-            <span className="truncate">{inputValue}</span>
-          ) : (
-            <span className="text-zinc-500">{placeholder}</span>
-          )}
+          {options.find((option) => option.value === value)?.label ||
+            (value ? value : placeholder)}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-zinc-700">
-        <Command>
+      <PopoverContent className={cn("w-[--radix-popover-trigger-width] p-0 bg-zinc-950 border-zinc-800 text-white", contentClassName)}>
+        <Command className="bg-zinc-950 text-white">
           <CommandInput
             placeholder={placeholder}
+            className="text-white placeholder:text-zinc-500 border-b border-zinc-800"
             value={inputValue}
             onValueChange={setInputValue}
           />
           <CommandList>
-            <CommandEmpty>
-              {allowCustom ? `Create "${inputValue}"` : "No item found."}
+            <CommandEmpty className="py-6 text-center text-sm text-zinc-400">
+              {allowCustom && inputValue.trim() ? (
+                <div className="flex flex-col items-center gap-2">
+                  <p>No results found for "{inputValue}"</p>
+                  <Button
+                    variant="link"
+                    onClick={handleCustomSubmit}
+                    className="text-blue-500 text-sm h-auto p-0"
+                  >
+                    <PlusCircle className="mr-1 h-4 w-4" /> Create "{inputValue}"
+                  </Button>
+                </div>
+              ) : (
+                "No results found."
+              )}
             </CommandEmpty>
             <CommandGroup>
-              {filteredOptions.map((option) => (
+              {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={option.label} // Use label for command searchability
                   onSelect={() => handleSelect(option.value)}
-                  className="text-sm cursor-pointer"
+                  className={cn(
+                    "text-white hover:bg-zinc-800",
+                    itemClassName,
+                    value === option.value && "bg-zinc-800 text-blue-400"
+                  )}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0",
+                      value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}
                 </CommandItem>
               ))}
-              {allowCustom && inputValue && !options.some(opt => opt.label.toLowerCase() === inputValue.toLowerCase()) && (
-                <CommandItem
-                  onSelect={() => handleSelect(inputValue)}
-                  className="text-sm cursor-pointer text-blue-400"
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Create "{inputValue}"
-                </CommandItem>
-              )}
             </CommandGroup>
           </CommandList>
         </Command>

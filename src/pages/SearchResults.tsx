@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react'; // Added useCallback and useState
 import { useSearchParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
@@ -13,14 +13,13 @@ import { DropdownMenuTrigger, DropdownMenu, DropdownMenuContent } from '@/compon
 import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddModal';
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
-import { useState } from 'react';
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q')?.toLowerCase() || '';
-  const { tracks, albums, artists, releases, setCurrentTrack, activeProfile } = useMusicStore(); // Removed deleteTrack, addToUserQueue, incrementMemories, decrementMemories as they are now handled by TrackDropdownMenuItems
+  const { tracks, albums, artists, releases, setCurrentTrack, activeProfile } = useMusicStore();
 
   const [selectedTrackForPlaylistAdd, setSelectedTrackForPlaylistAdd] = useState<any>(null); 
   const [isCreatePlaylistAddModalOpen, setIsCreatePlaylistAddModalOpen] = useState(false);
@@ -29,19 +28,37 @@ const SearchResults = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
+  const getTrackDisplayArtists = useCallback((track: any) => {
+    if (!track || !track.artistCredits) {
+      const primaryArtist = artists.find(a => a.id === track.artistId);
+      return primaryArtist?.name || "Unknown Artist";
+    }
+
+    const leadArtists = track.artistCredits
+      .filter((credit: any) => credit.role === 'Lead artist')
+      .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+
+    if (leadArtists.length > 0) {
+      return leadArtists.join(', ');
+    }
+    const primaryArtist = artists.find(a => a.id === track.artistId);
+    return primaryArtist?.name || "Unknown Artist";
+  }, [artists]);
+
   const results = useMemo(() => {
     if (!query) return { tracks: [], albums: [], artists: [] };
 
     return {
       tracks: tracks.filter(t => 
         t.title.toLowerCase().includes(query) || 
-        artists.find(a => a.id === t.artistId)?.name.toLowerCase().includes(query) || 
+        getTrackDisplayArtists(t).toLowerCase().includes(query) || // Use helper for search
         albums.find(al => trackHasAlbum(t, al.id))?.title.toLowerCase().includes(query)
       ),
       albums: albums.filter(a => a.title.toLowerCase().includes(query) || artists.find(art => art.id === a.artistId)?.name.toLowerCase().includes(query)),
       artists: artists.filter(a => a.name.toLowerCase().includes(query))
     };
-  }, [query, tracks, albums, artists]);
+  }, [query, tracks, albums, artists, getTrackDisplayArtists]);
 
   const hasResults = results.tracks.length > 0 || results.albums.length > 0 || results.artists.length > 0;
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
@@ -92,7 +109,7 @@ const SearchResults = () => {
                   <Link key={album.id} to={`/albums/${album.id}`}>
                     <Card className="bg-zinc-900/40 border-zinc-800 p-3 hover:bg-zinc-900/60 transition-all group">
                       <div className="aspect-square rounded-lg overflow-hidden mb-3">
-                        <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover" alt="" /> {/* Use the new helper */}
+                        <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover" alt="" />
                       </div>
                       <h3 className="text-sm font-bold text-white truncate">{album.title}</h3>
                     </Card>
@@ -107,7 +124,7 @@ const SearchResults = () => {
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Tracks</h2>
               <div className="space-y-2">
                 {results.tracks.map(track => {
-                  const artist = artists.find(a => a.id === track.artistId);
+                  const artistName = getTrackDisplayArtists(track);
                   const album = albums.find(al => trackHasAlbum(track, al.id));
                   return (
                     <TrackRightClickMenu key={track.id} track={track}>
@@ -116,7 +133,7 @@ const SearchResults = () => {
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-10 h-10 rounded bg-zinc-800 overflow-hidden relative group/play">
-                            <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover opacity-60" alt="" /> {/* Use the new helper */}
+                            <img src={getAlbumDisplayCover(album, releases, defaultAlbumImage)} className="w-full h-full object-cover opacity-60" alt="" />
                             <button 
                               onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id); }}
                               className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover/play:opacity-100 transition-opacity"
@@ -126,7 +143,7 @@ const SearchResults = () => {
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-white truncate">{track.title}</p>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{artist?.name} {album?.title && `— ${album.title}`}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{artistName} {album?.title && `— ${album.title}`}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">

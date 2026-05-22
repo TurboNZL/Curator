@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
 import { ListMusic, Trash2, Shuffle, Play, GripVertical, Music, Loader2 } from 'lucide-react';
@@ -60,11 +60,31 @@ const Queue = () => {
     return getAlbumDisplayCover(album, releases, defaultAlbumImage);
   };
 
+  const getTrackDisplayArtists = useCallback((track: any) => {
+    if (!track || !track.artistCredits) {
+      const primaryArtist = artists.find(a => a.id === track.artistId);
+      return primaryArtist?.name || "Unknown Artist";
+    }
+
+    const leadArtists = track.artistCredits
+      .filter((credit: any) => credit.role === 'Lead artist')
+      .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+
+    if (leadArtists.length > 0) {
+      return leadArtists.join(', ');
+    }
+    const primaryArtist = artists.find(a => a.id === track.artistId);
+    return primaryArtist?.name || "Unknown Artist";
+  }, [artists]);
+
+
   const getTrackData = (id: string) => {
     const track = tracks.find(t => t.id === id);
-    const artist = artists.find(a => a.id === track?.artistId);
+    // Use getTrackDisplayArtists to get the display artist name
+    const artistName = track ? getTrackDisplayArtists(track) : 'Unknown Artist';
     const album = albums.find(al => track?.albumIds?.some(aId => aId.albumId === al.id));
-    return { track, artist, album };
+    return { track, artistName, album };
   };
 
   const currentTrackData = currentTrackId ? getTrackData(currentTrackId) : null;
@@ -123,7 +143,7 @@ const Queue = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-black text-white uppercase truncate">{currentTrackData.track.title}</h3>
-                <p className="text-sm font-bold text-blue-400">{currentTrackData.artist?.name || 'Unknown Artist'}</p>
+                <p className="text-sm font-bold text-blue-400">{currentTrackData.artistName || 'Unknown Artist'}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white" onClick={(e) => e.stopPropagation()}>
@@ -155,7 +175,7 @@ const Queue = () => {
             <p className="text-xs text-zinc-700 py-4 text-center border border-dashed border-zinc-900 rounded-xl">Manual queue is empty.</p>
           ) : (
             userQueue.map((id, index) => {
-              const { track, artist, album } = getTrackData(id);
+              const { track, artistName, album } = getTrackData(id);
               if (!track) return null;
               return (
                 <div
@@ -171,7 +191,7 @@ const Queue = () => {
                 >
                   <QueueItem
                     track={track}
-                    artist={artist}
+                    artistName={artistName}
                     album={album}
                     releases={releases} // Pass releases
                     activeProfile={activeProfile} // Pass activeProfile
@@ -209,13 +229,13 @@ const Queue = () => {
             <p className="text-xs text-zinc-700 py-4 text-center border border-dashed border-zinc-900 rounded-xl">No source tracks queued.</p>
           ) : (
             activeQueue.map((id, index) => {
-              const { track, artist, album } = getTrackData(id);
+              const { track, artistName, album } = getTrackData(id);
               if (!track) return null;
               return (
                 <QueueItem
                   key={`${id}-${index}`}
                   track={track}
-                  artist={artist}
+                  artistName={artistName}
                   album={album}
                   releases={releases} // Pass releases
                   activeProfile={activeProfile} // Pass activeProfile
@@ -233,7 +253,7 @@ const Queue = () => {
   );
 };
 
-const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, onPlay }: {track: Track, artist: any, album: any, releases: any[], activeProfile: any, onRemove: () => void, onPlay: () => void}) => {
+const QueueItem = ({ track, artistName, album, releases, activeProfile, onRemove, onPlay }: {track: Track, artistName: string, album: any, releases: any[], activeProfile: any, onRemove: () => void, onPlay: () => void}) => {
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
   const albumArt = getAlbumDisplayCover(album, releases, defaultAlbumImage);
 
@@ -248,7 +268,7 @@ const QueueItem = ({ track, artist, album, releases, activeProfile, onRemove, on
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
-          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artist?.name || 'Unknown Artist'}</p>
+          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">{artistName || 'Unknown Artist'}</p>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={(e) => { e.stopPropagation(); onPlay(); }}>

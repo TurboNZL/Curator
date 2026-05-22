@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Info, ListMusic, ChevronUp, ChevronDown, Trash2, Merge, Music, MoreVertical, Plus, Minus, Edit2, List, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { CreatePlaylistAddModal } from '../modals/CreatePlaylistAddModal';
 import { EditTrackModal } from '../modals/EditTrackModal';
 import { toast } from 'sonner';
 import { TrackDropdownMenuItems } from '../ui/TrackDropdownMenuItems'; // Import new component
+import { Credit } from '@/types/music'; // Import Credit type
 
 const PARTIAL_PLAY_THRESHOLD_SECONDS = 30; // Define the threshold for partial plays
 
@@ -42,6 +43,24 @@ export const BottomPlayer = () => {
   const artist = artists.find(a => a.id === currentTrack?.artistId);
   const album = albums.find(al => currentTrack && trackHasAlbum(currentTrack, al.id));
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
+
+  // Derive display artist names from artistCredits
+  const displayArtists = useMemo(() => {
+    if (!currentTrack || !currentTrack.artistCredits) {
+      return artist?.name || "Unknown Artist";
+    }
+    const leadArtists = currentTrack.artistCredits
+      .filter(credit => credit.role === 'Lead artist')
+      .map(credit => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+
+    if (leadArtists.length > 0) {
+      const allLeadArtists = leadArtists.join(', ');
+      // Truncate if too long (e.g., more than 30 characters)
+      return allLeadArtists.length > 30 ? `${allLeadArtists.substring(0, 27)}...` : allLeadArtists;
+    }
+    return artist?.name || "Unknown Artist"; // Fallback to primary artist if no lead artists defined
+  }, [currentTrack, artists, artist]);
 
   // Update refs when relevant props change
   useEffect(() => {
@@ -217,7 +236,7 @@ export const BottomPlayer = () => {
             {currentTrack?.title || "No Track Selected"}
           </h4>
           <p className="text-xs font-bold text-zinc-500 truncate uppercase tracking-widest">
-            {artist?.name || "Select music to play"}
+            {displayArtists}
           </p>
           {currentTrack && (
             <div className="flex items-center gap-2 mt-1">

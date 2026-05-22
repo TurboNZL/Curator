@@ -17,6 +17,7 @@ export default defineHandler(async (event) => {
       title: body.title,
       artistId: body.artistId,
       artistIds: JSON.stringify(body.artistIds || []),
+      artistCredits: JSON.stringify(body.artistCredits || []), // NEW: Store artistCredits
       rating: body.rating,
       initialRating: body.initialRating,
       memories: body.memories,
@@ -28,10 +29,8 @@ export default defineHandler(async (event) => {
       bpm: body.bpm,
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
-      // genres are handled separately
-      producers: JSON.stringify(body.producers || []),
-      writers: JSON.stringify(body.writers || []),
-      credits: JSON.stringify(body.credits || []),
+      // genres are handled separately via trackGenres
+      // Removed producers, writers, credits as direct track fields
       syncWithAlbumCredits: body.syncWithAlbumCredits ? 1 : 0, 
     };
     await db.update(tracks).set(updateData).where(eq(tracks.id, id));

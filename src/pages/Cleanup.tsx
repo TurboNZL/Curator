@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle, FileText } from 'lucide-react'; 
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle, FileText, Users } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
@@ -18,16 +18,14 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal';
-import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
+import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
 import { useLocation } from 'react-router-dom';
-import { SpotifyUriGroupResolutionModal } from '@/components/modals/SpotifyUriGroupResolutionModal'; // Import new modal
+import { SpotifyUriGroupResolutionModal } from '@/components/modals/SpotifyUriGroupResolutionModal';
 import { GeniusLinkResolutionModal } from '@/components/modals/GeniusLinkResolutionModal';
 import { YoutubeMusicLinkResolutionModal } from '@/components/modals/YoutubeMusicLinkResolutionModal';
-import { ProducersResolutionModal } from '@/components/modals/ProducersResolutionModal';
-import { GenresResolutionModal } from '@/components/modals/GenresResolutionModal';
 import { ReleaseDateResolutionModal } from '@/components/modals/ReleaseDateResolutionModal';
 import { AlbumCreditsResolutionModal } from '@/components/modals/AlbumCreditsResolutionModal';
-import { Track, Album, Release } from '@/types/music'; // Import types
+import { Track, Album, Release, Credit } from '@/types/music';
 
 
 interface ImageUploadResolutionModalProps {
@@ -89,7 +87,7 @@ const ImageUploadResolutionModal: React.FC<ImageUploadResolutionModalProps> = ({
 
 
 const Cleanup = () => {
-  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, activeProfile } = useMusicStore();
+  const { tracks, albums, artists, releases, vote, volume, updateTrack, updateAlbum, updateArtist, fetchData, activeProfile, clearUnlinkedFiles, clearUnusedCategoriesAndGenres } = useMusicStore();
   
   const [pair, setPair] = useState<[any, any] | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -112,11 +110,8 @@ const Cleanup = () => {
   const [isYoutubeMusicResolutionModalOpen, setIsYoutubeMusicResolutionModalOpen] = useState(false);
   const [selectedTrackForYoutubeMusic, setSelectedTrackForYoutubeMusic] = useState<Track | null>(null);
 
-  const [isProducersResolutionModalOpen, setIsProducersResolutionModalOpen] = useState(false);
-  const [selectedTrackForProducers, setSelectedTrackForProducers] = useState<Track | null>(null);
-
-  const [isGenresResolutionModalOpen, setIsGenresResolutionModalOpen] = useState(false);
-  const [selectedTrackForGenres, setSelectedTrackForGenres] = useState<Track | null>(null);
+  // Removed isProducersResolutionModalOpen and selectedTrackForProducers
+  // Removed isGenresResolutionModalOpen and selectedTrackForGenres
 
   const [isReleaseDateResolutionModalOpen, setIsReleaseDateResolutionModalOpen] = useState(false);
   const [selectedReleaseForDate, setSelectedReleaseForDate] = useState<Release | null>(null);
@@ -133,13 +128,12 @@ const Cleanup = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
     album_cover: true,
-    credits_and_metadata: true, // Merged filter for album/track credits and metadata
+    album_credits: true, // Renamed from credits_and_metadata for clarity for albums
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
-    producers: true,
     release_date: true,
-    genres: true,
+    // Removed specific filters for producers, writers, genres, track_credits as they are now under general track metadata and ArtistCredits.
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -207,7 +201,7 @@ const Cleanup = () => {
 
   const allTasks = useMemo(() => {
     const generatedTasks: any[] = [];
-    const spotifyTasksForAlbums: any[] = []; // Declare spotifyTasksForAlbums here
+    const spotifyTasksForAlbums: any[] = [];
 
     // Artist Image
     artists.filter(a => !a.image).forEach(a => {
@@ -224,10 +218,16 @@ const Cleanup = () => {
       generatedTasks.push({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' });
     });
 
-    // Album Credits
+    // Album General Credits (Textarea field)
     albums.filter(al => al.credits.length === 0).forEach(al => {
-      generatedTasks.push({ type: 'credits_and_metadata', originalType: 'album_credits', entity: al, label: `Add credits for album ${al.title}`, icon: FileText, color: 'text-gray-500' });
+      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add general notes for album ${al.title}`, icon: FileText, color: 'text-gray-500' });
     });
+
+    // Album Artist Credits (ArtistCreditSelect field) - This is considered 'metadata' for the album
+    albums.filter(al => al.artistCredits.length === 0).forEach(al => {
+      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add artist roles for album ${al.title}`, icon: Users, color: 'text-indigo-500' }); // Using Users icon
+    });
+
 
     // Release Date
     releases.filter(r => !r.releaseDate).forEach(r => {
@@ -287,22 +287,6 @@ const Cleanup = () => {
 
     generatedTasks.push(...spotifyTasksForAlbums, ...individualSpotifyTasks);
 
-
-    // Track-level Metadata (only if not syncing with album)
-    tracks.filter(t => !t.syncWithAlbumCredits).forEach(t => {
-      if (t.genres.length === 0) {
-        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' });
-      }
-      if (t.producers.length === 0) {
-        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' });
-      }
-      if (t.writers.length === 0) {
-        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_writers', entity: t, label: `Add writers for ${t.title}`, icon: Tag, color: 'text-orange-500' });
-      }
-      if (t.credits.length === 0) {
-        generatedTasks.push({ type: 'credits_and_metadata', originalType: 'track_credits', entity: t, label: `Add additional credits for ${t.title}`, icon: FileText, color: 'text-gray-500' });
-      }
-    });
 
     // Genius URI
     tracks.filter(t => !t.geniusUrl).forEach(t => {
@@ -441,10 +425,8 @@ const Cleanup = () => {
             });
             setIsSpotifyResolutionModalOpen(true);
         } else {
-            // For individual Spotify URI resolution, we can reuse GeniusLinkResolutionModal logic
-            // or if a more specific one is needed, create SpotifyLinkResolutionModal for individual tracks
-            setSelectedTrackForGenius(task.entity); // Temp assignment
-            setIsGeniusResolutionModalOpen(true); // Reusing for generic link resolution for now
+            setSelectedTrackForGenius(task.entity); // Reusing for generic link resolution for now
+            setIsGeniusResolutionModalOpen(true);
         }
     } else if (task.type === 'genius_uri') {
       setSelectedTrackForGenius(task.entity);
@@ -452,33 +434,9 @@ const Cleanup = () => {
     } else if (task.type === 'youtube_music_uri') {
       setSelectedTrackForYoutubeMusic(task.entity);
       setIsYoutubeMusicResolutionModalOpen(true);
-    } else if (task.type === 'credits_and_metadata') {
-      switch (task.originalType) {
-        case 'album_credits':
-          setSelectedAlbumForCredits(task.entity);
-          setIsAlbumCreditsResolutionModalOpen(true);
-          break;
-        case 'track_genres':
-          setSelectedTrackForGenres(task.entity);
-          setIsGenresResolutionModalOpen(true);
-          break;
-        case 'track_producers':
-          setSelectedTrackForProducers(task.entity);
-          setIsProducersResolutionModalOpen(true);
-          break;
-        case 'track_writers':
-          setSelectedTrackForProducers(task.entity); // Reusing Producers modal for writers
-          setIsProducersResolutionModalOpen(true);
-          break;
-        case 'track_credits':
-          // Assuming AlbumCreditsResolutionModal can handle track credits if needed, or a new modal would be created.
-          // For now, re-using AlbumCreditsResolutionModal and casting entity to Album if it's a track is problematic.
-          // Need to ensure AlbumCreditsResolutionModal can truly handle a Track entity or create a TrackCreditsResolutionModal.
-          // For the scope of this task, I will assume it can handle track entities as per previous implementation.
-          setSelectedAlbumForCredits(task.entity); // This might be problematic if AlbumCreditsResolutionModal expects an Album.
-          setIsAlbumCreditsResolutionModalOpen(true);
-          break;
-      }
+    } else if (task.type === 'album_credits') { // For both general notes and artist roles
+      setSelectedAlbumForCredits(task.entity);
+      setIsAlbumCreditsResolutionModalOpen(true);
     } else if (task.type === 'release_date') {
       setSelectedReleaseForDate(task.entity);
       setIsReleaseDateResolutionModalOpen(true);
@@ -516,28 +474,17 @@ const Cleanup = () => {
     fetchData();
   };
 
-  const handleProducersResolution = async (trackId: string, producers: string[]) => {
-    await updateTrack(trackId, { producers });
-    fetchData();
-  };
-
-  const handleGenresResolution = async (trackId: string, genres: string[]) => {
-    await updateTrack(trackId, { genres });
+  const handleAlbumCreditsResolution = async (albumId: string, credits: string[], artistCredits: Credit[]) => {
+    await updateAlbum(albumId, { credits, artistCredits });
     fetchData();
   };
 
   const handleReleaseDateResolution = async (releaseId: string, releaseDate: string) => {
-    // This is a direct API call as updateRelease is not directly exposed for single fields
     await fetch(`/api/releases/${releaseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ releaseDate })
     });
-    fetchData();
-  };
-
-  const handleAlbumCreditsResolution = async (albumId: string, credits: string[]) => {
-    await updateAlbum(albumId, { credits });
     fetchData();
   };
 
@@ -789,24 +736,6 @@ const Cleanup = () => {
           onClose={() => setIsYoutubeMusicResolutionModalOpen(false)}
           track={selectedTrackForYoutubeMusic}
           onResolve={handleYoutubeMusicResolution}
-        />
-      )}
-
-      {selectedTrackForProducers && (
-        <ProducersResolutionModal
-          isOpen={isProducersResolutionModalOpen}
-          onClose={() => setIsProducersResolutionModalOpen(false)}
-          track={selectedTrackForProducers}
-          onResolve={handleProducersResolution}
-        />
-      )}
-
-      {selectedTrackForGenres && (
-        <GenresResolutionModal
-          isOpen={isGenresResolutionModalOpen}
-          onClose={() => setIsGenresResolutionModalOpen(false)}
-          track={selectedTrackForGenres}
-          onResolve={handleGenresResolution}
         />
       )}
 

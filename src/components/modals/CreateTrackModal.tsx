@@ -10,6 +10,9 @@ import { FileUpload } from '@/components/ui/FileUpload';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; // Import ArtistCreditSelect
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; // Import MultiSelectSearch
+import { Credit } from '@/types/music'; // Import Credit type
 
 interface CreateTrackModalProps {
   albumId?: string; // These props are now optional for initial form state
@@ -24,13 +27,12 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   
   const [formData, setFormData] = useState({
     title: '',
-    artistId: initialArtistId,
-    artistIds: [] as string[],
-    artistCredits: [] as { artistId: string; role: string }[], // Initialize artistCredits
+    artistId: initialArtistId, // Primary artist
+    artistIds: [] as string[], // Additional artists
+    artistCredits: [] as Credit[], // NEW: Artist credits
     albumId: initialAlbumId,
     rating: '',
-    genres: '',
-    producers: '',
+    genres: [] as string[], // NEW: Genres as array
     bitrate: '320kbps', // Bitrate still stored, but not editable directly
     audioUrl: '',
     spotifyUrl: '',
@@ -48,8 +50,7 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
         artistCredits: [], // Reset artistCredits
         albumId: initialAlbumId,
         rating: '',
-        genres: '',
-        producers: '',
+        genres: [],
         bitrate: '320kbps',
         audioUrl: '',
         spotifyUrl: '',
@@ -61,6 +62,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
 
   const selectedAlbum = useMemo(() => albums.find(a => a.id === formData.albumId), [albums, formData.albumId]);
   const pendingFiles = selectedAlbum?.pendingFiles || [];
+
+  const allGenres = useMusicStore(state => state.genres);
+  const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
 
   const cleanSpotifyUrl = (url: string) => {
     if (!url) return '';
@@ -93,18 +97,27 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
       finalPrimaryArtistId = newArtist.id;
     }
 
+    // Ensure the primary artist from artistCredits is also in the track's primary artistId
+    // If no 'Lead artist' exists, default to existing track.artistId
+    const primaryArtistCredit = formData.artistCredits.find(ac => ac.role === 'Lead artist');
+    const primaryArtistIdFromCredits = primaryArtistCredit ? primaryArtistCredit.artistId : finalPrimaryArtistId;
+    
+    // Ensure primary artist is also in artistCredits if not already there
+    const finalArtistCredits = [...formData.artistCredits];
+    if (!finalArtistCredits.some(credit => credit.artistId === primaryArtistIdFromCredits)) {
+      finalArtistCredits.unshift({ artistId: primaryArtistIdFromCredits, role: 'Lead artist' });
+    }
+
     const newTrack = {
       title: formData.title,
-      artistId: finalPrimaryArtistId,
+      artistId: primaryArtistIdFromCredits, // Set primary artist from credits
       artistIds: finalArtistIds,
-      artistCredits: [{ artistId: finalPrimaryArtistId, role: 'Primary artist' }], // Add default artistCredits
-      albumIds: formData.albumId && formData.albumId !== 'none' ? [{ albumId: formData.albumId, order: 0 }] : [], // Corrected albumIds structure
+      artistCredits: finalArtistCredits, // NEW: Artist credits
+      albumIds: formData.albumId && formData.albumId !== 'none' ? [{ albumId: formData.albumId, order: 0 }] : [],
       rating: formData.rating ? parseFloat(formData.rating) : undefined,
       initialRating: formData.rating ? parseFloat(formData.rating) : undefined,
-      genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
-      producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
-      writers: [],
-      credits: [],
+      genres: formData.genres, // NEW: Genres as array
+      // Removed producers, writers, credits
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
@@ -135,13 +148,12 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
     
     setFormData({ 
       title: '', 
-      artistId: formData.artistId, 
+      artistId: finalPrimaryArtistId, // Keep primary artist for convenience if reopening
       artistIds: [],
       artistCredits: [], // Reset artistCredits
       albumId: formData.albumId, 
       rating: '', 
-      genres: '', 
-      producers: '', 
+      genres: [], 
       bitrate: '320kbps', 
       audioUrl: '', 
       spotifyUrl: '', 
@@ -176,19 +188,19 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   
     const tracksToCreate = pendingFiles.map(file => {
       const cleanTitle = file.name.split('.')[0].replace(/_/g, ' ');
+      // Default artistCredits for autofilled tracks
+      const defaultArtistCredits: Credit[] = [{ artistId: formData.artistId, role: 'Lead artist' }];
+
       return {
         title: cleanTitle,
         artistId: formData.artistId,
         artistIds: formData.artistIds,
-        artistCredits: [{ artistId: formData.artistId, role: 'Primary artist' }], // Add default artistCredits
-        albumIds: [{ albumId: selectedAlbum.id, order: 0 }], // Corrected albumIds structure
+        artistCredits: defaultArtistCredits, // NEW: Add default artistCredits
+        albumIds: [{ albumId: selectedAlbum.id, order: 0 }],
         rating: undefined,
         initialRating: undefined,
         genres: [],
-        producers: [],
-        writers: [],
-        credits: [],
-        bitrate: '320kbps', // Default, would ideally be extracted
+        bitrate: '320kbps',
         localFilePath: file.url,
         spotifyUrl: '',
         geniusUrl: '',
@@ -204,9 +216,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
   
     try {
       await addTracks(tracksToCreate);
-      await updateAlbum(selectedAlbum.id, { pendingFiles: [] }); // Clear pending files
+      await updateAlbum(selectedAlbum.id, { pendingFiles: [] });
       toast.success(`Added ${tracksToCreate.length} tracks from pending files.`);
-      onOpenChange(false); // Close modal after autofill
+      onOpenChange(false);
     } catch (error) {
       console.error("Autofill failed:", error);
       toast.error("Failed to autofill tracks.");
@@ -271,6 +283,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 onValueChange={(val) => setFormData({...formData, artistId: val})}
                 placeholder="Search or type artist..."
                 allowCustom
+                className="bg-zinc-900 border-zinc-800"
+                contentClassName="bg-zinc-950 border-zinc-800"
+                itemClassName="text-white hover:bg-zinc-800"
               />
             </div>
             <div className="space-y-2">
@@ -281,6 +296,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
                 onValueChange={(val) => setFormData({...formData, albumId: val})}
                 placeholder="Search or type album..."
                 allowCustom
+                className="bg-zinc-900 border-zinc-800"
+                contentClassName="bg-zinc-950 border-zinc-800"
+                itemClassName="text-white hover:bg-zinc-800"
               />
             </div>
           </div>
@@ -306,6 +324,9 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
               onValueChange={addArtist}
               placeholder="Add another artist..."
               allowCustom
+              className="bg-zinc-900 border-zinc-800"
+              contentClassName="bg-zinc-950 border-zinc-800"
+              itemClassName="text-white hover:bg-zinc-800"
             />
           </div>
 
@@ -315,9 +336,24 @@ export const CreateTrackModal = ({ albumId: initialAlbumId = '', artistId: initi
               <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="bg-zinc-900 border-zinc-800" />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rating (0-10, empty for unrated)</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Initial Rating (0-10, empty for unrated)</Label>
               <Input type="number" step="0.1" value={formData.rating} onChange={(e) => setFormData({...formData, rating: e.target.value})} className="bg-zinc-900 border-zinc-800" />
             </div>
+          </div>
+
+          <ArtistCreditSelect
+            value={formData.artistCredits}
+            onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
+          />
+          
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres</Label>
+            <MultiSelectSearch
+                options={genreOptions}
+                selected={formData.genres.map(genre => ({ value: genre, label: genre }))}
+                onSelectedChange={(selectedItems) => setFormData(prev => ({ ...prev, genres: selectedItems.map(item => item.value) }))}
+                placeholder="Select genres..."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

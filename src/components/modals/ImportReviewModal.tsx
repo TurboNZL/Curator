@@ -11,15 +11,18 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Disc, Music, User, Plus, Loader2, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMusicStore } from '@/store/useMusicStore';
-import { cn, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
+import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch';
+import { Credit } from '@/types/music';
 
 interface ImportedTrackData {
   title: string;
   youtubeMusicUrl: string;
   localFilePath: string;
   thumbnailUrl?: string;
-  bitrate?: string; // Added bitrate
+  bitrate?: string;
 }
 
 interface ImportReviewModalProps {
@@ -35,7 +38,7 @@ interface ImportReviewModalProps {
 }
 
 export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, onClose, initialData }) => {
-  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData } = useMusicStore(); // Added releases
+  const { artists, releases, addArtist, addAlbum, addRelease, addTracks, fetchData, genres } = useMusicStore();
   const [isSaving, setIsSaving] = useState(false);
 
   const [albumFormData, setAlbumFormData] = useState({
@@ -43,23 +46,32 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
     artistId: initialData.suggestedArtistId || '',
     artistNameInput: initialData.suggestedArtistName,
     primaryCover: initialData.suggestedAlbumCover, 
-    releaseDate: ''
+    releaseDate: '',
+    artistCredits: [] as Credit[], // NEW: Album artist credits
   });
 
   const [tracksFormData, setTracksFormData] = useState<ImportedTrackData[]>(initialData.suggestedTracks);
+
+  const allGenres = useMusicStore(state => state.genres);
+  const genreOptions = allGenres.map(genre => ({ value: genre, label: genre }));
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]); // To allow setting genres for all tracks
 
   useEffect(() => {
     if (isOpen) {
       if (initialData.suggestedArtistId) {
         setAlbumFormData(prev => ({ ...prev, artistId: initialData.suggestedArtistId, artistNameInput: initialData.suggestedArtistName }));
+        setAlbumFormData(prev => ({ ...prev, artistCredits: [{ artistId: initialData.suggestedArtistId, role: 'Lead artist' }] }));
       } else if (initialData.suggestedArtistName) {
         const foundArtist = artists.find(a => a.name.toLowerCase() === initialData.suggestedArtistName.toLowerCase());
         if (foundArtist) {
           setAlbumFormData(prev => ({ ...prev, artistId: foundArtist.id, artistNameInput: foundArtist.name }));
+          setAlbumFormData(prev => ({ ...prev, artistCredits: [{ artistId: foundArtist.id, role: 'Lead artist' }] }));
         } else {
           setAlbumFormData(prev => ({ ...prev, artistId: '', artistNameInput: initialData.suggestedArtistName }));
+          setAlbumFormData(prev => ({ ...prev, artistCredits: [] }));
         }
       }
+      setSelectedGenres([]); // Reset genres
     }
   }, [artists, initialData, isOpen]);
 
@@ -100,26 +112,34 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
         throw new Error("Artist could not be created or identified.");
       }
 
+      // Ensure primary artist is also in album artistCredits if not already there
+      const finalAlbumArtistCredits = [...albumFormData.artistCredits];
+      if (!finalAlbumArtistCredits.some(credit => credit.artistId === finalArtistId)) {
+        finalAlbumArtistCredits.unshift({ artistId: finalArtistId, role: 'Lead artist' });
+      }
+
       const newAlbum = await addAlbum({
         title: albumFormData.title,
         artistId: finalArtistId,
         artistIds: [finalArtistId],
-        // Removed 'covers' from creation
         primaryCover: albumFormData.primaryCover || null, 
         pendingFiles: [], 
-        credits: [] 
+        credits: [],
+        artistCredits: finalAlbumArtistCredits, // NEW: Album artist credits
       });
       toast.success(`Album "${albumFormData.title}" created.`);
 
-      const tracksToCreate = tracksFormData.map(track => ({
+      const tracksToCreate = tracksFormData.map((track, index) => ({
         ...track,
         artistId: finalArtistId,
         artistIds: [finalArtistId], 
-        albumIds: [{ albumId: newAlbum.id, order: 0 }],
-        genres: [], producers: [], writers: [], credits: [],
+        albumIds: [{ albumId: newAlbum.id, order: index }], // Use index for order
+        genres: selectedGenres, // Apply selected genres to all tracks
+        producers: [], writers: [], credits: [], // Removed as direct fields
         eloScore: 1000, comparisons: 0, memories: 0, queueRules: {},
-        bitrate: track.bitrate, // Pass bitrate
-        artistCredits: [{ artistId: finalArtistId, role: 'Primary artist' }], // Add default artistCredits
+        bitrate: track.bitrate,
+        artistCredits: [{ artistId: finalArtistId, role: 'Lead artist' }], // Add default artistCredits for tracks
+        syncWithAlbumCredits: true, // Default to true
       }));
       const createdTracks = await addTracks(tracksToCreate);
       toast.success(`Added ${tracksToCreate.length} tracks to "${newAlbum.title}".`);
@@ -145,11 +165,13 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
 
   const handleArtistSelectChange = (value: string) => {
     const existingArtist = artists.find(a => a.id === value);
+    const newArtistId = existingArtist ? existingArtist.id : value;
 
     setAlbumFormData(prev => ({
       ...prev,
-      artistId: existingArtist ? existingArtist.id : value,
-      artistNameInput: existingArtist ? existingArtist.name : value
+      artistId: newArtistId,
+      artistNameInput: existingArtist ? existingArtist.name : value,
+      artistCredits: [{ artistId: newArtistId, role: 'Lead artist' }] // Set default lead artist for album
     }));
   };
 
@@ -195,15 +217,22 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Artist</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Primary Artist</Label>
                   <SearchableSelect
                     options={artistOptions}
                     value={albumFormData.artistId}
                     onValueChange={handleArtistSelectChange}
                     placeholder="Search or type artist..."
                     allowCustom
+                    className="bg-zinc-900 border-zinc-800"
+                    contentClassName="bg-zinc-950 border-zinc-800"
+                    itemClassName="text-white hover:bg-zinc-800"
                   />
                 </div>
+                <ArtistCreditSelect
+                  value={albumFormData.artistCredits}
+                  onChange={(credits) => setAlbumFormData(prev => ({ ...prev, artistCredits: credits }))}
+                />
                 <div className="space-y-2">
                   <Label htmlFor="release-date" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Release Date (for default release)</Label>
                   <Input
@@ -219,12 +248,20 @@ export const ImportReviewModal: React.FC<ImportReviewModalProps> = ({ isOpen, on
           </TabsContent>
 
           <TabsContent value="tracks" className="flex-1 p-6 space-y-4 mt-0 overflow-y-auto">
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Edit individual track titles if needed.</p>
-            <ScrollArea className="h-[calc(90vh-300px)] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Edit individual track titles if needed. Genres set below will apply to all tracks.</p>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres (Applies to all imported tracks)</Label>
+              <MultiSelectSearch
+                options={genreOptions}
+                selected={selectedGenres.map(genre => ({ value: genre, label: genre }))}
+                onSelectedChange={(selectedItems) => setSelectedGenres(selectedItems.map(item => item.value))}
+                placeholder="Select genres..."
+              />
+            </div>
+            <ScrollArea className="h-[calc(90vh-400px)] rounded-xl border border-zinc-900 bg-zinc-900/30 p-2">
               <div className="space-y-2">
                 {tracksFormData.map((track, index) => (
                   <div key={index} className="flex items-center gap-3 p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
-                    {/* Use getAlbumDisplayCover for track thumbnails, passing a mock album or direct URL */}
                     <img src={track.thumbnailUrl || getAlbumDisplayCover(undefined, [], '/placeholder.svg')} alt="" className="w-10 h-10 object-cover rounded-md" />
                     <Input
                       value={track.title}

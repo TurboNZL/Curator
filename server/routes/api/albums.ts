@@ -20,8 +20,9 @@ export default defineHandler(async (event) => {
       eraId: body.eraId,
       primaryCover: body.primaryCover || null, 
       pendingFiles: JSON.stringify(body.pendingFiles || []),
-      credits: JSON.stringify(body.credits || []),
-      artistIds: JSON.stringify(body.artistIds || [])
+      credits: JSON.stringify(body.credits || []), // General album credits
+      artistIds: JSON.stringify(body.artistIds || []),
+      artistCredits: JSON.stringify(body.artistCredits || []), // NEW: Album artist credits
     };
 
     await db.insert(albums).values(newAlbum);
@@ -29,7 +30,8 @@ export default defineHandler(async (event) => {
       ...newAlbum, 
       pendingFiles: body.pendingFiles || [],
       credits: body.credits || [],
-      artistIds: body.artistIds || []
+      artistIds: body.artistIds || [],
+      artistCredits: body.artistCredits || [], // Parse back for return
     };
   }
 });

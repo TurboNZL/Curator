@@ -32,7 +32,8 @@ export interface Album {
   title: string;
   artistId: string; // Primary artist ID
   artistIds: string[]; // Additional artist IDs
-  credits: string[]; // Album-level credits (e.g., Mixed by, Mastered by)
+  credits: string[]; // Album-level general credits (e.g., Mixed by, Mastered by)
+  artistCredits: Credit[]; // Album-level artist-specific credits with roles
   eraId?: string;
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
@@ -54,7 +55,7 @@ export interface Track {
   title: string;
   artistId: string; // Primary artist
   artistIds: string[]; // Additional artist IDs
-  artistCredits: Credit[]; // Combined primary and additional artists with roles
+  artistCredits: Credit[]; // Track-level artist-specific credits with roles
   rating?: number; // Balanced rating (0-10)
   initialRating?: number; // Unbalanced rating
   eloScore: number;
@@ -63,10 +64,10 @@ export interface Track {
   spotifyUrl?: string;
   geniusUrl?: string;
   youtubeMusicUrl?: string;
-  genres: string[];
-  producers: string[];
-  writers: string[];
-  credits: string[];
+  genres: string[]; // Now fetched via trackGenres join table
+  // Removed producers: string[];
+  // Removed writers: string[];
+  // Removed credits: string[];
   bitrate?: string;
   bpm?: number;
   key?: string;
@@ -115,6 +116,13 @@ export interface Group {
 export interface ReleaseType {
   id: string;
   name: string;
+}
+
+// New interface for Role Categories
+export interface RoleCategory {
+  id: string;
+  name: string;
+  isRemovable: boolean;
 }
 
 export interface PlaybackRule {

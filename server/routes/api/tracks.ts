@@ -30,9 +30,8 @@ export default defineHandler(async (event) => {
         return {
           ...track,
           genres: trackGenreNames, // Use fetched genre names
-          producers: parseJson(track.producers),
-          writers: parseJson(track.writers),
-          credits: parseJson(track.credits),
+          artistCredits: parseJson(track.artistCredits), // NEW: Parse artistCredits
+          // Removed producers, writers, credits as direct track fields
           queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
           isFavorite: !!track.is_favorite,
           albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
@@ -55,6 +54,7 @@ export default defineHandler(async (event) => {
       title: body.title,
       artistId: body.artistId,
       artistIds: JSON.stringify(body.artistIds || []),
+      artistCredits: JSON.stringify(body.artistCredits || []), // NEW: Store artistCredits
       rating: body.rating || 0,
       initialRating: body.initialRating || 0,
       eloScore: body.eloScore || 1000,
@@ -63,14 +63,12 @@ export default defineHandler(async (event) => {
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
-      // genres are handled separately
-      producers: JSON.stringify(body.producers || []),
-      writers: JSON.stringify(body.writers || []),
-      credits: JSON.stringify(body.credits || []),
+      // genres are handled separately via trackGenres
+      // Removed producers, writers, credits as direct track fields
       bitrate: body.bitrate || '320kbps',
       bpm: body.bpm,
       key: body.key,
-      isFavorite: body.isFavorite ? 1 : 0,
+      isFavorite: !!body.isFavorite,
       queueRules: JSON.stringify(body.queueRules || {}),
       syncWithAlbumCredits: body.syncWithAlbumCredits, 
     };
@@ -106,11 +104,10 @@ export default defineHandler(async (event) => {
     return {
       ...newTrack,
       genres: body.genres || [], // Return the genre names that were passed in
-      producers: body.producers || [],
-      writers: body.writers || [],
-      credits: body.credits || [],
+      artistCredits: body.artistCredits || [], // NEW: Return artistCredits
+      // Removed producers, writers, credits from return
       queueRules: body.queueRules || {},
-      isFavorite: !!body.isFavorite,
+      isFavorite: !!newTrack.isFavorite, // Ensure it's a boolean for the return type
       albumIds: body.albumIds || [],
       artistIds: body.artistIds || [],
       syncWithAlbumCredits: !!body.syncWithAlbumCredits, 

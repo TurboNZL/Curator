@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react'; // Added useCallback
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Music, Play, Pause, Trash2, Edit2, Zap, AlertTriangle } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { toast } from 'sonner';
-import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
 import { EditTrackModal } from './EditTrackModal';
 import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
 import { Rating } from '../ui/Rating'; // DO NOT CHANGE THE STYLE OF THE RATING CARD
@@ -20,7 +20,7 @@ interface LowQualityTracksModalProps {
 }
 
 export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ open, onOpenChange }) => {
-  const { tracks, artists, albums, releases, volume, deleteTrack, fetchData, activeProfile } = useMusicStore(); // Added releases, activeProfile
+  const { tracks, artists, albums, releases, volume, deleteTrack, fetchData, activeProfile } = useMusicStore();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
@@ -39,14 +39,24 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
 
   const getAlbumArt = (track: any) => {
     const album = albums.find(a => trackHasAlbum(track, a.id));
-    // Use the new helper here
     return getAlbumDisplayCover(album, releases, activeProfile.settings?.defaultAlbumImage || '/placeholder.svg');
   };
 
-  const getArtistName = (track: any) => {
-    const artist = artists.find(a => a.id === track.artistId);
-    return artist?.name || 'Unknown Artist';
-  };
+  const getTrackDisplayArtists = useCallback((t: any) => {
+    const primaryArtist = artists.find(a => a.id === t.artistId);
+    if (!t.artistCredits || t.artistCredits.length === 0) return primaryArtist?.name || "Unknown Artist";
+    
+    const leadArtists = t.artistCredits
+      .filter((credit: any) => credit.role === 'Lead artist')
+      .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+
+    if (leadArtists.length > 0) {
+      return leadArtists.join(', ');
+    }
+    return primaryArtist?.name || "Unknown Artist";
+  }, [artists]);
+
 
   const playSnippet = (track: any) => {
     if (playingId === track.id) {
@@ -146,7 +156,7 @@ export const LowQualityTracksModal: React.FC<LowQualityTracksModalProps> = ({ op
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-bold text-white truncate">{track.title}</p>
-                          <p className="text-[10px] text-zinc-500 truncate">{getArtistName(track)}</p>
+                          <p className="text-[10px] text-zinc-500 truncate">{getTrackDisplayArtists(track)}</p>
                         </div>
                         <span className="text-[10px] font-mono text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full uppercase tracking-widest">{track.bitrate || 'N/A'}</span>
                       </div>

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X, Calendar, Text } from 'lucide-react'; 
 import { toast } from 'sonner';
-import { Album } from '@/types/music';
+import { Album, Credit } from '@/types/music'; // Import Credit type
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -17,6 +17,7 @@ import { Card } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Textarea } from '@/components/ui/textarea';
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; // Import ArtistCreditSelect
 
 export const EditAlbumModal = ({ album }: { album: Album }) => {
   const [open, setOpen] = useState(false);
@@ -45,7 +46,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
     artistIds: album.artistIds || [],
     primaryCover: album.primaryCover || '', 
     pendingFiles: album.pendingFiles || [],
-    credits: album.credits.join(', '), // Added credits to form data
+    credits: album.credits.join(', '), // General album notes, stored as comma-separated string
+    artistCredits: album.artistCredits || [], // NEW: Album artist credits
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
@@ -59,7 +61,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
         artistIds: album.artistIds || [],
         primaryCover: album.primaryCover || '', 
         pendingFiles: album.pendingFiles || [],
-        credits: album.credits.join(', '), // Initialize credits
+        credits: album.credits.join(', '), // Initialize general credits
+        artistCredits: album.artistCredits || [], // Initialize album artist credits
       });
     }
   };
@@ -74,7 +77,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
       artistIds: formData.artistIds,
       primaryCover: formData.primaryCover || null, 
       pendingFiles: formData.pendingFiles,
-      credits: formData.credits.split(',').map(s => s.trim()).filter(Boolean), // Parse credits back to array
+      credits: formData.credits.split(',').map(s => s.trim()).filter(Boolean), // Parse general credits back to array
+      artistCredits: formData.artistCredits, // NEW: Save album artist credits
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -147,7 +151,6 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
               <TabsTrigger value="files" className="text-[10px] font-black uppercase tracking-widest">Files ({formData.pendingFiles.length})</TabsTrigger>
-              <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Credits</TabsTrigger>
               <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
@@ -197,6 +200,9 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
                     onValueChange={(val) => setFormData({...formData, artistId: val})}
                     placeholder="Search or type artist..."
                     allowCustom
+                    className="bg-zinc-900 border-zinc-800"
+                    contentClassName="bg-zinc-950 border-zinc-800"
+                    itemClassName="text-white hover:bg-zinc-800"
                   />
                 </div>
 
@@ -221,8 +227,27 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
                     onValueChange={addArtist}
                     placeholder="Add another artist..."
                     allowCustom
+                    className="bg-zinc-900 border-zinc-800"
+                    contentClassName="bg-zinc-950 border-zinc-800"
+                    itemClassName="text-white hover:bg-zinc-800"
                   />
                 </div>
+              </div>
+               {/* NEW: Album Artist Credits */}
+              <ArtistCreditSelect
+                value={formData.artistCredits}
+                onChange={(credits) => setFormData(prev => ({ ...prev, artistCredits: credits }))}
+              />
+               {/* General Album Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">General Album Notes (comma separated)</Label>
+                <Textarea 
+                  id="credits" 
+                  value={formData.credits}
+                  onChange={(e) => setFormData({...formData, credits: e.target.value})}
+                  placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean" 
+                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[120px]"
+                />
               </div>
             </TabsContent>
 
@@ -272,20 +297,6 @@ export const EditAlbumModal = ({ album }: { album: Album }) => {
                     </div>
                   )}
                 </div>
-              </div>
-            </TabsContent>
-
-            {/* New Credits Tab */}
-            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Credits (comma separated)</Label>
-                <Textarea 
-                  id="credits" 
-                  value={formData.credits}
-                  onChange={(e) => setFormData({...formData, credits: e.target.value})}
-                  placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean" 
-                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[120px]"
-                />
               </div>
             </TabsContent>
 

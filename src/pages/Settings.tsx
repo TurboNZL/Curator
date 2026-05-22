@@ -13,8 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch'; // Added Switch import
 
 const Settings = () => {
-  const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase, clearUnlinkedFiles, clearUnusedGenres } = useMusicStore();
+  const { activeProfile, updateSettings, updatePlaybackRules, tracks, resetDatabase, clearUnlinkedFiles, clearUnusedCategoriesAndGenres, addRoleCategory, roleCategories } = useMusicStore();
   const [newRule, setNewRule] = useState({ trackAId: '', trackBId: '', playFirstOnShuffle: false, applyToAlbumSource: false });
+  const [newRoleCategoryName, setNewRoleCategoryName] = useState('');
 
   const handleAddRule = async () => {
     if (!newRule.trackAId || !newRule.trackBId) return toast.error("Both tracks are required for a rule");
@@ -30,19 +31,23 @@ const Settings = () => {
     toast.success("Rule removed");
   };
 
+  const handleAddRoleCategory = async () => {
+    if (!newRoleCategoryName.trim()) {
+      toast.error("Role category name cannot be empty.");
+      return;
+    }
+    await addRoleCategory(newRoleCategoryName.trim());
+    setNewRoleCategoryName('');
+    toast.success(`Role category "${newRoleCategoryName}" added.`);
+  };
+
+  const handleClearUnused = async () => {
+    if (confirm("Are you sure you want to delete all unused genres AND removable role categories? This action cannot be undone.")) {
+      await clearUnusedCategoriesAndGenres();
+    }
+  };
+
   const trackOptions = tracks.map(t => ({ value: t.id, label: t.title }));
-
-  const handleClearUnlinkedFiles = async () => {
-    if (confirm("Are you sure you want to delete all unlinked files? This action cannot be undone.")) {
-      await clearUnlinkedFiles();
-    }
-  };
-
-  const handleClearUnusedGenres = async () => {
-    if (confirm("Are you sure you want to delete all unused genres? This action cannot be undone.")) {
-      await clearUnusedGenres();
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-20">
@@ -99,6 +104,9 @@ const Settings = () => {
                 value={newRule.trackAId} 
                 onValueChange={(val) => setNewRule({...newRule, trackAId: val})}
                 placeholder="Search track..."
+                className="bg-zinc-900 border-zinc-800"
+                contentClassName="bg-zinc-950 border-zinc-800"
+                itemClassName="text-white hover:bg-zinc-800"
               />
             </div>
             <div className="space-y-2">
@@ -108,6 +116,9 @@ const Settings = () => {
                 value={newRule.trackBId} 
                 onValueChange={(val) => setNewRule({...newRule, trackBId: val})}
                 placeholder="Search track..."
+                className="bg-zinc-900 border-zinc-800"
+                contentClassName="bg-zinc-950 border-zinc-800"
+                itemClassName="text-white hover:bg-zinc-800"
               />
             </div>
           </div>
@@ -163,6 +174,47 @@ const Settings = () => {
           ))}
         </div>
       </section>
+      
+      {/* NEW: Role Category Management */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3 border-b border-zinc-900 pb-4">
+          <div className="p-2 bg-pink-500/10 rounded-lg text-pink-500">
+            <Tag size={20} />
+          </div>
+          <h2 className="text-sm font-black uppercase tracking-widest text-white">Role Category Management</h2>
+        </div>
+        <Card className="bg-zinc-900/30 border-zinc-800 p-6 space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-white uppercase tracking-tight">Add New Role Category</h3>
+            <p className="text-sm text-zinc-400 leading-relaxed font-medium">
+              Create new categories for artist roles (e.g., 'Engineer', 'Composer') to use in album and track credits.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <Input
+                placeholder="New role category name"
+                value={newRoleCategoryName}
+                onChange={(e) => setNewRoleCategoryName(e.target.value)}
+                className="flex-1 bg-zinc-900 border-zinc-800 focus-visible:ring-pink-500"
+              />
+              <Button onClick={handleAddRoleCategory} className="bg-pink-600 hover:bg-pink-500 text-[10px] font-black uppercase tracking-widest h-9">
+                <Plus size={12} className="mr-1" /> Add Role
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+              Current Role Categories
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {roleCategories.map(rc => (
+                <Badge key={rc.id} variant="secondary" className="bg-zinc-800 text-white text-xs">
+                  {rc.name} {!rc.isRemovable && <span className="ml-1 text-zinc-500">(Default)</span>}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </section>
 
       {/* Database Management */}
       <section className="space-y-6">
@@ -208,30 +260,29 @@ const Settings = () => {
           <Button 
             variant="outline" 
             className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-purple-400 hover:text-purple-300 font-black uppercase tracking-widest h-12 px-8"
-            onClick={handleClearUnlinkedFiles}
+            onClick={clearUnlinkedFiles}
           >
             <Trash2 size={16} className="mr-2" /> Clear Unlinked Files
           </Button>
         </Card>
 
-        {/* New: Category & Genre Management Card */}
+        {/* Updated: Category & Genre Cleanup Card */}
         <Card className="bg-zinc-900/50 border-zinc-800 p-8 space-y-6">
           <div className="space-y-2">
             <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
               <Tag size={20} className="text-pink-500" />
-              Category & Genre Management
+              Category & Genre Cleanup
             </h3>
             <p className="text-sm text-zinc-400 leading-relaxed font-medium">
-              Remove genre entries from your database that are no longer associated with any tracks.
-              This helps keep your genre list clean and relevant.
+              Remove genre entries and removable role categories from your database that are no longer associated with any tracks or albums.
             </p>
           </div>
           <Button 
             variant="outline" 
             className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-pink-400 hover:text-pink-300 font-black uppercase tracking-widest h-12 px-8"
-            onClick={handleClearUnusedGenres}
+            onClick={handleClearUnused}
           >
-            <Trash2 size={16} className="mr-2" /> Clear Unused Genres
+            <Trash2 size={16} className="mr-2" /> Clear Unused Categories & Genres
           </Button>
         </Card>
       </section>
@@ -239,4 +290,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default Cleanup;

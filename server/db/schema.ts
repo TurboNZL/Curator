@@ -29,12 +29,12 @@ export const albums = sqliteTable('albums', {
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(), // Primary artist
   artistIds: text('artist_ids'), // JSON string array for multiple artists
+  credits: text('credits'), // JSON string array for album-level general credits
+  artistCredits: text('artist_credits'), // JSON string array for album-level artist-specific credits with roles
   eraId: text('era_id'),
-  // Removed covers: text('covers'), // JSON string array
   primaryCover: text('primary_cover'), // New column for the album's primary cover
   defaultReleaseId: text('default_release_id'),
   pendingFiles: text('pending_files'), // JSON string array
-  credits: text('credits'), // JSON string array for album-level credits
 });
 
 export const releaseTypes = sqliteTable('release_types', {
@@ -64,6 +64,7 @@ export const tracks = sqliteTable('tracks', {
   title: text('title').notNull(),
   artistId: text('artist_id').notNull(), // Primary artist
   artistIds: text('artist_ids'), // JSON string array for multiple artists
+  artistCredits: text('artist_credits'), // JSON string array for track-level artist-specific credits with roles
   rating: real('rating'), // Balanced rating (0-10), nullable for unrated
   initialRating: real('initial_rating'), // Unbalanced rating, nullable for unrated
   eloScore: real('elo_score').notNull().default(1000), // Internal ELO for calculation
@@ -72,16 +73,17 @@ export const tracks = sqliteTable('tracks', {
   spotifyUrl: text('spotify_url'),
   geniusUrl: text('genius_url'),
   youtubeMusicUrl: text('youtube_music_url'),
-  // genres: text('genres'), // REMOVED: Now stored in separate table and linked
-  producers: text('producers'), // JSON string array
-  writers: text('writers'), // JSON string array
-  credits: text('credits'), // JSON string array
+  // Removed genres: text('genres'),
+  // Removed producers: text('producers'),
+  // Removed writers: text('writers'),
+  // Removed credits: text('credits'),
   bitrate: text('bitrate'),
   bpm: integer('bpm'),
   key: text('key'),
   memories: integer('memories').notNull().default(0),
   queueRules: text('queue_rules'), // JSON: { nextTrackId?: string, forbiddenStandalone?: boolean }
   syncWithAlbumCredits: integer('sync_with_album_credits', { mode: 'boolean' }).notNull().default(true),
+  isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const trackGenres = sqliteTable('track_genres', {
@@ -94,6 +96,12 @@ export const trackGenres = sqliteTable('track_genres', {
 export const genres = sqliteTable('genres', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
+});
+
+export const roleCategories = sqliteTable('role_categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  isRemovable: integer('is_removable', { mode: 'boolean' }).notNull().default(true),
 });
 
 export const groups = sqliteTable('groups', {

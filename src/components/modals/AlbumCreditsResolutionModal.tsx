@@ -7,33 +7,36 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Text, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Album } from '@/types/music';
+import { Album, Credit } from '@/types/music'; // Import Credit type
+import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; // Import ArtistCreditSelect
 
 interface AlbumCreditsResolutionModalProps {
   isOpen: boolean;
   onClose: () => void;
   album: Album | null;
-  onResolve: (albumId: string, credits: string[]) => Promise<void>;
+  onResolve: (albumId: string, credits: string[], artistCredits: Credit[]) => Promise<void>;
 }
 
 export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalProps> = ({ isOpen, onClose, album, onResolve }) => {
-  const [creditsText, setCreditsText] = useState('');
+  const [generalCreditsText, setGeneralCreditsText] = useState('');
+  const [artistSpecificCredits, setArtistSpecificCredits] = useState<Credit[]>([]);
   const [isResolving, setIsResolving] = useState(false);
 
   useEffect(() => {
     if (isOpen && album) {
-      setCreditsText(album.credits.join(', '));
+      setGeneralCreditsText(album.credits.join(', '));
+      setArtistSpecificCredits(album.artistCredits || []);
     }
   }, [isOpen, album]);
 
   const handleSubmit = async () => {
     if (!album) return;
     
-    const creditsArray = creditsText.split(',').map(s => s.trim()).filter(Boolean);
+    const generalCreditsArray = generalCreditsText.split(',').map(s => s.trim()).filter(Boolean);
 
     setIsResolving(true);
     try {
-      await onResolve(album.id, creditsArray);
+      await onResolve(album.id, generalCreditsArray, artistSpecificCredits);
       toast.success("Album credits updated successfully.");
       onClose();
     } catch (error) {
@@ -48,7 +51,7 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
             <Text size={20} className="text-blue-500" />
@@ -60,15 +63,19 @@ export const AlbumCreditsResolutionModal: React.FC<AlbumCreditsResolutionModalPr
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="credits-text" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Credits (comma separated)</Label>
+            <Label htmlFor="general-credits-text" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">General Credits (comma separated)</Label>
             <Textarea
-              id="credits-text"
-              value={creditsText}
-              onChange={(e) => setCreditsText(e.target.value)}
+              id="general-credits-text"
+              value={generalCreditsText}
+              onChange={(e) => setGeneralCreditsText(e.target.value)}
               placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean"
               className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[100px]"
             />
           </div>
+          <ArtistCreditSelect
+            value={artistSpecificCredits}
+            onChange={setArtistSpecificCredits}
+          />
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={isResolving}>

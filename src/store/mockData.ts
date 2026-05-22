@@ -32,7 +32,8 @@ export const MOCK_ALBUMS: Album[] = [
     eraId: 'e1',
     primaryCover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&h=400&fit=crop',
     pendingFiles: [], // Added
-    credits: [] // Added
+    credits: [], // Added
+    artistCredits: [{ artistId: 'a1', role: 'Lead artist' }] // NEW: Album artist credits
   },
   {
     id: 'al2',
@@ -42,7 +43,8 @@ export const MOCK_ALBUMS: Album[] = [
     eraId: 'e4',
     primaryCover: 'https://images.unsplash.com/photo-1619983081563-430f63602796?w=400&h=400&fit=crop',
     pendingFiles: [], // Added
-    credits: [] // Added
+    credits: [], // Added
+    artistCredits: [{ artistId: 'a2', role: 'Lead artist' }] // NEW: Album artist credits
   }
 ];
 

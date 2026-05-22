@@ -5,47 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Plus, X } from 'lucide-react';
 import { Credit } from '@/types/music';
+import { cn } from '@/lib/utils'; // Import cn for conditional classnames
 
 interface ArtistCreditSelectProps {
   value: Credit[];
   onChange: (credits: Credit[]) => void;
-  disabled?: boolean; // Added disabled prop
+  disabled?: boolean;
 }
 
-const roles = [
-  { value: 'Primary artist', label: 'Primary artist' },
-  { value: 'Featured artist', label: 'Featured artist' },
-  { value: 'Producer', label: 'Producer' },
-  { value: 'Writer', label: 'Writer' },
-  { value: 'Composer', label: 'Composer' },
-  { value: 'Engineer', label: 'Engineer' },
-  { value: 'Mixer', label: 'Mixer' },
-  { value: 'Masterer', label: 'Masterer' },
-  { value: 'Remixer', label: 'Remixer' },
-  { value: 'Vocals', label: 'Vocals' },
-  { value: 'Guitar', label: 'Guitar' },
-  { value: 'Bass', label: 'Bass' },
-  { value: 'Drums', label: 'Drums' },
-  { value: 'Keyboards', label: 'Keyboards' },
-  { value: 'Strings', label: 'Strings' },
-  { value: 'Percussion', label: 'Percussion' },
-  { value: 'Programmer', label: 'Programmer' },
-  { value: 'Arranger', label: 'Arranger' },
-  { value: 'Conductor', label: 'Conductor' },
-  { value: 'Executive Producer', label: 'Executive Producer' },
-  { value: 'Art Director', label: 'Art Director' },
-  { value: 'Photographer', label: 'Photographer' },
-  { value: 'Designer', label: 'Designer' },
-];
-
 export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, onChange, disabled = false }) => {
-  const { artists } = useMusicStore();
+  const { artists, roleCategories } = useMusicStore();
 
   const artistOptions = artists.map(a => ({ value: a.id, label: a.name }));
-  const roleOptions = roles;
+  const roleOptions = roleCategories.map(rc => ({ value: rc.name, label: rc.name }));
 
   const handleAddCredit = () => {
-    onChange([...value, { artistId: '', role: 'Primary artist' }]);
+    onChange([...value, { artistId: '', role: 'Lead artist' }]);
   };
 
   const handleUpdateCredit = (index: number, field: 'artistId' | 'role', newValue: string) => {
@@ -71,7 +46,10 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
               onValueChange={(val) => handleUpdateCredit(index, 'artistId', val)}
               placeholder="Select artist..."
               allowCustom
-              disabled={disabled} // Propagate disabled prop
+              disabled={disabled}
+              className={cn("bg-zinc-900 border-zinc-800", disabled && "bg-zinc-900/50 cursor-not-allowed")}
+              contentClassName="bg-zinc-950 border-zinc-800"
+              itemClassName="text-white hover:bg-zinc-800"
             />
           </div>
           <div className="w-32">
@@ -81,7 +59,10 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
               onValueChange={(val) => handleUpdateCredit(index, 'role', val)}
               placeholder="Select role..."
               allowCustom
-              disabled={disabled} // Propagate disabled prop
+              disabled={disabled}
+              className={cn("bg-zinc-900 border-zinc-800", disabled && "bg-zinc-900/50 cursor-not-allowed")}
+              contentClassName="bg-zinc-950 border-zinc-800"
+              itemClassName="text-white hover:bg-zinc-800"
             />
           </div>
           <Button
@@ -90,7 +71,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
             size="icon"
             className="h-7 w-7 text-zinc-500 hover:text-red-500"
             onClick={() => handleRemoveCredit(index)}
-            disabled={disabled} // Propagate disabled prop
+            disabled={disabled}
           >
             <X size={14} />
           </Button>
@@ -101,7 +82,7 @@ export const ArtistCreditSelect: React.FC<ArtistCreditSelectProps> = ({ value, o
         variant="outline"
         className="w-full border-zinc-800 text-[10px] font-black uppercase h-9 tracking-widest hover:bg-zinc-800"
         onClick={handleAddCredit}
-        disabled={disabled} // Propagate disabled prop
+        disabled={disabled}
       >
         <Plus size={12} className="mr-1" /> Add Artist Credit
       </Button>

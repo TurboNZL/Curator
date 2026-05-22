@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Badge } from '@/components/ui/badge';
@@ -21,11 +21,11 @@ import { CreatePlaylistAddModal } from '@/components/modals/CreatePlaylistAddMod
 import { StatsForNerdsModal } from '@/components/modals/StatsForNerdsModal';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { toast } from 'sonner';
-import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems'; // Import new component
+import { TrackDropdownMenuItems } from '@/components/ui/TrackDropdownMenuItems';
 
 
 const AlbumDetail = () => {
-  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups, deleteTrack } = useMusicStore(); // Removed incrementMemories, decrementMemories, addToUserQueue as they are now handled by TrackDropdownMenuItems
+  const { albums, artists, releases, tracks, setCurrentTrack, updateAlbum, activeProfile, groups } = useMusicStore();
   const { id } = useParams();
   
   const album = albums.find(a => a.id === id);
@@ -42,7 +42,7 @@ const AlbumDetail = () => {
   ).length;
 
   const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(null);
-  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null); // New state for temporary cover override
+  const [temporaryDisplayCoverUrl, setTemporaryDisplayCoverUrl] = useState<string | null>(null);
   
   const [showAllTracks, setShowAllTracks] = useState(false);
   const [sortConfig, setSortConfig] = useState(() => {
@@ -60,7 +60,6 @@ const AlbumDetail = () => {
   const [selectedTrackForStats, setSelectedTrackForStats] = useState<any>(null);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
-  // New state for CreateTrackModal
   const [isCreateTrackModalOpen, setIsCreateTrackModalOpen] = useState(false); 
 
 
@@ -71,7 +70,7 @@ const AlbumDetail = () => {
         album.defaultReleaseId || albumReleases[0]?.id || null
       );
     }
-  }, [album?.id, album?.defaultReleaseId, albumReleases.length]);
+  }, [album?.id, album?.defaultReleaseId, albumReleases.length, selectedReleaseId]);
 
 
   useEffect(() => {
@@ -107,7 +106,7 @@ const AlbumDetail = () => {
         .map(trackId =>
           tracksForAlbum.find(t => t.id === trackId)
         )
-        .filter(Boolean);
+        .filter(Boolean) as typeof tracks; // Type assertion
     } else {
       tracksForAlbum.sort((a, b) => {
         const aOrder =
@@ -151,14 +150,14 @@ const AlbumDetail = () => {
     toast.success("Default release set!");
   };
 
-  const handleCopyLink = (url?: string) => {
-    if (url) {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied to clipboard!");
-    } else {
-      toast.error("No link available for this item.");
-    }
-  };
+  const getTrackDisplayArtists = useCallback((track: any) => {
+    if (!track || !track.artistCredits) return "Unknown Artist";
+    const leadArtists = track.artistCredits
+      .filter((credit: any) => credit.role === 'Lead artist')
+      .map((credit: any) => artists.find(a => a.id === credit.artistId)?.name)
+      .filter(Boolean);
+    return leadArtists.length > 0 ? leadArtists.join(', ') : artists.find(a => a.id === track.artistId)?.name || "Unknown Artist";
+  }, [artists]);
 
 
   if (!album) return <div className="p-8">Album not found.</div>;
@@ -218,7 +217,7 @@ const AlbumDetail = () => {
         <div className="lg:col-span-3 space-y-8">
           <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-              <ListMusic size={14} /> {showAllTracks ? 'All Project Tracks' : `Tracklist - ${currentRelease?.title || 'Unknown Release'}`}
+              <ListMusic size={14} /> {showAllTracks ? 'All Tracks' : `Tracklist - ${currentRelease?.title || 'Unknown Release'}`}
             </h2>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-bold text-zinc-600 uppercase">{albumTracks.length} Tracks</span>
@@ -238,12 +237,24 @@ const AlbumDetail = () => {
                 <TableRow className="border-zinc-900 hover:bg-transparent">
                   <TableHead className="w-10 text-zinc-600 text-[10px] font-black uppercase">#</TableHead>
                   <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Title</TableHead>
+                  <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Artist</TableHead> {/* Added Artist column */}
                   <TableHead className="text-zinc-600 text-[10px] font-black uppercase">Rating</TableHead>
                   <TableHead className="text-zinc-600 text-[10px] font-black uppercase text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {albumTracks.map((track, index) => {
+                  const displayArtists = getTrackDisplayArtists(track); // Use the new helper
+                  const displayCredits = (track.syncWithAlbumCredits && album?.artistCredits)
+                    ? album.artistCredits
+                        .filter(credit => credit.role !== 'Lead artist' && credit.artistId !== track.artistId)
+                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role})`)
+                        .join(', ')
+                    : track.artistCredits
+                        .filter(credit => credit.role !== 'Lead artist' && credit.artistId !== track.artistId)
+                        .map(credit => `${artists.find(a => a.id === credit.artistId)?.name || 'Unknown'} (${credit.role})`)
+                        .join(', ');
+
                   return (
                     <TrackRightClickMenu key={track.id} track={track}>
                       <TableRow className="border-zinc-900/50 hover:bg-zinc-900/30 transition-colors group">
@@ -251,9 +262,12 @@ const AlbumDetail = () => {
                         <TableCell onClick={(e) => { e.stopPropagation(); setCurrentTrack(track.id, { type: 'album', id: album.id, tracks: albumTracks.map(t => t.id) }); }} className="cursor-pointer">
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-white group-hover:text-blue-400">{track.title}</span>
-                            <span className="text-[10px] text-zinc-500 font-medium">{track.genres.join(', ')}</span>
+                            {displayCredits && (
+                                <span className="text-[8px] text-zinc-600 font-medium italic truncate">{displayCredits}</span>
+                            )}
                           </div>
                         </TableCell>
+                        <TableCell className="text-zinc-400 text-xs font-medium">{displayArtists}</TableCell> {/* Display lead artists */}
                         <TableCell>
                           {/* DO NOT CHANGE THE STYLE OF THE RATING CARD */}
                           <Rating
