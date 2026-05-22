@@ -1,79 +1,130 @@
 "use client";
 
-import React from 'react';
-import { Star } from 'lucide-react';
-import { useMusicStore } from '@/store/useMusicStore';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Star, GripVertical, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Track } from '@/types/music';
+import { Track } from '../../server/types/music'; // Corrected import path
+import { useMusicStore } from '@/store/useMusicStore';
+import { Button } from './button';
+import { toast } from 'sonner';
 
 interface RatingProps {
   track: Track;
   showEditor?: boolean;
   size?: 'sm' | 'md' | 'lg';
-  isCleanupContext?: boolean; // New prop to indicate cleanup context
+  isCleanupContext?: boolean; // New prop to indicate if it's in cleanup context
 }
 
-export const Rating = ({ track, showEditor = false, size = 'md', isCleanupContext = false }: RatingProps) => {
-  const { updateTrack, vote, getRankedTenStarTracks } = useMusicStore();
+export const Rating: React.FC<RatingProps> = ({ track, showEditor = true, size = 'sm', isCleanupContext = false }) => {
+  const { updateTrack, activeProfile } = useMusicStore();
+  const [editing, setEditing] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [tempRating, setTempRating] = useState(0);
 
-  const getEffectiveRating = (t: Track) => {
-    if (t.comparisons >= 3 && t.rating !== undefined && t.rating !== null && t.rating > 0.001) {
-      return t.rating;
+  const showUnbalancedFirst = activeProfile.settings?.showUnbalancedFirst;
+
+  const currentRating = useMemo(() => {
+    // Determine which rating to show based on settings and data availability
+    const balanced = (track.comparisons >= 3 || track.memories > 0) && track.rating !== undefined && track.rating !== null && track.rating > 0.001 ? track.rating : null;
+    const initial = track.initialRating !== undefined && track.initialRating !== null && track.initialRating > 0.001 ? track.initialRating : null;
+
+    if (balanced !== null && initial !== null) {
+      return showUnbalancedFirst ? initial : balanced;
     }
-    if (t.initialRating !== undefined && t.initialRating !== null && t.initialRating > 0.001) {
-      return t.initialRating;
+    return balanced !== null ? balanced : (initial !== null ? initial : 0);
+  }, [track.rating, track.initialRating, track.comparisons, track.memories, showUnbalancedFirst]);
+
+
+  useEffect(() => {
+    if (!editing) {
+      setTempRating(currentRating);
     }
-    return 0; // Treat as 0 if truly unrated or 0.0
+  }, [editing, currentRating]);
+
+
+  const handleStarClick = (newRating: number) => {
+    setTempRating(newRating);
   };
 
-  const effectiveRating = getEffectiveRating(track);
+  const handleSave = async () => {
+    if (tempRating !== currentRating) {
+      // Decide whether to update initialRating or rating based on isCleanupContext or comparisons
+      const updateData: Partial<Track> = {};
+      if (isCleanupContext || (track.comparisons < 3 && !showUnbalancedFirst)) { // Update initial if in cleanup or not enough comparisons and showing unbalanced
+        updateData.initialRating = tempRating;
+      } else { // Otherwise, update balanced rating
+        updateData.rating = tempRating;
+      }
 
-  const isTenStar = effectiveRating >= 9.9999 && track.comparisons > 0;
-  const isUnratedOrZero = effectiveRating < 0.001;
-
-  const displayValue = React.useMemo(() => {
-    if (isUnratedOrZero && track.comparisons < 3) {
-      return '?'; // Show '?' for truly unrated tracks with few comparisons
+      await updateTrack(track.id, updateData);
+      toast.success("Rating updated!");
     }
-    if (isTenStar) {
-      const rankedTenStarTracks = getRankedTenStarTracks();
-      const rank = rankedTenStarTracks.findIndex(t => t.id === track.id) + 1;
-      return rank > 0 ? `#${rank}` : '10.0'; // Should always find a rank if it's 10-star
-    }
-    return effectiveRating.toFixed(1);
-  }, [track, effectiveRating, isUnratedOrZero, isTenStar, getRankedTenStarTracks]);
+    setEditing(false);
+  };
 
-  const textColorClass = React.useMemo(() => {
-    if (isUnratedOrZero) return 'text-zinc-500'; // Grey for 0.0
-    if (isTenStar) return 'text-blue-400'; // Blue for 10/10 ranked
-    if (effectiveRating >= 7) return 'text-emerald-400'; // Green for 7-9.9
-    if (effectiveRating >= 4) return 'text-yellow-400'; // Yellow for 4-6.9
-    return 'text-red-400'; // Red for 0.1-3.9
-  }, [effectiveRating, isUnratedOrZero, isTenStar]);
+  const handleCancel = () => {
+    setEditing(false);
+    setTempRating(currentRating); // Reset to original rating
+  };
 
-  const buttonClass = cn(
-    "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold transition-colors",
-    "bg-zinc-900 border border-zinc-800",
-    textColorClass,
-    size === 'sm' && "h-6 px-2 text-[10px]",
-    size === 'md' && "h-7 px-2.5 text-xs",
-    size === 'lg' && "h-8 px-3 text-sm",
-    (isCleanupContext && !showEditor) && "pointer-events-none" // Disable interactions in cleanup context if not an editor
-  );
+  const roundedRating = Math.round(currentRating * 2) / 2; // Round to nearest 0.5
+  const roundedTempRating = Math.round(tempRating * 2) / 2;
+  const displayValue = editing ? roundedTempRating : roundedRating;
 
-  const starSize = size === 'sm' ? 10 : size === 'md' ? 12 : 14;
-  const comparisonSize = size === 'sm' ? 'text-[8px]' : 'text-[10px]';
+  const starSize = size === 'sm' ? 14 : size === 'md' ? 16 : 18;
 
   return (
-    <div className="flex items-center gap-1">
-      <button className={buttonClass}>
-        <Star size={starSize} fill="currentColor" className={cn(textColorClass, "text-opacity-50")} />
-        <span>{displayValue}</span>
-        {track.comparisons > 0 && (
-          <span className={cn("ml-1 text-zinc-600 font-mono", comparisonSize)}>{track.comparisons}</span>
-        )}
-      </button>
-      {/* Removed +1/-1 buttons, as the prompt specified not to change them visually but remove the interaction */}
+    <div className="flex items-center gap-1.5">
+      {showEditor && editing ? (
+        <>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starValue) => (
+            <Star
+              key={starValue}
+              size={starSize}
+              className={cn(
+                "cursor-pointer transition-colors",
+                (hoverRating || tempRating) >= starValue ? "text-yellow-400 fill-yellow-400" : "text-zinc-600 fill-transparent"
+              )}
+              onMouseEnter={() => setHoverRating(starValue)}
+              onMouseLeave={() => setHoverRating(0)}
+              onClick={() => handleStarClick(starValue)}
+            />
+          ))}
+          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-emerald-500 hover:text-emerald-400" onClick={handleSave}>
+            <Check size={14} />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-400" onClick={handleCancel}>
+            <X size={14} />
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className={cn(
+            "font-black tracking-tighter",
+            size === 'sm' && "text-sm",
+            size === 'md' && "text-base",
+            size === 'lg' && "text-lg",
+            currentRating > 0.001 ? "text-white" : "text-zinc-600"
+          )}>
+            {currentRating > 0.001 ? currentRating.toFixed(1) : 'N/A'}
+          </span>
+          {showEditor && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "text-zinc-500 hover:text-yellow-400 transition-colors",
+                size === 'sm' && "h-6 w-6",
+                size === 'md' && "h-7 w-7",
+                size === 'lg' && "h-8 w-8"
+              )}
+              onClick={() => setEditing(true)}
+            >
+              <GripVertical size={starSize} />
+            </Button>
+          )}
+        </>
+      )}
     </div>
   );
 };

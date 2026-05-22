@@ -15,7 +15,7 @@ import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
 import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch';
-import { Credit } from '../../server/types/music';
+import { Credit } from '../../server/types/music'; // Corrected import path
 
 interface ImportedTrackData {
   title: string;

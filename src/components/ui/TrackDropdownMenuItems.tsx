@@ -1,20 +1,19 @@
 "use client";
 
 import React from 'react';
-import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Copy, Plus, Share2, Info, Edit2, Trash2, Heart, Brain, Minus, Play, Link as LinkIcon, Youtube } from "lucide-react";
-import { toast } from "sonner";
+import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Music, Plus, Trash2, Info, Edit2, Zap, Bookmark, Play, Minus } from 'lucide-react'; // Added Play and Minus
 import { useMusicStore } from "@/store/useMusicStore";
-import { Track } from '../../server/types/music'; 
+import { Track } from '../../server/types/music'; // Corrected import path
 
 interface TrackDropdownMenuItemsProps {
   track: Track;
   setSelectedTrackForPlaylistAdd: (track: Track) => void;
-  setIsCreatePlaylistAddModalOpen: (isOpen: boolean) => void;
+  setIsCreatePlaylistAddModalOpen: (open: boolean) => void;
   setSelectedTrackForEdit: (track: Track) => void;
-  setIsEditTrackModalOpen: (isOpen: boolean) => void;
+  setIsEditTrackModalOpen: (open: boolean) => void;
   setSelectedTrackForStats: (track: Track) => void;
-  setIsStatsModalOpen: (isOpen: boolean) => void;
+  setIsStatsModalOpen: (open: boolean) => void;
 }
 
 export const TrackDropdownMenuItems: React.FC<TrackDropdownMenuItemsProps> = ({
@@ -26,74 +25,76 @@ export const TrackDropdownMenuItems: React.FC<TrackDropdownMenuItemsProps> = ({
   setSelectedTrackForStats,
   setIsStatsModalOpen,
 }) => {
-  const { setCurrentTrack, addToUserQueue, deleteTrack, incrementMemories, decrementMemories, updateTrack } = useMusicStore();
+  const { setCurrentTrack, addToUserQueue, deleteTrack, incrementMemories, decrementMemories } = useMusicStore();
 
-  const handleCopyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
+  const handlePlayNow = () => {
+    setCurrentTrack(track.id);
+  };
+
+  const handleAddToQueue = () => {
+    addToUserQueue(track.id);
+  };
+
+  const handleAddTrackToPlaylist = () => {
+    setSelectedTrackForPlaylistAdd(track);
+    setIsCreatePlaylistAddModalOpen(true);
+  };
+
+  const handleEditTrack = () => {
+    setSelectedTrackForEdit(track);
+    setIsEditTrackModalOpen(true);
   };
 
   const handleDeleteTrack = async () => {
-    if (confirm(`Are you sure you want to delete "${track.title}"? This cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to delete "${track.title}"? This action cannot be undone.`)) {
       await deleteTrack(track.id);
-      toast.success(`"${track.title}" deleted.`);
     }
   };
 
-  const handleToggleFavorite = async () => {
-    await updateTrack(track.id, { isFavorite: !track.isFavorite });
-    toast.success(track.isFavorite ? `Removed "${track.title}" from favorites.` : `Added "${track.title}" to favorites.`);
+  const handleShowStats = () => {
+    setSelectedTrackForStats(track);
+    setIsStatsModalOpen(true);
+  };
+
+  const handleIncrementMemories = () => {
+    incrementMemories(track.id);
+  };
+
+  const handleDecrementMemories = () => {
+    decrementMemories(track.id);
   };
 
   return (
     <>
-      <DropdownMenuItem onClick={() => setCurrentTrack(track.id)} className="text-sm font-medium">
-        <Play size={14} className="mr-2" /> Play Now
+      <DropdownMenuItem onClick={handlePlayNow} className="text-xs font-bold gap-2">
+        <Play size={14} /> Play Now
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => addToUserQueue(track.id)} className="text-sm font-medium">
-        <Plus size={14} className="mr-2" /> Add to Queue
+      <DropdownMenuItem onClick={handleAddToQueue} className="text-xs font-bold gap-2">
+        <Music size={14} /> Add to Queue
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => { setSelectedTrackForPlaylistAdd(track); setIsCreatePlaylistAddModalOpen(true); }} className="text-sm font-medium">
-        <Plus size={14} className="mr-2" /> Add to Playlist...
-      </DropdownMenuItem>
-      <DropdownMenuSeparator className="bg-zinc-800" />
-      <DropdownMenuItem onClick={() => handleCopyToClipboard(track.title, 'Title')} className="text-sm font-medium">
-        <Copy size={14} className="mr-2" /> Copy Title
-      </DropdownMenuItem>
-      {track.spotifyUrl && (
-        <DropdownMenuItem onClick={() => handleCopyToClipboard(track.spotifyUrl!, 'Spotify URL')} className="text-sm font-medium">
-          <LinkIcon size={14} className="mr-2" /> Share Spotify Link
-        </DropdownMenuItem>
-      )}
-      {track.geniusUrl && (
-        <DropdownMenuItem onClick={() => handleCopyToClipboard(track.geniusUrl!, 'Genius URL')} className="text-sm font-medium">
-          <LinkIcon size={14} className="mr-2" /> Share Genius Link
-        </DropdownMenuItem>
-      )}
-      {track.youtubeMusicUrl && (
-        <DropdownMenuItem onClick={() => handleCopyToClipboard(track.youtubeMusicUrl!, 'YouTube Music URL')} className="text-sm font-medium">
-          <Youtube size={14} className="mr-2" /> Share YouTube Music Link
-        </DropdownMenuItem>
-      )}
-      <DropdownMenuSeparator className="bg-zinc-800" />
-      <DropdownMenuItem onClick={() => { setSelectedTrackForEdit(track); setIsEditTrackModalOpen(true); }} className="text-sm font-medium">
-        <Edit2 size={14} className="mr-2" /> Edit Track
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => { setSelectedTrackForStats(track); setIsStatsModalOpen(true); }} className="text-sm font-medium">
-        <Info size={14} className="mr-2" /> Stats for Nerds
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={handleToggleFavorite} className="text-sm font-medium">
-        <Heart size={14} className="mr-2" fill={track.isFavorite ? "currentColor" : "none"} /> {track.isFavorite ? 'Unfavorite' : 'Favorite'}
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => incrementMemories(track.id)} className="text-sm font-medium">
-        <Plus size={14} className="mr-2" /> Add Memory ({track.memories})
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => decrementMemories(track.id)} className="text-sm font-medium">
-        <Minus size={14} className="mr-2" /> Remove Memory ({track.memories})
+      <DropdownMenuItem onClick={handleAddTrackToPlaylist} className="text-xs font-bold gap-2">
+        <Plus size={14} /> Add to Playlist
       </DropdownMenuItem>
       <DropdownMenuSeparator className="bg-zinc-800" />
-      <DropdownMenuItem onClick={handleDeleteTrack} className="text-sm font-medium text-red-500">
-        <Trash2 size={14} className="mr-2" /> Delete Track
+      <DropdownMenuItem onClick={handleEditTrack} className="text-xs font-bold gap-2">
+        <Edit2 size={14} /> Edit Track
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={handleDeleteTrack} className="text-xs font-bold text-red-500 hover:bg-red-900/20 hover:text-red-400 focus:text-red-400 focus:bg-red-900/20 gap-2">
+        <Trash2 size={14} /> Delete Track
+      </DropdownMenuItem>
+      <DropdownMenuSeparator className="bg-zinc-800" />
+      <DropdownMenuItem onClick={handleIncrementMemories} className="text-xs font-bold gap-2">
+        <Bookmark size={14} /> +1 Memory
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={handleDecrementMemories} className="text-xs font-bold gap-2">
+        <Minus size={14} /> -1 Memory
+      </DropdownMenuItem>
+      <DropdownMenuSeparator className="bg-zinc-800" />
+      <DropdownMenuItem onClick={handleShowStats} className="text-xs font-bold gap-2">
+        <Info size={14} /> Stats for Nerds
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => {}} className="text-xs font-bold gap-2">
+        <Zap size={14} /> Improve Quality
       </DropdownMenuItem>
     </>
   );

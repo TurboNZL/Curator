@@ -18,7 +18,7 @@ import { SearchableSelect } from '../ui/SearchableSelect';
 import { X, User, Disc, Music, Layers, Link as LinkIcon, Check } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { cn } from '@/lib/utils';
-import { GroupMember } from '@/types/music'; // Import GroupMember type
+import { GroupMember } from '../../server/types/music'; // Corrected import path
 
 interface RelationalBioModalProps {
   initialEntity?: { type: string, id: string, label: string };

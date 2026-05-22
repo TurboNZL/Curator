@@ -10,7 +10,7 @@ import { ListMusic, Plus, Search, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Album, Track } from '@/types/music';
+import { Album, Track } from '../../server/types/music'; // Corrected import path
 
 interface CreatePlaylistAddModalProps {
   trackToAdd?: Track;

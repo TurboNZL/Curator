@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Track } from '@/types/music';
+import { Track } from '../../server/types/music'; // Corrected import path
 
 interface GeniusLinkResolutionModalProps {
   isOpen: boolean;

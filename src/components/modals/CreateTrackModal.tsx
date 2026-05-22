@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect'; 
 import { MultiSelectSearch } from '@/components/ui/MultiSelectSearch'; 
-import { Credit } from '@/types/music'; 
+import { Credit } from '../../server/types/music'; // Corrected import path
 import { Switch } from '@/components/ui/switch'; // Import Switch
 
 interface CreateTrackModalProps {

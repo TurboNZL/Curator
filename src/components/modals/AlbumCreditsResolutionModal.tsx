@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Text, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Album, Credit } from '../../server/types/music'; 
+import { Album, Credit } from '../../server/types/music'; // Corrected import path
 import { ArtistCreditSelect } from '../shared/ArtistCreditSelect';
 
 interface AlbumCreditsResolutionModalProps {

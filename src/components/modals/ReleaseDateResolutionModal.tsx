@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Release } from '@/types/music';
+import { Release } from '../../server/types/music'; // Corrected import path
 
 interface ReleaseDateResolutionModalProps {
   isOpen: boolean;
