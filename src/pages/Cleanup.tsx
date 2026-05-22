@@ -21,6 +21,13 @@ import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal
 import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { useLocation } from 'react-router-dom';
 import { SpotifyUriGroupResolutionModal } from '@/components/modals/SpotifyUriGroupResolutionModal'; // Import new modal
+import { GeniusLinkResolutionModal } from '@/components/modals/GeniusLinkResolutionModal';
+import { YoutubeMusicLinkResolutionModal } from '@/components/modals/YoutubeMusicLinkResolutionModal';
+import { ProducersResolutionModal } from '@/components/modals/ProducersResolutionModal';
+import { GenresResolutionModal } from '@/components/modals/GenresResolutionModal';
+import { ReleaseDateResolutionModal } from '@/components/modals/ReleaseDateResolutionModal';
+import { AlbumCreditsResolutionModal } from '@/components/modals/AlbumCreditsResolutionModal';
+import { Track, Album, Release } from '@/types/music'; // Import types
 
 
 interface ImageUploadResolutionModalProps {
@@ -89,9 +96,9 @@ const Cleanup = () => {
   const [isShufflePairing, setIsShufflePairing] = useState(false);
   const [isShuffleTasks, setIsShuffleTasks] = useState(false);
 
-  // State for Spotify Group Resolution Modal
+  // States for Modals
   const [isSpotifyResolutionModalOpen, setIsSpotifyResolutionModalOpen] = useState(false);
-  const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<any[]>([]);
+  const [spotifyResolutionTracks, setSpotifyResolutionTracks] = useState<Track[]>([]);
   const [spotifyResolutionAlbum, setSpotifyResolutionAlbum] = useState<{
     albumId: string;
     albumTitle: string;
@@ -99,7 +106,24 @@ const Cleanup = () => {
     releaseTitle?: string;
   } | null>(null);
 
-  const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({ field: 'none', direction: 'asc' });
+  const [isGeniusResolutionModalOpen, setIsGeniusResolutionModalOpen] = useState(false);
+  const [selectedTrackForGenius, setSelectedTrackForGenius] = useState<Track | null>(null);
+
+  const [isYoutubeMusicResolutionModalOpen, setIsYoutubeMusicResolutionModalOpen] = useState(false);
+  const [selectedTrackForYoutubeMusic, setSelectedTrackForYoutubeMusic] = useState<Track | null>(null);
+
+  const [isProducersResolutionModalOpen, setIsProducersResolutionModalOpen] = useState(false);
+  const [selectedTrackForProducers, setSelectedTrackForProducers] = useState<Track | null>(null);
+
+  const [isGenresResolutionModalOpen, setIsGenresResolutionModalOpen] = useState(false);
+  const [selectedTrackForGenres, setSelectedTrackForGenres] = useState<Track | null>(null);
+
+  const [isReleaseDateResolutionModalOpen, setIsReleaseDateResolutionModalOpen] = useState(false);
+  const [selectedReleaseForDate, setSelectedReleaseForDate] = useState<Release | null>(null);
+
+  const [isAlbumCreditsResolutionModalOpen, setIsAlbumCreditsResolutionModalOpen] = useState(false);
+  const [selectedAlbumForCredits, setSelectedAlbumForCredits] = useState<Album | null>(null);
+
 
   const [isImageUploadModalOpen, setIsImageUploadModalOpen] = useState(false);
   const [imageUploadEntity, setImageUploadEntity] = useState<any>(null);
@@ -109,17 +133,27 @@ const Cleanup = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, boolean>>({
     artist_image: true,
     album_cover: true,
+    album_credits: true, // New filter
     spotify_uri: true,
     genius_uri: true,
     youtube_music_uri: true,
     producers: true,
     release_date: true,
     genres: true,
+    track_genres: true, // Specific for tracks not syncing with album
+    track_producers: true, // Specific for tracks not syncing with album
+    track_writers: true, // Specific for tracks not syncing with album
+    track_credits: true, // Specific for tracks not syncing with album
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<any>(null);
   const location = useLocation();
+
+  // Pagination for tasks
+  const tasksPerPage = 20;
+  const [visibleTaskCount, setVisibleTaskCount] = useState(tasksPerPage);
+
 
   useEffect(() => {
     if (audioRef.current) {
@@ -176,26 +210,38 @@ const Cleanup = () => {
   };
 
   const allTasks = useMemo(() => {
-    const generatedTasks: any[] = [
-      ...artists.filter(a => !a.image).map(a => ({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' })),
-      ...albums.filter(al => {
-          const hasPrimaryCover = !!al.primaryCover;
-          if (hasPrimaryCover) return false;
-          const albumHasReleaseCover = releases.some(r => r.albumId === al.id && !!r.coverImage);
-          return !albumHasReleaseCover;
-      }).map(al => ({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' })),
-      ...tracks.filter(t => !t.geniusUrl).map(t => ({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' })),
-      ...tracks.filter(t => !t.youtubeMusicUrl).map(t => ({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' })),
-      ...tracks.filter(t => t.producers.length === 0).map(t => ({ type: 'producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' })),
-      // Removed release_date from here as it's not applicable for tracks. It applies to releases.
-      ...releases.filter(r => !r.releaseDate).map(r => ({ type: 'release_date', entity: r, label: `Add date for ${r.title}`, icon: Calendar, color: 'text-orange-500' })),
-      ...tracks.filter(t => t.genres.length === 0).map(t => ({ type: 'genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' })),
-    ];
+    const generatedTasks: any[] = [];
+    const spotifyTasksForAlbums: any[] = []; // Declare spotifyTasksForAlbums here
 
-    const tracksMissingSpotify = tracks.filter(t => !t.spotifyUrl);
-    const spotifyTasksForAlbums: any[] = [];
+    // Artist Image
+    artists.filter(a => !a.image).forEach(a => {
+      generatedTasks.push({ type: 'artist_image', entity: a, label: `Add image for ${a.name}`, icon: User, color: 'text-purple-500' });
+    });
+
+    // Album Cover
+    albums.filter(al => {
+        const hasPrimaryCover = !!al.primaryCover;
+        if (hasPrimaryCover) return false;
+        const albumHasReleaseCover = releases.some(r => r.albumId === al.id && !!r.coverImage);
+        return !albumHasReleaseCover;
+    }).forEach(al => {
+      generatedTasks.push({ type: 'album_cover', entity: al, label: `Add cover for ${al.title}`, icon: ImageIcon, color: 'text-blue-500' });
+    });
+
+    // Album Credits
+    albums.filter(al => al.credits.length === 0).forEach(al => {
+      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add credits for album ${al.title}`, icon: Text, color: 'text-gray-500' });
+    });
+
+    // Release Date
+    releases.filter(r => !r.releaseDate).forEach(r => {
+      const album = albums.find(al => al.id === r.albumId);
+      generatedTasks.push({ type: 'release_date', entity: r, label: `Add date for release ${r.title} (${album?.title || 'Unknown Album'})`, icon: Calendar, color: 'text-orange-500' });
+    });
+
     const processedTrackIdsForSpotify = new Set<string>();
 
+    // Spotify URIs (Grouped by album/release first)
     albums.forEach(album => {
         let relevantRelease = album.defaultReleaseId ? releases.find(r => r.id === album.defaultReleaseId) : null;
         if (!relevantRelease && releases.some(r => r.albumId === album.id)) {
@@ -203,7 +249,6 @@ const Cleanup = () => {
         }
 
         let albumTrackIdsInOrder: string[] = [];
-
         if (relevantRelease) {
             albumTrackIdsInOrder = relevantRelease.trackIds;
         } else {
@@ -219,11 +264,10 @@ const Cleanup = () => {
 
         const tracksInAlbumMissingSpotify = albumTrackIdsInOrder
             .map(trackId => tracks.find(t => t.id === trackId))
-            .filter(t => t && !t.spotifyUrl && !processedTrackIdsForSpotify.has(t.id));
+            .filter((t): t is Track => t !== undefined && !t.spotifyUrl && !processedTrackIdsForSpotify.has(t.id));
 
         if (tracksInAlbumMissingSpotify.length > 0) {
-            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForSpotify.add(t!.id));
-
+            tracksInAlbumMissingSpotify.forEach(t => processedTrackIdsForSpotify.add(t.id));
             spotifyTasksForAlbums.push({
                 type: 'spotify_uri',
                 entity: { 
@@ -241,21 +285,55 @@ const Cleanup = () => {
         }
     });
 
-    const individualSpotifyTasks = tracksMissingSpotify
-      .filter(t => !processedTrackIdsForSpotify.has(t.id))
-      .map(t => ({ type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false }));
+    const individualSpotifyTasks = tracks.filter(t => !t.spotifyUrl && !processedTrackIdsForSpotify.has(t.id)).map(t => ({
+      type: 'spotify_uri', entity: t, label: `Add Spotify link for ${t.title}`, icon: Link, color: 'text-green-500', isGrouped: false
+    }));
 
-    return [...generatedTasks, ...spotifyTasksForAlbums, ...individualSpotifyTasks];
+    generatedTasks.push(...spotifyTasksForAlbums, ...individualSpotifyTasks);
+
+
+    // Track-level Metadata (only if not syncing with album)
+    tracks.filter(t => !t.syncWithAlbumCredits).forEach(t => {
+      if (t.genres.length === 0) {
+        generatedTasks.push({ type: 'track_genres', entity: t, label: `Add genres for ${t.title}`, icon: Tag, color: 'text-pink-500' });
+      }
+      if (t.producers.length === 0) {
+        generatedTasks.push({ type: 'track_producers', entity: t, label: `Add producers for ${t.title}`, icon: Tag, color: 'text-yellow-500' });
+      }
+      if (t.writers.length === 0) {
+        generatedTasks.push({ type: 'track_writers', entity: t, label: `Add writers for ${t.title}`, icon: Tag, color: 'text-orange-500' });
+      }
+      if (t.credits.length === 0) {
+        generatedTasks.push({ type: 'track_credits', entity: t, label: `Add additional credits for ${t.title}`, icon: Text, color: 'text-gray-500' });
+      }
+    });
+
+    // Genius URI
+    tracks.filter(t => !t.geniusUrl).forEach(t => {
+      generatedTasks.push({ type: 'genius_uri', entity: t, label: `Add Genius link for ${t.title}`, icon: Link, color: 'text-yellow-500' });
+    });
+
+    // YouTube Music URI
+    tracks.filter(t => !t.youtubeMusicUrl).forEach(t => {
+      generatedTasks.push({ type: 'youtube_music_uri', entity: t, label: `Add YouTube Music link for ${t.title}`, icon: Youtube, color: 'text-red-500' });
+    });
+
+    return generatedTasks;
   }, [tracks, artists, albums, releases, activeProfile]);
 
-  const filteredTasks = useMemo(() => {
+
+  const filteredAndSortedTasks = useMemo(() => {
     let tasks = allTasks.filter(task => activeFilters[task.type]);
 
     if (isShuffleTasks) {
       tasks = [...tasks].sort(() => Math.random() - 0.5);
     }
     return tasks;
-  }, [allTasks, activeFilters, isShuffleTasks]); // Removed sortConfig as it's no longer needed
+  }, [allTasks, activeFilters, isShuffleTasks]);
+
+  const loadMoreTasks = () => {
+    setVisibleTaskCount(prev => prev + tasksPerPage);
+  };
 
   const lowQualityTracks = tracks.filter(t => t.bitrate && parseInt(t.bitrate) < 192);
 
@@ -367,59 +445,39 @@ const Cleanup = () => {
             });
             setIsSpotifyResolutionModalOpen(true);
         } else {
-            const spotifyUrl = prompt(`Enter Spotify URL for ${task.entity.title}:`);
-            if (spotifyUrl) {
-                await updateTrack(task.entity.id, { spotifyUrl });
-                toast.success("Spotify URL updated.");
-                fetchData();
-            }
+            // For individual Spotify URI resolution, we can reuse GeniusLinkResolutionModal logic
+            // or if a more specific one is needed, create SpotifyLinkResolutionModal for individual tracks
+            setSelectedTrackForGenius(task.entity); // Temp assignment
+            setIsGeniusResolutionModalOpen(true); // Reusing for generic link resolution for now
         }
     } else if (task.type === 'genius_uri') {
-      const geniusUrl = prompt(`Enter Genius URL for ${task.entity.title}:`);
-      if (geniusUrl) {
-        await updateTrack(task.entity.id, { geniusUrl });
-        toast.success("Genius URL updated.");
-        fetchData();
-      }
+      setSelectedTrackForGenius(task.entity);
+      setIsGeniusResolutionModalOpen(true);
     } else if (task.type === 'youtube_music_uri') {
-      const youtubeMusicUrl = prompt(`Enter YouTube Music URL for ${task.entity.title}:`);
-      if (youtubeMusicUrl) {
-        await updateTrack(task.entity.id, { youtubeMusicUrl });
-        toast.success("YouTube Music URL updated.");
-        fetchData();
-      }
-    } else if (task.type === 'producers') {
-      const producers = prompt(`Enter producers for ${task.entity.title} (comma separated):`);
-      if (producers !== null) {
-        await updateTrack(task.entity.id, { producers: producers.split(',').map(s => s.trim()).filter(Boolean) });
-        toast.success("Producers updated.");
-        fetchData();
-      }
-    } else if (task.type === 'genres') {
-      const genres = prompt(`Enter genres for ${task.entity.title} (comma separated):`);
-      if (genres !== null) {
-        await updateTrack(task.entity.id, { genres: genres.split(',').map(s => s.trim()).filter(Boolean) });
-        toast.success("Genres updated.");
-        fetchData();
+      setSelectedTrackForYoutubeMusic(task.entity);
+      setIsYoutubeMusicResolutionModalOpen(true);
+    } else if (task.type === 'producers' || task.type === 'track_producers') {
+      setSelectedTrackForProducers(task.entity);
+      setIsProducersResolutionModalOpen(true);
+    } else if (task.type === 'genres' || task.type === 'track_genres') {
+      setSelectedTrackForGenres(task.entity);
+      setIsGenresResolutionModalOpen(true);
+    } else if (task.type === 'track_writers') {
+      // Re-using ProducersResolutionModal structure for writers
+      setSelectedTrackForProducers(task.entity); // Use same state for now
+      setIsProducersResolutionModalOpen(true); // Potentially create a new WritersModal
+    } else if (task.type === 'track_credits' || task.type === 'album_credits') {
+      if (task.entity.id) { // Check if it's an album
+        setSelectedAlbumForCredits(task.entity);
+        setIsAlbumCreditsResolutionModalOpen(true);
+      } else {
+        // Track-specific credits.
+        setSelectedAlbumForCredits(task.entity); 
+        setIsAlbumCreditsResolutionModalOpen(true);
       }
     } else if (task.type === 'release_date') {
-      const releaseDate = prompt(`Enter release date for ${task.entity.title} (YYYY-MM-DD or YYYY-MM or YYYY):`);
-      if (releaseDate !== null) {
-        const releaseToUpdate = releases.find(r => r.id === task.entity.id);
-        if (releaseToUpdate) {
-          // This should be updateRelease, not updateTrack
-          // Assuming updateRelease is available from useMusicStore
-          await fetch(`/api/releases/${task.entity.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ releaseDate })
-          });
-          toast.success("Release date updated.");
-          fetchData();
-        } else {
-          toast.error("Release not found.");
-        }
-      }
+      setSelectedReleaseForDate(task.entity);
+      setIsReleaseDateResolutionModalOpen(true);
     } else if (task.type === 'artist_image') {
       setImageUploadEntity(task.entity);
       setImageUploadEntityType('artist');
@@ -434,14 +492,48 @@ const Cleanup = () => {
   const handleSpotifyResolution = async (trackIds: string[], uris: string[]) => {
     const updatePromises = trackIds.map((id, index) => {
       const uri = uris[index];
-      // Only update if the URI is not empty and different from current (or was empty)
       const currentTrack = tracks.find(t => t.id === id);
       if (uri && currentTrack?.spotifyUrl !== uri) {
         return updateTrack(id, { spotifyUrl: uri });
       }
-      return Promise.resolve(); // No update needed
+      return Promise.resolve();
     });
     await Promise.all(updatePromises);
+    fetchData();
+  };
+
+  const handleGeniusResolution = async (trackId: string, geniusUrl: string) => {
+    await updateTrack(trackId, { geniusUrl });
+    fetchData();
+  };
+
+  const handleYoutubeMusicResolution = async (trackId: string, youtubeMusicUrl: string) => {
+    await updateTrack(trackId, { youtubeMusicUrl });
+    fetchData();
+  };
+
+  const handleProducersResolution = async (trackId: string, producers: string[]) => {
+    await updateTrack(trackId, { producers });
+    fetchData();
+  };
+
+  const handleGenresResolution = async (trackId: string, genres: string[]) => {
+    await updateTrack(trackId, { genres });
+    fetchData();
+  };
+
+  const handleReleaseDateResolution = async (releaseId: string, releaseDate: string) => {
+    // This is a direct API call as updateRelease is not directly exposed for single fields
+    await fetch(`/api/releases/${releaseId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ releaseDate })
+    });
+    fetchData();
+  };
+
+  const handleAlbumCreditsResolution = async (albumId: string, credits: string[]) => {
+    await updateAlbum(albumId, { credits });
     fetchData();
   };
 
@@ -600,13 +692,13 @@ const Cleanup = () => {
 
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
-              {filteredTasks.length === 0 ? (
+              {filteredAndSortedTasks.slice(0, visibleTaskCount).length === 0 ? (
                 <div className="py-12 text-center border-2 border-dashed border-zinc-900 rounded-2xl">
                   <CheckCircle2 size={32} className="text-emerald-500 mx-auto mb-3 opacity-20" />
                   <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">All tasks completed. Your library is in top shape!</p>
                 </div>
               ) : (
-                filteredTasks.map((task, i) => (
+                filteredAndSortedTasks.slice(0, visibleTaskCount).map((task, i) => (
                   <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-2 rounded-lg bg-zinc-950 border border-zinc-800", task.color)}>
@@ -624,6 +716,17 @@ const Cleanup = () => {
                     </Button>
                   </div>
                 ))
+              )}
+              {visibleTaskCount < filteredAndSortedTasks.length && (
+                <div className="text-center mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={loadMoreTasks}
+                    className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest h-9 px-6"
+                  >
+                    Load More Tasks
+                  </Button>
+                </div>
               )}
             </div>
           </ScrollArea>
@@ -656,6 +759,7 @@ const Cleanup = () => {
         </div>
       </Card>
 
+      {/* Modals for task resolution */}
       {spotifyResolutionAlbum && (
         <SpotifyUriGroupResolutionModal
           isOpen={isSpotifyResolutionModalOpen}
@@ -663,6 +767,60 @@ const Cleanup = () => {
           tracks={spotifyResolutionTracks}
           albumDetails={spotifyResolutionAlbum}
           onResolve={handleSpotifyResolution}
+        />
+      )}
+
+      {selectedTrackForGenius && (
+        <GeniusLinkResolutionModal
+          isOpen={isGeniusResolutionModalOpen}
+          onClose={() => setIsGeniusResolutionModalOpen(false)}
+          track={selectedTrackForGenius}
+          onResolve={handleGeniusResolution}
+        />
+      )}
+
+      {selectedTrackForYoutubeMusic && (
+        <YoutubeMusicLinkResolutionModal
+          isOpen={isYoutubeMusicResolutionModalOpen}
+          onClose={() => setIsYoutubeMusicResolutionModalOpen(false)}
+          track={selectedTrackForYoutubeMusic}
+          onResolve={handleYoutubeMusicResolution}
+        />
+      )}
+
+      {selectedTrackForProducers && (
+        <ProducersResolutionModal
+          isOpen={isProducersResolutionModalOpen}
+          onClose={() => setIsProducersResolutionModalOpen(false)}
+          track={selectedTrackForProducers}
+          onResolve={handleProducersResolution}
+        />
+      )}
+
+      {selectedTrackForGenres && (
+        <GenresResolutionModal
+          isOpen={isGenresResolutionModalOpen}
+          onClose={() => setIsGenresResolutionModalOpen(false)}
+          track={selectedTrackForGenres}
+          onResolve={handleGenresResolution}
+        />
+      )}
+
+      {selectedReleaseForDate && (
+        <ReleaseDateResolutionModal
+          isOpen={isReleaseDateResolutionModalOpen}
+          onClose={() => setIsReleaseDateResolutionModalOpen(false)}
+          release={selectedReleaseForDate}
+          onResolve={handleReleaseDateResolution}
+        />
+      )}
+
+      {selectedAlbumForCredits && (
+        <AlbumCreditsResolutionModal
+          isOpen={isAlbumCreditsResolutionModalOpen}
+          onClose={() => setIsAlbumCreditsResolutionModalOpen(false)}
+          album={selectedAlbumForCredits} 
+          onResolve={handleAlbumCreditsResolution}
         />
       )}
 
