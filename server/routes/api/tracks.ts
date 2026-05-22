@@ -2,7 +2,7 @@ import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
 import { tracks, albumTracks } from '../../db/schema';
-import type { InferSelectModel } from 'drizzle-orm'; // Import InferSelectModel
+import type { InferSelectModel } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
   const method = event.method;
@@ -12,12 +12,9 @@ export default defineHandler(async (event) => {
       const allTracks = await db.select().from(tracks);
       const relations = await db.select().from(albumTracks);
       
-      // InferSelectModel infers based on the table definition,
-      // which uses the column name 'is_favorite'.
-      // We explicitly create a type that includes 'is_favorite' to satisfy TypeScript
-      type TrackSelectWithDbFields = InferSelectModel<typeof tracks> & { is_favorite?: number | boolean };
+      type TrackSelectWithDbFields = InferSelectModel<typeof tracks> & { is_favorite?: number | boolean, sync_with_album_credits?: number | boolean };
 
-      return allTracks.map((track: TrackSelectWithDbFields) => { // Use the updated alias here
+      return allTracks.map((track: TrackSelectWithDbFields) => {
         const parseJson = (val: any) => {
           if (typeof val === 'string') {
             try { return JSON.parse(val || '[]'); } catch (e) { return []; }
@@ -32,9 +29,10 @@ export default defineHandler(async (event) => {
           writers: parseJson(track.writers),
           credits: parseJson(track.credits),
           queueRules: typeof track.queueRules === 'string' ? JSON.parse(track.queueRules || '{}') : (track.queueRules || {}),
-          isFavorite: !!track.is_favorite, // Corrected: access 'is_favorite' from DB result and map to 'isFavorite'
+          isFavorite: !!track.is_favorite,
           albumIds: relations.filter(r => r.trackId === track.id).map(r => ({ albumId: r.albumId, order: r.order || 0 })),
-          artistIds: parseJson(track.artistIds)
+          artistIds: parseJson(track.artistIds),
+          syncWithAlbumCredits: !!track.sync_with_album_credits, // Parse new field
         };
       });
     } catch (error) {
@@ -59,17 +57,17 @@ export default defineHandler(async (event) => {
       localFilePath: body.localFilePath,
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
-      // Removed soundcloudUrl: body.soundcloudUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
       genres: JSON.stringify(body.genres || []),
       producers: JSON.stringify(body.producers || []),
       writers: JSON.stringify(body.writers || []),
       credits: JSON.stringify(body.credits || []),
-      bitrate: body.bitrate || '320kbps', // Changed: default to '320kbps' if not provided
+      bitrate: body.bitrate || '320kbps',
       bpm: body.bpm,
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
       queueRules: JSON.stringify(body.queueRules || {}),
+      syncWithAlbumCredits: body.syncWithAlbumCredits, // Corrected: Pass boolean directly
     };
 
     await db.insert(tracks).values(newTrack);
@@ -93,7 +91,8 @@ export default defineHandler(async (event) => {
       queueRules: body.queueRules || {},
       isFavorite: !!body.isFavorite,
       albumIds: body.albumIds || [],
-      artistIds: body.artistIds || []
+      artistIds: body.artistIds || [],
+      syncWithAlbumCredits: !!body.syncWithAlbumCredits, // Return parsed new field
     };
   }
 });

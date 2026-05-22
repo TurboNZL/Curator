@@ -28,11 +28,10 @@ export interface Album {
   artistId: string; // Primary artist
   artistIds: string[]; // For multiple artists
   eraId?: string;
-  // Removed 'covers: string[]' as it will no longer be stored directly on the album
   primaryCover?: string; // Album's explicitly set primary cover (optional manual override)
   defaultReleaseId?: string;
   pendingFiles: { url: string; name: string }[];
-  credits: string[];
+  credits: string[]; // Added album-level credits
 }
 
 export interface Release {
@@ -67,7 +66,7 @@ export interface Track {
   key?: string;
   memories: number;
   queueRules: any; // Could be further refined
-  syncWithAlbumCredits: boolean;
+  syncWithAlbumCredits: boolean; // New field to control individual credit editing
   albumIds: { albumId: string; order: number }[]; // Relation to albums
   isFavorite: boolean;
 }

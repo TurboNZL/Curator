@@ -6,20 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X, Calendar } from 'lucide-react';
+import { Edit2, Layers, Check, FileAudio, Plus, Trash2, Link as LinkIcon, Edit3, X, Calendar, Text } from 'lucide-react'; 
 import { toast } from 'sonner';
 import { Album } from '@/types/music';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn, getAlbumDisplayCover } from '@/lib/utils'; // Import getAlbumDisplayCover
+import { cn, getAlbumDisplayCover } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { Textarea } from '@/components/ui/textarea';
 
-export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'children' prop
+export const EditAlbumModal = ({ album }: { album: Album }) => {
   const [open, setOpen] = useState(false);
-  const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup, activeProfile } = useMusicStore(); // Added activeProfile
+  const { artists, updateAlbum, deleteAlbum, releases, uploadFile, groups, deleteGroup, activeProfile } = useMusicStore();
   const albumReleases = releases.filter(r => r.albumId === album.id);
   
   const albumGroups = groups.filter(g =>
@@ -29,7 +30,6 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
   const defaultAlbumImage = activeProfile.settings?.defaultAlbumImage || '/placeholder.svg';
 
   const allPossibleCovers = useMemo(() => {
-    // Collect all potential cover images
     const covers = new Set<string>();
     if (album.primaryCover) covers.add(album.primaryCover);
     albumReleases.forEach(r => {
@@ -45,6 +45,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
     artistIds: album.artistIds || [],
     primaryCover: album.primaryCover || '', 
     pendingFiles: album.pendingFiles || [],
+    credits: album.credits.join(', '), // Added credits to form data
   });
   const [isRelationalBioModalOpen, setIsRelationalBioModalOpen] = React.useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
@@ -58,6 +59,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
         artistIds: album.artistIds || [],
         primaryCover: album.primaryCover || '', 
         pendingFiles: album.pendingFiles || [],
+        credits: album.credits.join(', '), // Initialize credits
       });
     }
   };
@@ -71,8 +73,8 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
       artistId: formData.artistId,
       artistIds: formData.artistIds,
       primaryCover: formData.primaryCover || null, 
-      // Removed 'covers' from update
       pendingFiles: formData.pendingFiles,
+      credits: formData.credits.split(',').map(s => s.trim()).filter(Boolean), // Parse credits back to array
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -145,6 +147,7 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
             <TabsList className="bg-zinc-900 border-zinc-800">
               <TabsTrigger value="metadata" className="text-[10px] font-black uppercase tracking-widest">Metadata</TabsTrigger>
               <TabsTrigger value="files" className="text-[10px] font-black uppercase tracking-widest">Files ({formData.pendingFiles.length})</TabsTrigger>
+              <TabsTrigger value="credits" className="text-[10px] font-black uppercase tracking-widest">Credits</TabsTrigger>
               <TabsTrigger value="relational" className="text-[10px] font-black uppercase tracking-widest">Relational Bios</TabsTrigger>
             </TabsList>
           </div>
@@ -172,8 +175,6 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                       )}
                     </button>
                   ))}
-                  {/* Removed the drag and drop box for new primary cover upload */}
-                  {/* The ImageUpload is still available for selection within the grid if a URL is provided or chosen */}
                 </div>
               </div>
 
@@ -222,8 +223,6 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                     allowCustom
                   />
                 </div>
-
-                {/* Removed Album Release Date field - managed by individual releases */}
               </div>
             </TabsContent>
 
@@ -273,6 +272,20 @@ export const EditAlbumModal = ({ album }: { album: Album }) => { // Removed 'chi
                     </div>
                   )}
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* New Credits Tab */}
+            <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Album Credits (comma separated)</Label>
+                <Textarea 
+                  id="credits" 
+                  value={formData.credits}
+                  onChange={(e) => setFormData({...formData, credits: e.target.value})}
+                  placeholder="e.g. Mixed by Dr. Dre, Mastered by Mike Dean" 
+                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500 min-h-[120px]"
+                />
               </div>
             </TabsContent>
 

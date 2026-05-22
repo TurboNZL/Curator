@@ -1,7 +1,7 @@
 import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../../db';
-import { tracks, playbackLogs, groupMembers, albumTracks } from '../../../db/schema'; // Import albumTracks
+import { tracks, playbackLogs, groupMembers, albumTracks } from '../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
@@ -17,7 +17,6 @@ export default defineHandler(async (event) => {
       title: body.title,
       artistId: body.artistId,
       artistIds: JSON.stringify(body.artistIds || []),
-      // albumIds: JSON.stringify(body.albumIds || []), // Removed direct update of albumIds on tracks table
       rating: body.rating,
       initialRating: body.initialRating,
       memories: body.memories,
@@ -25,9 +24,7 @@ export default defineHandler(async (event) => {
       spotifyUrl: body.spotifyUrl,
       geniusUrl: body.geniusUrl,
       youtubeMusicUrl: body.youtubeMusicUrl,
-      // Change Start
-      bitrate: body.bitrate === undefined ? undefined : body.bitrate || '320kbps', // Changed: handle undefined vs blank
-      // Change End
+      bitrate: body.bitrate === undefined ? undefined : body.bitrate || '320kbps',
       bpm: body.bpm,
       key: body.key,
       isFavorite: body.isFavorite ? 1 : 0,
@@ -35,16 +32,16 @@ export default defineHandler(async (event) => {
       producers: JSON.stringify(body.producers || []),
       writers: JSON.stringify(body.writers || []),
       credits: JSON.stringify(body.credits || []),
+      syncWithAlbumCredits: body.syncWithAlbumCredits ? 1 : 0, // Handle new field
     };
     await db.update(tracks).set(updateData).where(eq(tracks.id, id));
 
-    // Handle albumTracks relationship separately
     if (body.albumIds !== undefined && Array.isArray(body.albumIds)) {
-      await db.delete(albumTracks).where(eq(albumTracks.trackId, id)); // Clear existing album relations
+      await db.delete(albumTracks).where(eq(albumTracks.trackId, id));
       for (const albumRelation of body.albumIds) {
         await db.insert(albumTracks).values({ albumId: albumRelation.albumId, trackId: id, order: albumRelation.order || 0 });
       }
-    } else if (body.albumId === null || body.albumId === 'none') { // If album is explicitly unselected
+    } else if (body.albumId === null || body.albumId === 'none') {
       await db.delete(albumTracks).where(eq(albumTracks.trackId, id));
     }
 
@@ -55,7 +52,7 @@ export default defineHandler(async (event) => {
   if (method === 'DELETE') {
     await db.delete(playbackLogs).where(eq(playbackLogs.trackId, id));
     await db.delete(groupMembers).where(and(eq(groupMembers.entityId, id), eq(groupMembers.entityType, 'track')));
-    await db.delete(albumTracks).where(eq(albumTracks.trackId, id)); // Also delete from albumTracks
+    await db.delete(albumTracks).where(eq(albumTracks.trackId, id));
     await db.delete(tracks).where(eq(tracks.id, id));
     return { success: true };
   }

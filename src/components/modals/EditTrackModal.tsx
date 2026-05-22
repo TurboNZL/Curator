@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X } from 'lucide-react';
+import { Edit2, Music, Plus, Trash2, Link as LinkIcon, Edit3, X, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Track } from '@/types/music';
@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { RelationalBioModal } from './RelationalBioModal';
 import { Card } from '../ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 interface EditTrackModalProps {
   track: Track;
@@ -45,6 +47,7 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     spotifyUrl: track.spotifyUrl || '',
     geniusUrl: track.geniusUrl || '',
     youtubeMusicUrl: track.youtubeMusicUrl || '', 
+    syncWithAlbumCredits: track.syncWithAlbumCredits, // New field
   });
 
   const albumOptions = albums.filter(a => a.artistId === formData.artistId).map(a => ({ value: a.id, label: a.title }));
@@ -71,17 +74,18 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
       title: formData.title,
       artistId: formData.artistId,
       artistIds: formData.artistIds,
-      albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [], // Corrected albumIds structure
+      albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
-      genres: formData.genres.split(',').map(s => s.trim()).filter(Boolean),
-      producers: formData.producers.split(',').map(s => s.trim()).filter(Boolean),
-      writers: formData.writers.split(',').map(s => s.trim()).filter(Boolean),
-      credits: formData.credits.split(',').map(s => s.trim()).filter(Boolean),
+      genres: formData.syncWithAlbumCredits ? [] : formData.genres.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      producers: formData.syncWithAlbumCredits ? [] : formData.producers.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      writers: formData.syncWithAlbumCredits ? [] : formData.writers.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      credits: formData.syncWithAlbumCredits ? [] : formData.credits.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
       geniusUrl: formData.geniusUrl,
       youtubeMusicUrl: formData.youtubeMusicUrl,
+      syncWithAlbumCredits: formData.syncWithAlbumCredits, // Save new field
     });
 
     toast.success(`Updated ${formData.title}`);
@@ -215,7 +219,6 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bitrate</Label>
-                  {/* Bitrate is now display-only */}
                   <Input value={formData.bitrate || 'Unknown'} disabled className="bg-zinc-900 border-zinc-800 text-zinc-400" />
                 </div>
               </div>
@@ -237,21 +240,55 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
             </TabsContent>
 
             <TabsContent value="credits" className="p-6 space-y-6 mt-0 max-h-[400px] overflow-y-auto">
+              <div className="flex items-center justify-between pb-4">
+                <div className="flex items-center gap-2">
+                  <Zap size={14} className="text-orange-500" />
+                  <Label htmlFor="sync-credits" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    Sync with Album Credits
+                  </Label>
+                </div>
+                <Switch 
+                  id="sync-credits" 
+                  checked={formData.syncWithAlbumCredits} 
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, syncWithAlbumCredits: checked }))} 
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Genres (comma separated)</Label>
-                <Input value={formData.genres} onChange={(e) => setFormData({...formData, genres: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+                <Input 
+                  value={formData.genres} 
+                  onChange={(e) => setFormData({...formData, genres: e.target.value})} 
+                  className="bg-zinc-900 border-zinc-800" 
+                  disabled={formData.syncWithAlbumCredits}
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Producers (comma separated)</Label>
-                <Input value={formData.producers} onChange={(e) => setFormData({...formData, producers: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+                <Input 
+                  value={formData.producers} 
+                  onChange={(e) => setFormData({...formData, producers: e.target.value})} 
+                  className="bg-zinc-900 border-zinc-800" 
+                  disabled={formData.syncWithAlbumCredits}
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Writers (comma separated)</Label>
-                <Input value={formData.writers} onChange={(e) => setFormData({...formData, writers: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+                <Input 
+                  value={formData.writers} 
+                  onChange={(e) => setFormData({...formData, writers: e.target.value})} 
+                  className="bg-zinc-900 border-zinc-800" 
+                  disabled={formData.syncWithAlbumCredits}
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Additional Credits (comma separated)</Label>
-                <Input value={formData.credits} onChange={(e) => setFormData({...formData, credits: e.target.value})} className="bg-zinc-900 border-zinc-800" />
+                <Textarea 
+                  value={formData.credits} 
+                  onChange={(e) => setFormData({...formData, credits: e.target.value})} 
+                  className="bg-zinc-900 border-zinc-800 min-h-[120px]" 
+                  disabled={formData.syncWithAlbumCredits}
+                />
               </div>
             </TabsContent>
 
