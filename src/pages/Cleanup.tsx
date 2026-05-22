@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle } from 'lucide-react'; 
+import { AlertTriangle, CheckCircle2, FileWarning, Database, Swords, Play, Pause, SkipForward, Equal, Image as ImageIcon, Music, Calendar, User, Tag, ThumbsUp, Link, Youtube, Shuffle, FileText } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn, trackHasAlbum, getAlbumDisplayCover } from '@/lib/utils';
@@ -230,7 +230,7 @@ const Cleanup = () => {
 
     // Album Credits
     albums.filter(al => al.credits.length === 0).forEach(al => {
-      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add credits for album ${al.title}`, icon: Text, color: 'text-gray-500' });
+      generatedTasks.push({ type: 'album_credits', entity: al, label: `Add credits for album ${al.title}`, icon: FileText, color: 'text-gray-500' });
     });
 
     // Release Date
@@ -304,7 +304,7 @@ const Cleanup = () => {
         generatedTasks.push({ type: 'track_writers', entity: t, label: `Add writers for ${t.title}`, icon: Tag, color: 'text-orange-500' });
       }
       if (t.credits.length === 0) {
-        generatedTasks.push({ type: 'track_credits', entity: t, label: `Add additional credits for ${t.title}`, icon: Text, color: 'text-gray-500' });
+        generatedTasks.push({ type: 'track_credits', entity: t, label: `Add additional credits for ${t.title}`, icon: FileText, color: 'text-gray-500' });
       }
     });
 
