@@ -750,7 +750,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   resetDatabase: async () => {
     await fetch('/api/reset', { method: 'POST' });
-    set({ artists: [], albums: [], tracks: [], [], playlists: [], timeline: [], groups: [], playbackLogs: [], genres: [], roleCategories: [] });
+    set({ artists: [], albums: [], tracks: [], playlists: [], timeline: [], groups: [], playbackLogs: [], genres: [], roleCategories: [] });
   },
 
   clearUnlinkedFiles: async () => {
