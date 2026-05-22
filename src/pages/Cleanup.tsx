@@ -18,7 +18,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Switch } from '@/components/ui/switch';
 import { EditTrackModal } from '@/components/modals/EditTrackModal';
 import { LowQualityTracksModal } from '@/components/modals/LowQualityTracksModal';
-import { TrackRightClickMenu } from '../ui/TrackRightClickMenu';
+import { TrackRightClickMenu } from '@/components/ui/TrackRightClickMenu';
 import { useLocation } from 'react-router-dom';
 import { SpotifyUriGroupResolutionModal } from '@/components/modals/SpotifyUriGroupResolutionModal';
 import { GeniusLinkResolutionModal } from '@/components/modals/GeniusLinkResolutionModal';
