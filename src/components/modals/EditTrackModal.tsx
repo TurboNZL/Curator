@@ -38,6 +38,10 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
     artistCredits: track.artistCredits || [], // Updated to new credit structure
     albumId: track.albumIds[0]?.albumId || '',
     initialRating: track.initialRating?.toString() || '',
+    genres: track.genres.join(', '),
+    producers: track.producers.join(', '),
+    writers: track.writers.join(', '),
+    credits: track.credits.join(', '),
     bitrate: track.bitrate || '320kbps', // Still stored, but not editable directly
     audioUrl: track.localFilePath || '',
     spotifyUrl: track.spotifyUrl || '',
@@ -71,6 +75,10 @@ export const EditTrackModal = ({ track, children, open, onOpenChange }: EditTrac
       artistCredits: formData.artistCredits,
       albumIds: formData.albumId ? [{ albumId: formData.albumId, order: 0 }] : [],
       initialRating: formData.initialRating ? parseFloat(formData.initialRating) : undefined,
+      genres: formData.syncWithAlbumCredits ? [] : formData.genres.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      producers: formData.syncWithAlbumCredits ? [] : formData.producers.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      writers: formData.syncWithAlbumCredits ? [] : formData.writers.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
+      credits: formData.syncWithAlbumCredits ? [] : formData.credits.split(',').map(s => s.trim()).filter(Boolean), // Conditional save
       bitrate: formData.bitrate,
       localFilePath: formData.audioUrl,
       spotifyUrl: cleanSpotifyUrl(formData.spotifyUrl),
