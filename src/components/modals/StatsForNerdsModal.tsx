@@ -18,8 +18,7 @@ interface StatsForNerdsModalProps {
 
 export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: StatsForNerdsModalProps) => {
   const { playbackLogs, artists, albums } = useMusicStore();
-  if (!track) return null;
-
+  
   const getTrackDisplayArtists = useCallback((t: any) => {
     const primaryArtist = artists.find(a => a.id === t.artistId);
     if (!t.artistCredits || t.artistCredits.length === 0) return primaryArtist?.name || "Unknown Artist";
@@ -44,6 +43,8 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
       })
       .filter(Boolean);
   }, [artists]);
+  
+  if (!track) return null;
 
   const album = albums.find(al => track.albumIds?.some(trackAlbum => trackAlbum.albumId === al.id));
 
