@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, PlaybackRule, PlaybackLog, Credit, RoleCategory }  from '@/../server/types/music'; // Corrected import path
+import { Profile, Artist, Album, Track, Release, TimelineEntry, Playlist, Group, ReleaseType, PlaybackRule, PlaybackLog, Credit, RoleCategory }  from '@/../server/types/music'; // Corrected import path
 import { toast } from 'sonner';
 
 interface MusicState {
@@ -10,6 +10,7 @@ interface MusicState {
   releases: Release[];
   playlists: Playlist[];
   groups: (Group & { members?: { entityType: string, entityId: string, label: string, showOnEntityPage?: boolean }[] })[];
+  releaseTypes: ReleaseType[];
   timeline: TimelineEntry[];
   playbackLogs: PlaybackLog[];
   genres: string[];
@@ -68,6 +69,7 @@ interface MusicState {
   deletePlaylist: (id: string) => Promise<void>;
   addRelease: (release: Omit<Release, 'id'>) => Promise<Release>; 
   updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
+  addReleaseType: (name: string) => Promise<void>;
   addTimelineEntry:(entry: Omit<TimelineEntry, 'id' | 'timestamp'>) => Promise<void>;
   
   addGroup: (group: Omit<Group, 'id'>) => Promise<Group>; 
@@ -129,6 +131,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   releases: [],
   playlists: [],
   groups: [],
+  releaseTypes: [],
   timeline: [],
   playbackLogs: [],
   genres: [],
@@ -161,7 +164,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         }
       };
 
-      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, groups, allGenres, roleCategories] = await Promise.all([
+      const [artists, albums, tracks, timeline, releases, playlists, logs, profiles, groups, releaseTypes, allGenres, roleCategories] = await Promise.all([
         fetchJson('/api/artists'),
         fetchJson('/api/albums'),
         fetchJson('/api/tracks'),
@@ -171,6 +174,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
         fetchJson('/api/playback-stats'),
         fetchJson('/api/profiles'),
         fetchJson('/api/groups'),
+        fetchJson('/api/release-types'),
         fetchJson('/api/genres'),
         fetchJson('/api/role-categories'),
       ]);
@@ -211,6 +215,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
           members: g.members ? g.members.map((m: any) => ({ ...m, showOnEntityPage: !!m.showOnEntityPage })) : []
         })),
         playlists: playlists || [],
+        releaseTypes: releaseTypes || [],
         timeline: (timeline || []).map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })),
         playbackLogs: (logs || []).map((log: any) => ({ ...log, timestamp: new Date(log.timestamp), isSkip: !!log.isSkip })),
         genres: allGenres || [],
@@ -615,6 +620,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
+    });
+    await get().fetchData();
+  },
+
+  addReleaseType: async (name) => {
+    await fetch('/api/release-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
     });
     await get().fetchData();
   },
