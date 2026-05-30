@@ -1,5 +1,4 @@
 allowBuilds:
-<<<<<<< HEAD
   # dyad-default-allow-builds begin
   # dyad-default-allow-builds-schema=v1
   # dyad-default-allow-builds-data-version=2026-05-21.2
@@ -373,7 +372,7 @@ allowBuilds:
   zopflipng-bin: true
   # dyad-default-allow-builds end
   ffmpeg-static: true
-  youtube-dl-exec: set this to true or false
+  youtube-dl-exec: true
 
 packages:
   - .
