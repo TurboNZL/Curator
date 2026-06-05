@@ -157,7 +157,7 @@ export const StatsForNerdsModal = ({ track, children, open, onOpenChange }: Stat
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-zinc-500">Genres</span>
-                <span className="text-white font-bold truncate max-w-[250px]">{track.genres?.join(', ') || 'None'|| 'None'}</span>
+                <span className="text-white font-bold truncate max-w-[250px]">{track.genres.join(', ') || 'None'}</span>
               </div>
             </div>
           </div>
