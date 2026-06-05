@@ -1,7 +1,7 @@
 import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../../db';
-import { tracks, playbackLogs, groupMembers, albumTracks, genres, trackGenres } from '../../../db/schema';
+import { tracks, playbackLogs, groupMembers, albumTracks, genres } from '../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
@@ -33,25 +33,6 @@ export default defineHandler(async (event) => {
     };
     await db.update(tracks).set(updateData).where(eq(tracks.id, id));
 
-    // Handle genres update
-    if (body.genres !== undefined && Array.isArray(body.genres)) {
-      // Delete existing genre links for this track
-      await db.delete(trackGenres).where(eq(trackGenres.trackId, id));
-
-      // Insert new genre links
-      for (const genreName of body.genres) {
-        let genre = await db.select().from(genres).where(eq(genres.name, genreName)).limit(1);
-        let genreId: string;
-
-        if (genre.length > 0) {
-          genreId = genre[0].id;
-        } else {
-          genreId = Math.random().toString(36).substring(7);
-          await db.insert(genres).values({ id: genreId, name: genreName });
-        }
-        await db.insert(trackGenres).values({ trackId: id, genreId });
-      }
-    }
 
     if (body.albumIds !== undefined && Array.isArray(body.albumIds)) {
       await db.delete(albumTracks).where(eq(albumTracks.trackId, id));
@@ -69,7 +50,6 @@ export default defineHandler(async (event) => {
     await db.delete(playbackLogs).where(eq(playbackLogs.trackId, id));
     await db.delete(groupMembers).where(and(eq(groupMembers.entityId, id), eq(groupMembers.entityType, 'track')));
     await db.delete(albumTracks).where(eq(albumTracks.trackId, id));
-    await db.delete(trackGenres).where(eq(trackGenres.trackId, id)); // Delete genre links
     await db.delete(tracks).where(eq(tracks.id, id));
     return { success: true };
   }

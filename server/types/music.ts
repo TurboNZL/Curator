@@ -65,7 +65,7 @@ export interface Track {
   spotifyUrl?: string;
   geniusUrl?: string;
   youtubeMusicUrl?: string;
-  genres: string[]; // Now fetched via trackGenres join table
+  genres: string[];
   bitrate?: string;
   bpm?: number;
   key?: string;

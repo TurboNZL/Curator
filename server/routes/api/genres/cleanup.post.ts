@@ -1,6 +1,6 @@
 import { defineHandler } from "nitro";
 import { db } from '../../db'; 
-import { genres, trackGenres, roleCategories, albums, tracks } from '../../db/schema';
+import { genres, roleCategories, albums, tracks } from '../../db/schema';
 import { inArray, and, eq, sql } from 'drizzle-orm';
 import { Credit } from '../../types/music'; // Updated import path
 
@@ -25,10 +25,6 @@ export default defineHandler(async (event) => {
     const allTracks = await db.select().from(tracks);
     const allAlbums = await db.select().from(albums);
 
-    const usedGenreIdsFromTracksResult = await db.select({
-      genreId: trackGenres.genreId
-    }).from(trackGenres);
-    const usedGenreIdsFromTracks = Array.from(new Set(usedGenreIdsFromTracksResult.map(row => row.genreId)));
 
     // Fetch all genres first to map names to IDs
     const allGenresInDb = await db.select({
@@ -47,7 +43,7 @@ export default defineHandler(async (event) => {
       });
     });
 
-    const allUsedGenreIds = Array.from(new Set([...usedGenreIdsFromTracks, ...Array.from(usedGenreIdsFromAlbums)]));
+    const allUsedGenreIds = Array.from(usedGenreIdsFromAlbums);
 
     const unusedGenres = allGenresInDb.filter(genre => !allUsedGenreIds.includes(genre.id));
 

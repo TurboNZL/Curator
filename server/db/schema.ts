@@ -80,12 +80,6 @@ export const tracks = sqliteTable('tracks', {
   isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
 });
 
-export const trackGenres = sqliteTable('track_genres', {
-  trackId: text('track_id').notNull(),
-  genreId: text('genre_id').notNull(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.trackId, table.genreId] }),
-}));
 
 export const genres = sqliteTable('genres', {
   id: text('id').primaryKey(),

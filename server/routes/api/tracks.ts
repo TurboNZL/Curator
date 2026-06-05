@@ -1,7 +1,7 @@
 import { defineHandler } from "nitro";
 import { readBody } from "h3";
 import { db } from '../../db';
-import { tracks, albumTracks, genres, trackGenres } from '../../db/schema';
+import { tracks, albumTracks, albums, genres } from '../../db/schema';
 import { InferSelectModel, eq } from 'drizzle-orm';
 
 export default defineHandler(async (event) => {
@@ -11,8 +11,8 @@ export default defineHandler(async (event) => {
     try {
       const allTracks = await db.select().from(tracks);
       const relations = await db.select().from(albumTracks);
-      const allTrackGenres = await db.select().from(trackGenres);
       const allGenres = await db.select().from(genres);
+      const allAlbums = await db.select().from(albums);
       
       type TrackSelectWithDbFields = InferSelectModel<typeof tracks> & { is_favorite?: number | boolean, sync_with_album_credits?: number | boolean };
 
@@ -24,8 +24,19 @@ export default defineHandler(async (event) => {
           return val || [];
         };
 
-        const trackGenreIds = allTrackGenres.filter(tg => tg.trackId === track.id).map(tg => tg.genreId);
-        const trackGenreNames = allGenres.filter(g => trackGenreIds.includes(g.id)).map(g => g.name);
+        const associatedAlbumIds = relations.filter(r => r.trackId === track.id).map(r => r.albumId);
+        let trackGenreNames: string[] = [];
+
+        if (track.syncWithAlbumCredits && associatedAlbumIds.length > 0) {
+          const mainAlbum = allAlbums.find(album => album.id === associatedAlbumIds[0]);
+          if (mainAlbum && mainAlbum.genres) {
+            try {
+              trackGenreNames = JSON.parse(mainAlbum.genres);
+            } catch (e) {
+              console.error('Error parsing album genres:', e);
+            }
+          }
+        }
 
         return {
           ...track,
@@ -71,21 +82,6 @@ export default defineHandler(async (event) => {
 
     await db.insert(tracks).values(newTrack);
 
-    // Handle genres
-    if (body.genres && Array.isArray(body.genres)) {
-      for (const genreName of body.genres) {
-        let genre = await db.select().from(genres).where(eq(genres.name, genreName)).limit(1);
-        let genreId: string;
-
-        if (genre.length > 0) {
-          genreId = genre[0].id;
-        } else {
-          genreId = Math.random().toString(36).substring(7);
-          await db.insert(genres).values({ id: genreId, name: genreName });
-        }
-        await db.insert(trackGenres).values({ trackId: id, genreId });
-      }
-    }
 
     if (body.albumTracks && Array.isArray(body.albumTracks)) {
       for (const albumTrack of body.albumTracks) {
@@ -99,7 +95,7 @@ export default defineHandler(async (event) => {
 
     return {
       ...newTrack,
-      genres: body.genres || [],
+      genres: [],
       artistCredits: body.artistCredits || [], // Return artistCredits (role: string[])
       queueRules: body.queueRules || {},
       isFavorite: !!newTrack.isFavorite, 
