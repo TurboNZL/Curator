@@ -1,7 +1,10 @@
 import type { Library } from './library.ts';
 
 export interface VoteLine { voteId: string; opponent: string; opponentExists: boolean; result: 'won' | 'lost' | 'equal'; timestamp: number }
+export interface PlayLine { logId: string; timestamp: number; seconds: number; isSkip: boolean; source: string | null }
 export interface TrackInfo {
+  /** every logged play of this track, newest first */
+  history: PlayLine[];
   wins: number; losses: number; draws: number;
   votes: VoteLine[];
   plays: number; skips: number; secondsListened: number; lastPlayed: number | null;
@@ -21,8 +24,10 @@ export function trackInfo(lib: Library, trackId: string): TrackInfo {
   }
   votes.sort((a, b) => b.timestamp - a.timestamp);
   const logs = lib.logs.filter((l) => l.trackId === trackId);
+  const history = logs.map((l) => ({ logId: l.id, timestamp: l.timestamp, seconds: l.duration ?? 0, isSkip: !!l.isSkip, source: l.sourceType ?? null }))
+    .sort((a, b) => b.timestamp - a.timestamp);
   return {
-    wins, losses, draws, votes,
+    history, wins, losses, draws, votes,
     plays: logs.length, skips: logs.filter((l) => l.isSkip).length,
     secondsListened: logs.reduce((s, l) => s + (l.duration ?? 0), 0),
     lastPlayed: logs.length ? Math.max(...logs.map((l) => l.timestamp)) : null,

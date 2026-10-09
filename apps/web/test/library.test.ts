@@ -9,6 +9,8 @@ import { computeHealth } from '../src/lib/health.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
 import { computeStats } from '../src/lib/stats.ts';
 import { appendTrack, hasLead, leadArtistId, withLeadFallback, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
+import { pickEvictions } from '../src/lib/cachePolicy.ts';
+import { defaultDir, sortTracks } from '../src/lib/trackSort.ts';
 import { pickPair } from '../src/lib/pairing.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
@@ -211,6 +213,7 @@ describe('trackInfo', () => {
     expect(i.votes.map((v) => v.voteId)).toEqual(['v3', 'v2', 'v1']); // newest first, the unrelated v4 excluded
     expect(i.votes[0]).toMatchObject({ opponent: '(deleted track)', opponentExists: false, result: 'equal' });
     expect(i).toMatchObject({ plays: 2, skips: 1, secondsListened: 35, lastPlayed: 20 });
+    expect(i.history.map((h) => [h.logId, h.isSkip, h.seconds])).toEqual([['p2', true, 5], ['p1', false, 30]]); // newest first
   });
 });
 
@@ -248,4 +251,38 @@ describe('lead artist from credits', () => {
     expect(items.map((i) => i.id).sort()).toEqual(['al', 't']);
     expect(computeHealth(libFor([lead('b')], {})).find((c) => c.id === 'no-lead')!.items).toEqual([]);
   });
+});
+
+describe('pickEvictions (offline audio)', () => {
+  const MB = 1024 * 1024;
+  const cache = { old: { size: 10 * MB, at: 1 }, mid: { size: 10 * MB, at: 2 }, new: { size: 10 * MB, at: 3 } };
+  it('evicts nothing when the file fits', () => expect(pickEvictions(cache, 10 * MB, 40 * MB)).toEqual([]));
+  it('evicts least recently used first, and only as many as needed', () => {
+    expect(pickEvictions(cache, 10 * MB, 30 * MB)).toEqual(['old']);
+    expect(pickEvictions(cache, 15 * MB, 30 * MB)).toEqual(['old', 'mid']);
+  });
+  it('never evicts protected files, and returns null (delete nothing) if that leaves no room', () => {
+    expect(pickEvictions(cache, 10 * MB, 30 * MB, new Set(['old']))).toEqual(['mid']);
+    expect(pickEvictions(cache, 10 * MB, 30 * MB, new Set(['old', 'mid', 'new']))).toBeNull();
+    expect(pickEvictions(cache, 50 * MB, 30 * MB)).toBeNull(); // bigger than the whole limit
+  });
+});
+
+describe('sortTracks', () => {
+  const lib = buildLibrary(rows(
+    rec('artists', 'a', { name: 'A', image: null }),
+    rec('albums', 'al', { title: 'Zed', artistId: 'a', credits: [], genres: [], cover: null }),
+    rec('tracks', 't1', track('track 10', { albums: [{ albumId: 'al', order: 0 }] })),
+    rec('tracks', 't2', track('Track 2', { albums: [] })),
+    rec('tracks', 't3', track('apple', { albums: [{ albumId: 'al', order: 0 }] }))));
+  const ids = (k: Parameters<typeof sortTracks>[1], d: 'asc' | 'desc') => sortTracks(lib.tracks, k, d).map((t) => t.id);
+  it('sorts titles naturally and case-insensitively, either direction', () => {
+    expect(ids('title', 'asc')).toEqual(['t3', 't2', 't1']);
+    expect(ids('title', 'desc')).toEqual(['t1', 't2', 't3']);
+  });
+  it('keeps tracks without an album last in both directions', () => {
+    expect(ids('album', 'asc')[2]).toBe('t2');
+    expect(ids('album', 'desc')[2]).toBe('t2');
+  });
+  it('first click goes the natural way for each column', () => { expect(defaultDir('title')).toBe('asc'); expect(defaultDir('rating')).toBe('desc'); });
 });

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { advance, newId, pushHistory, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
+import { moveTrack } from './defaults.ts';
 import { audioSource } from './files.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
@@ -27,6 +28,9 @@ interface PlayerState {
   /** put at the front of the user queue ("play next") or the back ("add to queue") */
   enqueue(trackId: string, where?: 'next' | 'last'): void;
   dequeue(index: number): void;
+  /** reorder the user queue */
+  moveQueued(from: number, to: number): void;
+  clearQueued(): void;
 }
 
 let audio: HTMLAudioElement | null = null;
@@ -151,5 +155,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
       const q = get().queue;
       set({ queue: { ...q, user: q.user.filter((_, i) => i !== index) } });
     },
+    moveQueued(from, to) {
+      const q = get().queue;
+      set({ queue: { ...q, user: moveTrack(q.user, from, to) } });
+    },
+    clearQueued() { set({ queue: { ...get().queue, user: [] } }); },
   };
 });
