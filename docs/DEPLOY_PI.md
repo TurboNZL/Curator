@@ -95,12 +95,12 @@ Open that URL on your phone (also on Tailscale). With this in place you can set 
 - Every client holds a full copy of what it has synced, but a client that was never online after an edit cannot restore the server, so still back up.
 
 ## 7. Updating
+As the `curator` user (needs `sudo` rights for `systemctl`), from the checkout:
 ```
-sudo -u curator -H bash -c 'cd ~/music-curator && git pull && pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web && pnpm --filter @curator/web build'
-sudo systemctl restart curator
+./scripts/update.sh
 sudo yt-dlp -U
 ```
-Clients pick up the new web build on their next load (when online; the app shell is fetched fresh and cached for offline).
+It stops the service, `git pull --ff-only`, installs, builds the web client with the nvm Node at `/home/curator/.nvm/versions/node/v22.23.3/bin` (edit `NODE_BIN` in the script after a Node upgrade), and starts the service again. It prints each step and stops at the first failure; if that happens after the stop, the service stays down until you fix it and re-run. Clients pick up the new web build on their next load (when online; the app shell is fetched fresh and cached for offline).
 
 ## Troubleshooting
 - Service starts then exits: `journalctl -u curator -n 50`. `Cannot find package '@hono/node-server'` means the install step was skipped or run as another user.
