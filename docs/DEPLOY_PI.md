@@ -95,12 +95,36 @@ Open that URL on your phone (also on Tailscale). With this in place you can set 
 - Every client holds a full copy of what it has synced, but a client that was never online after an edit cannot restore the server, so still back up.
 
 ## 7. Updating
-As the `curator` user (needs `sudo` rights for `systemctl`), from the checkout:
+From your own computer, step by step:
 ```
+# 1. log in to the Pi
+ssh pi-admin@PI_ADDRESS
+
+# 2. switch to the service user (same command as in section 2)
+sudo -u curator -H bash
+
+# 3. FIRST TIME ONLY: get the code. Skip this if ~/music-curator already exists.
+git clone https://github.com/TurboNZL/music-curator/ ~/music-curator
+
+# 4. update: stop the service, git pull, install, build the web client, start the service
+cd ~/music-curator
 ./scripts/update.sh
-sudo yt-dlp -U
 ```
-It stops the service, `git pull --ff-only`, installs, builds the web client with the nvm Node at `/home/curator/.nvm/versions/node/v22.23.3/bin` (edit `NODE_BIN` in the script after a Node upgrade), and starts the service again. It prints each step and stops at the first failure; if that happens after the stop, the service stays down until you fix it and re-run. Clients pick up the new web build on their next load (when online; the app shell is fetched fresh and cached for offline).
+Notes:
+- The folder is `~/music-curator` (with a hyphen), the path the systemd unit in section 3 points at.
+- The script prints every step and stops at the first failure; if that happens after the service was stopped, it stays stopped until you fix the problem and run the script again.
+- It uses the nvm Node at `/home/curator/.nvm/versions/node/v22.23.3/bin` (edit `NODE_BIN` in the script after a Node upgrade).
+- The service (section 3) must already exist: the script only stops and starts it. On a brand-new Pi do sections 1 to 3 first.
+- **The script calls `sudo systemctl`, and the `curator` user has no sudo rights by default.** Either let it do exactly that and nothing else, once, from `pi-admin`:
+  ```
+  sudo visudo -f /etc/sudoers.d/curator
+  # contents (check the path with: command -v systemctl):
+  curator ALL=(root) NOPASSWD: /usr/bin/systemctl stop curator, /usr/bin/systemctl start curator, /usr/bin/systemctl is-active --quiet curator
+  ```
+  or run the script as `pi-admin` with the repo owned by that user instead.
+- Afterwards run `sudo yt-dlp -U` as `pi-admin` now and then; YouTube breaks old versions regularly.
+
+Clients pick up the new web build on their next load (when online; the app shell is fetched fresh and cached for offline). **Settings → Server → Test connection** now shows whether the server can run yt-dlp and ffmpeg, so a missing install is visible before an import fails.
 
 ## Troubleshooting
 - Service starts then exits: `journalctl -u curator -n 50`. `Cannot find package '@hono/node-server'` means the install step was skipped or run as another user.

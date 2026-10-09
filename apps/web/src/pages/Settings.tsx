@@ -6,6 +6,7 @@ import { ACCENTS, THEMES } from '../lib/theme.ts';
 import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
+import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="card space-y-4 p-5"><h2 className="font-semibold">{title}</h2>{children}</section>;
@@ -62,7 +63,8 @@ export function SettingsPage() {
         <label className="block space-y-1 text-sm">Token<input className="input font-mono" type="password" placeholder="contents of <data dir>/token" value={token} onChange={(e) => setToken(e.target.value)} /></label>
         <div className="flex flex-wrap items-center gap-2"><button className="btn" onClick={test}>Test connection</button><button className="btn btn-accent" onClick={save}>Save &amp; sync</button>
           <button className="btn btn-ghost" onClick={() => void syncNow()} disabled={sync.state === 'syncing'}><RefreshCw size={15} className={cn(sync.state === 'syncing' && 'animate-spin')} />Sync now</button></div>
-        {status && <div className="rounded-theme bg-raised p-3 text-sm">{typeof status === 'string' ? status : <>Connected · {status.files.count} files ({fmtBytes(status.files.bytes)}) · cursor {status.cursor}</>}</div>}
+        {status && <div className="rounded-theme bg-raised p-3 text-sm">{typeof status === 'string' ? status : <>Connected · {status.files.count} files ({fmtBytes(status.files.bytes)}) · cursor {status.cursor}
+          {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
 
@@ -72,6 +74,12 @@ export function SettingsPage() {
         {acq && <div className="text-sm text-muted">{acq}</div>}
         <p className="text-xs text-muted">Downloads run on the server and need yt-dlp and ffmpeg installed there.</p>
       </Section>
+
+      <Section title="Playback rules"><PlaybackRules /></Section>
+
+      <Section title="Genres and roles"><Vocabulary /></Section>
+
+      <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
 
       <Section title="This device's storage">
         <p className="text-sm text-muted">Browsers can only hold a limited amount, so offline audio stops at the limit you set (or, with “Make room automatically”, replaces the tracks played longest ago). The desktop and Android apps keep full offline copies; here, use “Keep offline” on albums and playlists.</p>

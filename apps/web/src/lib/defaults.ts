@@ -59,3 +59,23 @@ export const moveTrack = (order: string[], from: number, to: number): string[] =
 };
 export const removeTrack = (order: string[], id: string) => order.filter((x) => x !== id);
 export const appendTrack = (order: string[], id: string) => (order.includes(id) ? order : [...order, id]);
+
+/** A track title from a file name: no extension, no leading track number ("01 ", "3 - "; a bare "7 Rings" is kept), underscores as spaces. */
+export function titleFromFilename(name: string): string {
+  const base = name.replace(/^.*[\\/]/, '').replace(/\.[A-Za-z0-9]{2,5}$/, '');
+  const tidy = (x: string) => x.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  const cleaned = tidy(base.replace(/^\s*(?:\d{1,3}\s*[-.)_]\s*|0\d{1,2}[\s_]+(?=[^\d\s_]))/, ''));
+  return cleaned || tidy(base);
+}
+
+const AUDIO_TYPES: Record<string, string> = {
+  mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg', oga: 'audio/ogg',
+  opus: 'audio/ogg', wav: 'audio/wav', webm: 'audio/webm',
+};
+export const AUDIO_ACCEPT = Object.keys(AUDIO_TYPES).map((e) => `.${e}`).join(',') + ',audio/*';
+
+/** The browser's own type when it gave one, else a guess from the extension (so the server and <audio> agree). */
+export function audioMime(name: string, type: string): string {
+  if (type.startsWith('audio/')) return type;
+  return AUDIO_TYPES[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'audio/mpeg';
+}

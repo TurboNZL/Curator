@@ -1,5 +1,7 @@
 import { Disc3, User } from 'lucide-react';
+import { useLibrary } from '../lib/derive.ts';
 import { useFileUrl } from '../lib/files.ts';
+import { defaultImage } from '../lib/profile.ts';
 import { cn } from '../lib/cn.ts';
 
 /** Deterministic gradient so cover-less items still look distinct and stable. */
@@ -11,7 +13,8 @@ function gradient(seed: string) {
 
 export function Cover({ hash, seed, kind = 'album', className }: { hash: string | null | undefined; seed: string; kind?: 'album' | 'artist'; className?: string }) {
   const Icon = kind === 'artist' ? User : Disc3;
-  const url = useFileUrl(hash);
+  const fallback = defaultImage(useLibrary(), kind === 'artist' ? 'defaultArtistImage' : 'defaultAlbumCover');
+  const url = useFileUrl(hash || fallback);
   return (
     <div className={cn('relative aspect-square overflow-hidden bg-raised', kind === 'artist' ? 'rounded-full' : 'rounded-theme', className)}
       style={url ? undefined : { backgroundImage: gradient(seed) }}>

@@ -52,7 +52,7 @@ export function HealthPage() {
     }
   }
   const problems = checks.filter((c) => c.items.length);
-  const openItem = (i: HealthItem) => (i.kind === 'track' || i.kind === 'album' || i.kind === 'artist') && edit({ kind: i.kind, id: i.id });
+  const openItem = (i: HealthItem) => (i.kind === 'track' || i.kind === 'album' || i.kind === 'artist' || i.kind === 'release') && edit({ kind: i.kind, id: i.id });
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -74,7 +74,7 @@ export function HealthPage() {
               {c.addLead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`${c.addLead!.label} (${c.items.length})?`) && addLeadCredits(c.items)}>{c.addLead.label}</button></div>}
               {c.fix && <div className="px-4 pb-2"><button className="btn text-bad" onClick={() => confirm(`${c.fix!.label} (${c.items.length})?`) && c.items.forEach((i) => remove(c.fix!.table, i.id))}>{c.fix.label}</button></div>}
               <div className="max-h-80 divide-y divide-line/60 overflow-y-auto">{c.items.slice(0, 200).map((i) => (
-                <button key={`${i.kind}${i.id}`} disabled={!['track', 'album', 'artist'].includes(i.kind)} className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-raised/60 disabled:cursor-default disabled:hover:bg-transparent" onClick={() => openItem(i)}>
+                <button key={`${i.kind}${i.id}`} disabled={!['track', 'album', 'artist', 'release'].includes(i.kind)} className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-raised/60 disabled:cursor-default disabled:hover:bg-transparent" onClick={() => openItem(i)}>
                   <span className="truncate">{i.label}</span>{i.detail && <span className="shrink-0 text-xs text-muted">{i.detail}</span>}</button>))}
                 {c.items.length > 200 && <div className="px-4 py-2 text-xs text-muted">…and {c.items.length - 200} more</div>}</div>
             </div>)}

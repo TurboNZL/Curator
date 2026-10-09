@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { Cover } from '../components/Cover.tsx';
 
 export function ArtistsPage() {
   const lib = useLibrary();
+  const edit = useEditor((s) => s.open);
   const [q, setQ] = useState('');
   const rows = useMemo(() => {
     const counts = new Map<string, number>();
@@ -16,6 +19,7 @@ export function ArtistsPage() {
     <div>
       <div className="mb-5 flex items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Artists <span className="text-base font-normal text-muted">{rows.length}</span></h1>
+        <button className="btn" onClick={() => edit({ kind: 'new-artist', id: '' })}><Plus size={15} />New artist</button>
         <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>

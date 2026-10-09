@@ -1,4 +1,6 @@
-import { Pencil } from 'lucide-react';
+import { Pencil, Play, Shuffle } from 'lucide-react';
+import { shuffleWithRules } from '@curator/core';
+import { usePlayer } from '../lib/player.ts';
 import { Link, useParams } from 'react-router-dom';
 import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -11,18 +13,23 @@ export function ArtistPage() {
   const { id } = useParams();
   const lib = useLibrary();
   const edit = useEditor((s) => s.open);
+  const play = usePlayer((s) => s.play);
   const artist = id ? lib.artistById.get(id) : undefined;
   if (!artist) return <div className="text-muted">Artist not found.</div>;
   const albums = lib.albums.filter((a) => a.artistId === artist.id || a.credits.some((c) => c.artistId === artist.id));
   const tracks = lib.tracks.filter((t) => t.artistId === artist.id || t.credits.some((c) => c.artistId === artist.id))
     .sort((a, b) => b.effectiveRating - a.effectiveRating || b.elo - a.elo);
+  const playable = tracks.filter((t) => t.file).map((t) => t.id);
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-5">
         <Cover kind="artist" hash={artist.image} seed={artist.name} className="w-32 shrink-0 sm:w-40" />
         <div><div className="text-xs uppercase tracking-wider text-muted">Artist</div><h1 className="text-3xl font-bold">{artist.name}</h1>
           <div className="text-sm text-muted">{albums.length} albums · {tracks.length} tracks</div>
-          <button className="btn btn-ghost mt-2 -ml-3" onClick={() => edit({ kind: 'artist', id: artist.id })}><Pencil size={15} />Edit</button></div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
+            <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={16} />Shuffle</button>
+          <button className="btn btn-ghost" onClick={() => edit({ kind: 'artist', id: artist.id })}><Pencil size={15} />Edit</button></div></div>
       </div>
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
