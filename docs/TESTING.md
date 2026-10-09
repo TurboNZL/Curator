@@ -3,22 +3,48 @@
 Everything below runs on your own machine. Nothing here touches your old app or your old `curator.db` (it is only read).
 
 ## 0. What you need
-- **Node 22.13 or newer** (`node -v`). Older versions need an extra flag for the built-in SQLite the server uses.
-- **pnpm** (`npm i -g pnpm`).
-- Git, and this branch: `git fetch origin && git checkout claude/eloquent-darwin-6q1rf2`.
-- For audio only (step 5): **yt-dlp** and **ffmpeg** (both must run from a terminal).
 
-## 1. Install and build (once, and after each `git pull`)
-From the repo root:
+You need **Node 22.13 or newer**, **pnpm**, and a copy of this repo that contains `apps/web` (the current `main` does).
+
+Check what you have:
 ```
+node -v      # must print v22.13 or higher
+pnpm -v      # must print a version
+```
+`sudo apt install nodejs` usually gives a much older Node (Debian 12 ships 18), and apt has no `pnpm` package, so use nvm (installs into your home folder, no sudo):
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+```
+Close the terminal and open a new one, then:
+```
+nvm install 22
+npm install -g pnpm
+node -v && pnpm -v
+```
+(Any newer nvm release tag works in that URL; check github.com/nvm-sh/nvm/releases.)
+
+For audio only (step 5) you also need **yt-dlp** and **ffmpeg**.
+
+**If `pnpm install` fails with symlink / EPERM / "operation not permitted" errors:** the folder is on a drive format that cannot hold symlinks (exFAT, some NTFS mounts). Copy the repo to your home folder (`cp -r` to `~/curator`) and run everything there. The data folder in step 2 can still live anywhere.
+
+## 1. Install and build (once, and after each update)
+From the repo root (quote the path if it has spaces):
+```
+cd "/path/to/music-curator-main"
 pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web
 pnpm --filter @curator/web build
 ```
-(`--ignore-scripts` matters: the legacy app's `youtube-dl-exec` postinstall fails otherwise.)
+(`--ignore-scripts` matters: the legacy app's `youtube-dl-exec` postinstall fails otherwise.) The build ends with `✓ built in …s`.
 
 ## 2. Import your library into a fresh data folder
 Pick a folder for the new server's data (any path; later this is the external drive on the Pi).
 Your old database is `data/curator.db` inside the old app folder.
+
+Linux / macOS (bash):
+```
+cd packages/server
+CURATOR_DATA_DIR=~/curator-data node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db "/path/to/old-app/data/curator.db"
+```
 
 PowerShell (Windows):
 ```
@@ -26,17 +52,12 @@ cd packages\server
 $env:CURATOR_DATA_DIR = "C:\curator-data"
 node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db "C:\path\to\old-app\data\curator.db"
 ```
-macOS / Linux:
-```
-cd packages/server
-CURATOR_DATA_DIR=~/curator-data node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db /path/to/old-app/data/curator.db
-```
 You should see a table of counts (444 tracks, 33 albums, 1950 votes for the library tested so far).
 It is safe to run again; it never duplicates anything.
 Add `--public <old-app>/public` only if you still have the old `public/uploads` folder (audio + images); it copies them in.
 
 ## 3. Start the server
-Same terminal, same `CURATOR_DATA_DIR`:
+Same terminal, same `CURATOR_DATA_DIR` (bash: `CURATOR_DATA_DIR=~/curator-data pnpm start`):
 ```
 pnpm start
 ```
@@ -64,7 +85,7 @@ Things worth trying:
 
 ## 5. Getting audio back (the old `uploads` folder is gone)
 Install **yt-dlp** and **ffmpeg** so the server can find them (or point at them):
-PowerShell, before `pnpm start`:
+bash: `CURATOR_YTDLP=/path/to/yt-dlp CURATOR_DATA_DIR=~/curator-data pnpm start`. PowerShell, before `pnpm start`:
 ```
 $env:CURATOR_YTDLP = "C:\tools\yt-dlp.exe"       # only if it is not on PATH
 $env:CURATOR_FFMPEG_DIR = "C:\tools\ffmpeg\bin"  # folder containing ffmpeg.exe, only if not on PATH
@@ -74,7 +95,8 @@ Start small to check it works: the first run is the first real test of this code
 Downloaded tracks get a play button and can be kept offline per album.
 
 ## If something is wrong
-- Blank page / 404 at `/`: you skipped the build in step 1.
+- `pnpm: command not found`: see step 0 (apt has no pnpm package; use nvm + `npm install -g pnpm`).
+- Blank page / 404 at `/`: you skipped the build in step 1, or your copy has no `apps/web` folder (re-download the current `main`).
 - "Wrong token": copy the token from `<data dir>/token` again.
 - Counts look wrong after migrating: tell me the numbers shown and which album/track looks off.
 - Run the automated checks: `pnpm --filter @curator/web test`, and `npx vitest run` inside `packages/core` and `packages/server`.
