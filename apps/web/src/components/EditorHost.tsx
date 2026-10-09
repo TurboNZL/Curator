@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { AlbumData, ArtistData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
+import type { AlbumData, ArtistData, GroupData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
+import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
+import { logJournal } from '../lib/journal.ts';
 import { newAlbumData, newTrackData, appendTrack } from '../lib/defaults.ts';
-import { ArtistSelect, CreditsEditor, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { ArtistSelect, CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 
 /** Make sure every genre name used exists as a genre record, so it shows up in filters and suggestions. */
 function useEnsureGenres() {
@@ -146,7 +148,7 @@ function NewAlbumDialog({ onClose }: { onClose: () => void }) {
   const ok = title.trim() && artistId;
   return (
     <Modal title="New album" onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); const id = put('albums', newAlbumData({ title: title.trim(), artistId, genres, cover })); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
+      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); const id = put('albums', newAlbumData({ title: title.trim(), artistId, genres, cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(artistId)?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
       <ImagePicker hash={cover} onChange={setCover} seed={title || 'new'} />
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
       <Field label="Artist"><ArtistSelect value={artistId} onChange={setArtistId} /></Field>
@@ -180,10 +182,48 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
   );
 }
 
+const BIO_TYPES: GroupData['type'][] = ['relationship', 'collective', 'thematic', 'era'];
+
+/** Create or edit a relational bio. `initial` pre-links an entity ("album:xyz") when started from its page. */
+function BioDialog({ groupId, initial, onClose }: { groupId?: string; initial?: string; onClose: () => void }) {
+  const lib = useLibrary();
+  const { put, remove } = useStore();
+  const existing = groupId ? lib.groups.find((g) => g.id === groupId) : undefined;
+  const [g, setG] = useState<GroupData>(() => {
+    if (existing) return { ...existing };
+    const [t, i] = (initial ?? '').split(':');
+    const pre: GroupMemberData[] = t && i ? [{ entityType: t as GroupMemberData['entityType'], entityId: i, showOnEntityPage: t !== 'track' }] : [];
+    return { name: '', description: '', label: null, type: 'relationship', members: pre };
+  });
+  if (groupId && !existing) return null;
+  const add = (e: { type: 'artist' | 'album' | 'track'; id: string }) =>
+    !g.members.some((m) => m.entityType === e.type && m.entityId === e.id) && setG({ ...g, members: [...g.members, { entityType: e.type, entityId: e.id, showOnEntityPage: e.type !== 'track' }] });
+  const ok = g.name.trim() && g.members.length > 0;
+  return (
+    <Modal title={groupId ? 'Edit relational bio' : 'New relational bio'} onClose={onClose} footer={<>
+      {groupId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', groupId); onClose(); } }}>Delete</button>}
+      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-accent" disabled={!ok} onClick={() => { const bid = put('groups', { ...g, name: g.name.trim(), label: g.label ?? g.name.trim(), description: g.description?.trim() || null }, groupId); if (!groupId) logJournal('bio', `New relational bio: ${g.name.trim()}`, '', bid); onClose(); }}>Save</button></div></>}>
+      <Field label="Name"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>
+      <Field label="Type"><select className="input" value={g.type} onChange={(e) => setG({ ...g, type: e.target.value })}>{BIO_TYPES.map((t) => <option key={t}>{t}</option>)}</select></Field>
+      <Field label="Description"><textarea className="input" rows={4} value={g.description ?? ''} onChange={(e) => setG({ ...g, description: e.target.value })} /></Field>
+      <div className="space-y-2"><div className="text-sm text-muted">Linked ({g.members.length}), and whether the bio shows on that page</div>
+        {g.members.map((m, i) => { const r = resolveEntity(lib, m.entityType, m.entityId); return (
+          <div key={i} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-2 text-sm">
+            <span className="chip">{m.entityType}</span><span className="min-w-0 flex-1 truncate">{r?.label ?? '(deleted)'}</span>
+            <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" checked={m.showOnEntityPage} onChange={(e) => setG({ ...g, members: g.members.map((x, j) => (j === i ? { ...x, showOnEntityPage: e.target.checked } : x)) })} />show</label>
+            <button type="button" aria-label="Unlink" className="text-muted hover:text-fg" onClick={() => setG({ ...g, members: g.members.filter((_, j) => j !== i) })}>×</button></div>); })}
+        <EntityPicker onPick={add} /></div>
+    </Modal>
+  );
+}
+
 export function EditorHost() {
   const { target, close } = useEditor();
   if (!target) return null;
   const key = `${target.kind}:${target.id}`;
+  if (target.kind === 'bio') return <BioDialog key={key} groupId={target.id} onClose={close} />;
+  if (target.kind === 'new-bio') return <BioDialog key={key} initial={target.id} onClose={close} />;
   if (target.kind === 'new-album') return <NewAlbumDialog key="new-album" onClose={close} />;
   if (target.kind === 'new-track') return <NewTrackDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'track') return <TrackEditor key={key} id={target.id} onClose={close} />;

@@ -6,6 +6,8 @@ import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
+import { Bios } from '../components/Bios.tsx';
+import { Notes } from '../components/Notes.tsx';
 import { KeepOffline } from '../components/KeepOffline.tsx';
 import { TracklistEditor } from '../components/TracklistEditor.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
@@ -21,8 +23,6 @@ export function AlbumPage() {
   const tracks = album.trackIds.map((t) => lib.trackById.get(t)!);
   const playable = tracks.filter((t) => t.file).map((t) => t.id);
   const releases = lib.releases.filter((r) => r.albumId === album.id);
-  const notes = lib.notes.filter((n) => n.entityType === 'album' && n.entityId === album.id);
-  const groups = lib.groups.filter((g) => g.members.some((m) => m.entityType === 'album' && m.entityId === album.id && m.showOnEntityPage));
 
   return (
     <div className="space-y-6">
@@ -57,12 +57,8 @@ export function AlbumPage() {
           ))}</div>
         </section>
       )}
-      {groups.map((g) => (
-        <section key={g.id} className="card p-4"><div className="text-sm font-semibold">{g.label ?? g.name}</div><p className="mt-1 text-sm text-muted">{g.description}</p></section>
-      ))}
-      {notes.map((n) => (
-        <section key={n.id} className="card p-4"><div className="text-sm font-semibold">{n.label}</div><p className="mt-1 whitespace-pre-wrap text-sm text-muted">{n.content}</p></section>
-      ))}
+      <Bios lib={lib} type="album" id={album.id} />
+      <Notes lib={lib} type="album" id={album.id} />
     </div>
   );
 }

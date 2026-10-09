@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-/** `new-album` ignores `id`; `new-track` creates a track inside the album `id` */
-export type EditTarget = { kind: 'track' | 'album' | 'artist' | 'new-album' | 'new-track'; id: string };
+/** `bio`: id = group id. `new-bio`: id = `entityType:entityId` to pre-link, or '' for none. `new-album` ignores `id`; `new-track` creates a track inside the album `id` */
+export type EditTarget = { kind: 'track' | 'album' | 'artist' | 'new-album' | 'new-track' | 'bio' | 'new-bio'; id: string };
 
 /** Which entity the edit dialog is open for (one dialog at a time, rendered by EditorHost). */
 export const useEditor = create<{ target: EditTarget | null; open(t: EditTarget): void; close(): void }>((set) => ({

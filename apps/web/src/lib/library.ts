@@ -1,4 +1,4 @@
-import { balancedRatings, replayVotes, type AlbumData, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData } from '@curator/core';
+import { balancedRatings, replayVotes, type AlbumData, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData } from '@curator/core';
 
 export type Row<T> = T & { id: string };
 
@@ -28,6 +28,7 @@ export interface Library {
   playlists: Row<PlaylistData>[];
   genres: Row<GenreData>[];
   roles: Row<RoleCategoryData>[];
+  timeline: Row<TimelineData>[];
   groups: Row<GroupData>[];
   notes: Row<NoteData>[];
   votes: Row<VoteData>[];
@@ -106,7 +107,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   return {
     tracks, trackById, artists, artistById, albums, albumById: by(albums),
     releases, playlists: live<PlaylistData>(rows.playlists),
-    genres: live<GenreData>(rows.genres), roles: live<RoleCategoryData>(rows.roleCategories), groups: live<GroupData>(rows.groups), notes: live<NoteData>(rows.notes),
+    genres: live<GenreData>(rows.genres), roles: live<RoleCategoryData>(rows.roleCategories), timeline: live<TimelineData>(rows.timeline), groups: live<GroupData>(rows.groups), notes: live<NoteData>(rows.notes),
     votes, logs: live<PlaybackLogData>(rows.playbackLogs), profile, rules: profile?.playbackRules ?? [],
   };
 }

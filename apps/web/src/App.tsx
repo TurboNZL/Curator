@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout.tsx';
 import { useStore } from './lib/store.ts';
+import { HomePage } from './pages/Home.tsx';
+import { BiosPage } from './pages/BiosPage.tsx';
 import { AlbumsPage } from './pages/Albums.tsx';
 import { AlbumPage } from './pages/Album.tsx';
 import { ArtistsPage } from './pages/Artists.tsx';
@@ -22,7 +24,8 @@ export function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/albums" replace />} />
+        <Route index element={<HomePage />} />
+        <Route path="bios" element={<BiosPage />} />
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:id" element={<AlbumPage />} />
         <Route path="artists" element={<ArtistsPage />} />
