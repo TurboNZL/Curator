@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
+import { Acquirer } from './acquire.ts';
 import { diskUsage, filePath, parseRange, saveVerified, streamFile, UploadError } from './files.ts';
 
 export const API_VERSION = 1;
@@ -15,7 +16,7 @@ function tokenOk(given: string | undefined, expected: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function createApp(config: Config, store: Store) {
+export function createApp(config: Config, store: Store, acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir })) {
   const app = new Hono();
 
   // Native apps ignore CORS; browsers need it because the web client may be served from another origin.
@@ -53,6 +54,19 @@ export function createApp(config: Config, store: Store) {
     const parsed = pushSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: 'invalid body', issues: parsed.error.issues.slice(0, 5) }, 400);
     return c.json(store.push(parsed.data.records));
+  });
+
+  // Re-download audio for tracks that have a source URL but no file (e.g. after losing the old uploads folder).
+  app.post('/api/acquire', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { trackIds?: unknown };
+    const ids = Array.isArray(body.trackIds) ? body.trackIds.filter((x): x is string => typeof x === 'string') : undefined;
+    return c.json({ queued: acquirer.enqueueMissing(ids).length });
+  });
+  app.get('/api/acquire', (c) => {
+    const jobs = [...acquirer.jobs.values()];
+    const count = (s: string) => jobs.filter((j) => j.state === s).length;
+    return c.json({ queued: count('queued'), running: count('running'), done: count('done'), failed: count('failed'),
+      failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error }) => ({ trackId, error })) });
   });
 
   app.get('/api/files', (c) => c.json(store.listFiles()));
