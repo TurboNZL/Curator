@@ -1,6 +1,6 @@
 # Music Curator: project handoff
 
-Read this first. It replaces the earlier chat history. Update it whenever a decision or the state changes.
+Read this first, then `docs/PROJECT_BRIEF.md` (the long vision/context doc: goals, user profile, feature inventory, rating rules, architecture, roadmap with done-criteria). This file is the running state/decision log. Update it whenever a decision or the state changes.
 
 ## What this is
 A personal music library manager for one user (owner@example.com): library (artists, albums, releases, tracks, playlists, "relational bios" = `groups`, timeline, notes) plus a **ranking system** (head-to-head votes → Elo → 0–10 rating) and playback queue rules ("play B right after A"). Originally generated with Dyad/Gemini (hence odd comments, `dyad-*` files). Being refactored heavily. The goal is that it is easy to iterate on.
