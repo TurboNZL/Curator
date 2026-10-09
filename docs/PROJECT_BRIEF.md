@@ -8,6 +8,8 @@
 
 ---
 
+> **Status snapshot (kept short on purpose; the authoritative, detailed state is `CLAUDE.md`).** `@curator/core`, `@curator/server` and a working **web client (`apps/web`) are built and on `main`**: local-first sync, library browsing, This-or-That voting with the exact rating rules, editing (credits-only artist entry), album import from YouTube, a library-health page that replaced the legacy cleanup queue, themes (default / Classic / light), offline audio caching and an installable PWA. The user has installed and run it on their Linux machine. **Not built yet:** Electron, the Android app (and therefore Android Auto), Pi deployment docs, automatic offline-cache eviction. Sections 6 and 10 below describe the *intended* end state and the legacy behaviour used as the spec; read them together with this snapshot, not as a to-do list from zero.
+
 ## 1. The one-paragraph version
 
 Music Curator is a **personal music library for one person** who owns their music files and cares deeply about *ranking and curating* them. Its distinguishing feature is a head-to-head "This or That" voting system that turns thousands of small choices into a trustworthy 0 to 10 rating for every track, alongside rich metadata (credits and roles, releases, relational bios, a curation journal). The user wants to **use it in place of Spotify**, including **in the car via Android Auto**. So it must play their own files, work offline on a phone, and optionally sync with a home server (a Raspberry Pi with an external hard drive). It currently exists as a fragile AI-generated web app (built in "Dyad" with Gemini) that has to be rebuilt into a clean, local-first, multi-platform system that is *easy to iterate on*.
@@ -102,7 +104,7 @@ The legacy app (still at the repo root until ported then deleted) is the *specif
 ```
 packages/core      @curator/core    pure TS rules + types (BUILT)
 packages/server    @curator/server  Hono + node:sqlite + file store + sync + migrate + acquire (BUILT)
-apps/web           React web client, thematable, local IndexedDB mirror + sync (NEXT)
+apps/web           React web client, thematable, local IndexedDB mirror + sync (BUILT; see CLAUDE.md)
 apps/electron      Desktop shell around apps/web with real local storage, optional in-process server (LATER)
 apps/android       Native Kotlin + Media3 app, Room mirror, same sync protocol, Android Auto (LATER)
 ```
@@ -123,8 +125,8 @@ Self-contained; boots with no config; `CURATOR_DATA_DIR` for the external drive;
 ### 7.5 Cross-platform parity
 Anything that affects what the user *sees or hears* must be identical on web/Electron/Android: rating numbers, the "10-star rank" display, queue order with back-to-back rules, credit display names. Strategy: pure functions in core + a **fixtures file** (JSON inputs and expected outputs produced by core's tests) that the Kotlin implementation's tests also consume. Do this when starting Android, but design core functions with plain-data in/out now so fixtures are easy.
 
-### 7.6 The web client (next big task)
-- Stack: Vite + React + TypeScript + Tailwind (+ shadcn/ui where it helps). Prefer **small focused modules** and a clear data layer over one giant store (the legacy `useMusicStore.ts` is 770 lines of everything and refetches *all* tables after nearly every mutation; do not reproduce that).
+### 7.6 The web client (built; this section is the intent, `CLAUDE.md` has the as-built detail)
+- Stack as built: Vite + React 19 + TypeScript + Tailwind 3 + zustand + `idb` (no shadcn dependency in the new client). Prefer **small focused modules** and a clear data layer over one giant store (the legacy `useMusicStore.ts` is 770 lines of everything and refetches *all* tables after nearly every mutation; do not reproduce that).
 - **Data layer**: IndexedDB mirror of records; reads come from the local mirror (instant, offline); writes apply locally, are queued, and are pushed when a server is reachable; a pull loop merges remote changes. Derived selectors (ratings, album genres, display credits) are memoised pure functions from core.
 - **Theme system**: design tokens as CSS variables (colours, radii, density, typography, shadows), multiple named themes selectable in Settings, persisted per profile/device. Ship **two** at first: the new default and **Classic** (faithful recreation of the legacy look, including the exact rating pill behaviour). Architect so adding a third theme is "add one token file". Also consider accent colour, density, and light/dark.
 - **New default theme direction (user's words)**: "really stylish", **not too dense**. Plan: generous cover-art grids for browsing (Artists, Albums, Playlists, Home), **compact table rows for track lists** where the user ranks/edits (they need information density there), strong typographic hierarchy, restrained colour with one accent, smooth but tasteful motion, a polished persistent player that adapts to mobile widths. "Medium density" is the target. Use screenshots in Chromium at desktop and phone widths to judge it; iterate visually, don't ship unseen UI.
@@ -146,13 +148,13 @@ Wraps `apps/web`. Reason: real filesystem storage for GBs of offline audio, no b
 
 ### 7.9 Audio acquisition and imports
 - The legacy library's files were lost. Every legacy track has a source URL (YouTube watch URL), so **`POST /api/acquire`** re-downloads audio via yt-dlp+ffmpeg on the server machine. Real downloads have not yet been exercised (sandbox lacks yt-dlp/network); the first user run is the test. Surface job status and per-track failures in the UI, with retry.
-- Covers/artist images are lost. Album covers may be recoverable from YouTube thumbnails (not built; YouTube watch-page thumbnails are 16:9 video frames and often need square-cropping; YouTube Music "art tracks" give proper square art; evaluate). Artist images need manual upload (a cleanup task already exists for this).
-- Album import flow to rebuild: paste URL → fetch metadata only → **review/edit** → confirm → queue downloads. Fetching metadata first is a deliberate improvement over the legacy "download everything, then review".
+- Covers/artist images are lost. **Built:** the library-health page can fill missing album covers from YouTube thumbnails (maxres, then hq) through `/api/import/cover`, trimming black bars client-side. These are video frames, so quality varies; YouTube Music square art may be better and is not used. Artist images need manual upload (a health check flags them). Not exercised against real YouTube from the cloud sandbox.
+- **Album import (built):** paste URL → `POST /api/import/preview` (yt-dlp `--flat-playlist`, metadata only) → **review/edit** → confirm → records created → downloads queued via `/api/acquire`. Fetching metadata first is a deliberate improvement over the legacy "download everything, then review". Tested with a fake `yt-dlp`; real yt-dlp has never run in the sandbox.
 - Legal note for the user's awareness, no lecture: downloading from YouTube may violate its terms of service; this is the user's own-use tool and decision. Don't build features whose only purpose is redistribution.
 
 ## 8. The user's data (what the migration produced)
 
-Details and verification are in `CLAUDE.md`. Summary: 444 tracks / 33 albums / 38 releases / 10 artists (Drake, Kendrick Lamar, J Cole, Travis Scott, Don Toliver, Isaiah Rashad, Metro Boomin, Freddie Gibbs, PARTYNEXTDOOR, JACKBOYS, plus a created "Jorja Smith") / 1,950 votes / 99 play logs / 1 playlist / 1 group (relational bio) / 4 genres (Hip Hop, Diss Track, R&B, Dance) / 2 roles (Lead artist, Writer). Tracks are mostly 320 kbps (410); 34 are below 192 kbps (all ~127 to 152 kbps) and will show up in the low-quality list; 1 has an unknown bitrate. The migrator `cli-migrate.ts` is idempotent; the real `curator.db` is **not** in the repo and must never be committed. When you need real data for testing, ask the user for the file again or use a synthetic fixture; never fabricate that the real data was checked.
+Details and verification are in `CLAUDE.md`. Summary: 444 tracks / 33 albums / 38 releases / 10 artists (Drake, Kendrick Lamar, J Cole, Travis Scott, Don Toliver, Isaiah Rashad, Metro Boomin, Freddie Gibbs, PARTYNEXTDOOR, JACKBOYS, plus a created "Jorja Smith") / 1,950 votes / 99 play logs / 1 playlist / 1 group (relational bio) / 4 genres (Hip Hop, Diss Track, R&B, Dance) / 2 roles (Lead artist, Writer). Tracks are mostly 320 kbps (410); 34 are below 192 kbps (all ~127 to 152 kbps) and will show up in the low-quality list; 1 has an unknown bitrate. **Gotcha:** legacy `album_tracks.order` is 0 for almost every row, so track order within an album comes from the default (else longest) release's order, or from `album.trackOrder` once the user edits it. The migrator `cli-migrate.ts` is idempotent; the real `curator.db` is **not** in the repo and must never be committed. When you need real data for testing, ask the user for the file again or use a synthetic fixture; never fabricate that the real data was checked.
 
 ## 9. How we work: engineering rules
 
@@ -168,12 +170,14 @@ Details and verification are in `CLAUDE.md`. Summary: 444 tracks / 33 albums / 3
 
 ## 10. Roadmap with "done" criteria
 
-1. **Web client MVP** (`apps/web`): connect to a server (URL + token) or run with local data only; import via sync; browse Artists/Albums/Tracks/Playlists; play audio (server stream or local); vote This-or-That; rating pill with the exact rules; queue with back-to-back rules; two themes (new default + Classic); responsive to phone width; storage bar. *Done when:* the user's real migrated library loads, plays acquired audio, votes persist and sync to the server, and a second browser sees them; screenshots of both themes at desktop and phone width reviewed.
-2. **Feature parity** with the legacy app: playlists CRUD, groups/relational bios, notes, journal, stats, cleanup task queue, settings (rules editor, role categories), album import with review, image upload / cover-from-thumbnail. *Done when:* nothing in section 6 is missing and the legacy app can be deleted.
-3. **Electron app.** *Done when:* offline library on disk, optional embedded server toggle, packaged build for the user's OS (ask which OS; the legacy binary names suggest Windows).
-4. **Android app + Android Auto.** *Done when:* installs via sideload, plays offline, syncs, appears in Android Auto with the Unknown-sources setting, browse tree and voice search work on the user's phone/car (DHU first). Needs the user's device testing.
-5. **Pi deployment guide**: systemd unit and/or Docker, installing yt-dlp + ffmpeg on arm64, external-drive mount/permissions (note exFAT/NTFS lack unix modes), backups of `curator.db` + `files/`, HTTPS/Tailscale (see 7.4), updating.
-6. **Polish**: smarter pair selection for voting (optional), better stats, keyboard shortcuts, more themes, export/backup.
+Status key: DONE / PARTIAL / TODO. (Detailed as-built state: `CLAUDE.md`.)
+
+1. **Web client MVP**: **DONE** (verified by driving it in Chromium against a real server and the migrated real library; the user has run it). Original criteria, kept for regression checks: loads the migrated library, plays acquired audio, votes persist and sync, a second browser sees them, both themes reviewed at desktop and phone width.
+2. **Feature parity with the legacy app (section 6)**: **MOSTLY DONE.** Ported: browse pages, playlists, relational bios, notes, journal/home, stats, settings (rules editor, roles), voting, queue, album import with review, image upload, cover-from-thumbnail. The legacy Cleanup *task queue* was deliberately replaced by the **library-health** page (in-use-aware checks; it must never offer to remove roles/genres/artists that are in use, which the legacy cleanup did). *Remaining before the legacy root app can be deleted:* confirm nothing in section 6 is missing (known gaps from `CLAUDE.md`: per-track play-history list, queue reordering, column sorting; the low-bitrate check already lives in `lib/health.ts`), then remove the legacy `src/`, `server/` and root Vite/Nitro config.
+3. **Electron app**: **TODO.** *Done when:* offline library on disk, optional embedded server toggle, packaged build for the user's OS (their legacy binary names suggest Windows; they have also run the web stack on Linux, so ask which).
+4. **Android app + Android Auto**: **TODO.** *Done when:* installs via sideload, plays offline, syncs, appears in Android Auto with Unknown sources enabled, browse tree and voice search work on the user's phone/car (DHU first). Needs the user's device testing.
+5. **Pi deployment guide**: **TODO.** systemd unit and/or Docker, installing yt-dlp + ffmpeg on arm64, external-drive mount/permissions (exFAT/NTFS lack unix modes; symlink caveat is already in `docs/TESTING.md`), backups of `curator.db` + `files/`, HTTPS/Tailscale (7.4), updating. Note: **service workers (PWA install/offline shell) need HTTPS or localhost**, so over plain-HTTP LAN the web app works online but is not installable; this makes the HTTPS/Tailscale decision more pressing.
+6. **Polish**: **TODO.** Automatic offline-cache eviction, smarter pair selection for voting (optional), more themes, keyboard shortcuts, export/backup.
 
 ## 11. Open questions and risks (track these; resolve with evidence)
 
@@ -183,8 +187,8 @@ Details and verification are in `CLAUDE.md`. Summary: 444 tracks / 33 albums / 3
 - **Whole-record LWW** may drop concurrent edits to different fields (7.3). Acceptable now.
 - **Web storage quota/eviction** on mobile browsers; `persist()` may be denied. Prefer APK for phone offline use (user's stated preference: APK if the web app can't do local storage).
 - **Cross-language parity** (7.5): rating/queue logic must match between TypeScript and Kotlin.
-- **Unknown user changes.** At the time this brief was written the user said they had "done some changes"; none were visible on the remote branch. Always diff against the branch tip and ask the user to push anything that matters.
-- **OS of the user's PC** (for Electron packaging) and **Pi model/Node version** are unknown. Ask once when needed.
+- **Parallel sessions.** Several sessions have worked on this repo (PRs #1 to #5; #1 and #2 were closed unmerged but their commits reached `main` through #3). Before starting, fetch `origin/main` and read `CLAUDE.md` there; this branch's docs can lag. Always diff against `main`, and ask the user to push anything that matters.
+- **OS of the user's PC** (for Electron packaging; evidence points to both Windows and Linux) and **Pi model/Node version** are unknown. Ask once when needed.
 - Legacy features I have not read in full (modals, `Stats` internals, `AlbumDetail` editor) must be read when ported, since this brief's feature inventory is from headings and key components, not every line.
 
 ## 12. Things NOT to do
