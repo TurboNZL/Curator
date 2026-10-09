@@ -29,6 +29,15 @@ export function TrackDetails({ id, onClose }: { id: string; onClose: () => void 
       </div>
       <div className="text-xs text-muted">{info.lastPlayed ? `Last played ${new Date(info.lastPlayed).toLocaleString()}` : 'Never played here'} · {t.file ? `audio on server${t.file in cache ? ', saved on this device' : ''} (${t.file.slice(0, 8)}…${cache[t.file] ? `, ${fmtBytes(cache[t.file].size)}` : ''})` : 'no audio file'}{t.bitrate && ` · ${t.bitrate}`}</div>
       <div>
+        <div className="mb-1 text-sm font-medium">Play history ({info.history.length})</div>
+        {!info.history.length && <p className="text-sm text-muted">Not played on any synced device yet.</p>}
+        {info.history.length > 0 && <div className="max-h-48 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">{info.history.map((h) => (
+          <div key={h.logId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
+            <span className={cn('w-12 text-xs font-semibold uppercase', h.isSkip ? 'text-warn' : 'text-good')}>{h.isSkip ? 'skip' : 'played'}</span>
+            <span className="min-w-0 flex-1 truncate text-muted">{fmt(h.seconds)} · from {h.source ?? "unknown"}</span>
+            <span className="shrink-0 text-xs text-muted">{new Date(h.timestamp).toLocaleString()}</span></div>))}</div>}
+      </div>
+      <div>
         <div className="mb-1 text-sm font-medium">Votes ({info.votes.length})</div>
         {!info.votes.length && <p className="text-sm text-muted">No votes yet. Use Rank to compare it with other tracks.</p>}
         <div className="max-h-64 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">{info.votes.map((v) => (

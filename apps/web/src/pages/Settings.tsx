@@ -74,12 +74,13 @@ export function SettingsPage() {
       </Section>
 
       <Section title="This device's storage">
-        <p className="text-sm text-muted">Browsers can only hold a limited amount, so offline audio stops at the limit you set. The desktop and Android apps keep full offline copies; here, use “Keep offline” on albums and playlists.</p>
+        <p className="text-sm text-muted">Browsers can only hold a limited amount, so offline audio stops at the limit you set (or, with “Make room automatically”, replaces the tracks played longest ago). The desktop and Android apps keep full offline copies; here, use “Keep offline” on albums and playlists.</p>
         <div className="h-2 overflow-hidden rounded-full bg-raised"><div className="h-full bg-accent" style={{ width: `${Math.min(100, (audioBytes / limitBytes) * 100)}%` }} /></div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
           <span>{fmtBytes(audioBytes)} of offline audio ({Object.keys(audioCache).length} files) · limit {settings.storageLimitMb} MB{usage ? ` · browser allows ${fmtBytes(usage.quota)}` : ''}</span>
           <span className="flex items-center gap-3">
             <label className="flex items-center gap-2">Limit MB<input className="input !w-24" type="number" min={100} step={100} value={settings.storageLimitMb} onChange={(e) => updateSettings({ storageLimitMb: Number(e.target.value) || 2048 })} /></label>
+            <label className="flex items-center gap-1.5" title="When full, remove the offline tracks you played longest ago to make room"><input type="checkbox" checked={settings.evictOldest} onChange={(e) => updateSettings({ evictOldest: e.target.checked })} />Make room automatically</label>
             <button className="btn" disabled={!audioBytes} onClick={() => void removeAudio(Object.keys(audioCache))}>Clear offline audio</button></span></div>
       </Section>
     </div>

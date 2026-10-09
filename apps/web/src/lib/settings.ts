@@ -10,6 +10,8 @@ export interface DeviceSettings {
   accent: string | null;
   /** soft cap for locally cached audio, in MB (browser storage is limited) */
   storageLimitMb: number;
+  /** when the limit is reached, drop the least recently played offline tracks instead of stopping */
+  evictOldest: boolean;
 }
 
 const KEY = 'curator.settings';
@@ -18,7 +20,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), serverUrl: '', token: '', theme: 'default', accent: null, storageLimitMb: 2048, ...saved,
+    deviceId: newId(), serverUrl: '', token: '', theme: 'default', accent: null, storageLimitMb: 2048, evictOldest: false, ...saved,
   };
   saveSettings(s);
   return s;
