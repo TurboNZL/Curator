@@ -1,7 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
-import { Play, Shuffle } from 'lucide-react';
+import { Pencil, Play, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
+import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
@@ -10,6 +11,7 @@ export function AlbumPage() {
   const { id } = useParams();
   const lib = useLibrary();
   const play = usePlayer((s) => s.play);
+  const edit = useEditor((s) => s.open);
   const album = id ? lib.albumById.get(id) : undefined;
   if (!album) return <div className="text-muted">Album not found.</div>;
   const tracks = album.trackIds.map((t) => lib.trackById.get(t)!);
@@ -33,6 +35,7 @@ export function AlbumPage() {
           <div className="flex gap-2 pt-2">
             <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'album', id: album.id })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'album', id: album.id }); }}><Shuffle size={16} />Shuffle</button>
+            <button className="btn btn-ghost" onClick={() => edit({ kind: 'album', id: album.id })}><Pencil size={15} />Edit</button>
           </div>
           {!playable.length && <div className="text-xs text-muted">No audio on the server yet. Use Settings → Download missing audio.</div>}
         </div>

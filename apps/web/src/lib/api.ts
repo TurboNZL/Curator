@@ -31,6 +31,10 @@ export class Api {
   push(records: SyncRecord[]) {
     return this.req<{ applied: number; cursor: number }>('/api/sync/push', { method: 'POST', body: JSON.stringify({ records }) });
   }
+  async putFile(hash: string, blob: Blob) {
+    const res = await fetch(this.url(`/api/files/${hash}`), { method: 'PUT', headers: { Authorization: `Bearer ${this.s.token}`, 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+    if (!res.ok) throw new ApiError(res.status, `Upload failed (${res.status})`);
+  }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
     return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');

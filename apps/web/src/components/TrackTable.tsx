@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Heart, ListEnd, ListStart, Play } from 'lucide-react';
+import { Heart, ListEnd, ListStart, Pencil, Play } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
+import { useEditor } from '../lib/editor.ts';
 import { cn } from '../lib/cn.ts';
 import { Rating } from './Rating.tsx';
 import type { SourceType } from '@curator/core';
@@ -15,6 +16,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const enqueue = usePlayer((s) => s.enqueue);
   const current = usePlayer((s) => s.queue.currentId);
   const patch = useStore((s) => s.patch);
+  const edit = useEditor((s) => s.open);
   const ids = tracks.map((t) => t.id);
 
   return (
@@ -33,13 +35,14 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
               {showAlbum && t.albumTitle && <> · <Link to={`/albums/${t.albumId}`} className="hover:text-fg hover:underline">{t.albumTitle}</Link></>}
             </div>
           </div>
-          <div className="hidden w-40 justify-end gap-1 sm:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
+          <div className="hidden w-40 justify-end gap-1 overflow-hidden sm:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <div className="hidden w-14 text-right text-xs tabular-nums text-muted md:block">{t.bitrate ?? ''}</div>
           <button className={cn('p-1 text-muted hover:text-fg', t.isFavorite && 'text-bad')} title="Favourite"
             onClick={() => patch('tracks', t.id, { isFavorite: !t.isFavorite })}>
             <Heart size={15} fill={t.isFavorite ? 'currentColor' : 'none'} />
           </button>
           <div className="hidden gap-0.5 group-hover:flex">
+            <button className="p-1 text-muted hover:text-fg" title="Edit" onClick={() => edit({ kind: 'track', id: t.id })}><Pencil size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Play next" disabled={!t.file} onClick={() => enqueue(t.id, 'next')}><ListStart size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Add to queue" disabled={!t.file} onClick={() => enqueue(t.id, 'last')}><ListEnd size={15} /></button>
           </div>

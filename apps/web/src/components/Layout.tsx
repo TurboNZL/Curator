@@ -3,6 +3,7 @@ import { Disc3, ListMusic, ListOrdered, Music2, Search, Settings, Swords, Users 
 import { useState } from 'react';
 import { cn } from '../lib/cn.ts';
 import { useStore } from '../lib/store.ts';
+import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
 
 const NAV = [
@@ -48,6 +49,7 @@ export function Layout() {
         </main>
       </div>
       <PlayerBar />
+      <EditorHost />
       <nav className="flex border-t border-line bg-surface md:hidden">
         {NAV.filter((n) => n.to !== '/playlists').map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={({ isActive }) => cn('flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] text-muted', isActive && 'text-accent')}>

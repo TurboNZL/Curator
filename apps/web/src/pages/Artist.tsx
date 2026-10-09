@@ -1,4 +1,6 @@
+import { Pencil } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { Cover } from '../components/Cover.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
@@ -6,6 +8,7 @@ import { TrackTable } from '../components/TrackTable.tsx';
 export function ArtistPage() {
   const { id } = useParams();
   const lib = useLibrary();
+  const edit = useEditor((s) => s.open);
   const artist = id ? lib.artistById.get(id) : undefined;
   if (!artist) return <div className="text-muted">Artist not found.</div>;
   const albums = lib.albums.filter((a) => a.artistId === artist.id || a.credits.some((c) => c.artistId === artist.id));
@@ -18,7 +21,8 @@ export function ArtistPage() {
       <div className="flex items-center gap-5">
         <Cover kind="artist" hash={artist.image} seed={artist.name} className="w-32 shrink-0 sm:w-40" />
         <div><div className="text-xs uppercase tracking-wider text-muted">Artist</div><h1 className="text-3xl font-bold">{artist.name}</h1>
-          <div className="text-sm text-muted">{albums.length} albums · {tracks.length} tracks</div></div>
+          <div className="text-sm text-muted">{albums.length} albums · {tracks.length} tracks</div>
+          <button className="btn btn-ghost mt-2 -ml-3" onClick={() => edit({ kind: 'artist', id: artist.id })}><Pencil size={15} />Edit</button></div>
       </div>
       {groups.map((g) => <section key={g.id} className="card p-4"><div className="text-sm font-semibold">{g.label ?? g.name}</div><p className="mt-1 text-sm text-muted">{g.description}</p></section>)}
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>

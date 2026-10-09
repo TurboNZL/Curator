@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { newId, RECORD_TABLES, wins, type RecordTable, type SyncRecord } from '@curator/core';
 import { Api } from './api.ts';
+import { flushUploads } from './files.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';
 import { loadSettings, saveSettings, type DeviceSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
@@ -25,6 +26,9 @@ interface State {
   patch(table: RecordTable, id: string, partial: object): void;
   remove(table: RecordTable, id: string): void;
   syncNow(): Promise<void>;
+  /** bumped when a local file is added so image hooks re-resolve */
+  filesRev: number;
+  touchFiles(): void;
 }
 
 let syncing: Promise<void> | null = null;
@@ -56,6 +60,7 @@ export const useStore = create<State>((set, get) => {
     const a = api();
     try {
       const db = await localDb();
+      await flushUploads(a); // images first, so records never point at a hash the server lacks for long
       // 1. push everything queued
       for (;;) {
         const keys = (await db.getAll('outbox')).slice(0, 500);
@@ -110,7 +115,8 @@ export const useStore = create<State>((set, get) => {
   });
 
   return {
-    ready: false, rev: 0, rows: emptyRows(),
+    ready: false, rev: 0, filesRev: 0, rows: emptyRows(),
+    touchFiles() { set((s) => ({ filesRev: s.filesRev + 1 })); },
     settings: loadSettings(),
     sync: { state: 'unconfigured', lastSync: null, pending: 0, error: null },
 

@@ -6,16 +6,21 @@ interface Schema extends DBSchema {
   records: { key: [string, string]; value: SyncRecord };
   outbox: { key: [string, string]; value: { table: RecordTable; id: string } };
   meta: { key: string; value: unknown };
+  /** images (and later audio) kept on this device, keyed by sha256 */
+  blobs: { key: string; value: Blob };
 }
 
 let dbp: Promise<IDBPDatabase<Schema>> | undefined;
 
 export function localDb(name = 'curator') {
-  dbp ??= openDB<Schema>(name, 1, {
-    upgrade(db) {
-      db.createObjectStore('records', { keyPath: ['table', 'id'] });
-      db.createObjectStore('outbox', { keyPath: ['table', 'id'] });
-      db.createObjectStore('meta');
+  dbp ??= openDB<Schema>(name, 2, {
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        db.createObjectStore('records', { keyPath: ['table', 'id'] });
+        db.createObjectStore('outbox', { keyPath: ['table', 'id'] });
+        db.createObjectStore('meta');
+      }
+      if (oldVersion < 2) db.createObjectStore('blobs');
     },
   });
   return dbp;
