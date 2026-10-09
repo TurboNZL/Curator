@@ -9,7 +9,7 @@ A personal music library manager for one user (owner@example.com): library (arti
 - Don't waste their usage. Fact-check and double-check yourself; use web search liberally.
 - They write casually; reply in normal capitalized prose, not lowercase or slang.
 - Put effort into verifying against real data and real runs, not only unit tests.
-- Open PR: https://github.com/TurboNZL/music-curator/pull/2 (branch `claude/eloquent-darwin-6q1rf2`; PR #1 is merged). Push to that branch; don't open new PRs.
+- PRs #1, #2 and #3 are all merged (the web client is on `main`). Branch `claude/eloquent-darwin-6q1rf2` is reset to `main` for new work; push there. A merged PR cannot take new work, so changes need a NEW PR (the user opens it, or asks for one).
 - Commit trailers required: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and the `Claude-Session: <this session's URL>` line given by the harness.
 
 ## Decisions made (don't re-ask)
@@ -69,6 +69,7 @@ Local-first: UI reads an in-memory mirror of IndexedDB; every edit is a `SyncRec
 - vitest picks up the root `vite.config.ts`/`postcss.config.js` → each package has its own `vitest.config.ts` with `css.postcss.plugins: []`.
 - Hono normalises `../` in URLs before routing (404, not 400); file names must match `^[0-9a-f]{64}$`.
 - pnpm `minimumReleaseAge: 1440` is set in `pnpm-workspace.yaml` (new packages <1 day old are refused).
+- On the user's Linux box `apt` has no `pnpm` package and the apt Node is too old: use nvm (Node 22) + `npm install -g pnpm` (documented in `docs/TESTING.md`).
 - Sandbox has `ffmpeg` but **no `yt-dlp`** and likely no YouTube access: real downloads are unverified. GitHub tools can disconnect; git push over the proxy works.
 
 ## The user's real data (they uploaded `curator.db`; it is NOT in the repo, keep it that way)
@@ -88,15 +89,32 @@ Partial `PUT /api/tracks/:id` wipes credits/favorite/sync flag (e.g. `incrementM
 Every row is a `SyncRecord {table,id,updatedAt,deviceId,deleted,data}`. Server assigns a monotonically increasing `seq`; clients pull `since=<cursor>`, push local changes. Conflicts: highest `updatedAt` wins, tie → higher `deviceId`. Deletes are tombstones. `votes`, `playbackLogs`, `timeline` are append-only (never conflict). Files are immutable, addressed by sha256; clients fetch missing hashes on demand or via "keep on this device".
 Entities store **file hashes** (`image`, `cover`, `file`), never server paths. Elo/rating are never stored.
 
-## Next steps (in order)
-1. **Web client is feature-complete for what the old app did**, except small things: automatic offline-audio eviction (it just stops at the limit), column-click sorting in the track table, queue reordering, per-track "play history" list, more themes. Real yt-dlp verification on the user's machine is the main open risk (see docs/TESTING.md).
-2. (done) Legacy features ported: bios, notes, journal, stats, import (rebuilt: preview before download), cleanup (as Library health), releases, playlists.
-3. **Electron** wrapper (local storage, optionally spawn the server in-process).
-4. **Android** native app (Kotlin, Media3 `MediaLibraryService`, Room/SQLite mirror, same sync protocol, offline file cache; Android Auto browse tree = Artists/Albums/Playlists/Recent).
-5. Docs for Pi deployment (systemd unit / Docker, installing yt-dlp+ffmpeg on arm64, reverse proxy/HTTPS or Tailscale), then delete the legacy root app.
+## NEXT TASK (user-requested, do this first): credits are the only way to set an artist
+
+**Remove the "Artist" selector at the top of the editors; the lead artist comes from the credits.** The credits editor becomes the one place to say who made something.
+
+Where the selector is now (all use `ArtistSelect` for the *primary* `artistId`):
+- `apps/web/src/components/EditorHost.tsx`: `TrackEditor` (~line 73), `AlbumEditor` (~114), `NewAlbumDialog` (~156), `NewTrackDialog` (~180)
+- `apps/web/src/components/ImportDialog.tsx` (~83): artist match/create for an imported album
+- (`CreditsEditor` in `forms.tsx` keeps its per-row `ArtistSelect`; that is the new single entry point)
+
+Design (decided; don't re-ask):
+1. **Primary artist = the first credit whose roles include "Lead artist"** (case-insensitive; the role exists in the user's roleCategories). If no credit has it, fall back to the first credit; if there are no credits at all, fall back to the stored legacy `artistId`.
+2. **Keep `artistId` in the stored record as a denormalised cache**, rewritten from the credits on every save. It is never edited directly. This keeps the server, the migration, the sync format, a future Android client, and the ~12 places that read `.artistId` working (`library.ts`, `health.ts`, `defaults.ts`, `Album.tsx`, `Artists.tsx`, `PlayerBar.tsx`, `TrackTable.tsx`, `EditorHost.tsx`). Do NOT remove the field from `model.ts`.
+3. Put the rule in one pure, tested helper (e.g. `leadArtistId(credits, fallback)` next to `newTrackData` in `lib/defaults.ts`, plus a `LEAD_ROLE = 'Lead artist'` constant) and use it in `library.ts` for `artistName` (join several leads with ", ") so the UI shows every lead artist, not just the first.
+4. **Saving requires at least one "Lead artist" credit.** Show an inline message and disable Save otherwise. New album/track dialogs start with one empty lead-credit row (new track: prefill the album's lead credits). Import review: keep matching/creating the artist from the link, but show it as the first lead-credit row instead of a separate field.
+5. **Backfill is required.** Real data: **440 of 444 tracks have `credits: []`** (their artist exists only in `artistId`); all 33 albums already have a matching Lead credit; 1 track has credits but its `artistId` is not credited as lead. So: (a) when an editor opens a record with no lead credit, prefill the row from `artistId`; (b) add a Health check "No lead artist credit" with a one-click "Add lead credit from artist" fix (writes `{artistId, role:['Lead artist']}`); (c) a unit test with a legacy-shaped record. Do not silently rewrite 440 records on load.
+6. **Open question to resolve while doing it:** 425 tracks have `syncWithAlbumCredits: true`. Decide what a synced track's credits are. Recommended: when true, the track editor shows the album's credits read-only (with a "Use track-specific credits" toggle that copies them in), and the lead artist derives from the album. Mirror what `genres` already does with the album.
+7. Verify with a real browser run (create album, create track, import, edit; check the saved record's `artistId` equals the lead credit and that artist pages/ratings/health still work), not just unit tests.
+
+## Other next steps (after the task above)
+1. **Web client leftovers:** automatic offline-audio eviction (it just stops at the limit), column-click sorting in the track table, queue reordering, per-track play-history list, more themes.
+2. **Electron** wrapper (local storage, optionally spawn the server in-process). The web client was run from a Linux machine by the user and install/build/migrate/sync worked.
+3. **Android** native app (Kotlin, Media3 `MediaLibraryService`, Room/SQLite mirror, same sync protocol, offline file cache; Android Auto browse tree = Artists/Albums/Playlists/Recent).
+4. Docs for Pi deployment (systemd unit / Docker, installing yt-dlp+ffmpeg on arm64, reverse proxy/HTTPS or Tailscale), then delete the legacy root app.
 
 ## Open / unverified
-- Real yt-dlp downloads and imports never run here (only a fake script); first real run on the user's machine is the test. YouTube thumbnail covers likewise (sandbox has no internet).
+- The user confirmed install, build, migration, server start and the app all work on their Linux machine. Real yt-dlp downloads/imports have still only been run here against a fake script; if the user reports problems with them, start there. YouTube thumbnail covers likewise (sandbox has no internet).
 - Legacy "uploads served in production" behaviour unverified (irrelevant after rewrite).
 - Need the user's answer only if a new fork appears; layout question is answered (medium density, stylish).
 - Server is HTTP; for use outside the LAN put it behind HTTPS or Tailscale (document it).
