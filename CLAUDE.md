@@ -1,6 +1,6 @@
 # Music Curator: project handoff
 
-Read this first. It replaces the earlier chat history. Update it whenever a decision or the state changes.
+Read this first, then `docs/PROJECT_BRIEF.md` (the long vision/context doc: goals, user profile, feature inventory, rating rules, architecture, roadmap with done-criteria). This file is the running state/decision log. Update it whenever a decision or the state changes.
 
 ## What this is
 A personal music library manager for one user (owner@example.com): library (artists, albums, releases, tracks, playlists, "relational bios" = `groups`, timeline, notes) plus a **ranking system** (head-to-head votes → Elo → 0–10 rating) and playback queue rules ("play B right after A"). Originally generated with Dyad/Gemini (hence odd comments, `dyad-*` files). Being refactored heavily. The goal is that it is easy to iterate on.
@@ -9,7 +9,7 @@ A personal music library manager for one user (owner@example.com): library (arti
 - Don't waste their usage. Fact-check and double-check yourself; use web search liberally.
 - They write casually; reply in normal capitalized prose, not lowercase or slang.
 - Put effort into verifying against real data and real runs, not only unit tests.
-- PRs #1, #2 and #3 are all merged (the web client is on `main`). Branch `claude/eloquent-darwin-6q1rf2` is reset to `main` for new work; push there. A merged PR cannot take new work, so changes need a NEW PR (the user opens it, or asks for one).
+- PRs #1 and #2 were closed unmerged but their commits reached `main` via #3; #3, #4 and #5 are merged (the web client and the credits-only-artist change are on `main`). A closed/merged PR cannot take new work, so changes need a NEW PR (the user asks for one). Use the branch the harness assigns for the session.
 - Commit trailers required: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and the `Claude-Session: <this session's URL>` line given by the harness.
 
 ## Decisions made (don't re-ask)
