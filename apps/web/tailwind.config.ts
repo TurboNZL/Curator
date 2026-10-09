@@ -1,0 +1,18 @@
+import type { Config } from 'tailwindcss';
+
+const c = (v: string) => `hsl(var(--${v}) / <alpha-value>)`;
+
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        bg: c('bg'), surface: c('surface'), raised: c('raised'), line: c('line'),
+        fg: c('fg'), muted: c('muted'), accent: c('accent'), 'accent-fg': c('accent-fg'),
+        good: c('good'), warn: c('warn'), bad: c('bad'), top: c('top'),
+      },
+      borderRadius: { theme: 'var(--radius)' },
+      fontFamily: { sans: 'var(--font)' },
+    },
+  },
+} satisfies Config;

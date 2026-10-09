@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -121,5 +121,25 @@ describe('files', () => {
     const a = createApp(small, store);
     const res = await a.request(`/api/files/${hash}`, { method: 'PUT', headers: auth, body: bytes });
     expect(res.status).toBe(413);
+  });
+});
+
+describe('web client hosting', () => {
+  it('serves index.html with SPA fallback, assets safely, and keeps /api JSON', async () => {
+    const web = mkdtempSync(join(tmpdir(), 'curator-web-'));
+    mkdirSync(join(web, 'assets'));
+    writeFileSync(join(web, 'index.html'), '<html>app</html>');
+    writeFileSync(join(web, 'assets', 'a.js'), 'x');
+    const cfg = loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN, CURATOR_WEB_DIR: web } as never);
+    const a = createApp(cfg, store);
+    expect(await (await a.request('/')).text()).toBe('<html>app</html>');
+    expect(await (await a.request('/albums/123')).text()).toBe('<html>app</html>');
+    const js = await a.request('/assets/a.js');
+    expect(js.headers.get('content-type')).toContain('javascript');
+    expect(js.headers.get('cache-control')).toContain('immutable');
+    expect(await (await a.request('/assets/../../etc/passwd')).text()).toBe('<html>app</html>');
+    expect((await a.request('/api/nope', { headers: auth })).status).toBe(404);
+    expect((await a.request('/api/health')).headers.get('content-type')).toContain('json');
+    rmSync(web, { recursive: true, force: true });
   });
 });

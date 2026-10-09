@@ -6,6 +6,7 @@ import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
+import { serveWeb } from './web.ts';
 import { diskUsage, filePath, parseRange, saveVerified, streamFile, UploadError } from './files.ts';
 
 export const API_VERSION = 1;
@@ -114,6 +115,8 @@ export function createApp(config: Config, store: Store, acquirer = new Acquirer(
     }
     return new Response(streamFile(path), { status: 200, headers: { ...headers, 'Content-Length': String(info.size) } });
   });
+
+  if (config.webDir) serveWeb(app, config.webDir);
 
   app.notFound((c) => c.json({ error: 'not found' }, 404));
   app.onError((e, c) => {

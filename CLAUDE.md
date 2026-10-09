@@ -9,8 +9,8 @@ A personal music library manager for one user (owner@example.com): library (arti
 - Don't waste their usage. Fact-check and double-check yourself; use web search liberally.
 - They write casually; reply in normal capitalized prose, not lowercase or slang.
 - Put effort into verifying against real data and real runs, not only unit tests.
-- Open PR: https://github.com/TurboNZL/music-curator/pull/1 (branch `claude/dazzling-keller-oufma2`). Push there; don't open new PRs.
-- Commit trailers required: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and `Claude-Session: https://claude.ai/code/session_014wvQkXo2rjE2C7EfxmLoBW`.
+- Open PR: https://github.com/TurboNZL/music-curator/pull/2 (branch `claude/eloquent-darwin-6q1rf2`; PR #1 is merged). Push to that branch; don't open new PRs.
+- Commit trailers required: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and the `Claude-Session: <this session's URL>` line given by the harness.
 
 ## Decisions made (don't re-ask)
 | Topic | Decision |
@@ -29,7 +29,8 @@ A personal music library manager for one user (owner@example.com): library (arti
 /                    LEGACY app (Vite+React19+shadcn+Zustand + Nitro API in server/). Untouched so far. To be ported, then deleted.
 packages/core        @curator/core  pure TS: ids (UUIDv7), elo, queue/rules, sync types+LWW rule, model.ts (canonical entity shapes)
 packages/server      @curator/server  Hono server, node:sqlite, files, sync, migration, acquire (yt-dlp)
-apps/                (empty) planned: web, electron, android
+apps/web             @curator/web  Vite + React 19 + Tailwind 3 + zustand + idb. The new client (see below)
+apps/                planned next: electron, android
 ```
 Legacy files worth reading before porting UI: `src/store/useMusicStore.ts` (all client logic), `src/components/layout/BottomPlayer.tsx`, `src/pages/*`, `src/components/ui/Rating.tsx`, `src/components/modals/*`.
 
@@ -44,6 +45,16 @@ Legacy files worth reading before porting UI: `src/store/useMusicStore.ts` (all 
 - `acquire.ts`: yt-dlp download queue for tracks that have `youtubeMusicUrl` but no `file`.
 
 Run: `pnpm install --ignore-scripts --filter @curator/server --filter @curator/core` (the **root** `youtube-dl-exec` postinstall fails offline, so use `--ignore-scripts`; never `--ignore-workspace`). Then in `packages/server`: `npx vitest run`, `npx tsc --noEmit`, `pnpm start`. Migration: `CURATOR_DATA_DIR=... node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db <old>/data/curator.db [--public <old>/public]`.
+
+## Web client (`apps/web`, built this session)
+Local-first: UI reads an in-memory mirror of IndexedDB; every edit is a `SyncRecord` written locally + queued in an `outbox`, pushed in the background.
+- `lib/idb.ts` (IndexedDB: `records`, `outbox`, `meta`), `lib/store.ts` (zustand: rows, `put/patch/remove`, sync loop: push outbox → pull from cursor; every 30 s, on `online`, 1.5 s after edits), `lib/api.ts` (server client; `fileUrl(hash)` adds `?token=`), `lib/settings.ts` (per-device: serverUrl, token, theme, accent, storage limit; localStorage).
+- `lib/library.ts` is the PURE derivation (`buildLibrary`: replays votes via core, ratings, 10-star ranks, album tracklists, genres from album when `syncWithAlbumCredits`). `lib/derive.ts` has the React hook + a rev-keyed cache (`getLibrary`). `lib/pairing.ts` picks vote pairs. `lib/player.ts` is the player (one `<audio>`, core queue + rules, MediaSession, logs `playbackLogs` incl. skips; skips tracks with no audio).
+- Pages: Albums, Album, Artists, Artist, Tracks, Rank (vote; ← → ↓ S keys; 15 s mid-track preview), Queue, Playlists, Search, Settings (themes, accent, server, acquire trigger, storage bar).
+- Themes = CSS-variable blocks in `index.css` (`default`, `classic`, `light`) + accent override; list in `lib/theme.ts`. Classic is only a first approximation of the old look; the old rating UI (`Rating.tsx`) behaviour IS ported (`components/Rating.tsx`).
+- Dev: `pnpm --filter @curator/web dev` (proxies `/api` to `CURATOR_SERVER`, default :47813; put the token in Settings). Prod: `pnpm --filter @curator/web build`, then the server serves `apps/web/dist` at `/` automatically (override `CURATOR_WEB_DIR`); same origin, so leave Server URL empty.
+- Tests: `pnpm --filter @curator/web test` (library derivation, pairing). Real-run check used: migrate the real DB, start the server, seed a few mp3s (ffmpeg sine) via `PUT /api/files/:hash` + a tracks push, drive the app with Playwright (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, global `playwright` module), screenshot, and verify no console errors. Verified: initial sync of all 13 tables, 444 tracks/33 albums, ratings and #ranks match the legacy stored ratings, play/next with real audio, voting persists to the server, a second fresh profile receives edits.
+- Bugs found by running it, fixed: album track order (see data findings), `pickPair` sampled only half its candidates.
 
 ## Hard-won gotchas (don't relearn)
 - **Run the real thing, not just vitest.** Vitest passed while real Node crashed: Node's `--experimental-strip-types` forbids TS parameter properties/enums. `packages/server/tsconfig.json` has `erasableSyntaxOnly` so `tsc` catches it. Also relative imports need explicit `.ts` extensions (core uses them).
@@ -60,6 +71,7 @@ Run: `pnpm install --ignore-scripts --filter @curator/server --filter @curator/c
 - Dangling rows dropped: 18 album_tracks, 80 release_tracks, 4 playback_logs.
 - Legacy `artist_ids` mirrors the primary artist on 264 tracks; the rest are extras kept as credits (one bare name "Jorja Smith" → artist created). `track_genres` (36 tracks) merged into `track.genres`.
 - All 444 tracks have a distinct `youtubeMusicUrl` (YouTube watch URL), 443 have a Spotify URL.
+- **`album_tracks.order` is 0 for 460 of 462 rows** (legacy never kept album order) but `release_tracks.order` is real and every album has a release. The client orders an album's tracks by its default (else longest) release. Don't trust `track.albums[].order`.
 - **The old `public/uploads` folder is LOST.** All audio, all 10 artist images and 33 album covers are gone. Audio is recoverable via `POST /api/acquire` (needs yt-dlp+ffmpeg on the machine running the server). Covers can partly come back from YouTube thumbnails (**not built yet**). Artist images must be re-uploaded.
 
 ## Known legacy bugs (the old app; fixed by the rewrite, listed so they aren't re-ported)
@@ -70,8 +82,8 @@ Every row is a `SyncRecord {table,id,updatedAt,deviceId,deleted,data}`. Server a
 Entities store **file hashes** (`image`, `cover`, `file`), never server paths. Elo/rating are never stored.
 
 ## Next steps (in order)
-1. **Web client** `apps/web`: Vite + React + Tailwind + shadcn; local data layer (IndexedDB mirror of records + sync client with pull/push loop and offline queue); derived selectors (elo/rating via core, album-derived genres); **theme system** (CSS vars) with new default theme + "Classic"; app shell; library/album/artist/track pages; player (HTML audio from `/api/files/:hash?token=` or local blob); voting UI; queue + rules; settings (server URL + token, storage capacity bar); trigger/monitor `/api/acquire`. Verify with Playwright (Chromium at `/opt/pw-browsers`) and screenshots.
-2. Port remaining features: playlists, groups ("relational bios"), notes, timeline, stats, cleanup, yt-dlp album *import* flow (review before download), cover-from-thumbnail, image upload.
+1. **Web client, remaining** (the core is done, see above): editing UI (edit track/album/artist, credits, genres, create artist inline, image/cover upload via `PUT /api/files/:hash`), playback-rules editor, stats page, timeline/notes/groups editing, cleanup tasks, real offline audio cache + enforcing the storage limit, album covers from YouTube thumbnails, polish Classic theme against the old look, mobile layout review, `PlaybackLog`-driven recents/home page.
+2. Port remaining legacy features: groups ("relational bios") editing, timeline, yt-dlp album *import* flow (review before download).
 3. **Electron** wrapper (local storage, optionally spawn the server in-process).
 4. **Android** native app (Kotlin, Media3 `MediaLibraryService`, Room/SQLite mirror, same sync protocol, offline file cache; Android Auto browse tree = Artists/Albums/Playlists/Recent).
 5. Docs for Pi deployment (systemd unit / Docker, installing yt-dlp+ffmpeg on arm64, reverse proxy/HTTPS or Tailscale), then delete the legacy root app.
