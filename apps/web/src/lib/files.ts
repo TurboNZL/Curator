@@ -1,19 +1,29 @@
 import { useEffect, useState } from 'react';
 import type { Api } from './api.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';
+import { coverCrop } from './image.ts';
+import { sha256Sync } from './sha256.ts';
 import { api, useStore } from './store.ts';
 
 export async function sha256Hex(data: ArrayBuffer): Promise<string> {
+  if (!globalThis.crypto?.subtle) return sha256Sync(new Uint8Array(data)); // insecure origin (plain http on the LAN)
   const digest = await crypto.subtle.digest('SHA-256', data);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** Downscale to at most `max` px on the long side and re-encode as JPEG: covers do not need to be 4000 px. */
-export async function prepareImage(file: Blob, max = 800): Promise<Blob> {
+export async function prepareImage(file: Blob, max = 800, trimBars = false): Promise<Blob> {
   const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const canvas = new OffscreenCanvas(Math.round(bmp.width * scale), Math.round(bmp.height * scale));
-  canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  let src = { x: 0, y: 0, w: bmp.width, h: bmp.height };
+  if (trimBars) { // e.g. a YouTube thumbnail: drop the black bars, keep the centre square
+    const probe = new OffscreenCanvas(bmp.width, bmp.height);
+    const pctx = probe.getContext('2d')!;
+    pctx.drawImage(bmp, 0, 0);
+    src = coverCrop(pctx.getImageData(0, 0, bmp.width, bmp.height).data, bmp.width, bmp.height);
+  }
+  const scale = Math.min(1, max / Math.max(src.w, src.h));
+  const canvas = new OffscreenCanvas(Math.round(src.w * scale), Math.round(src.h * scale));
+  canvas.getContext('2d')!.drawImage(bmp, src.x, src.y, src.w, src.h, 0, 0, canvas.width, canvas.height);
   return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.88 });
 }
 
@@ -21,8 +31,8 @@ export async function prepareImage(file: Blob, max = 800): Promise<Blob> {
  * Store an image on this device under its content hash and queue it for upload. The hash is what entities
  * reference, so the record can sync immediately; the bytes follow whenever the server is reachable.
  */
-export async function saveImage(file: Blob): Promise<string> {
-  const blob = await prepareImage(file);
+export async function saveImage(file: Blob, opts: { trimBars?: boolean } = {}): Promise<string> {
+  const blob = await prepareImage(file, 800, opts.trimBars);
   const hash = await sha256Hex(await blob.arrayBuffer());
   const db = await localDb();
   await db.put('blobs', blob, hash);

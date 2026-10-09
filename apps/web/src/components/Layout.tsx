@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Disc3, Home, ListMusic, Network, ListOrdered, Music2, Search, Settings, Swords, Users } from 'lucide-react';
+import { BarChart3, Stethoscope, Disc3, Home, ListMusic, Network, ListOrdered, Music2, Search, Settings, Swords, Users } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../lib/cn.ts';
 import { useStore } from '../lib/store.ts';
@@ -16,6 +16,7 @@ const NAV = [
   { to: '/queue', label: 'Queue', icon: ListOrdered },
   { to: '/bios', label: 'Bios', icon: Network },
   { to: '/stats', label: 'Stats', icon: BarChart3 },
+  { to: '/health', label: 'Health', icon: Stethoscope },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -57,7 +58,7 @@ export function Layout() {
       <PlayerBar />
       <EditorHost />
       <nav className="flex border-t border-line bg-surface md:hidden">
-        {NAV.filter((n) => !['/playlists', '/stats', '/queue', '/bios'].includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
+        {NAV.filter((n) => !['/playlists', '/stats', '/queue', '/bios', '/health'].includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
           <NavLink key={to} to={to} end={'end' in rest} className={({ isActive }) => cn('flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] text-muted', isActive && 'text-accent')}>
             <Icon size={20} />{label}
           </NavLink>

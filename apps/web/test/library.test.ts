@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { SyncRecord } from '@curator/core';
 import { buildLibrary } from '../src/lib/library.ts';
+import { centreSquare, contentBox, coverCrop } from '../src/lib/image.ts';
+import { createHash, randomBytes } from 'node:crypto';
+import { sha256Sync } from '../src/lib/sha256.ts';
+import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
+import { computeHealth } from '../src/lib/health.ts';
 import { computeStats } from '../src/lib/stats.ts';
 import { appendTrack, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
 import { pickPair } from '../src/lib/pairing.ts';
@@ -114,5 +119,81 @@ describe('album editing helpers', () => {
     const t = newTrackData({ title: 'x', artistId: 'a' });
     expect(t).toMatchObject({ file: null, albums: [], syncWithAlbumCredits: true, isFavorite: false, credits: [{ artistId: 'a', role: ['Lead artist'] }] });
     expect(newAlbumData({ title: 'y', artistId: 'a' }).genres).toEqual([]);
+  });
+});
+
+describe('computeHealth', () => {
+  const lib = buildLibrary(rows(
+    rec('artists', 'a', { name: 'Used', image: null }), rec('artists', 'z', { name: 'Orphan', image: null }), rec('artists', 'c', { name: 'Credit Only', image: 'h' }),
+    rec('albums', 'al', { title: 'Album', artistId: 'a', credits: [], genres: ['Rock'], cover: null }),
+    rec('albums', 'empty', { title: 'Empty', artistId: 'a', credits: [], genres: [], cover: 'h' }),
+    rec('tracks', 't1', track('Song', { genres: ['Pop'], credits: [{ artistId: 'c', role: ['Producer'] }], bitrate: '128kbps' })),
+    rec('tracks', 't2', track('Song!', { albums: [], file: 'f', youtubeMusicUrl: 'u' })),
+    rec('genres', 'g1', { name: 'Rock' }), rec('genres', 'g2', { name: 'Pop' }), rec('genres', 'g3', { name: 'Unused' }),
+    rec('roleCategories', 'r1', { name: 'Producer', isRemovable: true }), rec('roleCategories', 'r2', { name: 'Lead artist', isRemovable: true }),
+  ));
+  const by = (id: string) => computeHealth(lib).find((c) => c.id === id)!.items.map((i) => i.id).sort();
+  it('finds each kind of problem', () => {
+    expect(by('no-audio')).toEqual(['t1']);
+    expect(by('no-source')).toEqual(['t1']);
+    expect(by('no-album')).toEqual(['t2']);
+    expect(by('no-genre')).toEqual(['t2']);
+    expect(by('low-quality')).toEqual(['t1']);
+    expect(by('album-no-cover')).toEqual(['al']);
+    expect(by('album-empty')).toEqual(['empty']);
+    expect(by('duplicates')).toEqual(['t1', 't2']); // "Song" vs "Song!" normalise the same
+  });
+  it('never offers something in use for deletion (the legacy cleanup deleted roles that were in use)', () => {
+    expect(by('artist-unused')).toEqual(['z']);       // 'c' is only a credit but is still used
+    expect(by('genre-unused')).toEqual(['g3']);
+    expect(by('role-unused')).toEqual(['r2']);        // 'Producer' is used by a credit
+  });
+});
+
+describe('youtubeId', () => {
+  it('reads the common URL shapes and rejects the rest', () => {
+    expect(youtubeId('https://www.youtube.com/watch?v=pAEInY3xPc4')).toBe('pAEInY3xPc4');
+    expect(youtubeId('https://music.youtube.com/watch?v=pAEInY3xPc4&list=RDAMVM')).toBe('pAEInY3xPc4');
+    expect(youtubeId('https://youtu.be/pAEInY3xPc4?t=3')).toBe('pAEInY3xPc4');
+    expect(youtubeId('https://www.youtube.com/shorts/pAEInY3xPc4')).toBe('pAEInY3xPc4');
+    for (const bad of [null, undefined, '', 'nope', 'https://example.com/watch?v=pAEInY3xPc4', 'https://www.youtube.com/watch?v=short']) expect(youtubeId(bad)).toBeNull();
+    expect(thumbnailUrls('abcdefghijk')[1]).toBe('https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg');
+  });
+});
+
+describe('cover cropping (YouTube thumbnails have black bars)', () => {
+  /** w x h image: black, with a coloured rectangle (the picture) at the given box */
+  function img(w: number, h: number, pic: { x: number; y: number; w: number; h: number }) {
+    const d = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4, inside = x >= pic.x && x < pic.x + pic.w && y >= pic.y && y < pic.y + pic.h;
+      d[i] = inside ? 200 : 0; d[i + 1] = inside ? 120 : 0; d[i + 2] = inside ? 60 : 0; d[i + 3] = 255;
+    }
+    return d;
+  }
+  it('finds the picture inside letterbox and pillarbox bars', () => {
+    expect(contentBox(img(480, 360, { x: 0, y: 45, w: 480, h: 270 }), 480, 360)).toEqual({ x: 0, y: 45, w: 480, h: 270 });
+    expect(contentBox(img(1280, 720, { x: 280, y: 0, w: 720, h: 720 }), 1280, 720)).toEqual({ x: 280, y: 0, w: 720, h: 720 });
+  });
+  it('crops album art in a 16:9 frame to exactly the art; keeps images without bars whole', () => {
+    expect(coverCrop(img(1280, 720, { x: 280, y: 0, w: 720, h: 720 }), 1280, 720)).toEqual({ x: 280, y: 0, w: 720, h: 720 });
+    expect(coverCrop(img(300, 300, { x: 0, y: 0, w: 300, h: 300 }), 300, 300)).toEqual({ x: 0, y: 0, w: 300, h: 300 });
+  });
+  it('centre-squares a wide picture, and ignores an all-black or tiny result', () => {
+    expect(centreSquare({ x: 0, y: 45, w: 480, h: 270 })).toEqual({ x: 105, y: 45, w: 270, h: 270 });
+    const black = new Uint8ClampedArray(400 * 300 * 4).map((_, i) => (i % 4 === 3 ? 255 : 0));
+    expect(coverCrop(black, 400, 300)).toEqual({ x: 0, y: 0, w: 400, h: 300 });
+    expect(coverCrop(img(400, 300, { x: 100, y: 100, w: 20, h: 20 }), 400, 300)).toEqual({ x: 0, y: 0, w: 400, h: 300 });
+  });
+});
+
+describe('sha256Sync (fallback for insecure origins)', () => {
+  it('matches node:crypto for known vectors and every length around the block boundaries', () => {
+    expect(sha256Sync(new Uint8Array())).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+    expect(sha256Sync(new TextEncoder().encode('abc'))).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    for (const n of [1, 54, 55, 56, 57, 63, 64, 65, 119, 120, 127, 128, 1000, 100_003]) {
+      const buf = randomBytes(n);
+      expect(sha256Sync(buf)).toBe(createHash('sha256').update(buf).digest('hex'));
+    }
   });
 });

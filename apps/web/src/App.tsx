@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout.tsx';
 import { useStore } from './lib/store.ts';
+import { HealthPage } from './pages/Health.tsx';
 import { HomePage } from './pages/Home.tsx';
 import { BiosPage } from './pages/BiosPage.tsx';
 import { AlbumsPage } from './pages/Albums.tsx';
@@ -25,6 +26,7 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
+        <Route path="health" element={<HealthPage />} />
         <Route path="bios" element={<BiosPage />} />
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:id" element={<AlbumPage />} />
