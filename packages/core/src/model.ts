@@ -18,6 +18,8 @@ export interface AlbumData {
   cover: string | null;
   eraId?: string | null;
   defaultReleaseId?: string | null;
+  /** explicit track order (ids); wins over the release tracklist. Set when the user reorders or adds tracks by hand. */
+  trackOrder?: string[];
 }
 export interface ReleaseData {
   albumId: string;

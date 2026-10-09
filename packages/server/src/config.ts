@@ -1,5 +1,6 @@
 import { mkdirSync, existsSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 
 export interface Config {
@@ -11,6 +12,8 @@ export interface Config {
   maxUploadBytes: number;
   ytdlp?: string;
   ffmpegDir?: string;
+  /** built web client to serve at `/`; unset/missing = API only */
+  webDir?: string;
 }
 
 /** Obscure by default so it doesn't collide with 8080/3000/5173 and isn't an obvious scan target. */
@@ -32,6 +35,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     maxUploadBytes: Number(env.CURATOR_MAX_UPLOAD_MB ?? 1024) * 1024 * 1024,
     ytdlp: env.CURATOR_YTDLP,
     ffmpegDir: env.CURATOR_FFMPEG_DIR,
+    webDir: env.CURATOR_WEB_DIR ? resolve(env.CURATOR_WEB_DIR) : defaultWebDir(),
   };
 }
 
@@ -42,4 +46,10 @@ function loadOrCreateToken(dataDir: string): string {
   writeFileSync(path, token + '\n', { mode: 0o600 });
   try { chmodSync(path, 0o600); } catch { /* some external-drive filesystems (exFAT/NTFS) have no modes */ }
   return token;
+}
+
+/** apps/web/dist next to this package in the monorepo, if it has been built */
+function defaultWebDir(): string | undefined {
+  const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../../../apps/web/dist');
+  return existsSync(join(dir, 'index.html')) ? dir : undefined;
 }
