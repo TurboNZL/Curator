@@ -66,3 +66,59 @@ export function useFileUrl(hash: string | null | undefined): string | null {
   }, [hash, configured, filesRev]);
   return url;
 }
+
+/* ---------- offline audio ---------- */
+
+export interface CacheEntry { size: number; at: number }
+export class CacheLimitError extends Error { constructor() { super('Storage limit reached'); } }
+
+export const cacheBytes = (c: Record<string, CacheEntry>) => Object.values(c).reduce((n, e) => n + e.size, 0);
+
+/** Download one audio file to this device. Throws CacheLimitError rather than exceed the user's limit. */
+export async function downloadAudio(hash: string): Promise<void> {
+  const st = useStore.getState();
+  if (st.audioCache[hash]) return;
+  const res = await fetch(api().fileUrl(hash));
+  if (!res.ok) throw new Error(`Server said ${res.status}`);
+  const blob = await res.blob();
+  if (cacheBytes(useStore.getState().audioCache) + blob.size > st.settings.storageLimitMb * 1024 * 1024) throw new CacheLimitError();
+  const db = await localDb();
+  await db.put('blobs', blob, hash);
+  const next = { ...useStore.getState().audioCache, [hash]: { size: blob.size, at: Date.now() } };
+  await setMeta('audioCache', next);
+  useStore.setState({ audioCache: next });
+}
+
+export async function removeAudio(hashes: string[]): Promise<void> {
+  const db = await localDb();
+  const next = { ...useStore.getState().audioCache };
+  for (const h of hashes) { if (next[h]) { await db.delete('blobs', h); delete next[h]; } }
+  await setMeta('audioCache', next);
+  useStore.setState({ audioCache: next });
+}
+
+/** URL to play `hash` from: the local copy when kept offline, otherwise streamed from the server. Caller revokes blob: URLs. */
+export async function audioSource(hash: string): Promise<{ url: string; local: boolean }> {
+  if (useStore.getState().audioCache[hash]) {
+    const blob = await (await localDb()).get('blobs', hash);
+    if (blob) return { url: URL.createObjectURL(blob), local: true };
+  }
+  return { url: api().fileUrl(hash), local: false };
+}
+
+export interface KeepProgress { running: boolean; done: number; total: number; message: string | null }
+
+/** Copy a set of tracks' audio to this device, in order, stopping cleanly at the storage limit. */
+export async function keepOffline(hashes: string[], set: (p: KeepProgress) => void): Promise<void> {
+  const todo = hashes.filter((h) => !useStore.getState().audioCache[h]);
+  set({ running: true, done: 0, total: todo.length, message: null });
+  let done = 0;
+  for (const h of todo) {
+    try { await downloadAudio(h); } catch (e) {
+      set({ running: false, done, total: todo.length, message: e instanceof CacheLimitError ? 'Stopped: storage limit reached. Raise it in Settings.' : 'Stopped: could not reach the server.' });
+      return;
+    }
+    set({ running: true, done: ++done, total: todo.length, message: null });
+  }
+  set({ running: false, done, total: todo.length, message: null });
+}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, ListEnd, ListStart, Pencil, Play } from 'lucide-react';
+import { ArrowDownToLine, Heart, ListEnd, ListStart, Pencil, Play } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
@@ -17,6 +17,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const current = usePlayer((s) => s.queue.currentId);
   const patch = useStore((s) => s.patch);
   const edit = useEditor((s) => s.open);
+  const cache = useStore((s) => s.audioCache);
   const ids = tracks.map((t) => t.id);
 
   return (
@@ -36,6 +37,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
             </div>
           </div>
           <div className="hidden w-40 justify-end gap-1 overflow-hidden sm:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
+          <span className="w-4 text-muted" title={t.file && cache[t.file] ? 'Saved on this device' : ''}>{t.file && cache[t.file] && <ArrowDownToLine size={13} />}</span>
           <div className="hidden w-14 text-right text-xs tabular-nums text-muted md:block">{t.bitrate ?? ''}</div>
           <button className={cn('p-1 text-muted hover:text-fg', t.isFavorite && 'text-bad')} title="Favourite"
             onClick={() => patch('tracks', t.id, { isFavorite: !t.isFavorite })}>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { newId, RECORD_TABLES, wins, type RecordTable, type SyncRecord } from '@curator/core';
 import { Api } from './api.ts';
-import { flushUploads } from './files.ts';
+import { flushUploads, type CacheEntry } from './files.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';
 import { loadSettings, saveSettings, type DeviceSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
@@ -29,6 +29,8 @@ interface State {
   /** bumped when a local file is added so image hooks re-resolve */
   filesRev: number;
   touchFiles(): void;
+  /** audio kept on this device, by file hash */
+  audioCache: Record<string, CacheEntry>;
 }
 
 let syncing: Promise<void> | null = null;
@@ -115,7 +117,7 @@ export const useStore = create<State>((set, get) => {
   });
 
   return {
-    ready: false, rev: 0, filesRev: 0, rows: emptyRows(),
+    ready: false, rev: 0, filesRev: 0, audioCache: {}, rows: emptyRows(),
     touchFiles() { set((s) => ({ filesRev: s.filesRev + 1 })); },
     settings: loadSettings(),
     sync: { state: 'unconfigured', lastSync: null, pending: 0, error: null },
@@ -127,7 +129,7 @@ export const useStore = create<State>((set, get) => {
       const db = await localDb();
       const rows = emptyRows();
       for (const r of await db.getAll('records')) rows[r.table]?.set(r.id, r);
-      set({ rows, ready: true, rev: 1, sync: { ...get().sync, lastSync: await getMeta('lastSync', null), pending: await db.count('outbox'), state: configured() ? 'idle' : 'unconfigured' } });
+      set({ rows, audioCache: await getMeta('audioCache', {}), ready: true, rev: 1, sync: { ...get().sync, lastSync: await getMeta('lastSync', null), pending: await db.count('outbox'), state: configured() ? 'idle' : 'unconfigured' } });
       void get().syncNow();
       clearInterval(timer);
       timer = setInterval(() => void get().syncNow(), 30_000);

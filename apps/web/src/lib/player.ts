@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { advance, newId, pushHistory, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
+import { audioSource } from './files.ts';
 import { getLibrary } from './derive.ts';
-import { api, useStore } from './store.ts';
+import { useStore } from './store.ts';
 
 interface Source { type: SourceType; id: string | null }
 
@@ -29,6 +30,8 @@ interface PlayerState {
 }
 
 let audio: HTMLAudioElement | null = null;
+let loadSeq = 0;
+let objectUrl: string | null = null;
 const lib = getLibrary;
 const rules = () => lib().rules;
 
@@ -63,12 +66,18 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   function load(trackId: string | null) {
     const a = el();
+    const seq = ++loadSeq; // a newer load supersedes one still resolving its source
     if (!trackId) { a.pause(); a.removeAttribute('src'); set({ time: 0, duration: 0, playing: false, error: null }); return true; }
     const track = lib().trackById.get(trackId);
     if (!track?.file) return false;
-    a.src = api().fileUrl(track.file);
     set({ error: null, time: 0 });
-    void a.play().catch(() => set({ playing: false }));
+    void audioSource(track.file).then(({ url, local }) => {
+      if (seq !== loadSeq) { if (local) URL.revokeObjectURL(url); return; }
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = local ? url : null;
+      a.src = url;
+      void a.play().catch(() => set({ playing: false }));
+    });
     updateMediaSession(trackId);
     return true;
   }

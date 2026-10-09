@@ -5,6 +5,7 @@ import { useLibrary } from '../lib/derive.ts';
 import { ACCENTS, THEMES } from '../lib/theme.ts';
 import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
+import { cacheBytes, removeAudio } from '../lib/files.ts';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="card space-y-4 p-5"><h2 className="font-semibold">{title}</h2>{children}</section>;
@@ -39,6 +40,8 @@ export function SettingsPage() {
     catch { setAcq('Could not reach the server.'); }
   }
   const limitBytes = settings.storageLimitMb * 1024 * 1024;
+  const audioCache = useStore((s) => s.audioCache);
+  const audioBytes = cacheBytes(audioCache);
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -71,10 +74,13 @@ export function SettingsPage() {
       </Section>
 
       <Section title="This device's storage">
-        <p className="text-sm text-muted">Browsers can only hold a limited amount. The desktop and Android apps keep full offline copies; this web app streams audio from the server.</p>
-        {usage && <><div className="h-2 overflow-hidden rounded-full bg-raised"><div className="h-full bg-accent" style={{ width: `${Math.min(100, (usage.usage / limitBytes) * 100)}%` }} /></div>
-          <div className="flex items-center justify-between text-xs text-muted"><span>{fmtBytes(usage.usage)} used of your {settings.storageLimitMb} MB limit (browser allows {fmtBytes(usage.quota)})</span>
-            <label className="flex items-center gap-2">Limit MB<input className="input !w-24" type="number" min={100} step={100} value={settings.storageLimitMb} onChange={(e) => updateSettings({ storageLimitMb: Number(e.target.value) || 2048 })} /></label></div></>}
+        <p className="text-sm text-muted">Browsers can only hold a limited amount, so offline audio stops at the limit you set. The desktop and Android apps keep full offline copies; here, use “Keep offline” on albums and playlists.</p>
+        <div className="h-2 overflow-hidden rounded-full bg-raised"><div className="h-full bg-accent" style={{ width: `${Math.min(100, (audioBytes / limitBytes) * 100)}%` }} /></div>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+          <span>{fmtBytes(audioBytes)} of offline audio ({Object.keys(audioCache).length} files) · limit {settings.storageLimitMb} MB{usage ? ` · browser allows ${fmtBytes(usage.quota)}` : ''}</span>
+          <span className="flex items-center gap-3">
+            <label className="flex items-center gap-2">Limit MB<input className="input !w-24" type="number" min={100} step={100} value={settings.storageLimitMb} onChange={(e) => updateSettings({ storageLimitMb: Number(e.target.value) || 2048 })} /></label>
+            <button className="btn" disabled={!audioBytes} onClick={() => void removeAudio(Object.keys(audioCache))}>Clear offline audio</button></span></div>
       </Section>
     </div>
   );

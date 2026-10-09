@@ -3,6 +3,7 @@ import { Link2, Plus, Trash2 } from 'lucide-react';
 import type { PlaylistData } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
+import { KeepOffline } from '../components/KeepOffline.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
 
 export function PlaylistsPage() {
@@ -28,7 +29,7 @@ export function PlaylistsPage() {
         <button key={p.id} onClick={() => setOpenId(p.id)} className={`btn ${openId === p.id ? 'btn-accent' : ''}`}>{p.name} <span className="opacity-60">{p.trackIds.length}</span></button>))}</div>
       {open && (
         <section className="space-y-3">
-          <div className="flex items-center gap-3"><h2 className="text-xl font-semibold">{open.name}</h2>
+          <div className="flex items-center gap-3"><h2 className="text-xl font-semibold">{open.name}</h2><KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
             <button className="btn btn-ghost ml-auto text-bad" onClick={() => { remove('playlists', open.id); setOpenId(null); }}><Trash2 size={15} />Delete</button></div>
           <div className="relative max-w-md"><input className="input" placeholder="Add a track…" value={adding} onChange={(e) => setAdding(e.target.value)} />
             {matches.length > 0 && <div className="card absolute z-10 mt-1 w-full overflow-hidden shadow-xl">{matches.map((t) => (
