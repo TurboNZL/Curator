@@ -9,6 +9,8 @@ export interface Config {
   host: string;
   token: string;
   maxUploadBytes: number;
+  ytdlp?: string;
+  ffmpegDir?: string;
 }
 
 /** Obscure by default so it doesn't collide with 8080/3000/5173 and isn't an obvious scan target. */
@@ -28,6 +30,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     host: env.CURATOR_HOST ?? '0.0.0.0',
     token: env.CURATOR_TOKEN ?? loadOrCreateToken(dataDir),
     maxUploadBytes: Number(env.CURATOR_MAX_UPLOAD_MB ?? 1024) * 1024 * 1024,
+    ytdlp: env.CURATOR_YTDLP,
+    ffmpegDir: env.CURATOR_FFMPEG_DIR,
   };
 }
 

@@ -32,40 +32,47 @@ export function applyVote(ra: number, rb: number, outcome: 'a' | 'b' | 'equal', 
 /**
  * Elo is DERIVED from the append-only vote log, never stored as mutable truth.
  * That makes votes from several devices mergeable: union the logs, replay in time order.
+ *
+ * Votes against since-deleted tracks still count: the surviving track's score was shaped by
+ * that opponent. Verified against a real library: replaying every vote (ghosts included)
+ * reproduces the legacy stored Elo and comparison counts exactly. Ghosts are not returned.
  */
 export function replayVotes(votes: Vote[], trackIds: Iterable<string>): Map<string, RankedTrack> {
-  const out = new Map<string, RankedTrack>();
-  for (const id of trackIds) out.set(id, { elo: ELO_START, comparisons: 0 });
+  const all = new Map<string, RankedTrack>();
+  const get = (id: string) => {
+    let r = all.get(id);
+    if (!r) all.set(id, (r = { elo: ELO_START, comparisons: 0 }));
+    return r;
+  };
   const ordered = [...votes].sort((x, y) => x.timestamp - y.timestamp || (x.id < y.id ? -1 : 1));
   for (const v of ordered) {
-    const a = out.get(v.trackAId);
-    const b = out.get(v.trackBId);
-    if (!a || !b) continue; // vote references a deleted track
+    const a = get(v.trackAId);
+    const b = get(v.trackBId);
     const outcome = v.isEqual ? 'equal' : v.winnerId === v.trackAId ? 'a' : 'b';
     const next = applyVote(a.elo, b.elo, outcome);
     a.elo = next.a; b.elo = next.b;
     a.comparisons++; b.comparisons++;
   }
+  const out = new Map<string, RankedTrack>();
+  for (const id of trackIds) out.set(id, all.get(id) ?? { elo: ELO_START, comparisons: 0 });
   return out;
 }
 
 /**
- * Map Elo to a 0-10 rating. Only compared tracks participate in the range, a track's
- * manual `initialRating` is a floor, and uncompared tracks keep their initial rating.
+ * Map Elo to a 0-10 rating (min..max over ALL tracks, as the legacy app did; verified to
+ * reproduce every stored rating). A track's manual `initialRating` is a floor.
  */
 export function balancedRatings(
   ranked: Map<string, RankedTrack>,
   initialRatings: Map<string, number | null | undefined> = new Map(),
-): Map<string, number | null> {
-  const compared = [...ranked.values()].filter((r) => r.comparisons > 0).map((r) => r.elo);
-  const min = Math.min(...compared);
-  const max = Math.max(...compared);
-  const out = new Map<string, number | null>();
+): Map<string, number> {
+  const elos = [...ranked.values()].map((r) => r.elo);
+  const min = Math.min(...elos);
+  const max = Math.max(...elos);
+  const out = new Map<string, number>();
   for (const [id, r] of ranked) {
-    const floor = initialRatings.get(id) ?? null;
-    if (r.comparisons === 0) { out.set(id, floor); continue; }
     const scaled = max > min ? ((r.elo - min) / (max - min)) * 10 : 5;
-    out.set(id, floor !== null ? Math.max(scaled, floor) : scaled);
+    out.set(id, Math.max(scaled, initialRatings.get(id) ?? 0));
   }
   return out;
 }

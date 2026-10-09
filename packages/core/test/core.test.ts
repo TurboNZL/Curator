@@ -24,16 +24,17 @@ describe('elo', () => {
     expect(a.get('x')).toEqual(b.get('x'));
     expect(a.get('x')!.comparisons).toBe(3);
   });
-  it('ignores votes for deleted tracks', () => {
+  it('votes against deleted tracks still shape survivors (matches legacy data)', () => {
     const r = replayVotes([{ id: '1', trackAId: 'x', trackBId: 'gone', winnerId: 'x', timestamp: 1 }], ['x']);
-    expect(r.get('x')!.comparisons).toBe(0);
+    expect(r.get('x')).toEqual({ elo: 1016, comparisons: 1 });
+    expect(r.has('gone')).toBe(false);
   });
-  it('balanced ratings honour the initial-rating floor and leave uncompared tracks alone', () => {
+  it('balanced ratings span 0-10 and honour the initial-rating floor', () => {
     const ranked = replayVotes([{ id: '1', trackAId: 'x', trackBId: 'y', winnerId: 'x', timestamp: 1 }], ['x', 'y', 'z']);
-    const out = balancedRatings(ranked, new Map([['y', 4], ['z', 7]]));
+    const out = balancedRatings(ranked, new Map([['y', 4]]));
     expect(out.get('x')).toBe(10);
-    expect(out.get('y')).toBe(4);
-    expect(out.get('z')).toBe(7);
+    expect(out.get('y')).toBe(4); // scaled 0, floored to 4
+    expect(out.get('z')).toBeCloseTo(5.0, 1); // untouched track sits mid-range
   });
 });
 

@@ -85,6 +85,18 @@ export class Store {
     return { records: page, cursor: page.length ? page[page.length - 1].seq : since, more };
   }
 
+  get(table: RecordTable, id: string): StoredRecord | undefined {
+    const r = this.db.prepare(`SELECT tbl, id, seq, updated_at, device_id, deleted, data FROM records WHERE tbl = ? AND id = ?`).get(table, id) as
+      | { tbl: string; id: string; seq: number; updated_at: number; device_id: string; deleted: number; data: string } | undefined;
+    return r && { table: r.tbl as RecordTable, id: r.id, seq: r.seq, updatedAt: r.updated_at, deviceId: r.device_id, deleted: !!r.deleted, data: JSON.parse(r.data) };
+  }
+
+  /** all live records of one table */
+  list(table: RecordTable): StoredRecord[] {
+    return (this.db.prepare(`SELECT id FROM records WHERE tbl = ? AND deleted = 0`).all(table) as { id: string }[])
+      .map((r) => this.get(table, r.id)!);
+  }
+
   hasFile(hash: string): boolean {
     return !!this.db.prepare(`SELECT 1 FROM files WHERE hash = ?`).get(hash);
   }
