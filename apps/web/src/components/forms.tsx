@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ImagePlus, Plus, X } from 'lucide-react';
-import type { ArtistData } from '@curator/core';
+import type { ArtistData, Credit } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
@@ -110,4 +110,22 @@ export function TrackPicker({ value, onChange, exclude }: { value: string | null
   return <div className="relative"><input className="input" placeholder="Search for a track…" value={q} onChange={(e) => setQ(e.target.value)} />
     {matches.length > 0 && <div className="card absolute z-10 mt-1 w-full overflow-hidden shadow-xl">{matches.map((t) => (
       <button key={t.id} type="button" className="block w-full px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => { onChange(t.id); setQ(''); }}>{t.title} <span className="text-muted">· {t.artistName}</span></button>))}</div>}</div>;
+}
+
+/** Who worked on a track/album and in what role. Role names are suggested from the existing role list. */
+export function CreditsEditor({ value, onChange }: { value: Credit[]; onChange: (v: Credit[]) => void }) {
+  const lib = useLibrary();
+  const first = lib.artists[0]?.id ?? '';
+  const set = (i: number, c: Credit) => onChange(value.map((x, j) => (j === i ? c : x)));
+  return (
+    <div className="space-y-3">
+      {value.map((c, i) => (
+        <div key={i} className="space-y-2 rounded-theme border border-line p-3">
+          <div className="flex items-start gap-2"><div className="flex-1"><ArtistSelect value={c.artistId} onChange={(id) => set(i, { ...c, artistId: id })} /></div>
+            <button type="button" className="btn btn-ghost !p-2" aria-label="Remove credit" onClick={() => onChange(value.filter((_, j) => j !== i))}><X size={15} /></button></div>
+          <TagInput value={c.role} onChange={(role) => set(i, { ...c, role })} suggestions={lib.roles.map((r) => r.name)} />
+        </div>))}
+      <button type="button" className="btn" disabled={!first} onClick={() => onChange([...value, { artistId: first, role: [] }])}><Plus size={15} />Add credit</button>
+    </div>
+  );
 }

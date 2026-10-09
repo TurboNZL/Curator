@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SyncRecord } from '@curator/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { computeStats } from '../src/lib/stats.ts';
+import { appendTrack, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
 import { pickPair } from '../src/lib/pairing.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
@@ -89,5 +90,29 @@ describe('computeStats', () => {
     expect(s.topTracks[0]).toMatchObject({ seconds: 120, plays: 2 });
     expect(s.recent[0].trackId).toBe('gone');
     expect(s.withAudio).toBe(1);
+  });
+});
+
+describe('album editing helpers', () => {
+  it('moves, removes and appends without mutating', () => {
+    const o = ['a', 'b', 'c'];
+    expect(moveTrack(o, 0, 2)).toEqual(['b', 'c', 'a']);
+    expect(moveTrack(o, 2, 1)).toEqual(['a', 'c', 'b']);
+    expect(moveTrack(o, 0, -1)).toBe(o);
+    expect(removeTrack(o, 'b')).toEqual(['a', 'c']);
+    expect(appendTrack(o, 'd')).toEqual(['a', 'b', 'c', 'd']);
+    expect(appendTrack(o, 'a')).toBe(o);
+    expect(o).toEqual(['a', 'b', 'c']);
+  });
+  it('an explicit trackOrder wins over the release order; unlisted tracks follow', () => {
+    const base = [rec('artists', 'a', { name: 'A', image: null }), rec('tracks', 't1', track('One')), rec('tracks', 't2', track('Two')), rec('tracks', 't3', track('Three')),
+      rec('releases', 'r', { albumId: 'al', title: 'R', cover: null, releaseDate: null, trackIds: ['t1', 't2', 't3'] })];
+    const lib = buildLibrary(rows(...base, rec('albums', 'al', { ...newAlbumData({ title: 'Al', artistId: 'a' }), trackOrder: ['t3', 't1'] })));
+    expect(lib.albumById.get('al')!.trackIds).toEqual(['t3', 't1', 't2']);
+  });
+  it('new tracks/albums are complete records', () => {
+    const t = newTrackData({ title: 'x', artistId: 'a' });
+    expect(t).toMatchObject({ file: null, albums: [], syncWithAlbumCredits: true, isFavorite: false, credits: [{ artistId: 'a', role: ['Lead artist'] }] });
+    expect(newAlbumData({ title: 'y', artistId: 'a' }).genres).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { balancedRatings, replayVotes, type AlbumData, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData } from '@curator/core';
+import { balancedRatings, replayVotes, type AlbumData, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData } from '@curator/core';
 
 export type Row<T> = T & { id: string };
 
@@ -27,6 +27,7 @@ export interface Library {
   releases: Row<ReleaseData>[];
   playlists: Row<PlaylistData>[];
   genres: Row<GenreData>[];
+  roles: Row<RoleCategoryData>[];
   groups: Row<GroupData>[];
   notes: Row<NoteData>[];
   votes: Row<VoteData>[];
@@ -93,7 +94,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   };
 
   const albums = rawAlbums.map((a) => {
-    const pos = position(a.id, a.defaultReleaseId);
+    // an explicit order (set when the user reorders/adds by hand) wins over the release tracklist
+    const pos = a.trackOrder?.length ? new Map(a.trackOrder.map((id, i) => [id, i])) : position(a.id, a.defaultReleaseId);
     const at = (id: string) => pos.get(id) ?? Number.MAX_SAFE_INTEGER;
     const ids = (trackIdsByAlbum.get(a.id) ?? []).sort((x, y) => at(x.id) - at(y.id) || x.order - y.order).map((x) => x.id);
     const rated = ids.map((id) => trackById.get(id)!.effectiveRating).filter((x) => x > 0);
@@ -104,7 +106,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   return {
     tracks, trackById, artists, artistById, albums, albumById: by(albums),
     releases, playlists: live<PlaylistData>(rows.playlists),
-    genres: live<GenreData>(rows.genres), groups: live<GroupData>(rows.groups), notes: live<NoteData>(rows.notes),
+    genres: live<GenreData>(rows.genres), roles: live<RoleCategoryData>(rows.roleCategories), groups: live<GroupData>(rows.groups), notes: live<NoteData>(rows.notes),
     votes, logs: live<PlaybackLogData>(rows.playbackLogs), profile, rules: profile?.playbackRules ?? [],
   };
 }

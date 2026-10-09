@@ -3,7 +3,7 @@
 Everything below runs on your own machine. Nothing here touches your old app or your old `curator.db` (it is only read).
 
 ## 0. What you need
-- **Node 22.5 or newer** (`node -v`). Older versions lack the built-in SQLite the server uses.
+- **Node 22.13 or newer** (`node -v`). Older versions need an extra flag for the built-in SQLite the server uses.
 - **pnpm** (`npm i -g pnpm`).
 - Git, and this branch: `git fetch origin && git checkout claude/eloquent-darwin-6q1rf2`.
 - For audio only (step 5): **yt-dlp** and **ffmpeg** (both must run from a terminal).
