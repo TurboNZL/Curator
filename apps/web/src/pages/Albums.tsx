@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -27,6 +27,7 @@ export function AlbumsPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Albums <span className="text-base font-normal text-muted">{albums.length}</span></h1>
+        <button className="btn" onClick={() => edit({ kind: 'import', id: '' })}><Download size={15} />Import</button>
         <button className="btn" onClick={() => edit({ kind: 'new-album', id: '' })}><Plus size={15} />New album</button>
         <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="input !w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort">

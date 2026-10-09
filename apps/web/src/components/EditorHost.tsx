@@ -5,6 +5,7 @@ import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
+import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
 import { newAlbumData, newTrackData, appendTrack } from '../lib/defaults.ts';
 import { ArtistSelect, CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
@@ -222,6 +223,7 @@ export function EditorHost() {
   const { target, close } = useEditor();
   if (!target) return null;
   const key = `${target.kind}:${target.id}`;
+  if (target.kind === 'import') return <ImportDialog key="import" onClose={close} />;
   if (target.kind === 'bio') return <BioDialog key={key} groupId={target.id} onClose={close} />;
   if (target.kind === 'new-bio') return <BioDialog key={key} initial={target.id} onClose={close} />;
   if (target.kind === 'new-album') return <NewAlbumDialog key="new-album" onClose={close} />;

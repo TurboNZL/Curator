@@ -11,6 +11,11 @@ export interface ServerStatus {
   disk: { free: number; total: number } | Record<string, number>;
 }
 
+export interface ImportPreview {
+  title: string; artist: string; thumbnail: string | null;
+  entries: { id: string; title: string; rawTitle: string; url: string; duration: number | null }[];
+}
+
 export class Api {
   constructor(private s: Pick<DeviceSettings, 'serverUrl' | 'token'>) {}
 
@@ -21,7 +26,10 @@ export class Api {
       ...init,
       headers: { Authorization: `Bearer ${this.s.token}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
     });
-    if (!res.ok) throw new ApiError(res.status, res.status === 401 ? 'Wrong token' : `Server said ${res.status}`);
+    if (!res.ok) {
+      const detail = res.status === 401 ? 'Wrong token' : ((await res.json().catch(() => null)) as { error?: string } | null)?.error;
+      throw new ApiError(res.status, detail ?? `Server said ${res.status}`);
+    }
     return res.json() as Promise<T>;
   }
 
@@ -35,6 +43,10 @@ export class Api {
     const res = await fetch(this.url(`/api/files/${hash}`), { method: 'PUT', headers: { Authorization: `Bearer ${this.s.token}`, 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
     if (!res.ok) throw new ApiError(res.status, `Upload failed (${res.status})`);
   }
+  importPreview(url: string) {
+    return this.req<ImportPreview>('/api/import/preview', { method: 'POST', body: JSON.stringify({ url }) });
+  }
+  importCover(url: string) { return this.req<{ hash: string }>('/api/import/cover', { method: 'POST', body: JSON.stringify({ url }) }); }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
     return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');
