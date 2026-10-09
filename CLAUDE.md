@@ -9,8 +9,8 @@ A personal music library manager for one user (owner@example.com): library (arti
 - Don't waste their usage. Fact-check and double-check yourself; use web search liberally.
 - They write casually; reply in normal capitalized prose, not lowercase or slang.
 - Put effort into verifying against real data and real runs, not only unit tests.
-- Open PR: https://github.com/TurboNZL/music-curator/pull/1 (branch `claude/dazzling-keller-oufma2`). Push there; don't open new PRs.
-- Commit trailers required: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and `Claude-Session: https://claude.ai/code/session_014wvQkXo2rjE2C7EfxmLoBW`.
+- Open PR: https://github.com/TurboNZL/music-curator/pull/2 (branch `claude/eloquent-darwin-6q1rf2`; PR #1 is merged). Push to that branch; don't open new PRs.
+- Commit trailers required: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` and the `Claude-Session: <this session's URL>` line given by the harness.
 
 ## Decisions made (don't re-ask)
 | Topic | Decision |
@@ -29,21 +29,39 @@ A personal music library manager for one user (owner@example.com): library (arti
 /                    LEGACY app (Vite+React19+shadcn+Zustand + Nitro API in server/). Untouched so far. To be ported, then deleted.
 packages/core        @curator/core  pure TS: ids (UUIDv7), elo, queue/rules, sync types+LWW rule, model.ts (canonical entity shapes)
 packages/server      @curator/server  Hono server, node:sqlite, files, sync, migration, acquire (yt-dlp)
-apps/                (empty) planned: web, electron, android
+apps/web             @curator/web  Vite + React 19 + Tailwind 3 + zustand + idb. The new client (see below)
+apps/                planned next: electron, android
 ```
 Legacy files worth reading before porting UI: `src/store/useMusicStore.ts` (all client logic), `src/components/layout/BottomPlayer.tsx`, `src/pages/*`, `src/components/ui/Rating.tsx`, `src/components/modals/*`.
 
 ## What exists and is tested (state as of last commit)
 **core**: `newId` (UUIDv7); `replayVotes` / `balancedRatings` / `applyVote`; `startTrack` / `advance` / `shuffleWithRules` (Fisher-Yates) / `pushHistory`; `SyncRecord` + `wins()` last-writer-wins (higher `updatedAt`, ties → higher `deviceId`); record tables list; `model.ts` entity types. 10 tests.
 
-**server** (22 tests):
+**server** (31 tests):
 - `config.ts`: env `CURATOR_DATA_DIR` (default `./data`), `CURATOR_PORT` (47813), `CURATOR_HOST` (0.0.0.0), `CURATOR_TOKEN` (else generated into `<data>/token`), `CURATOR_MAX_UPLOAD_MB` (1024), `CURATOR_YTDLP`, `CURATOR_FFMPEG_DIR`.
 - `db.ts` `Store`: generic `records(tbl,id,seq,updated_at,device_id,deleted,data)` + `files(hash,size,mime)`. `push` (atomic, LWW), `pull(since)` cursor pagination, `get`, `list`.
-- `app.ts` routes: `GET /api/health` (open) · `GET /api/status` (counts, disk free) · `GET /api/sync/pull?since=&limit=` · `POST /api/sync/push` · `GET /api/files` · `HEAD|PUT|GET /api/files/:hash` (sha256 content-addressed, hash verified on upload, size cap, **HTTP Range**) · `POST|GET /api/acquire`. Auth: `Authorization: Bearer <token>` or `?token=` (needed for `<audio src>`).
+- `app.ts` routes: `GET /api/health` (open) · `GET /api/status` (counts, disk free) · `GET /api/sync/pull?since=&limit=` · `POST /api/sync/push` · `GET /api/files` · `HEAD|PUT|GET /api/files/:hash` (sha256 content-addressed, hash verified on upload, size cap, **HTTP Range**) · `POST|GET /api/acquire` · `POST /api/import/preview` · `POST /api/import/cover` · static web client at `/` (`web.ts`, SPA fallback, `CURATOR_WEB_DIR`). Auth: `Authorization: Bearer <token>` or `?token=` (needed for `<audio src>`).
 - `migrate-legacy.ts` + `cli-migrate.ts`: imports a legacy `curator.db` (+ optional `--public` dir with `uploads/`). Idempotent.
 - `acquire.ts`: yt-dlp download queue for tracks that have `youtubeMusicUrl` but no `file`.
 
 Run: `pnpm install --ignore-scripts --filter @curator/server --filter @curator/core` (the **root** `youtube-dl-exec` postinstall fails offline, so use `--ignore-scripts`; never `--ignore-workspace`). Then in `packages/server`: `npx vitest run`, `npx tsc --noEmit`, `pnpm start`. Migration: `CURATOR_DATA_DIR=... node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db <old>/data/curator.db [--public <old>/public]`.
+
+## Web client (`apps/web`, built this session)
+Local-first: UI reads an in-memory mirror of IndexedDB; every edit is a `SyncRecord` written locally + queued in an `outbox`, pushed in the background.
+- `lib/idb.ts` (IndexedDB: `records`, `outbox`, `meta`), `lib/store.ts` (zustand: rows, `put/patch/remove`, sync loop: push outbox → pull from cursor; every 30 s, on `online`, 1.5 s after edits), `lib/api.ts` (server client; `fileUrl(hash)` adds `?token=`), `lib/settings.ts` (per-device: serverUrl, token, theme, accent, storage limit; localStorage).
+- `lib/library.ts` is the PURE derivation (`buildLibrary`: replays votes via core, ratings, 10-star ranks, album tracklists, genres from album when `syncWithAlbumCredits`). `lib/derive.ts` has the React hook + a rev-keyed cache (`getLibrary`). `lib/pairing.ts` picks vote pairs. `lib/player.ts` is the player (one `<audio>`, core queue + rules, MediaSession, logs `playbackLogs` incl. skips; skips tracks with no audio).
+- Pages: Albums, Album, Artists, Artist, Tracks, Rank (vote; ← → ↓ S keys; 15 s mid-track preview), Queue, Playlists, Search, Stats (`lib/stats.ts`, pure + tested), Settings (themes, accent, server, acquire trigger, storage).
+- **Editing** (`components/EditorHost.tsx`, opened via `lib/editor.ts` kinds: track, album, artist, new-album, new-track, bio, new-bio, import, track-details, release, new-release). Everything edits the RAW stored record (`rows[table].get(id).data`), never derived library objects, so derived fields can't leak into storage. Artists/genres/roles are created inline; unknown genre/role names become records. Track editor includes credits and the **playback rule** (stored in the profile's `playbackRules`). Album page: Edit, "Edit tracks" (reorder/remove/add, saved as `album.trackOrder`, which WINS over the release order), releases (create/edit/set default), bios, notes, Keep offline.
+- **Album import** (`components/ImportDialog.tsx` + server `import.ts`): paste a YouTube/YT Music link → `POST /api/import/preview` (yt-dlp `--flat-playlist -J`, metadata only) → review/edit (cleaned titles via `cleanTitle`, artist match or create, genres, per-track include, cover) → creates records, sets `trackOrder`, syncs, then `POST /api/acquire`. Covers: `POST /api/import/cover` (YouTube/Google image hosts only, https, 10 MB cap). Tested with a fake yt-dlp script; the real yt-dlp has never run here.
+- **Library health** (`lib/health.ts`, page `/health`): replaces the legacy cleanup tasks. Checks are "in use" aware (never offers a role/genre/artist that is used; the legacy cleanup deleted roles in use). "Try YouTube thumbnails" fills missing covers: tries maxres then hq thumbnail through `/api/import/cover`, trims black bars (`lib/image.ts`, verified in Chromium: a 1280x720 frame with square art → exactly the art), saves via `saveImage`.
+- **Journal/home** (`pages/Home.tsx`): the old "Curation journal": tiles (library, avg rating, bios, ranked %), manual entries + auto entries (new album, import, bio) in `timeline`. Bios (`components/Bios.tsx`, `/bios`), notes (`components/Notes.tsx`), stats (`lib/stats.ts`), track details/"stats for nerds" (`lib/trackinfo.ts`).
+- **Images** (`lib/files.ts`): resized to 800 px JPEG, sha256-hashed, kept in IndexedDB `blobs`, uploaded by `flushUploads` at the start of each sync (queue in meta `pendingUploads`). `useFileUrl(hash)` prefers the local blob, else the server URL. **`crypto.subtle` does not exist on plain-http non-localhost origins (a phone on the LAN)**, so `sha256Hex` falls back to `lib/sha256.ts` (tested against node:crypto; verified on a real insecure origin).
+- **Offline audio** (`lib/files.ts` + `components/KeepOffline.tsx`): "Keep offline" downloads audio into `blobs`, tracked in meta `audioCache`; `downloadAudio` refuses to exceed `settings.storageLimitMb` (`CacheLimitError`). The player plays the local copy when present (verified with the network off). No automatic eviction yet.
+- **PWA** (`public/sw.js`, `manifest.webmanifest`): caches the app shell + fingerprinted assets, never `/api`. Service workers need https or localhost: over plain http on the LAN the app works online but is not installable/offline. Use Tailscale/HTTPS for that. Verified: after one online visit a deep link renders fully offline.
+- Themes = CSS-variable blocks in `index.css` (`default`, `classic`, `light`) + accent override; list in `lib/theme.ts`. Classic is only a first approximation of the old look; the old rating UI (`Rating.tsx`) behaviour IS ported (`components/Rating.tsx`).
+- Dev: `pnpm --filter @curator/web dev` (proxies `/api` to `CURATOR_SERVER`, default :47813; put the token in Settings). Prod: `pnpm --filter @curator/web build`, then the server serves `apps/web/dist` at `/` automatically (override `CURATOR_WEB_DIR`); same origin, so leave Server URL empty.
+- Tests: `pnpm --filter @curator/web test` (library derivation, pairing, stats, health, track info, image cropping, sha256, album helpers; 19). Real-run check used: migrate the real DB, start the server, seed a few mp3s (ffmpeg sine) via `PUT /api/files/:hash` + a tracks push, drive the app with Playwright (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, global `playwright` module), screenshot, and verify no console errors. Verified: initial sync of all 13 tables, 444 tracks/33 albums, ratings and #ranks match the legacy stored ratings, play/next with real audio, voting persists to the server, a second fresh profile receives edits.
+- Bugs found by running it, fixed: album track order (see data findings), `pickPair` sampled only half its candidates, hover buttons shifting table columns, no sync indicator on mobile, `crypto.subtle` missing on LAN http.
 
 ## Hard-won gotchas (don't relearn)
 - **Run the real thing, not just vitest.** Vitest passed while real Node crashed: Node's `--experimental-strip-types` forbids TS parameter properties/enums. `packages/server/tsconfig.json` has `erasableSyntaxOnly` so `tsc` catches it. Also relative imports need explicit `.ts` extensions (core uses them).
@@ -60,6 +78,7 @@ Run: `pnpm install --ignore-scripts --filter @curator/server --filter @curator/c
 - Dangling rows dropped: 18 album_tracks, 80 release_tracks, 4 playback_logs.
 - Legacy `artist_ids` mirrors the primary artist on 264 tracks; the rest are extras kept as credits (one bare name "Jorja Smith" → artist created). `track_genres` (36 tracks) merged into `track.genres`.
 - All 444 tracks have a distinct `youtubeMusicUrl` (YouTube watch URL), 443 have a Spotify URL.
+- **`album_tracks.order` is 0 for 460 of 462 rows** (legacy never kept album order) but `release_tracks.order` is real and every album has a release. The client orders an album's tracks by its default (else longest) release. Don't trust `track.albums[].order`.
 - **The old `public/uploads` folder is LOST.** All audio, all 10 artist images and 33 album covers are gone. Audio is recoverable via `POST /api/acquire` (needs yt-dlp+ffmpeg on the machine running the server). Covers can partly come back from YouTube thumbnails (**not built yet**). Artist images must be re-uploaded.
 
 ## Known legacy bugs (the old app; fixed by the rewrite, listed so they aren't re-ported)
@@ -70,14 +89,14 @@ Every row is a `SyncRecord {table,id,updatedAt,deviceId,deleted,data}`. Server a
 Entities store **file hashes** (`image`, `cover`, `file`), never server paths. Elo/rating are never stored.
 
 ## Next steps (in order)
-1. **Web client** `apps/web`: Vite + React + Tailwind + shadcn; local data layer (IndexedDB mirror of records + sync client with pull/push loop and offline queue); derived selectors (elo/rating via core, album-derived genres); **theme system** (CSS vars) with new default theme + "Classic"; app shell; library/album/artist/track pages; player (HTML audio from `/api/files/:hash?token=` or local blob); voting UI; queue + rules; settings (server URL + token, storage capacity bar); trigger/monitor `/api/acquire`. Verify with Playwright (Chromium at `/opt/pw-browsers`) and screenshots.
-2. Port remaining features: playlists, groups ("relational bios"), notes, timeline, stats, cleanup, yt-dlp album *import* flow (review before download), cover-from-thumbnail, image upload.
+1. **Web client is feature-complete for what the old app did**, except small things: automatic offline-audio eviction (it just stops at the limit), column-click sorting in the track table, queue reordering, per-track "play history" list, more themes. Real yt-dlp verification on the user's machine is the main open risk (see docs/TESTING.md).
+2. (done) Legacy features ported: bios, notes, journal, stats, import (rebuilt: preview before download), cleanup (as Library health), releases, playlists.
 3. **Electron** wrapper (local storage, optionally spawn the server in-process).
 4. **Android** native app (Kotlin, Media3 `MediaLibraryService`, Room/SQLite mirror, same sync protocol, offline file cache; Android Auto browse tree = Artists/Albums/Playlists/Recent).
 5. Docs for Pi deployment (systemd unit / Docker, installing yt-dlp+ffmpeg on arm64, reverse proxy/HTTPS or Tailscale), then delete the legacy root app.
 
 ## Open / unverified
-- Real yt-dlp downloads never run here; first real run on user's machine is the test.
+- Real yt-dlp downloads and imports never run here (only a fake script); first real run on the user's machine is the test. YouTube thumbnail covers likewise (sandbox has no internet).
 - Legacy "uploads served in production" behaviour unverified (irrelevant after rewrite).
 - Need the user's answer only if a new fork appears; layout question is answered (medium density, stylish).
 - Server is HTTP; for use outside the LAN put it behind HTTPS or Tailscale (document it).

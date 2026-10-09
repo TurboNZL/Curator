@@ -6,6 +6,8 @@ import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
+import { ImportError, Importer } from './import.ts';
+import { serveWeb } from './web.ts';
 import { diskUsage, filePath, parseRange, saveVerified, streamFile, UploadError } from './files.ts';
 
 export const API_VERSION = 1;
@@ -16,7 +18,11 @@ function tokenOk(given: string | undefined, expected: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function createApp(config: Config, store: Store, acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir })) {
+export function createApp(
+  config: Config, store: Store,
+  acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir }),
+  importer = new Importer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp }),
+) {
   const app = new Hono();
 
   // Native apps ignore CORS; browsers need it because the web client may be served from another origin.
@@ -69,6 +75,19 @@ export function createApp(config: Config, store: Store, acquirer = new Acquirer(
       failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error }) => ({ trackId, error })) });
   });
 
+  // Album import step 1: look up a YouTube/playlist link (metadata only) so the user can review before anything downloads.
+  app.post('/api/import/preview', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { url?: unknown };
+    try { return c.json(await importer.preview(body.url)); }
+    catch (e) { if (e instanceof ImportError) return c.json({ error: e.message }, e.status as 400); throw e; }
+  });
+  // Step 2: save the suggested cover image (YouTube image hosts only) and return its file hash.
+  app.post('/api/import/cover', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { url?: unknown };
+    try { return c.json({ hash: await importer.fetchCover(body.url) }); }
+    catch (e) { if (e instanceof ImportError) return c.json({ error: e.message }, e.status as 400); throw e; }
+  });
+
   app.get('/api/files', (c) => c.json(store.listFiles()));
 
   app.on('HEAD', '/api/files/:hash', (c) => {
@@ -114,6 +133,8 @@ export function createApp(config: Config, store: Store, acquirer = new Acquirer(
     }
     return new Response(streamFile(path), { status: 200, headers: { ...headers, 'Content-Length': String(info.size) } });
   });
+
+  if (config.webDir) serveWeb(app, config.webDir);
 
   app.notFound((c) => c.json({ error: 'not found' }, 404));
   app.onError((e, c) => {
