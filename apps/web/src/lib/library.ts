@@ -1,4 +1,5 @@
-import { balancedRatings, replayVotes, type AlbumData, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData } from '@curator/core';
+import { leadArtistId, leadArtistIds, hasLead } from './defaults.ts';
+import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData } from '@curator/core';
 
 export type Row<T> = T & { id: string };
 
@@ -43,6 +44,13 @@ const live = <T,>(m: Map<string, SyncRecord>): Row<T>[] => {
   return out;
 };
 
+/** "A, B" for every lead artist (falls back to the primary artist). */
+const leadNames = (credits: Credit[], primary: string, artistById: Map<string, { name: string }>) => {
+  const ids = leadArtistIds(credits);
+  const names = (ids.length ? ids : [primary]).flatMap((id) => artistById.get(id)?.name ?? []);
+  return names.length ? names.join(', ') : 'Unknown artist';
+};
+
 const by = <T extends { id: string }>(xs: T[]) => new Map(xs.map((x) => [x.id, x]));
 
 export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Library {
@@ -75,9 +83,12 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const album = albumOf.get(t.id) ?? null;
     const eff = r.comparisons >= 3 && rating > 0.001 ? rating : (t.initialRating ?? 0) > 0.001 ? t.initialRating! : 0;
     const genres = t.syncWithAlbumCredits && album ? album.genres : t.genres;
+    // a track that follows its album takes the album's credits (when the album has a lead artist)
+    const credits = t.syncWithAlbumCredits && album && hasLead(album.credits ?? []) ? album.credits : (t.credits ?? []);
+    const artistId = leadArtistId(credits, t.artistId);
     return {
-      ...t, elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
-      artistName: artistById.get(t.artistId)?.name ?? 'Unknown artist',
+      ...t, credits, artistId, elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
+      artistName: leadNames(credits, artistId, artistById),
       albumId: album?.id ?? null, albumTitle: album?.title ?? null, cover: album?.cover ?? null,
       allGenres: genres ?? [],
     };
@@ -100,7 +111,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const at = (id: string) => pos.get(id) ?? Number.MAX_SAFE_INTEGER;
     const ids = (trackIdsByAlbum.get(a.id) ?? []).sort((x, y) => at(x.id) - at(y.id) || x.order - y.order).map((x) => x.id);
     const rated = ids.map((id) => trackById.get(id)!.effectiveRating).filter((x) => x > 0);
-    return { ...a, artistName: artistById.get(a.artistId)?.name ?? 'Unknown artist', trackIds: ids,
+    const artistId = leadArtistId(a.credits ?? [], a.artistId);
+    return { ...a, artistId, artistName: leadNames(a.credits ?? [], artistId, artistById), trackIds: ids,
       rating: rated.length ? rated.reduce((s, x) => s + x, 0) / rated.length : null };
   });
 

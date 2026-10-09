@@ -89,23 +89,15 @@ Partial `PUT /api/tracks/:id` wipes credits/favorite/sync flag (e.g. `incrementM
 Every row is a `SyncRecord {table,id,updatedAt,deviceId,deleted,data}`. Server assigns a monotonically increasing `seq`; clients pull `since=<cursor>`, push local changes. Conflicts: highest `updatedAt` wins, tie → higher `deviceId`. Deletes are tombstones. `votes`, `playbackLogs`, `timeline` are append-only (never conflict). Files are immutable, addressed by sha256; clients fetch missing hashes on demand or via "keep on this device".
 Entities store **file hashes** (`image`, `cover`, `file`), never server paths. Elo/rating are never stored.
 
-## NEXT TASK (user-requested, do this first): credits are the only way to set an artist
-
-**Remove the "Artist" selector at the top of the editors; the lead artist comes from the credits.** The credits editor becomes the one place to say who made something.
-
-Where the selector is now (all use `ArtistSelect` for the *primary* `artistId`):
-- `apps/web/src/components/EditorHost.tsx`: `TrackEditor` (~line 73), `AlbumEditor` (~114), `NewAlbumDialog` (~156), `NewTrackDialog` (~180)
-- `apps/web/src/components/ImportDialog.tsx` (~83): artist match/create for an imported album
-- (`CreditsEditor` in `forms.tsx` keeps its per-row `ArtistSelect`; that is the new single entry point)
-
-Design (decided; don't re-ask):
-1. **Primary artist = the first credit whose roles include "Lead artist"** (case-insensitive; the role exists in the user's roleCategories). If no credit has it, fall back to the first credit; if there are no credits at all, fall back to the stored legacy `artistId`.
-2. **Keep `artistId` in the stored record as a denormalised cache**, rewritten from the credits on every save. It is never edited directly. This keeps the server, the migration, the sync format, a future Android client, and the ~12 places that read `.artistId` working (`library.ts`, `health.ts`, `defaults.ts`, `Album.tsx`, `Artists.tsx`, `PlayerBar.tsx`, `TrackTable.tsx`, `EditorHost.tsx`). Do NOT remove the field from `model.ts`.
-3. Put the rule in one pure, tested helper (e.g. `leadArtistId(credits, fallback)` next to `newTrackData` in `lib/defaults.ts`, plus a `LEAD_ROLE = 'Lead artist'` constant) and use it in `library.ts` for `artistName` (join several leads with ", ") so the UI shows every lead artist, not just the first.
-4. **Saving requires at least one "Lead artist" credit.** Show an inline message and disable Save otherwise. New album/track dialogs start with one empty lead-credit row (new track: prefill the album's lead credits). Import review: keep matching/creating the artist from the link, but show it as the first lead-credit row instead of a separate field.
-5. **Backfill is required.** Real data: **440 of 444 tracks have `credits: []`** (their artist exists only in `artistId`); all 33 albums already have a matching Lead credit; 1 track has credits but its `artistId` is not credited as lead. So: (a) when an editor opens a record with no lead credit, prefill the row from `artistId`; (b) add a Health check "No lead artist credit" with a one-click "Add lead credit from artist" fix (writes `{artistId, role:['Lead artist']}`); (c) a unit test with a legacy-shaped record. Do not silently rewrite 440 records on load.
-6. **Open question to resolve while doing it:** 425 tracks have `syncWithAlbumCredits: true`. Decide what a synced track's credits are. Recommended: when true, the track editor shows the album's credits read-only (with a "Use track-specific credits" toggle that copies them in), and the lead artist derives from the album. Mirror what `genres` already does with the album.
-7. Verify with a real browser run (create album, create track, import, edit; check the saved record's `artistId` equals the lead credit and that artist pages/ratings/health still work), not just unit tests.
+## DONE: credits are the only way to set an artist
+The "Artist" selector is gone from every editor; the **Lead artist** credit is the artist. Rules (in `apps/web/src/lib/defaults.ts`, tested):
+- `leadArtistId(credits, fallback)`: first credit with role "Lead artist" (case-insensitive, non-blank artist), else the stored `artistId`, else the first credit. **Deliberate deviation from the first draft** (which said first credit before `artistId`): a lone Producer credit on a legacy record must not become its artist.
+- `artistId` stays in stored records as a cache, rewritten from the credits on every editor save (and for synced tracks when their album is saved). Never edited directly.
+- `library.ts`: a track with `syncWithAlbumCredits` whose album has a lead credit takes the **album's credits** (derived `credits`/`artistId`); `artistName` joins every lead ("A, B").
+- Editors: Save/Create is disabled until there is a lead credit (inline message). Credits editor has "Add lead artist" / "Add credit". Legacy records with no lead get one prefilled from `artistId` when opened. Synced tracks show the album credits read-only; unticking "Use the album's credits and genres" copies them in. New album starts with a blank lead row; new track is prefilled from the album's credits.
+- Health: "No lead artist credit" with "Add lead credit from artist" (writes `{artistId, role:['Lead artist']}`). Nothing is rewritten on load.
+- Import dialog keeps the artist match/create but labels it "Lead artist (becomes the first credit)"; album and tracks get that lead credit. (Not a full credits editor there; extra credits are added afterwards in the editors.)
+- Verified in Chromium against a real server with legacy-shaped data (empty credits): prefill, disabled Save, saved records' `artistId` equals the lead credit, health fix, artist pages, synced track following an album lead change. The import dialog itself was not re-driven (needs yt-dlp).
 
 ## Other next steps (after the task above)
 1. **Web client leftovers:** automatic offline-audio eviction (it just stops at the limit), column-click sorting in the track table, queue reordering, per-track play-history list, more themes.

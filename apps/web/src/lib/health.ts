@@ -1,3 +1,4 @@
+import { hasLead } from './defaults.ts';
 import type { Library } from './library.ts';
 
 export type HealthKind = 'track' | 'album' | 'artist' | 'genre' | 'role';
@@ -6,6 +7,8 @@ export interface HealthCheck {
   id: string; title: string; why: string; items: HealthItem[];
   /** only for checks that are safe to fix in one click */
   fix?: { label: string; table: 'artists' | 'genres' | 'roleCategories' };
+  /** one-click: write a "Lead artist" credit from the stored artistId onto each item */
+  addLead?: { label: string };
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -34,6 +37,12 @@ export function computeHealth(lib: Library): HealthCheck[] {
   const lowQuality = lib.tracks.filter((x) => x.bitrate && parseInt(x.bitrate) > 0 && parseInt(x.bitrate) < 192);
 
   return [
+    { id: 'no-lead', title: 'No lead artist credit', why: 'The artist comes from the credits: the first credit with the role “Lead artist”. Old records only have it stored separately.',
+      addLead: { label: 'Add lead credit from artist' },
+      items: [
+        ...lib.albums.filter((a) => !hasLead(a.credits ?? [])).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })),
+        ...lib.tracks.filter((x) => !hasLead(x.credits ?? [])).map((x) => t(x)),
+      ] },
     { id: 'no-audio', title: 'Tracks without audio', why: 'They cannot be played. Tracks with a YouTube link can be downloaded from Settings.',
       items: lib.tracks.filter((x) => !x.file).map((x) => t(x, x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
     { id: 'no-source', title: 'Tracks with no audio and no YouTube link', why: 'Nothing to download from. Add a link in the track editor.',

@@ -8,7 +8,7 @@ import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { computeHealth } from '../src/lib/health.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
 import { computeStats } from '../src/lib/stats.ts';
-import { appendTrack, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
+import { appendTrack, hasLead, leadArtistId, withLeadFallback, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
 import { pickPair } from '../src/lib/pairing.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
@@ -211,5 +211,41 @@ describe('trackInfo', () => {
     expect(i.votes.map((v) => v.voteId)).toEqual(['v3', 'v2', 'v1']); // newest first, the unrelated v4 excluded
     expect(i.votes[0]).toMatchObject({ opponent: '(deleted track)', opponentExists: false, result: 'equal' });
     expect(i).toMatchObject({ plays: 2, skips: 1, secondsListened: 35, lastPlayed: 20 });
+  });
+});
+
+describe('lead artist from credits', () => {
+  const lead = (artistId: string, ...extra: string[]) => ({ artistId, role: ['Lead artist', ...extra] });
+  it('picks the first lead credit (case-insensitive), then the stored artistId, then the first credit', () => {
+    expect(leadArtistId([{ artistId: 'p', role: ['Producer'] }, { artistId: 'b', role: ['lead ARTIST'] }, lead('c')], 'old')).toBe('b');
+    expect(leadArtistId([{ artistId: 'p', role: ['Producer'] }], 'old')).toBe('old');
+    expect(leadArtistId([{ artistId: 'p', role: ['Producer'] }], '')).toBe('p');
+    expect(leadArtistId([], 'old')).toBe('old');
+    expect(hasLead([{ artistId: '', role: ['Lead artist'] }])).toBe(false); // blank editor row
+  });
+  it('backfills a lead credit for a legacy record that has the artist only in artistId', () => {
+    expect(withLeadFallback([], 'a')).toEqual([lead('a')]);
+    const kept = [{ artistId: 'a', role: ['Producer'] }, { artistId: 'x', role: ['Writer'] }];
+    expect(withLeadFallback(kept, 'a')).toEqual([{ artistId: 'a', role: ['Lead artist', 'Producer'] }, kept[1]]);
+    const has = [lead('z')];
+    expect(withLeadFallback(has, 'a')).toBe(has);
+  });
+  const libFor = (albumCredits: object[], t: object) => buildLibrary(rows(
+    rec('artists', 'a', { name: 'Old', image: null }), rec('artists', 'b', { name: 'Bee', image: null }), rec('artists', 'c', { name: 'Cee', image: null }),
+    rec('albums', 'al', { title: 'Album', artistId: 'a', credits: albumCredits, genres: [], cover: null }), rec('tracks', 't', track('T', t))));
+  it('shows every lead artist and follows the album for tracks that sync with it', () => {
+    const lib = libFor([lead('b'), lead('c')], {});
+    expect(lib.albumById.get('al')).toMatchObject({ artistId: 'b', artistName: 'Bee, Cee' });
+    expect(lib.trackById.get('t')).toMatchObject({ artistId: 'b', artistName: 'Bee, Cee' });
+  });
+  it('keeps a legacy record (no credits) on its stored artist, and a track with its own credits on those', () => {
+    expect(libFor([], {}).trackById.get('t')!.artistName).toBe('Old');
+    const own = libFor([lead('b')], { syncWithAlbumCredits: false, credits: [lead('c')] });
+    expect(own.trackById.get('t')).toMatchObject({ artistId: 'c', artistName: 'Cee' });
+  });
+  it('flags records with no lead credit in the health check', () => {
+    const items = computeHealth(libFor([], {})).find((c) => c.id === 'no-lead')!.items;
+    expect(items.map((i) => i.id).sort()).toEqual(['al', 't']);
+    expect(computeHealth(libFor([lead('b')], {})).find((c) => c.id === 'no-lead')!.items).toEqual([]);
   });
 });

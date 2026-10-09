@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ImagePlus, Plus, X } from 'lucide-react';
 import type { ArtistData, Credit } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
+import { hasLead, LEAD_ROLE } from '../lib/defaults.ts';
 import { saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from './Cover.tsx';
@@ -29,7 +30,7 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 
 /** Chips with suggestions from the existing genre list; unknown names are created as genre records on save. */
-export function TagInput({ value, onChange, suggestions }: { value: string[]; onChange: (v: string[]) => void; suggestions: string[] }) {
+export function TagInput({ value, onChange, suggestions, placeholder = 'Add genre, press Enter' }: { value: string[]; onChange: (v: string[]) => void; suggestions: string[]; placeholder?: string }) {
   const [text, setText] = useState('');
   const add = (raw: string) => {
     const v = raw.trim();
@@ -41,7 +42,7 @@ export function TagInput({ value, onChange, suggestions }: { value: string[]; on
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">{value.map((g) => (
         <span key={g} className="chip gap-1 !text-fg">{g}<button type="button" aria-label={`Remove ${g}`} onClick={() => onChange(value.filter((x) => x !== g))}><X size={12} /></button></span>))}</div>
-      <input className="input" placeholder="Add genre, press Enter" value={text} onChange={(e) => setText(e.target.value)}
+      <input className="input" placeholder={placeholder} value={text} onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(text); } }} />
       {text && <div className="flex flex-wrap gap-1.5">{options.map((o) => <button key={o} type="button" className="chip hover:bg-line" onClick={() => add(o)}>{o}</button>)}</div>}
     </div>
@@ -68,7 +69,7 @@ export function ArtistSelect({ value, onChange }: { value: string; onChange: (id
       <button type="button" className="btn btn-accent" onClick={create}>Add</button><button type="button" className="btn btn-ghost" onClick={() => setCreating(false)}>Cancel</button></div>
   ) : (
     <div className="flex gap-2"><select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      {!lib.artistById.has(value) && <option value={value}>(unknown artist)</option>}
+      {!lib.artistById.has(value) && <option value={value}>{value ? '(unknown artist)' : 'Choose an artist…'}</option>}
       {sorted.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
       <button type="button" className="btn shrink-0" title="Create a new artist" onClick={() => setCreating(true)}><Plus size={15} />New</button></div>
   );
@@ -112,20 +113,31 @@ export function TrackPicker({ value, onChange, exclude }: { value: string | null
       <button key={t.id} type="button" className="block w-full px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => { onChange(t.id); setQ(''); }}>{t.title} <span className="text-muted">· {t.artistName}</span></button>))}</div>}</div>;
 }
 
-/** Who worked on a track/album and in what role. Role names are suggested from the existing role list. */
-export function CreditsEditor({ value, onChange }: { value: Credit[]; onChange: (v: Credit[]) => void }) {
+/**
+ * Who worked on a track/album and in what role. This is the only place an artist is entered: the primary
+ * artist is the first "Lead artist" credit. With `requireLead`, a missing lead credit is called out inline.
+ */
+export function CreditsEditor({ value, onChange, requireLead, readOnly }: { value: Credit[]; onChange: (v: Credit[]) => void; requireLead?: boolean; readOnly?: boolean }) {
   const lib = useLibrary();
-  const first = lib.artists[0]?.id ?? '';
   const set = (i: number, c: Credit) => onChange(value.map((x, j) => (j === i ? c : x)));
+  if (readOnly) return (
+    <div className="space-y-1.5">{value.map((c, i) => (
+      <div key={i} className="flex flex-wrap items-center gap-2 rounded-theme bg-raised px-3 py-2 text-sm"><span className="font-medium">{lib.artistById.get(c.artistId)?.name ?? '(unknown artist)'}</span>
+        {c.role.map((r) => <span key={r} className="chip">{r}</span>)}</div>))}</div>
+  );
   return (
     <div className="space-y-3">
       {value.map((c, i) => (
         <div key={i} className="space-y-2 rounded-theme border border-line p-3">
           <div className="flex items-start gap-2"><div className="flex-1"><ArtistSelect value={c.artistId} onChange={(id) => set(i, { ...c, artistId: id })} /></div>
             <button type="button" className="btn btn-ghost !p-2" aria-label="Remove credit" onClick={() => onChange(value.filter((_, j) => j !== i))}><X size={15} /></button></div>
-          <TagInput value={c.role} onChange={(role) => set(i, { ...c, role })} suggestions={lib.roles.map((r) => r.name)} />
+          <TagInput placeholder="Add role, press Enter" value={c.role} onChange={(role) => set(i, { ...c, role })} suggestions={lib.roles.map((r) => r.name)} />
         </div>))}
-      <button type="button" className="btn" disabled={!first} onClick={() => onChange([...value, { artistId: first, role: [] }])}><Plus size={15} />Add credit</button>
+      {requireLead && !hasLead(value) && <div role="alert" className="rounded-theme bg-warn/15 p-3 text-sm text-warn">Add a credit with the role “{LEAD_ROLE}”. That is how the artist is set.</div>}
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn" onClick={() => onChange([...value, { artistId: '', role: [LEAD_ROLE] }])}><Plus size={15} />Add lead artist</button>
+        <button type="button" className="btn" onClick={() => onChange([...value, { artistId: '', role: [] }])}><Plus size={15} />Add credit</button>
+      </div>
     </div>
   );
 }

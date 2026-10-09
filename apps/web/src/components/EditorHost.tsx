@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { AlbumData, ArtistData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
+import type { AlbumData, ArtistData, Credit, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
 import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -8,8 +8,8 @@ import { useStore } from '../lib/store.ts';
 import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
-import { newAlbumData, newTrackData, appendTrack, moveTrack, removeTrack } from '../lib/defaults.ts';
-import { ArtistSelect, CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { newAlbumData, newTrackData, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadArtistId, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
+import { CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 
 /** Make sure every genre name used exists as a genre record, so it shows up in filters and suggestions. */
 function useEnsureGenres() {
@@ -43,18 +43,28 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const ensureRoles = useEnsureRoles();
   const track = lib.trackById.get(id);
   const rule = lib.rules.find((r) => r.trackAId === id);
-  const [t, setT] = useState<TrackData | null>(() => raw<TrackData>('tracks', id) ?? null);
+  const [t, setT] = useState<TrackData | null>(() => {
+    const d = raw<TrackData>('tracks', id);
+    // legacy records have the artist only in artistId; show it as a lead credit so saving keeps it
+    return d ? { ...d, credits: withLeadFallback(d.credits ?? [], d.artistId) } : null;
+  });
   const [after, setAfter] = useState<string | null>(rule?.trackBId ?? null);
   const [first, setFirst] = useState(rule?.playFirstOnShuffle ?? true);
   const [albumOnly, setAlbumOnly] = useState(rule?.applyToAlbumSource ?? false);
   if (!track || !t) return null;
   const set = <K extends keyof TrackData>(k: K, v: TrackData[K]) => setT((p) => ({ ...p!, [k]: v }));
+  const albumCredits = track.albumId ? lib.albumById.get(track.albumId)?.credits ?? [] : [];
+  /** a track that follows its album shows the album's credits, read-only */
+  const follows = !!t.syncWithAlbumCredits && hasLead(albumCredits);
+  const credits = cleanCredits(t.credits ?? []);
+  const canSave = follows || hasLead(credits);
 
   function save() {
-    const d = t!;
+    const d = { ...t!, credits };
     if (!d.syncWithAlbumCredits) ensureGenres(d.genres ?? []);
-    ensureRoles(d.credits ?? []);
-    put('tracks', d, id);
+    ensureRoles(follows ? [] : credits);
+    // artistId is only a cache of the lead credit; it is never edited directly
+    put('tracks', { ...d, artistId: leadArtistId(follows ? albumCredits : credits, d.artistId) }, id);
     // playback rule lives on the profile: replace this track's rule
     const others = lib.rules.filter((r) => r.trackAId !== id);
     const rules: PlaybackRule[] = after ? [...others, { trackAId: id, trackBId: after, playFirstOnShuffle: first, applyToAlbumSource: albumOnly }] : others;
@@ -68,20 +78,25 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <Modal title="Edit track" onClose={onClose} footer={<>
       <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${track.title}”? Its votes stay in the history.`)) { remove('tracks', id); onClose(); } }}>Delete</button>
-      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" onClick={save}>Save</button></div></>}>
+      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!canSave} onClick={save}>Save</button></div></>}>
       <Field label="Title"><input className="input" value={t.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
-      <Field label="Artist"><ArtistSelect value={t.artistId ?? ''} onChange={(v) => set('artistId', v)} /></Field>
       <div className="grid grid-cols-3 gap-3">
         <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
         <Field label="BPM"><input className="input" inputMode="numeric" value={t.bpm ?? ''} onChange={(e) => set('bpm', numOrNull(e.target.value))} /></Field>
         <Field label="Key"><input className="input" value={t.key ?? ''} onChange={(e) => set('key', e.target.value || null)} /></Field>
       </div>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => set('syncWithAlbumCredits', e.target.checked)} />Use the album's genres{track.albumTitle ? ` (${track.albumTitle})` : ''}</label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
+        const on = e.target.checked;
+        // switching to track-specific credits starts from the album's, unless the track already has its own lead
+        setT((p) => ({ ...p!, syncWithAlbumCredits: on, credits: !on && !hasLead(p!.credits ?? []) ? albumCredits.map((c) => ({ ...c, role: [...c.role] })) : p!.credits }));
+      }} />Use the album's credits and genres{track.albumTitle ? ` (${track.albumTitle})` : ''}</label>
       {!t.syncWithAlbumCredits && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
       <Field label="Spotify URL"><input className="input" value={t.spotifyUrl ?? ''} onChange={(e) => set('spotifyUrl', e.target.value || null)} /></Field>
       <Field label="Genius URL"><input className="input" value={t.geniusUrl ?? ''} onChange={(e) => set('geniusUrl', e.target.value || null)} /></Field>
-      <Field label="Credits"><CreditsEditor value={t.credits ?? []} onChange={(v) => set('credits', v)} /></Field>
+      <Field label={follows ? 'Credits (from the album)' : 'Credits'}>{follows
+        ? <CreditsEditor readOnly value={albumCredits} onChange={() => undefined} />
+        : <CreditsEditor requireLead value={t.credits ?? []} onChange={(v) => set('credits', v)} />}</Field>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.isFavorite} onChange={(e) => set('isFavorite', e.target.checked)} />Favourite</label>
       <div className="space-y-2 rounded-theme border border-line p-3">
         <div className="text-sm font-medium">Playback rule: play another track right after this one</div>
@@ -95,25 +110,32 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
 
 function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const lib = useLibrary();
-  const { put, remove } = useStore();
+  const { put, patch, remove } = useStore();
   const nav = useNavigate();
   const ensureGenres = useEnsureGenres();
   const ensureRoles = useEnsureRoles();
   const album = lib.albumById.get(id);
-  const [a, setA] = useState<AlbumData | null>(() => raw<AlbumData>('albums', id) ?? null);
+  const [a, setA] = useState<AlbumData | null>(() => {
+    const d = raw<AlbumData>('albums', id);
+    return d ? { ...d, credits: withLeadFallback(d.credits ?? [], d.artistId) } : null;
+  });
   if (!album || !a) return null;
   const set = <K extends keyof AlbumData>(k: K, v: AlbumData[K]) => setA((p) => ({ ...p!, [k]: v }));
+  const credits = cleanCredits(a.credits ?? []);
   return (
     <Modal title="Edit album" onClose={onClose} footer={<>
       <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${album.title}”? Its tracks stay in your library.`)) { remove('albums', id); onClose(); nav('/albums'); } }}>Delete</button>
-      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" onClick={() => {
-        ensureGenres(a.genres ?? []); ensureRoles(a.credits ?? []); put('albums', a, id); onClose();
+      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!hasLead(credits)} onClick={() => {
+        const artistId = leadArtistId(credits, a.artistId);
+        ensureGenres(a.genres ?? []); ensureRoles(credits); put('albums', { ...a, credits, artistId }, id);
+        // tracks that follow the album's credits keep their cached artistId in step
+        for (const t of lib.tracks) if (t.albumId === id && t.syncWithAlbumCredits && t.artistId !== artistId) patch('tracks', t.id, { artistId });
+        onClose();
       }}>Save</button></div></>}>
       <ImagePicker hash={a.cover ?? null} onChange={(h) => set('cover', h)} seed={album.title} />
       <Field label="Title"><input className="input" value={a.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
-      <Field label="Artist"><ArtistSelect value={a.artistId ?? ''} onChange={(v) => set('artistId', v)} /></Field>
       <Field label="Genres" hint="Tracks that use the album's genres follow these"><TagInput value={a.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>
-      <Field label="Credits"><CreditsEditor value={a.credits ?? []} onChange={(v) => set('credits', v)} /></Field>
+      <Field label="Credits"><CreditsEditor requireLead value={a.credits ?? []} onChange={(v) => set('credits', v)} /></Field>
     </Modal>
   );
 }
@@ -143,17 +165,19 @@ function NewAlbumDialog({ onClose }: { onClose: () => void }) {
   const put = useStore((s) => s.put);
   const nav = useNavigate();
   const ensureGenres = useEnsureGenres();
+  const ensureRoles = useEnsureRoles();
   const [title, setTitle] = useState('');
-  const [artistId, setArtistId] = useState(lib.artists[0]?.id ?? '');
+  const [credits, setCredits] = useState<Credit[]>([{ artistId: '', role: [LEAD_ROLE] }]);
   const [genres, setGenres] = useState<string[]>([]);
   const [cover, setCover] = useState<string | null>(null);
-  const ok = title.trim() && artistId;
+  const clean = cleanCredits(credits);
+  const ok = title.trim() && hasLead(clean);
   return (
     <Modal title="New album" onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); const id = put('albums', newAlbumData({ title: title.trim(), artistId, genres, cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(artistId)?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
+      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); ensureRoles(clean); const artistId = leadArtistId(clean, ''); const id = put('albums', newAlbumData({ title: title.trim(), artistId, credits: clean, genres, cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(artistId)?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
       <ImagePicker hash={cover} onChange={setCover} seed={title || 'new'} />
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-      <Field label="Artist"><ArtistSelect value={artistId} onChange={setArtistId} /></Field>
+      <Field label="Credits"><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
       <Field label="Genres"><TagInput value={genres} onChange={setGenres} suggestions={lib.genres.map((g) => g.name)} /></Field>
     </Modal>
   );
@@ -164,20 +188,26 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
   const { put, patch } = useStore();
   const album = lib.albumById.get(albumId);
   const [title, setTitle] = useState('');
-  const [artistId, setArtistId] = useState(album?.artistId ?? lib.artists[0]?.id ?? '');
+  const [credits, setCredits] = useState<Credit[]>(() => {
+    const own = withLeadFallback((album?.credits ?? []).map((c) => ({ ...c, role: [...c.role] })), album?.artistId);
+    return hasLead(own) ? own : [{ artistId: '', role: [LEAD_ROLE] }];
+  });
   const [yt, setYt] = useState('');
   const [sp, setSp] = useState('');
+  const ensureRoles = useEnsureRoles();
   if (!album) return null;
-  const ok = title.trim() && artistId;
+  const clean = cleanCredits(credits);
+  const ok = title.trim() && hasLead(clean);
   return (
     <Modal title={`Add a track to ${album.title}`} onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
       <button className="btn btn-accent" disabled={!ok} onClick={() => {
-        const id = put('tracks', newTrackData({ title: title.trim(), artistId, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null, albums: [{ albumId, order: album.trackIds.length }] }));
+        ensureRoles(clean);
+        const id = put('tracks', newTrackData({ title: title.trim(), artistId: leadArtistId(clean, ''), credits: clean, syncWithAlbumCredits: false, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null, albums: [{ albumId, order: album.trackIds.length }] }));
         patch('albums', albumId, { trackOrder: appendTrack(album.trackIds, id) });
         onClose();
       }}>Add track</button></div>}>
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-      <Field label="Artist"><ArtistSelect value={artistId} onChange={setArtistId} /></Field>
+      <Field label="Credits" hint="Starts from the album's credits"><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
       <Field label="YouTube Music URL" hint="Lets the server download the audio"><input className="input" value={yt} onChange={(e) => setYt(e.target.value)} /></Field>
       <Field label="Spotify URL"><input className="input" value={sp} onChange={(e) => setSp(e.target.value)} /></Field>
     </Modal>
