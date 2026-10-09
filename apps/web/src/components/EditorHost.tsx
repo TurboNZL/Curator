@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { AlbumData, ArtistData, GroupData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
+import type { AlbumData, ArtistData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
 import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
+import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
-import { newAlbumData, newTrackData, appendTrack } from '../lib/defaults.ts';
+import { newAlbumData, newTrackData, appendTrack, moveTrack, removeTrack } from '../lib/defaults.ts';
 import { ArtistSelect, CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 
 /** Make sure every genre name used exists as a genre record, so it shows up in filters and suggestions. */
@@ -219,10 +220,42 @@ function BioDialog({ groupId, initial, onClose }: { groupId?: string; initial?: 
   );
 }
 
+/** Create or edit a release (an edition of an album with its own tracklist, date and cover). */
+function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; albumId?: string; onClose: () => void }) {
+  const lib = useLibrary();
+  const { put, patch, remove } = useStore();
+  const existing = releaseId ? lib.releases.find((r) => r.id === releaseId) : undefined;
+  const album = lib.albumById.get(existing?.albumId ?? albumId ?? '');
+  const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: album.title, cover: null, releaseDate: null, trackIds: [...album.trackIds] } : null);
+  if (!r || !album) return null;
+  const live = r.trackIds.filter((id) => lib.trackById.has(id));
+  const save = () => { put('releases', { ...r, trackIds: live }, releaseId); onClose(); };
+  return (
+    <Modal title={releaseId ? 'Edit release' : `New release of ${album.title}`} onClose={onClose} footer={<>
+      {releaseId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete release “${r.title}”?`)) { remove('releases', releaseId); onClose(); } }}>Delete</button>}
+      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!r.title.trim()} onClick={save}>Save</button></div></>}>
+      <ImagePicker hash={r.cover} onChange={(h) => setR({ ...r, cover: h })} seed={r.title} />
+      <Field label="Title"><input autoFocus className="input" value={r.title} onChange={(e) => setR({ ...r, title: e.target.value })} /></Field>
+      <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} /></Field>
+      <div className="space-y-1"><div className="text-sm text-muted">Tracklist ({live.length})</div>
+        {live.map((id, i) => (
+          <div key={id} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-1.5 text-sm"><span className="w-5 text-right text-xs text-muted">{i + 1}</span><span className="min-w-0 flex-1 truncate">{lib.trackById.get(id)!.title}</span>
+            <button type="button" className="px-1 text-muted hover:text-fg disabled:opacity-30" aria-label="Move up" disabled={i === 0} onClick={() => setR({ ...r, trackIds: moveTrack(live, i, i - 1) })}>↑</button>
+            <button type="button" className="px-1 text-muted hover:text-fg disabled:opacity-30" aria-label="Move down" disabled={i === live.length - 1} onClick={() => setR({ ...r, trackIds: moveTrack(live, i, i + 1) })}>↓</button>
+            <button type="button" className="px-1 text-muted hover:text-bad" aria-label="Remove from release" onClick={() => setR({ ...r, trackIds: removeTrack(live, id) })}>×</button></div>))}
+        <TrackPicker value={null} onChange={(id) => id && setR({ ...r, trackIds: appendTrack(live, id) })} /></div>
+      {releaseId && <button className="btn" onClick={() => { patch('albums', album.id, { defaultReleaseId: releaseId, trackOrder: live }); onClose(); }}>Use this tracklist and edition as the album's default</button>}
+    </Modal>
+  );
+}
+
 export function EditorHost() {
   const { target, close } = useEditor();
   if (!target) return null;
   const key = `${target.kind}:${target.id}`;
+  if (target.kind === 'track-details') return <TrackDetails key={key} id={target.id} onClose={close} />;
+  if (target.kind === 'release') return <ReleaseDialog key={key} releaseId={target.id} onClose={close} />;
+  if (target.kind === 'new-release') return <ReleaseDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'import') return <ImportDialog key="import" onClose={close} />;
   if (target.kind === 'bio') return <BioDialog key={key} groupId={target.id} onClose={close} />;
   if (target.kind === 'new-bio') return <BioDialog key={key} initial={target.id} onClose={close} />;

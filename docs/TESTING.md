@@ -48,11 +48,19 @@ The dot at the bottom of the sidebar turns green ("Synced") and your library app
 On your phone (same Wi-Fi): open `http://<computer's LAN address>:47813` (the server prints it), paste the token there too.
 
 Things worth trying:
+- **Home**: the journal, ranked %, and a "Keep ranking" shortcut.
+- **Albums → Import**: paste a YouTube Music album/playlist link. It looks it up first (nothing downloads), lets you fix titles/artist/genres, then imports and downloads the audio (needs step 5 set up).
+- **Health**: lists what is missing or odd (no audio, no genre, no cover, duplicates, unused genres/roles/artists). "Try YouTube thumbnails" fills missing covers.
+- **Album page → Edit tracks / Releases / Bios / Notes**, and **Playlists** (reorder, rename).
+- The (i) button on a track row shows how it earned its rating (wins, losses, every vote).
 - Albums / Artists / Tracks: browse, filter, sort. Ratings and `#1`, `#2` ranks should match your old app.
 - **Rank**: vote a few times; check the vote count on Stats goes up.
 - Edit a track/album/artist (pencil / Edit), upload a cover, create an artist, add a playback rule.
 - Open the app in a second browser or phone: changes should appear there within about 30 seconds.
 - Stop the server, keep using the app (it works offline), start it again: changes sync.
+
+### Using it on your phone
+`http://<computer's LAN address>:47813` works for browsing, ranking, editing and uploads. Browsers only allow installing the app and the offline app shell on **https or localhost**, so for that put the server behind HTTPS or Tailscale (a later docs step covers Pi deployment).
 
 ## 5. Getting audio back (the old `uploads` folder is gone)
 Install **yt-dlp** and **ffmpeg** so the server can find them (or point at them):

@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { BarChart3, Stethoscope, Disc3, Home, ListMusic, Network, ListOrdered, Music2, Search, Settings, Swords, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
 import { useStore } from '../lib/store.ts';
 import { EditorHost } from './EditorHost.tsx';
@@ -30,6 +31,17 @@ function SyncDot() {
 export function Layout() {
   const nav = useNavigate();
   const [q, setQ] = useState('');
+  const toggle = usePlayer((s) => s.toggle);
+  // space = play/pause, unless typing in a field or pressing a button
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.code !== 'Space' || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(el.tagName) || el.isContentEditable) return;
+      e.preventDefault(); toggle();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [toggle]);
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1">

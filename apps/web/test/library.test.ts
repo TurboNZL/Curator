@@ -6,6 +6,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { sha256Sync } from '../src/lib/sha256.ts';
 import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { computeHealth } from '../src/lib/health.ts';
+import { trackInfo } from '../src/lib/trackinfo.ts';
 import { computeStats } from '../src/lib/stats.ts';
 import { appendTrack, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
 import { pickPair } from '../src/lib/pairing.ts';
@@ -195,5 +196,20 @@ describe('sha256Sync (fallback for insecure origins)', () => {
       const buf = randomBytes(n);
       expect(sha256Sync(buf)).toBe(createHash('sha256').update(buf).digest('hex'));
     }
+  });
+});
+
+describe('trackInfo', () => {
+  it('counts wins/losses/draws, keeps votes against deleted tracks, and totals plays', () => {
+    const lib = buildLibrary(rows(
+      rec('artists', 'a', { name: 'A', image: null }), rec('tracks', 't1', track('One')), rec('tracks', 't2', track('Two')),
+      vote('v1', 't1', 't2', 't1', 1), vote('v2', 't2', 't1', 't2', 2), rec('votes', 'v3', { trackAId: 't1', trackBId: 'ghost', winnerId: null, isEqual: true, timestamp: 3 }), vote('v4', 'x', 'y', 'x', 4),
+      rec('playbackLogs', 'p1', { trackId: 't1', timestamp: 10, duration: 30, sourceType: 'album', sourceId: null, isSkip: false }),
+      rec('playbackLogs', 'p2', { trackId: 't1', timestamp: 20, duration: 5, sourceType: 'album', sourceId: null, isSkip: true })));
+    const i = trackInfo(lib, 't1');
+    expect([i.wins, i.losses, i.draws]).toEqual([1, 1, 1]);
+    expect(i.votes.map((v) => v.voteId)).toEqual(['v3', 'v2', 'v1']); // newest first, the unrelated v4 excluded
+    expect(i.votes[0]).toMatchObject({ opponent: '(deleted track)', opponentExists: false, result: 'equal' });
+    expect(i).toMatchObject({ plays: 2, skips: 1, secondsListened: 35, lastPlayed: 20 });
   });
 });

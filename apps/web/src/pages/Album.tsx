@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ListOrdered, Pencil, Play, Shuffle } from 'lucide-react';
+import { ListOrdered, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -50,13 +50,15 @@ export function AlbumPage() {
       {arranging ? <TracklistEditor album={album} lib={lib} />
         : <div className="card overflow-hidden"><TrackTable tracks={tracks} source="album" sourceId={album.id} numbered showAlbum={false} />{!tracks.length && <div className="px-4 pb-4 text-center text-xs text-muted">Use “Edit tracks” to add some.</div>}</div>}
 
-      {releases.length > 0 && (
-        <section><h2 className="mb-2 text-lg font-semibold">Releases</h2>
-          <div className="grid gap-2 sm:grid-cols-2">{releases.map((r) => (
-            <div key={r.id} className="card px-4 py-3 text-sm"><div className="font-medium">{r.title}</div><div className="text-xs text-muted">{r.releaseDate ?? 'undated'} · {r.trackIds.length} tracks</div></div>
-          ))}</div>
-        </section>
-      )}
+      <section className="space-y-2">
+        <div className="flex items-center gap-2"><h2 className="text-lg font-semibold">Releases</h2>
+          <button className="btn btn-ghost !p-1.5" aria-label="New release" onClick={() => edit({ kind: 'new-release', id: album.id })}><Plus size={16} /></button></div>
+        {!releases.length && <p className="text-sm text-muted">No releases. A release is an edition of the album (deluxe, streaming, vinyl) with its own date and tracklist.</p>}
+        <div className="grid gap-2 sm:grid-cols-2">{releases.map((r) => (
+          <button key={r.id} className="card px-4 py-3 text-left text-sm hover:bg-raised/50" onClick={() => edit({ kind: 'release', id: r.id })}>
+            <div className="flex items-center justify-between gap-2"><span className="font-medium">{r.title}</span>{album.defaultReleaseId === r.id && <span className="chip">default</span>}</div>
+            <div className="text-xs text-muted">{r.releaseDate ?? 'undated'} · {r.trackIds.length} tracks</div></button>))}</div>
+      </section>
       <Bios lib={lib} type="album" id={album.id} />
       <Notes lib={lib} type="album" id={album.id} />
     </div>

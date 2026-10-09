@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowDownToLine, Heart, ListEnd, ListStart, Pencil, Play } from 'lucide-react';
+import { ArrowDownToLine, Heart, Info, ListEnd, ListStart, Pencil, Play } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
@@ -9,8 +9,10 @@ import { Rating } from './Rating.tsx';
 import type { SourceType } from '@curator/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
-export function TrackTable({ tracks, source, sourceId = null, numbered = false, showAlbum = true }: {
+export function TrackTable({ tracks, source, sourceId = null, numbered = false, showAlbum = true, extra }: {
   tracks: Track[]; source: SourceType; sourceId?: string | null; numbered?: boolean; showAlbum?: boolean;
+  /** extra controls at the end of each row (e.g. move/remove in a playlist) */
+  extra?: (t: Track, index: number) => React.ReactNode;
 }) {
   const play = usePlayer((s) => s.play);
   const enqueue = usePlayer((s) => s.enqueue);
@@ -43,12 +45,14 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
             onClick={() => patch('tracks', t.id, { isFavorite: !t.isFavorite })}>
             <Heart size={15} fill={t.isFavorite ? 'currentColor' : 'none'} />
           </button>
-          <div className="hidden gap-0.5 group-hover:flex">
+          <div className="hidden w-28 justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 md:flex">
+            <button className="p-1 text-muted hover:text-fg" title="Details" onClick={() => edit({ kind: 'track-details', id: t.id })}><Info size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Edit" onClick={() => edit({ kind: 'track', id: t.id })}><Pencil size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Play next" disabled={!t.file} onClick={() => enqueue(t.id, 'next')}><ListStart size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Add to queue" disabled={!t.file} onClick={() => enqueue(t.id, 'last')}><ListEnd size={15} /></button>
           </div>
           <div className="flex w-20 justify-end"><Rating track={t} size="sm" /></div>
+          {extra?.(t, i)}
         </div>
       ))}
       {!tracks.length && <div className="p-6 text-center text-sm text-muted">No tracks.</div>}

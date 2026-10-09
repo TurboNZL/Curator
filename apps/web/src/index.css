@@ -45,3 +45,8 @@ body { @apply bg-bg text-fg font-sans antialiased; margin: 0; }
   .card { @apply rounded-theme bg-surface border border-line; }
   .chip { @apply whitespace-nowrap inline-flex items-center rounded-full bg-raised px-2 py-0.5 text-xs text-muted; }
 }
+
+/* Classic keeps the original app's loud, tight headings */
+[data-theme='classic'] h1 { @apply font-black uppercase tracking-tight; }
+[data-theme='classic'] h2 { @apply font-black uppercase tracking-widest text-sm; }
+[data-theme='classic'] .card { border-radius: var(--radius); background: hsl(var(--surface) / 0.5); }
