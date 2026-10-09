@@ -73,11 +73,13 @@ export function VotePage() {
         <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => { setOnlyPlayable(e.target.checked); setPair(null); }} />Only tracks with audio</label>
         <span className="text-sm text-muted tabular-nums">{lib.votes.length} votes</span>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
         {[a, b].map((t, i) => t && (
-          <div key={t.id} className="card flex flex-col items-center gap-3 p-5 text-center">
-            <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="w-44" />
-            <div className="min-w-0 max-w-full"><div className="truncate text-lg font-semibold">{t.title}</div><div className="truncate text-sm text-muted">{t.artistName}{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
+          <div key={t.id} className="card flex min-w-0 flex-col items-center gap-3 p-4 text-center sm:p-5">
+            <div className="flex w-full items-center gap-3 sm:flex-col sm:gap-3">
+              <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="w-20 shrink-0 sm:w-44" />
+              <div className="min-w-0 flex-1 text-left sm:text-center"><div className="truncate text-base font-semibold sm:text-lg">{t.title}</div><div className="truncate text-sm text-muted">{t.artistName}{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
+            </div>
             <Rating track={t} />
             <div className="flex gap-2">
               <button className="btn" disabled={!t.file} onClick={() => snippet(t)} title={t.file ? 'Preview 15 s' : 'No audio yet'}>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SyncRecord } from '@curator/core';
 import { buildLibrary } from '../src/lib/library.ts';
+import { computeStats } from '../src/lib/stats.ts';
 import { pickPair } from '../src/lib/pairing.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
@@ -68,5 +69,25 @@ describe('pickPair', () => {
   it('does not immediately repeat the previous pair when it can avoid it', () => {
     const t = mk(3);
     for (let i = 0; i < 100; i++) { const [a, b] = pickPair(t, Math.random, ['t0', 't1'])!; expect([a.id, b.id].sort()).not.toEqual(['t0', 't1']); }
+  });
+});
+
+describe('computeStats', () => {
+  it('totals plays, skips and listening time; ignores logs of deleted tracks in the top list', () => {
+    const log = (id: string, trackId: string, duration: number, isSkip: boolean, timestamp: number) =>
+      rec('playbackLogs', id, { trackId, timestamp, duration, sourceType: 'album', sourceId: null, isSkip });
+    const lib = buildLibrary(rows(
+      rec('artists', 'a', { name: 'A', image: null }),
+      rec('tracks', 't1', track('One', { albums: [] })), rec('tracks', 't2', track('Two', { albums: [], file: 'h' })),
+      log('l1', 't1', 100, false, 1), log('l2', 't1', 20, true, 2), log('l3', 't2', 50, false, 3), log('l4', 'gone', 999, false, 4)));
+    const s = computeStats(lib);
+    expect(s.plays).toBe(4);
+    expect(s.skips).toBe(1);
+    expect(s.skipRate).toBe(0.25);
+    expect(s.secondsListened).toBe(1169);
+    expect(s.topTracks.map((t) => t.id)).toEqual(['t1', 't2']);
+    expect(s.topTracks[0]).toMatchObject({ seconds: 120, plays: 2 });
+    expect(s.recent[0].trackId).toBe('gone');
+    expect(s.withAudio).toBe(1);
   });
 });

@@ -11,6 +11,7 @@ import { VotePage } from './pages/Vote.tsx';
 import { QueuePage } from './pages/Queue.tsx';
 import { PlaylistsPage } from './pages/Playlists.tsx';
 import { SearchPage } from './pages/Search.tsx';
+import { StatsPage } from './pages/Stats.tsx';
 import { SettingsPage } from './pages/Settings.tsx';
 
 export function App() {
@@ -31,6 +32,7 @@ export function App() {
         <Route path="queue" element={<QueuePage />} />
         <Route path="playlists" element={<PlaylistsPage />} />
         <Route path="search" element={<SearchPage />} />
+        <Route path="stats" element={<StatsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<div className="p-8 text-muted">Nothing here.</div>} />
       </Route>

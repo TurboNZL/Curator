@@ -38,7 +38,7 @@ body { @apply bg-bg text-fg font-sans antialiased; margin: 0; }
 * { scrollbar-width: thin; scrollbar-color: hsl(var(--line)) transparent; }
 
 @layer components {
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-theme px-3 py-1.5 text-sm font-medium bg-raised hover:bg-line transition-colors disabled:opacity-40 disabled:pointer-events-none; }
+  .btn { @apply whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-theme px-3 py-1.5 text-sm font-medium bg-raised hover:bg-line transition-colors disabled:opacity-40 disabled:pointer-events-none; }
   .btn-accent { @apply bg-accent text-accent-fg hover:brightness-110; }
   .btn-ghost { @apply bg-transparent hover:bg-raised; }
   .input { @apply w-full rounded-theme bg-raised border border-line px-3 py-1.5 text-sm outline-none focus:border-accent placeholder:text-muted; }
