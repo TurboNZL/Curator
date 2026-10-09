@@ -7,6 +7,8 @@ import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { api, useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
+import { withLeadFallback } from '../lib/defaults.ts';
+import type { Credit } from '@curator/core';
 
 export function HealthPage() {
   const lib = useLibrary();
@@ -39,6 +41,16 @@ export function HealthPage() {
     }
     setCovers({ running: false, done, total: todo.length, failed });
   }
+  /** write a Lead artist credit onto the stored record, from its artistId */
+  function addLeadCredits(items: HealthItem[]) {
+    for (const i of items) {
+      const table = i.kind === 'album' ? 'albums' : 'tracks';
+      const d = useStore.getState().rows[table].get(i.id)?.data as { credits?: Credit[]; artistId?: string } | undefined;
+      if (!d) continue;
+      const credits = withLeadFallback(d.credits ?? [], d.artistId);
+      if (credits !== (d.credits ?? [])) patch(table, i.id, { credits });
+    }
+  }
   const problems = checks.filter((c) => c.items.length);
   const openItem = (i: HealthItem) => (i.kind === 'track' || i.kind === 'album' || i.kind === 'artist') && edit({ kind: i.kind, id: i.id });
 
@@ -59,6 +71,7 @@ export function HealthPage() {
               {c.id === 'album-no-cover' && <div className="flex flex-wrap items-center gap-3 px-4 pb-2">
                 <button className="btn" disabled={!configured || covers?.running} onClick={() => void fillCovers(c.items.map((i) => i.id))}><ImageDown size={15} />Try YouTube thumbnails</button>
                 <span className="text-xs text-muted">{!configured ? 'Needs a server (Settings).' : covers ? `${covers.done}/${covers.total} done${covers.failed ? `, ${covers.failed} failed` : ''}${covers.running ? '…' : ''}` : 'Uses each album\'s first track link. Check the results; replace any that look wrong.'}</span></div>}
+              {c.addLead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`${c.addLead!.label} (${c.items.length})?`) && addLeadCredits(c.items)}>{c.addLead.label}</button></div>}
               {c.fix && <div className="px-4 pb-2"><button className="btn text-bad" onClick={() => confirm(`${c.fix!.label} (${c.items.length})?`) && c.items.forEach((i) => remove(c.fix!.table, i.id))}>{c.fix.label}</button></div>}
               <div className="max-h-80 divide-y divide-line/60 overflow-y-auto">{c.items.slice(0, 200).map((i) => (
                 <button key={`${i.kind}${i.id}`} disabled={!['track', 'album', 'artist'].includes(i.kind)} className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-raised/60 disabled:cursor-default disabled:hover:bg-transparent" onClick={() => openItem(i)}>

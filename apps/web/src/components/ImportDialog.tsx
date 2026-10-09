@@ -79,7 +79,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
           <div className="min-w-0 flex-1 space-y-2"><Field label="Album title"><input className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
             {pv.thumbnail && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={useCover} onChange={(e) => setUseCover(e.target.checked)} />Use this as the cover</label>}</div>
         </div>
-        <Field label="Artist" hint={!artistId ? `No match in your library; “${newArtist}” will be created.` : undefined}>
+        <Field label="Lead artist (becomes the first credit)" hint={!artistId ? `No match in your library; “${newArtist}” will be created.` : 'Added as a “Lead artist” credit on the album and every track.'}>
           {artistId || newArtist === null ? <ArtistSelect value={artistId} onChange={(id) => { setArtistId(id); setNewArtist(null); }} />
             : <div className="flex gap-2"><input className="input" value={newArtist ?? ''} onChange={(e) => setNewArtist(e.target.value)} />
               <button className="btn shrink-0" onClick={() => { setArtistId(lib.artists[0]?.id ?? ''); setNewArtist(null); }} disabled={!lib.artists.length}>Pick existing</button></div>}
