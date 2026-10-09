@@ -1,4 +1,4 @@
-import { createReadStream, createWriteStream, mkdirSync, renameSync, rmSync, statfsSync } from 'node:fs';
+import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync, renameSync, rmSync, statfsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { Readable, Transform } from 'node:stream';
@@ -67,4 +67,23 @@ export function streamFile(path: string, range?: { start: number; end: number })
 export function diskUsage(dataDir: string): { freeBytes: number; totalBytes: number } {
   const s = statfsSync(dataDir);
   return { freeBytes: Number(s.bavail) * s.bsize, totalBytes: Number(s.blocks) * s.bsize };
+}
+
+/** Copy an existing local file into the content-addressed store. Idempotent; returns hash + size. */
+export async function ingestFile(dataDir: string, src: string): Promise<{ hash: string; size: number }> {
+  const hash = createHash('sha256');
+  let size = 0;
+  await pipeline(createReadStream(src), new Transform({
+    transform(chunk, _e, cb) { size += chunk.length; hash.update(chunk); cb(); },
+    flush(cb) { cb(); },
+  }).on('data', () => {}));
+  const digest = hash.digest('hex');
+  const dest = filePath(dataDir, digest);
+  if (!existsSync(dest)) {
+    mkdirSync(join(dataDir, 'files', digest.slice(0, 2)), { recursive: true });
+    const tmp = join(dataDir, 'tmp', `${digest}.${process.pid}.${Date.now()}`);
+    copyFileSync(src, tmp);
+    renameSync(tmp, dest);
+  }
+  return { hash: digest, size };
 }
