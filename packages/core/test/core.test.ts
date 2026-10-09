@@ -1,0 +1,72 @@
+import { describe, it, expect } from 'vitest';
+import { newId, applyVote, replayVotes, balancedRatings, startTrack, advance, shuffleWithRules, wins } from '../src';
+
+describe('ids', () => {
+  it('are unique and time-sortable', () => {
+    const a = newId(1000), b = newId(2000);
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(a < b).toBe(true);
+    expect(new Set(Array.from({ length: 1000 }, () => newId())).size).toBe(1000);
+  });
+});
+
+describe('elo', () => {
+  it('is zero-sum and symmetric', () => {
+    const r = applyVote(1000, 1000, 'a');
+    expect(r.a).toBeCloseTo(1016); expect(r.b).toBeCloseTo(984);
+    expect(applyVote(1000, 1000, 'equal')).toEqual({ a: 1000, b: 1000 });
+  });
+  it('replay is order-independent of input array and mergeable', () => {
+    const v = (id: string, t: number, w: string) => ({ id, trackAId: 'x', trackBId: 'y', winnerId: w, timestamp: t });
+    const votes = [v('1', 1, 'x'), v('2', 2, 'y'), v('3', 3, 'x')];
+    const a = replayVotes(votes, ['x', 'y']);
+    const b = replayVotes([...votes].reverse(), ['x', 'y']);
+    expect(a.get('x')).toEqual(b.get('x'));
+    expect(a.get('x')!.comparisons).toBe(3);
+  });
+  it('ignores votes for deleted tracks', () => {
+    const r = replayVotes([{ id: '1', trackAId: 'x', trackBId: 'gone', winnerId: 'x', timestamp: 1 }], ['x']);
+    expect(r.get('x')!.comparisons).toBe(0);
+  });
+  it('balanced ratings honour the initial-rating floor and leave uncompared tracks alone', () => {
+    const ranked = replayVotes([{ id: '1', trackAId: 'x', trackBId: 'y', winnerId: 'x', timestamp: 1 }], ['x', 'y', 'z']);
+    const out = balancedRatings(ranked, new Map([['y', 4], ['z', 7]]));
+    expect(out.get('x')).toBe(10);
+    expect(out.get('y')).toBe(4);
+    expect(out.get('z')).toBe(7);
+  });
+});
+
+describe('queue', () => {
+  const rules = [{ trackAId: 'a', trackBId: 'b', playFirstOnShuffle: true, applyToAlbumSource: false }];
+  it('injects rule target after the current track', () => {
+    const s = startTrack({ user: [], active: [], currentId: null }, 'a', ['a', 'c', 'd'], rules, 'album');
+    expect(s.user).toEqual(['b']);
+    const n = advance(s, rules, 'album');
+    expect(n.currentId).toBe('b');
+    expect(n.active).toEqual(['c', 'd']);
+  });
+  it('does not duplicate when B is already next', () => {
+    const s = startTrack({ user: [], active: [], currentId: null }, 'a', ['a', 'b', 'c'], rules);
+    expect(s.user).toEqual([]);
+  });
+  it('album-only rules are skipped for playlists', () => {
+    const r = [{ ...rules[0], applyToAlbumSource: true }];
+    expect(startTrack({ user: [], active: [], currentId: null }, 'a', ['a', 'c'], r, 'playlist').user).toEqual([]);
+  });
+  it('shuffle keeps every id and places B right after A', () => {
+    for (let i = 0; i < 50; i++) {
+      const out = shuffleWithRules(['a', 'b', 'c', 'd', 'e'], rules);
+      expect([...out].sort()).toEqual(['a', 'b', 'c', 'd', 'e']);
+      expect(out[out.indexOf('a') + 1]).toBe('b');
+    }
+  });
+});
+
+describe('sync conflict rule', () => {
+  it('latest wins, deviceId breaks ties', () => {
+    expect(wins({ updatedAt: 2, deviceId: 'a' }, { updatedAt: 1, deviceId: 'z' })).toBe(true);
+    expect(wins({ updatedAt: 1, deviceId: 'a' }, { updatedAt: 2, deviceId: 'a' })).toBe(false);
+    expect(wins({ updatedAt: 1, deviceId: 'b' }, { updatedAt: 1, deviceId: 'a' })).toBe(true);
+  });
+});
