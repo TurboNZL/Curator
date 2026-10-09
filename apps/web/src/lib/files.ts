@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Api } from './api.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';
+import { audioMime } from './defaults.ts';
 import { coverCrop } from './image.ts';
 import { pickEvictions, type CacheEntry } from './cachePolicy.ts';
 import { sha256Sync } from './sha256.ts';
@@ -29,6 +30,18 @@ export async function prepareImage(file: Blob, max = 800, trimBars = false): Pro
 }
 
 /**
+ * The upload queue is read-modify-written from several places (saving a file, a sync finishing), so changes
+ * are serialised; otherwise a sync that ends after a new file was queued would overwrite the queue and lose it.
+ */
+let queueLock: Promise<unknown> = Promise.resolve();
+const changePending = (change: (cur: string[]) => string[]): Promise<void> => {
+  const run = queueLock.then(async () => { await setMeta('pendingUploads', change(await getMeta<string[]>('pendingUploads', []))); });
+  queueLock = run.catch(() => undefined);
+  return run;
+};
+const queueUpload = (hash: string) => changePending((cur) => (cur.includes(hash) ? cur : [...cur, hash]));
+
+/**
  * Store an image on this device under its content hash and queue it for upload. The hash is what entities
  * reference, so the record can sync immediately; the bytes follow whenever the server is reachable.
  */
@@ -37,12 +50,40 @@ export async function saveImage(file: Blob, opts: { trimBars?: boolean } = {}): 
   const hash = await sha256Hex(await blob.arrayBuffer());
   const db = await localDb();
   await db.put('blobs', blob, hash);
-  const pending = new Set(await getMeta<string[]>('pendingUploads', []));
-  pending.add(hash);
-  await setMeta('pendingUploads', [...pending]);
+  await queueUpload(hash);
   useStore.getState().touchFiles();
   void useStore.getState().syncNow();
   return hash;
+}
+
+/** Length of an audio file in seconds, or null when the browser cannot read it. */
+export function audioDuration(blob: Blob): Promise<number | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(blob);
+    const a = new Audio();
+    const done = (v: number | null) => { clearTimeout(timer); a.removeAttribute('src'); URL.revokeObjectURL(url); resolve(v); };
+    const timer = setTimeout(() => done(null), 8000);
+    a.preload = 'metadata';
+    a.onloadedmetadata = () => done(Number.isFinite(a.duration) && a.duration > 0 ? a.duration : null);
+    a.onerror = () => done(null);
+    a.src = url;
+  });
+}
+
+/**
+ * Take an audio file from this device: keep it under its content hash and queue the upload, exactly like
+ * an image. The bitrate is the average (size / length), which is what the library shows for old tracks too.
+ */
+export async function saveAudio(file: File): Promise<{ hash: string; bitrate: string | null; seconds: number | null }> {
+  const blob = new Blob([file], { type: audioMime(file.name, file.type) });
+  const hash = await sha256Hex(await blob.arrayBuffer());
+  const db = await localDb();
+  await db.put('blobs', blob, hash);
+  await queueUpload(hash);
+  const seconds = await audioDuration(blob);
+  useStore.getState().touchFiles();
+  void useStore.getState().syncNow();
+  return { hash, seconds, bitrate: seconds ? `${Math.round((blob.size * 8) / seconds / 1000)} kbps` : null };
 }
 
 /** Upload everything queued; called at the start of each sync. Failures stay queued. */
@@ -50,13 +91,19 @@ export async function flushUploads(a: Api): Promise<void> {
   const pending = await getMeta<string[]>('pendingUploads', []);
   if (!pending.length) return;
   const db = await localDb();
-  const left: string[] = [];
+  const sent = new Set<string>();
   for (const hash of pending) {
     const blob = await db.get('blobs', hash);
-    if (!blob) continue;
-    try { await a.putFile(hash, blob); } catch { left.push(hash); }
+    if (!blob) { sent.add(hash); continue; } // nothing left to send
+    try {
+      await a.putFile(hash, blob);
+      sent.add(hash);
+      // an uploaded audio file now lives on the server; keep a local copy only if the user chose "keep offline"
+      if (blob.type.startsWith('audio/') && !useStore.getState().audioCache[hash]) await db.delete('blobs', hash);
+    } catch { /* stays queued */ }
   }
-  await setMeta('pendingUploads', left);
+  // drop only what was sent: files queued while this ran must survive
+  await changePending((cur) => cur.filter((h) => !sent.has(h)));
 }
 
 /** A displayable URL for a file hash: this device's copy if it has one, else the server's. */
@@ -118,6 +165,11 @@ export async function audioSource(hash: string): Promise<{ url: string; local: b
     const next = { ...useStore.getState().audioCache, [hash]: { ...entry, at: Date.now() } }; // recency for eviction
     useStore.setState({ audioCache: next });
     void setMeta('audioCache', next);
+    const blob = await (await localDb()).get('blobs', hash);
+    if (blob) return { url: URL.createObjectURL(blob), local: true };
+  }
+  // chosen on this device and not uploaded yet: play the pending copy
+  if ((await getMeta<string[]>('pendingUploads', [])).includes(hash)) {
     const blob = await (await localDb()).get('blobs', hash);
     if (blob) return { url: URL.createObjectURL(blob), local: true };
   }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ImagePlus, Plus, X } from 'lucide-react';
+import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
 import type { ArtistData, Credit } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
-import { hasLead, LEAD_ROLE } from '../lib/defaults.ts';
-import { saveImage } from '../lib/files.ts';
+import { AUDIO_ACCEPT, hasLead, LEAD_ROLE } from '../lib/defaults.ts';
+import { saveAudio, saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from './Cover.tsx';
 
@@ -96,6 +96,30 @@ export function ImagePicker({ hash, onChange, seed, kind = 'album' }: { hash: st
           try { onChange(await saveImage(f)); } catch { setErr('Could not read that image.'); } finally { setBusy(false); }
         }} />
       </div>
+    </div>
+  );
+}
+
+/** Choose / replace a track's audio file from this device; it is hashed, kept locally and uploaded on the next sync. */
+export function AudioPicker({ hash, onChange }: { hash: string | null; onChange: (file: string | null, bitrate: string | null) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" className="btn" disabled={busy} onClick={() => input.current?.click()}><FileAudio size={15} />{busy ? 'Reading…' : hash ? 'Replace audio file' : 'Choose audio file'}</button>
+        {hash && <button type="button" className="btn btn-ghost" onClick={() => { setName(null); onChange(null, null); }}>Remove</button>}
+        <span className="min-w-0 truncate text-xs text-muted">{name ?? (hash ? 'Audio attached' : 'No audio yet')}</span>
+      </div>
+      {err && <div className="text-xs text-bad">{err}</div>}
+      <input ref={input} type="file" accept={AUDIO_ACCEPT} hidden onChange={async (e) => {
+        const f = e.target.files?.[0]; e.target.value = '';
+        if (!f) return;
+        setBusy(true); setErr(null);
+        try { const r = await saveAudio(f); setName(f.name); onChange(r.hash, r.bitrate); } catch { setErr('Could not read that file.'); } finally { setBusy(false); }
+      }} />
     </div>
   );
 }

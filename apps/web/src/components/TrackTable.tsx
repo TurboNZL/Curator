@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
-import { ArrowDownToLine, Heart, Info, ListEnd, ListStart, Pencil, Play } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowDownToLine, Heart, Info, ListEnd, ListStart, MoreHorizontal, Pencil, Play } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
 import { useEditor } from '../lib/editor.ts';
 import { cn } from '../lib/cn.ts';
 import { Rating } from './Rating.tsx';
+import { TrackMenu, type MenuAt } from './TrackMenu.tsx';
 import type { SourceType } from '@curator/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
@@ -21,11 +23,13 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const edit = useEditor((s) => s.open);
   const cache = useStore((s) => s.audioCache);
   const ids = tracks.map((t) => t.id);
+  const [menu, setMenu] = useState<MenuAt | null>(null);
 
   return (
     <div className="divide-y divide-line/60">
       {tracks.map((t, i) => (
-        <div key={t.id} className={cn('group flex items-center gap-3 px-3 hover:bg-raised/60', current === t.id && 'bg-accent/10')} style={{ paddingBlock: 'var(--row-y)' }}>
+        <div key={t.id} className={cn('group flex items-center gap-3 px-3 hover:bg-raised/60', current === t.id && 'bg-accent/10')} style={{ paddingBlock: 'var(--row-y)' }}
+          onContextMenu={(e) => { e.preventDefault(); setMenu({ track: t, x: e.clientX, y: e.clientY }); }}>
           <button className="relative w-6 shrink-0 text-center text-sm text-muted disabled:cursor-not-allowed" disabled={!t.file}
             onClick={() => play(t.id, ids, { type: source, id: sourceId })} title={t.file ? 'Play' : 'No audio file yet'}>
             <span className={cn(t.file && 'group-hover:hidden', current === t.id && t.file && 'text-accent')}>{numbered ? i + 1 : ''}</span>
@@ -51,10 +55,12 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
             <button className="p-1 text-muted hover:text-fg" title="Play next" disabled={!t.file} onClick={() => enqueue(t.id, 'next')}><ListStart size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Add to queue" disabled={!t.file} onClick={() => enqueue(t.id, 'last')}><ListEnd size={15} /></button>
           </div>
+          <button className="p-1 text-muted hover:text-fg" aria-label={`More actions for ${t.title}`} aria-haspopup="menu" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ track: t, x: r.right - 224, y: r.bottom + 4 }); }}><MoreHorizontal size={16} /></button>
           <div className="flex w-20 justify-end"><Rating track={t} size="sm" /></div>
           {extra?.(t, i)}
         </div>
       ))}
+      {menu && <TrackMenu at={menu} onClose={() => setMenu(null)} onPlay={() => play(menu.track.id, ids, { type: source, id: sourceId })} />}
       {!tracks.length && <div className="p-6 text-center text-sm text-muted">No tracks.</div>}
     </div>
   );

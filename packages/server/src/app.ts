@@ -8,6 +8,7 @@ import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
+import { checkTools } from './tools.ts';
 import { diskUsage, filePath, parseRange, saveVerified, streamFile, UploadError } from './files.ts';
 
 export const API_VERSION = 1;
@@ -38,13 +39,14 @@ export function createApp(
     await next();
   });
 
-  app.get('/api/status', (c) => {
+  app.get('/api/status', async (c) => {
     const files = store.listFiles();
     return c.json({
       apiVersion: API_VERSION,
       cursor: store.cursor(),
       files: { count: files.length, bytes: files.reduce((n, f) => n + f.size, 0) },
       disk: diskUsage(config.dataDir),
+      tools: await checkTools({ ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir }),
     });
   });
 

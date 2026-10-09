@@ -9,7 +9,9 @@ import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
 import { newAlbumData, newTrackData, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadArtistId, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
-import { CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { saveRules } from '../lib/profile.ts';
+import { AudioPicker, CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { AddToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
 
 /** Make sure every genre name used exists as a genre record, so it shows up in filters and suggestions. */
 function useEnsureGenres() {
@@ -69,8 +71,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
     const others = lib.rules.filter((r) => r.trackAId !== id);
     const rules: PlaybackRule[] = after ? [...others, { trackAId: id, trackBId: after, playFirstOnShuffle: first, applyToAlbumSource: albumOnly }] : others;
     if (rules.length !== lib.rules.length || after !== (rule?.trackBId ?? null) || first !== (rule?.playFirstOnShuffle ?? true) || albumOnly !== (rule?.applyToAlbumSource ?? false)) {
-      if (lib.profile) patch('profiles', lib.profile.id, { playbackRules: rules });
-      else put('profiles', { name: 'Main Curator', theme: 'dark', accentColor: '#3b82f6', playbackMode: 'local', settings: {}, playbackRules: rules } satisfies ProfileData, '1');
+      saveRules(lib, rules);
     }
     onClose();
   }
@@ -91,6 +92,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
         setT((p) => ({ ...p!, syncWithAlbumCredits: on, credits: !on && !hasLead(p!.credits ?? []) ? albumCredits.map((c) => ({ ...c, role: [...c.role] })) : p!.credits }));
       }} />Use the album's credits and genres{track.albumTitle ? ` (${track.albumTitle})` : ''}</label>
       {!t.syncWithAlbumCredits && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
+      <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
       <Field label="Spotify URL"><input className="input" value={t.spotifyUrl ?? ''} onChange={(e) => set('spotifyUrl', e.target.value || null)} /></Field>
       <Field label="Genius URL"><input className="input" value={t.geniusUrl ?? ''} onChange={(e) => set('geniusUrl', e.target.value || null)} /></Field>
@@ -186,28 +188,39 @@ function NewAlbumDialog({ onClose }: { onClose: () => void }) {
 function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, patch } = useStore();
-  const album = lib.albumById.get(albumId);
+  const nav = useNavigate();
+  const [albumSel, setAlbumSel] = useState(albumId);
+  const album = albumSel ? lib.albumById.get(albumSel) : undefined;
+  const blank = (): Credit[] => [{ artistId: '', role: [LEAD_ROLE] }];
+  const fromAlbum = (a: typeof album): Credit[] => {
+    const own = withLeadFallback((a?.credits ?? []).map((c) => ({ ...c, role: [...c.role] })), a?.artistId);
+    return hasLead(own) ? own : blank();
+  };
   const [title, setTitle] = useState('');
-  const [credits, setCredits] = useState<Credit[]>(() => {
-    const own = withLeadFallback((album?.credits ?? []).map((c) => ({ ...c, role: [...c.role] })), album?.artistId);
-    return hasLead(own) ? own : [{ artistId: '', role: [LEAD_ROLE] }];
-  });
+  const [credits, setCredits] = useState<Credit[]>(() => fromAlbum(album));
   const [yt, setYt] = useState('');
   const [sp, setSp] = useState('');
+  const [file, setFile] = useState<string | null>(null);
+  const [bitrate, setBitrate] = useState<string | null>(null);
   const ensureRoles = useEnsureRoles();
-  if (!album) return null;
+  if (albumId && !lib.albumById.has(albumId)) return null;
   const clean = cleanCredits(credits);
   const ok = title.trim() && hasLead(clean);
   return (
-    <Modal title={`Add a track to ${album.title}`} onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+    <Modal title={album && albumId ? `Add a track to ${album.title}` : 'New track'} onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
       <button className="btn btn-accent" disabled={!ok} onClick={() => {
         ensureRoles(clean);
-        const id = put('tracks', newTrackData({ title: title.trim(), artistId: leadArtistId(clean, ''), credits: clean, syncWithAlbumCredits: false, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null, albums: [{ albumId, order: album.trackIds.length }] }));
-        patch('albums', albumId, { trackOrder: appendTrack(album.trackIds, id) });
+        const id = put('tracks', newTrackData({ title: title.trim(), artistId: leadArtistId(clean, ''), credits: clean, syncWithAlbumCredits: false, file, bitrate, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null, albums: album ? [{ albumId: album.id, order: album.trackIds.length }] : [] }));
+        if (album) patch('albums', album.id, { trackOrder: appendTrack(album.trackIds, id) });
         onClose();
+        if (!albumId && album) nav(`/albums/${album.id}`);
       }}>Add track</button></div>}>
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-      <Field label="Credits" hint="Starts from the album's credits"><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
+      {!albumId && <Field label="Album" hint="Optional. Leave empty for a single.">
+        <select className="input" value={albumSel} onChange={(e) => { const next = lib.albumById.get(e.target.value); setAlbumSel(e.target.value); if (!hasLead(cleanCredits(credits))) setCredits(fromAlbum(next)); }}>
+          <option value="">No album</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>}
+      <Field label="Credits" hint={album ? "Starts from the album's credits" : undefined}><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
+      <Field label="Audio file" hint="From this device. Or use a YouTube link below."><AudioPicker hash={file} onChange={(f, b) => { setFile(f); setBitrate(b); }} /></Field>
       <Field label="YouTube Music URL" hint="Lets the server download the audio"><input className="input" value={yt} onChange={(e) => setYt(e.target.value)} /></Field>
       <Field label="Spotify URL"><input className="input" value={sp} onChange={(e) => setSp(e.target.value)} /></Field>
     </Modal>
@@ -290,6 +303,11 @@ export function EditorHost() {
   if (target.kind === 'bio') return <BioDialog key={key} groupId={target.id} onClose={close} />;
   if (target.kind === 'new-bio') return <BioDialog key={key} initial={target.id} onClose={close} />;
   if (target.kind === 'new-album') return <NewAlbumDialog key="new-album" onClose={close} />;
+  if (target.kind === 'new-artist') return <NewArtistDialog key="new-artist" onClose={close} />;
+  if (target.kind === 'upload') return <UploadDialog key={key} albumId={target.id} onClose={close} />;
+  if (target.kind === 'new-playlist') return <PlaylistDialog key="new-playlist" onClose={close} />;
+  if (target.kind === 'playlist') return <PlaylistDialog key={key} playlistId={target.id} onClose={close} />;
+  if (target.kind === 'add-to-playlist') return <AddToPlaylistDialog key={key} trackId={target.id} onClose={close} />;
   if (target.kind === 'new-track') return <NewTrackDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'track') return <TrackEditor key={key} id={target.id} onClose={close} />;
   if (target.kind === 'album') return <AlbumEditor key={key} id={target.id} onClose={close} />;

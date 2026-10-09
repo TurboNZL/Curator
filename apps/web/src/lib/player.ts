@@ -31,6 +31,12 @@ interface PlayerState {
   /** reorder the user queue */
   moveQueued(from: number, to: number): void;
   clearQueued(): void;
+  /** shuffle what is queued by you / what is left of the album or list (rules keep pairs together) */
+  shuffleQueued(): void;
+  shuffleRest(): void;
+  /** the rest of the album or list becomes part of the user queue / is dropped */
+  keepRest(): void;
+  clearRest(): void;
 }
 
 let audio: HTMLAudioElement | null = null;
@@ -160,5 +166,9 @@ export const usePlayer = create<PlayerState>((set, get) => {
       set({ queue: { ...q, user: moveTrack(q.user, from, to) } });
     },
     clearQueued() { set({ queue: { ...get().queue, user: [] } }); },
+    shuffleQueued() { const q = get().queue; set({ queue: { ...q, user: shuffleWithRules(q.user, rules()) } }); },
+    shuffleRest() { const q = get().queue; set({ queue: { ...q, active: shuffleWithRules(q.active, rules()) } }); },
+    keepRest() { const q = get().queue; set({ queue: { ...q, user: [...q.user, ...q.active], active: [] } }); },
+    clearRest() { set({ queue: { ...get().queue, active: [] } }); },
   };
 });

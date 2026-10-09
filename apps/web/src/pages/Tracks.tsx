@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../lib/derive.ts';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
+import { shuffleWithRules } from '@curator/core';
+import { useEditor } from '../lib/editor.ts';
+import { usePlayer } from '../lib/player.ts';
 import { defaultDir, sortTracks, type SortDir, type SortKey } from '../lib/trackSort.ts';
 import { cn } from '../lib/cn.ts';
 import { TrackTable } from '../components/TrackTable.tsx';
@@ -9,6 +12,8 @@ const PAGE = 100;
 
 export function TracksPage() {
   const lib = useLibrary();
+  const edit = useEditor((s) => s.open);
+  const play = usePlayer((s) => s.play);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<SortKey>('rating');
   const [dir, setDir] = useState<SortDir>('desc');
@@ -25,12 +30,17 @@ export function TracksPage() {
     return sortTracks(f, sort, dir);
   }, [lib, q, sort, dir, genre, onlyFav, onlyPlayable]);
 
+  const playable = tracks.filter((t) => t.file).map((t) => t.id);
   const pick = (k: SortKey) => { if (k === sort) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(k); setDir(defaultDir(k)); } };
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Tracks <span className="text-base font-normal text-muted">{tracks.length}</span></h1>
+        <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'search', id: null })}><Play size={15} fill="currentColor" />Play</button>
+        <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
+        <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New track</button>
+        <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
         <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => { setQ(e.target.value); setShown(PAGE); }} />
         <select className="input !w-auto" value={genre} onChange={(e) => setGenre(e.target.value)} aria-label="Genre">
           <option value="">All genres</option>{lib.genres.map((g) => <option key={g.id}>{g.name}</option>)}
