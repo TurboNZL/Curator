@@ -1,4 +1,5 @@
 import { leadArtistId, leadArtistIds, hasLead } from './defaults.ts';
+import { albumCover, coverPool } from './covers.ts';
 import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData, type EraData } from '@curator/core';
 
 export type Row<T> = T & { id: string };
@@ -36,7 +37,7 @@ export interface Library {
   eraById: Map<string, Row<EraData>>;
   /** tracks that are not on any album */
   singles: Track[];
-  albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null })[];
+  albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null; /** every image of the album: uploads, its picked cover and its releases' covers */ coverPool: string[] })[];
   albumById: Map<string, Library['albums'][number]>;
   releases: Row<ReleaseData>[];
   playlists: Row<PlaylistData>[];
@@ -77,8 +78,12 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   const ranked = replayVotes(votes.map((v) => ({ ...v })), rawTracks.map((t) => t.id));
   const ratings = balancedRatings(ranked, new Map(rawTracks.map((t) => [t.id, t.initialRating])));
 
+  const releases = live<ReleaseData>(rows.releases);
+  // the album's cover is its picked one, else its default release's (see covers.ts); everything below sees the derived cover
+  const defaultRel = (a: Row<AlbumData>) => { const mine = releases.filter((r) => r.albumId === a.id); return mine.find((r) => r.id === a.defaultReleaseId) ?? [...mine].sort((x, y) => y.trackIds.length - x.trackIds.length)[0]; };
+  const coveredAlbums = rawAlbums.map((a) => ({ ...a, cover: albumCover(a, releases.filter((r) => r.albumId === a.id), defaultRel(a)) }));
   const albumOf = new Map<string, Row<AlbumData>>();
-  const albumsById = by(rawAlbums);
+  const albumsById = by(coveredAlbums);
   const trackIdsByAlbum = new Map<string, { id: string; order: number }[]>();
   for (const t of rawTracks) {
     for (const link of t.albums ?? []) {
@@ -113,7 +118,6 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
 
   // Legacy data has album_tracks.order = 0 almost everywhere, but every album has an ordered release,
   // so a track's position comes from the album's default release (else its longest one), then `order`.
-  const releases = live<ReleaseData>(rows.releases);
   const eras = live<EraData>(rows.eras);
   const position = (albumId: string, defaultReleaseId?: string | null) => {
     const mine = releases.filter((r) => r.albumId === albumId);
@@ -121,7 +125,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     return new Map((rel?.trackIds ?? []).map((id, i) => [id, i]));
   };
 
-  const albums = rawAlbums.map((a) => {
+  const albums = coveredAlbums.map((a) => {
     // an explicit order (set when the user reorders/adds by hand) wins over the release tracklist
     const pos = a.trackOrder?.length ? new Map(a.trackOrder.map((id, i) => [id, i])) : position(a.id, a.defaultReleaseId);
     const at = (id: string) => pos.get(id) ?? Number.MAX_SAFE_INTEGER;
@@ -129,7 +133,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const rated = ids.map((id) => trackById.get(id)!.effectiveRating).filter((x) => x > 0);
     const artistId = leadArtistId(a.credits ?? [], a.artistId ?? '');
     const leads = leadsOf(a.credits ?? [], a.artistId, artistById);
-    return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids,
+    const raw = rawAlbums.find((x) => x.id === a.id)!;
+    return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids, coverPool: coverPool(raw, releases.filter((r) => r.albumId === a.id)),
       rating: rated.length ? rated.reduce((s, x) => s + x, 0) / rated.length : null };
   });
 

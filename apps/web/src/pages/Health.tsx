@@ -35,7 +35,9 @@ export function HealthPage() {
     let done = 0, failed = 0;
     for (const { id, vid } of todo) {
       try {
-        patch('albums', id, { cover: await fetchCoverFromLinks(thumbnailUrls(vid)) });
+        const hash = await fetchCoverFromLinks(thumbnailUrls(vid));
+        const raw = useStore.getState().rows.albums.get(id)?.data as { covers?: string[] } | undefined;
+        patch('albums', id, { covers: [...(raw?.covers ?? []), hash] }); // into the pool; the album shows it until a release has its own
       } catch { failed++; }
       setCovers({ running: true, done: ++done, total: todo.length, failed });
     }

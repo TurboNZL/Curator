@@ -10,7 +10,9 @@ import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
 import { newAlbumData, newTrackData, inheritFromAlbum, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadCredit, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
-import { defaultChoice, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
+import { defaultChoice, defaultRelease, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
+import { albumCover, coverPicked, coverPool } from '../lib/covers.ts';
+import { CoverPool } from './CoverPool.tsx';
 import { saveRules } from '../lib/profile.ts';
 import { AudioPicker, CreditsEditor, EntityPicker, EraSelect, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 import { AddToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
@@ -149,6 +151,11 @@ function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
   if (!album || !a) return null;
   const set = <K extends keyof AlbumData>(k: K, v: AlbumData[K]) => setA((p) => ({ ...p!, [k]: v }));
   const credits = cleanCredits(a.credits ?? []);
+  const mine = lib.releases.filter((r) => r.albumId === id);
+  const pool = coverPool(a, mine);
+  /** images something still points at: releases' covers cannot be dropped from here */
+  const inUse = new Set(mine.flatMap((r) => (r.cover ? [r.cover] : [])));
+  const inherited = albumCover({ ...a, coverPicked: false }, mine, defaultRelease(lib, album));
   return (
     <Modal title="Edit album" onClose={onClose} footer={<>
       <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${album.title}”? Its tracks stay in your library.`)) { remove('albums', id); onClose(); nav('/albums'); } }}>Delete</button>
@@ -157,7 +164,11 @@ function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
         ensureGenres(a.genres ?? []); ensureRoles(credits); put('albums', { ...rest, credits }, id);
         onClose();
       }}>Save</button></div></>}>
-      <ImagePicker hash={a.cover ?? null} onChange={(h) => set('cover', h)} seed={album.title} />
+      <Field label="Cover" hint="Every image of this album is in one pool, including its releases' covers. The album shows its default release's cover unless you choose another.">
+        <CoverPool seed={album.title} pool={pool} value={coverPicked(a) ? a.cover ?? null : null} inheritHash={inherited} inheritLabel="Use the default release's cover"
+          onChange={(h) => setA((p) => ({ ...p!, cover: h, coverPicked: !!h }))}
+          onAdd={(h) => setA((p) => ({ ...p!, covers: (p!.covers ?? []).includes(h) ? p!.covers : [...(p!.covers ?? []), h], cover: h, coverPicked: true }))}
+          onRemove={(h) => { if (!inUse.has(h)) setA((p) => ({ ...p!, covers: (p!.covers ?? []).filter((x) => x !== h) })); }} /></Field>
       <Field label="Title"><input className="input" value={a.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
       <Field label="Genres" hint="Tracks that use the album's genres follow these"><TagInput value={a.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>
       <Field label="Era" hint="Optional. Eras group albums and singles."><EraSelect value={a.eraId ?? ''} onChange={(v) => set('eraId', v || null)} /></Field>
@@ -200,7 +211,7 @@ function NewAlbumDialog({ onClose }: { onClose: () => void }) {
   const ok = title.trim() && hasLead(clean);
   return (
     <Modal title="New album" onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); ensureRoles(clean); const id = put('albums', newAlbumData({ title: title.trim(), credits: clean, genres, cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(clean.find((c) => c.artistId)?.artistId ?? '')?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
+      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); ensureRoles(clean); const id = put('albums', newAlbumData({ title: title.trim(), credits: clean, genres, cover, covers: cover ? [cover] : [], coverPicked: !!cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(clean.find((c) => c.artistId)?.artistId ?? '')?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
       <ImagePicker hash={cover} onChange={setCover} seed={title || 'new'} />
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
       <Field label="Credits"><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
@@ -312,15 +323,21 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
   const { put, patch, remove } = useStore();
   const existing = releaseId ? lib.releases.find((r) => r.id === releaseId) : undefined;
   const album = lib.albumById.get(existing?.albumId ?? albumId ?? '');
+  const [added, setAdded] = useState<string[]>([]);
   const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: album.title, cover: null, releaseDate: null, trackIds: [...album.trackIds] } : null);
   if (!r || !album) return null;
   const live = r.trackIds.filter((id) => lib.trackById.has(id));
-  const save = () => { put('releases', { ...r, trackIds: live }, releaseId); onClose(); };
+  const save = () => {
+    if (added.length) { const raw = useStore.getState().rows.albums.get(album.id)?.data as AlbumData | undefined; patch('albums', album.id, { covers: [...new Set([...(raw?.covers ?? []), ...added])] }); }
+    put('releases', { ...r, trackIds: live }, releaseId); onClose();
+  };
   return (
     <Modal title={releaseId ? 'Edit release' : `New release of ${album.title}`} onClose={onClose} footer={<>
       {releaseId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete release “${r.title}”?`)) { remove('releases', releaseId); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!r.title.trim()} onClick={save}>Save</button></div></>}>
-      <ImagePicker hash={r.cover} onChange={(h) => setR({ ...r, cover: h })} seed={r.title} />
+      <Field label="Cover" hint="Any image of the album can be used, including ones uploaded to the album itself. A new upload joins the album's pool.">
+        <CoverPool seed={r.title} pool={[...album.coverPool, ...added.filter((h) => !album.coverPool.includes(h))]} value={r.cover} inheritHash={album.cover} inheritLabel="Use the album's cover"
+          onChange={(h) => setR({ ...r, cover: h })} onAdd={(h) => { setAdded((x) => [...x, h]); setR({ ...r, cover: h }); }} /></Field>
       <Field label="Title"><input autoFocus className="input" value={r.title} onChange={(e) => setR({ ...r, title: e.target.value })} /></Field>
       <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} /></Field>
       <div className="space-y-1"><div className="text-sm text-muted">Tracklist ({live.length})</div>

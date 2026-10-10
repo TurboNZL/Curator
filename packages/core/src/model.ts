@@ -18,7 +18,12 @@ export interface AlbumData {
   /** @deprecated the old single-artist field. Credits (Lead artist) are the only artist now; kept only so old records can be migrated. */
   artistId?: string;
   genres: string[];
+  /** the cover the user picked from the pool; only counts when `coverPicked` (old records: when set) */
   cover: string | null;
+  /** images uploaded to the album (its pool); the pool also includes the picked cover and every release's cover */
+  covers?: string[];
+  /** false = inherit the default release's cover. Absent on old records, where a set `cover` counts as picked */
+  coverPicked?: boolean;
   eraId?: string | null;
   defaultReleaseId?: string | null;
   /** explicit track order (ids); wins over the release tracklist. Set when the user reorders or adds tracks by hand. */

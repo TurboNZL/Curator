@@ -6,6 +6,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { sha256Sync } from '../src/lib/sha256.ts';
 import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { parseBackup } from '../src/lib/backupFormat.ts';
+import { albumCover, coverPicked, coverPool } from '../src/lib/covers.ts';
 import { computeHealth } from '../src/lib/health.ts';
 import { assignLinks, linkGroups, looksRight, parseLinks } from '../src/lib/bulkLinks.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
@@ -327,4 +328,33 @@ describe('sortTracks', () => {
     expect(ids('album', 'desc')[2]).toBe('t2');
   });
   it('first click goes the natural way for each column', () => { expect(defaultDir('title')).toBe('asc'); expect(defaultDir('rating')).toBe('desc'); });
+});
+
+describe('album cover pool', () => {
+  const rel = (cover: string | null) => ({ cover });
+  it('pools uploads, the picked cover and every release cover once', () => {
+    expect(coverPool({ covers: ['u1', 'u2'], cover: 'u2' }, [rel('r1'), rel(null), rel('u1')])).toEqual(['u1', 'u2', 'r1']);
+  });
+  it('inherits the default release unless a cover was picked', () => {
+    expect(albumCover({ coverPicked: false, cover: 'old' }, [rel('a'), rel('b')], rel('b'))).toBe('b');
+    expect(albumCover({ coverPicked: true, cover: 'u1' }, [rel('a')], rel('a'))).toBe('u1');
+  });
+  it('treats an old record (no flag) with a cover as picked, and falls back through the pool', () => {
+    expect(coverPicked({ cover: 'x' })).toBe(true);
+    expect(coverPicked({ cover: null })).toBe(false);
+    expect(albumCover({ cover: 'x' }, [rel('a')], rel('a'))).toBe('x');
+    expect(albumCover({ coverPicked: false, covers: ['p'] }, [rel(null)], rel(null))).toBe('p');
+    expect(albumCover({}, [], undefined)).toBeNull();
+  });
+  it('the library shows the derived cover on the album and its tracks', () => {
+    const l = buildLibrary(rows(
+      rec('albums', 'al', { title: 'A', credits: [{ artistId: 'a', role: ['Lead artist'] }], genres: [], cover: null, covers: ['up'], coverPicked: false, defaultReleaseId: 'r2' }),
+      rec('releases', 'r1', { albumId: 'al', title: 'One', cover: 'c1', releaseDate: null, trackIds: ['t'] }),
+      rec('releases', 'r2', { albumId: 'al', title: 'Two', cover: 'c2', releaseDate: null, trackIds: ['t'] }),
+      rec('tracks', 't', track('T', { albums: [{ albumId: 'al', order: 0 }] })),
+    ));
+    expect(l.albumById.get('al')!.cover).toBe('c2');
+    expect(l.albumById.get('al')!.coverPool).toEqual(['up', 'c1', 'c2']);
+    expect(l.trackById.get('t')!.cover).toBe('c2');
+  });
 });

@@ -59,7 +59,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
       const known = new Set(lib.genres.map((g) => g.name.toLowerCase()));
       for (const g of genres) if (!known.has(g.toLowerCase())) put('genres', { name: g });
       const credits = leadCredit(aid);
-      const albumId = put('albums', newAlbumData({ title: title.trim(), credits, genres, cover }));
+      const albumId = put('albums', newAlbumData({ title: title.trim(), credits, genres, cover: null, covers: cover ? [cover] : [], coverPicked: false }));
       const ids = picked.map((r, i) => put('tracks', newTrackData({ title: r.title.trim(), credits, youtubeMusicUrl: r.url, albums: [{ albumId, order: i }] })));
       // the imported edition is the album's default release: it carries the cover and the tracklist
       const releaseId = put('releases', { albumId, title: title.trim(), cover, releaseDate: null, trackIds: ids });
