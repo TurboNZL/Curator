@@ -1,0 +1,55 @@
+# Push a tag like v0.2.0 to build the desktop installers and the Android APK and attach them to a GitHub release.
+# The installed apps update themselves from that release (Electron: electron-updater; Android: apps/android AppUpdater).
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes || true
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+
+  desktop:
+    needs: release
+    strategy:
+      matrix: { os: [ubuntu-latest, windows-latest] }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --ignore-scripts --filter @curator/web --filter @curator/core --filter @curator/server --filter @curator/electron
+      - name: Set the version from the tag
+        shell: bash
+        run: cd apps/electron && npm pkg set version="${GITHUB_REF_NAME#v}"
+      - run: pnpm --filter @curator/electron dist:publish
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+
+  android:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.9' }
+      - run: pnpm install --ignore-scripts --filter @curator/web --filter @curator/core
+      - run: pnpm --filter @curator/web build
+      - name: Build the APK
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gradle -p apps/android :app:assembleRelease -PappVersion="$VERSION"
+          cp apps/android/app/build/outputs/apk/release/app-release.apk "music-curator-$VERSION.apk"
+          gh release upload "$GITHUB_REF_NAME" "music-curator-$VERSION.apk" --clobber
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
