@@ -11,7 +11,7 @@ import { DefaultImages, PlaybackRules, Vocabulary } from '../components/Settings
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
-import { AppUpdatesCard, DiscordCard } from '../components/AppSettings.tsx';
+import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
 
 
 export function SettingsPage() {
@@ -75,6 +75,7 @@ export function SettingsPage() {
         <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
           <button className="btn" onClick={() => void desktop()!.showLibraryFolder()}>Show folder</button>
           <button className="btn" onClick={() => void desktop()!.chooseLibraryFolder()}>Change folder…</button></div>
+        <GraphicsLine />
         <p className="text-xs text-muted">Version {desktop()!.version}. Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first.</p>
       </Section>}
       <DiscordCard />

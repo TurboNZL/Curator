@@ -48,18 +48,18 @@ describe('colour themes', () => {
   });
 });
 
-describe('the Dyad look (the original app)', () => {
-  it('pairs the Dyad UI style with the Dyad colours and uses the toolbar layout', () => {
-    expect(isUiStyle('dyad')).toBe(true);
-    expect(isTheme('dyad')).toBe(true);
-    expect(UI_STYLES.find((x) => x.id === 'dyad')?.matching).toEqual({ light: 'dyad', dark: 'dyad' });
-    expect(navLayout('dyad')).toBe('toolbar');
+describe('the Toolbar style and Zinc colours (the first version)', () => {
+  it('pairs the Toolbar UI style with the Zinc colours and uses the toolbar layout', () => {
+    expect(isUiStyle('toolbar')).toBe(true);
+    expect(isTheme('zinc')).toBe(true);
+    expect(UI_STYLES.find((x) => x.id === 'toolbar')?.matching).toEqual({ light: 'zinc', dark: 'zinc' });
+    expect(navLayout('toolbar')).toBe('toolbar');
     expect(navLayout('default')).toBe('side');
     expect(navLayout('nope')).toBe('side');
   });
 
   it('uses the original Tailwind zinc and blue values', () => {
-    const v = curatorVars(resolveTheme('dyad'));
+    const v = curatorVars(resolveTheme('zinc'));
     const css = (colour: string) => { const [h, sat, l] = hex(colour); return `${h} ${sat}% ${l}%`; };
     expect(v.bg).toBe(css('#09090b')); // zinc-950, the page
     expect(v.raised).toBe(css('#18181b')); // zinc-900, fields and buttons
@@ -68,7 +68,7 @@ describe('the Dyad look (the original app)', () => {
     expect(v.accent).toBe(css('#2563eb')); // blue-600, primary buttons
     expect(v.good).toBe(css('#10b981')); // emerald-500
     expect(v.bad).toBe(css('#ef4444')); // red-500
-    expect(resolveTheme('dyad').dark).toBe(true);
+    expect(resolveTheme('zinc').dark).toBe(true);
   });
 });
 

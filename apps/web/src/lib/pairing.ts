@@ -18,3 +18,18 @@ export function pickPair<T extends Pairable>(tracks: T[], rnd: () => number = Ma
   const b = sample.find((t) => !exclude || !(exclude.includes(a.id) && exclude.includes(t.id))) ?? sample[0];
   return rnd() < 0.5 ? [a, b] : [b, a];
 }
+
+/**
+ * The tracks to rank from. With "only tracks with audio" on, that is the tracks that have a file, but only while at least two do:
+ * with fewer there is nothing to pair, so everything is used and `fellBack` says so (a fresh library has no audio yet).
+ */
+export function rankPool<T extends { file: unknown }>(tracks: T[], onlyAudio: boolean): { pool: T[]; fellBack: boolean } {
+  if (!onlyAudio) return { pool: tracks, fellBack: false };
+  const playable = tracks.filter((t) => t.file);
+  return playable.length >= 2 ? { pool: playable, fellBack: false } : { pool: tracks, fellBack: true };
+}
+
+/** Turning "only tracks with audio" on only needs a new pair when the pair on screen has a track without audio. */
+export function pairLacksAudio(pair: [string, string] | null, byId: ReadonlyMap<string, { file: unknown }>): boolean {
+  return !!pair && pair.some((id) => !byId.get(id)?.file);
+}

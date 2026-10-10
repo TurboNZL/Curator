@@ -4,7 +4,7 @@
  */
 import type { ThemeId } from "./theme.ts";
 
-export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "dyad" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5";
+export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5";
 
 export type UiStyleDef = {
   id: UiStyleId;
@@ -29,7 +29,7 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "win98", label: "Windows 98", description: "Classic: grey bevelled 3D controls, navy title bars, no animation and MS Sans Serif style type.", font: "Tahoma", matching: { light: "win98" } },
   { id: "macos", label: "macOS (Big Sur to Sequoia)", description: "Apple's flat 2020s look: 10 px windows, flat blue default buttons, a see-through sidebar and toolbar, sheet-style dialogs, in SF.", font: "system-ui", matching: { light: "macos", dark: "macos-dark" } },
   { id: "aqua", label: "Mac OS X Aqua (2001-09)", description: "Cheetah to Snow Leopard: pinstriped windows, glossy gel capsule buttons with a pulsing default, jewel traffic lights and a blue source list in Lucida Grande.", font: "Lucida Grande", matching: { light: "aqua" } },
-  { id: "dyad", label: "Dyad (the original app)", description: "The first version's layout: a four-item side bar, text links and a pill search in a full-width toolbar, bordered cover tiles, uppercase black headings and a three-column player. Pairs with the Dyad colours.", font: "system-ui", nav: "toolbar", matching: { light: "dyad", dark: "dyad" } },
+  { id: "toolbar", label: "Toolbar (first version)", description: "The first version's layout: a six-item side bar, text links and a pill search in a full-width toolbar, bordered cover tiles, uppercase black headings and a three-column player. Pairs with the Zinc colours.", font: "system-ui", nav: "toolbar", matching: { light: "zinc", dark: "zinc" } },
   { id: "liquid", label: "macOS Liquid Glass", description: "Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus.", font: "SF Pro", matching: { light: "macos", dark: "macos-dark" } },
   { id: "holo", label: "Android Holo (4.x, 2011-13)", description: "Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto.", font: "Roboto", matching: { light: "holo-light", dark: "holo-dark" } },
   { id: "winamp", label: "Winamp 2 (classic skin)", description: "The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial.", font: "Arial", matching: { light: "winamp" } },

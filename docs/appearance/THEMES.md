@@ -64,7 +64,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Fortnite Ch 2-3 | `fortnite-2` | dark | `#0a5db6` `#0a4b9a` `#e7f03b` `#d9eeff` |
 | Fortnite Ch 4 | `fortnite-4` | dark | `#0b3ab0` `#0a2f94` `#ffe600` `#ffffff` |
 | Fortnite Ch 5-6 | `fortnite-5` | dark | `#12151d` `#1b1f2b` `#ffee00` `#ffffff` |
-| Dyad (original) | `dyad` | dark | `#09090b` `#101012` `#2564eb` `#fafafa` |
+| Zinc | `zinc` | dark | `#09090b` `#101012` `#2564eb` `#fafafa` |
 | Material You | `material` | light | `#fef7ff` `#f7f2fa` `#6750a3` `#1d1b20` |
 | Material You Dark | `material-dark` | dark | `#141218` `#211f26` `#d0bcff` `#e6e0e9` |
 
@@ -82,7 +82,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Windows 98 | `win98` | `win98` | Classic: grey bevelled 3D controls, navy title bars, no animation and MS Sans Serif style type. |
 | macOS (Big Sur to Sequoia) | `macos` | `macos`, `macos-dark` | Apple's flat 2020s look: 10 px windows, flat blue default buttons, a see-through sidebar and toolbar, sheet-style dialogs, in SF. |
 | Mac OS X Aqua (2001-09) | `aqua` | `aqua` | Cheetah to Snow Leopard: pinstriped windows, glossy gel capsule buttons with a pulsing default, jewel traffic lights and a blue source list in Lucida Grande. |
-| Dyad (the original app) | `dyad` | `dyad`, `dyad` | The first version's layout: a four-item side bar, text links and a pill search in a full-width toolbar, bordered cover tiles, uppercase black headings and a three-column player. Pairs with the Dyad colours. |
+| Toolbar (first version) | `toolbar` | `zinc`, `zinc` | The first version's layout: a six-item side bar, text links and a pill search in a full-width toolbar, bordered cover tiles, uppercase black headings and a three-column player. Pairs with the Zinc colours. |
 | macOS Liquid Glass | `liquid` | `macos`, `macos-dark` | Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus. |
 | Android Holo (4.x, 2011-13) | `holo` | `holo-light`, `holo-dark` | Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto. |
 | Winamp 2 (classic skin) | `winamp` | `winamp` | The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial. |

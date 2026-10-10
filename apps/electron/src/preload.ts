@@ -20,5 +20,6 @@ contextBridge.exposeInMainWorld('curatorDesktop', {
     install: () => ipcRenderer.send('curator:update-install'),
     onState: (cb: (s: unknown) => void) => { const h = (_e: unknown, s: unknown) => cb(s); ipcRenderer.on('curator:update', h); return () => { ipcRenderer.removeListener('curator:update', h); }; },
   },
+  getGraphics: () => ipcRenderer.invoke('curator:graphics') as Promise<unknown>,
   showLibraryFolder: () => ipcRenderer.invoke('curator:show-folder') as Promise<void>,
 });

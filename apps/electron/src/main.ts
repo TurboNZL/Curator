@@ -6,6 +6,7 @@ import { startServer, type Running } from '../../../packages/server/src/start.ts
 import { findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
 import { DiscordPresence, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
+import { describeGraphics, type Graphics } from './graphics.ts';
 
 /**
  * The desktop app runs the same server as the Raspberry Pi, inside the app, on 127.0.0.1, with the library in a folder of the
@@ -23,7 +24,27 @@ app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(
 
 // let the sound keep going when the window is hidden, and let the keyboard's media keys reach the page (MPRIS on Linux)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
-if (process.platform === 'linux') app.commandLine.appendSwitch('enable-features', 'MediaSessionService,HardwareMediaKeyHandling');
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-features', 'MediaSessionService,HardwareMediaKeyHandling');
+  // Chromium's block list leaves GPU painting off on many Linux drivers, which shows as "not using the GPU renderer": ask for it (a driver
+  // that really cannot do it still falls back by itself, and graphics() below reports what happened)
+  app.commandLine.appendSwitch('ignore-gpu-blocklist');
+  app.commandLine.appendSwitch('enable-gpu-rasterization');
+}
+// escape hatch for a driver that crashes the GPU process: CURATOR_SOFTWARE_RENDERING=1 pnpm --filter @curator/electron start
+if (process.env.CURATOR_SOFTWARE_RENDERING) app.disableHardwareAcceleration();
+let gpuCrashes = 0;
+app.on('child-process-gone', (_e, d) => { if (d.type === 'GPU') { gpuCrashes++; console.warn(`[curator] the GPU process stopped (${d.reason}, code ${d.exitCode}); crash ${gpuCrashes}`); } });
+
+async function graphics(): Promise<Graphics> {
+  const info = (await app.getGPUInfo('basic').catch(() => null)) as { auxAttributes?: { glRenderer?: string; glImplementationParts?: string }; gpuDevice?: { vendorId?: number }[] } | null;
+  return describeGraphics({
+    features: app.getGPUFeatureStatus() as unknown as Record<string, string>,
+    renderer: info?.auxAttributes?.glRenderer ?? '',
+    glParts: info?.auxAttributes?.glImplementationParts ?? '',
+    vendorIds: (info?.gpuDevice ?? []).map((d) => d.vendorId ?? 0),
+  }, gpuCrashes);
+}
 
 const userData = () => app.getPath('userData');
 
@@ -53,6 +74,8 @@ function openWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) void shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(origin)) { e.preventDefault(); if (/^https?:/.test(url)) void shell.openExternal(url); } });
   win.on('closed', () => { win = null; });
+  // the GPU process starts lazily: look a moment after the page is up, and say it in the terminal if the app is painting in software
+  win.webContents.once('did-finish-load', () => setTimeout(() => void graphics().then((g) => console.log(`[curator] graphics: ${g.summary}${g.hardware ? '' : '. If your computer has a GPU, see docs/ELECTRON.md (Graphics).'}`)), 2500));
   void win.loadURL(origin);
 }
 
@@ -72,6 +95,7 @@ function chooseFolder(): Promise<string | null> {
 ipcMain.on('curator:info', (e) => {
   e.returnValue = { token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, port: server?.port ?? 0 };
 });
+ipcMain.handle('curator:graphics', () => graphics());
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
 const discordInfo = () => ({ ...loadDiscordConfig(userData()), status: discord.status });
 ipcMain.on('curator:presence', (_e, p: Presence | null) => {

@@ -7,6 +7,7 @@ import android.provider.Settings
 import androidx.core.content.FileProvider
 import app.musiccurator.android.BuildConfig
 import app.musiccurator.android.ServerPrefs
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -29,17 +30,6 @@ object AppUpdater {
     private val io = Executors.newSingleThreadExecutor()
     private fun set(s: State) { state = s; listener?.invoke(s) }
 
-    /** "0.2.10" > "0.2.9": compare number by number */
-    fun isNewer(remote: String, local: String): Boolean {
-        fun parts(v: String) = v.removePrefix("v").substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
-        val a = parts(remote); val b = parts(local)
-        for (i in 0 until maxOf(a.size, b.size)) {
-            val x = a.getOrElse(i) { 0 }; val y = b.getOrElse(i) { 0 }
-            if (x != y) return x > y
-        }
-        return false
-    }
-
     fun check(context: Context) {
         val ctx = context.applicationContext
         if (state.status == "checking" || state.status == "downloading") return
@@ -47,22 +37,21 @@ object AppUpdater {
         io.execute {
             val prefs = ServerPrefs(ctx)
             try {
-                val rel = JSONObject(get("https://api.github.com/repos/${BuildConfig.REPO_OWNER}/${BuildConfig.REPO_NAME}/releases/latest", prefs.updateToken, "application/vnd.github+json").bytes.toString(Charsets.UTF_8))
+                // The list, not /releases/latest: "latest" skips releases marked pre-release (and answers 404 when every release is one).
+                val releases = JSONArray(get("https://api.github.com/repos/${BuildConfig.REPO_OWNER}/${BuildConfig.REPO_NAME}/releases?per_page=20", prefs.updateToken, "application/vnd.github+json").bytes.toString(Charsets.UTF_8))
                 prefs.lastUpdateCheck = System.currentTimeMillis()
-                val tag = rel.getString("tag_name")
-                val assets = rel.getJSONArray("assets")
-                var apkUrl: String? = null
-                for (i in 0 until assets.length()) {
-                    val a = assets.getJSONObject(i)
-                    if (a.getString("name").endsWith(".apk")) { apkUrl = a.getString("url"); break }
-                }
-                if (apkUrl == null || !isNewer(tag, BuildConfig.VERSION_NAME)) { set(State("none")); return@execute }
+                val found = Releases.newestWithApk(releases)
+                if (found == null) { set(State("none", message = "No release with an Android app (.apk) has been published yet.")); return@execute }
+                val (tag, apkUrl) = found
+                if (!Releases.isNewer(tag, BuildConfig.VERSION_NAME)) { set(State("none")); return@execute }
                 val version = tag.removePrefix("v")
                 set(State("downloading", version, 0))
                 val dir = File(ctx.cacheDir, "updates").apply { mkdirs(); listFiles()?.forEach { it.delete() } }
                 val out = File(dir, "update.apk")
                 download(apkUrl, prefs.updateToken, out) { pct -> if (pct != state.percent) set(State("downloading", version, pct)) }
                 set(State("ready", version))
+            } catch (e: java.net.UnknownHostException) {
+                set(State("error", message = "No connection to GitHub. Check the phone's internet."))
             } catch (e: Exception) {
                 set(State("error", message = e.message ?: e.javaClass.simpleName))
             }
@@ -96,7 +85,9 @@ object AppUpdater {
             if (token.isNotEmpty() && URL(u).host.endsWith("github.com")) c.setRequestProperty("Authorization", "Bearer $token")
             val code = c.responseCode
             if (code in 300..399) { u = c.getHeaderField("Location") ?: throw IllegalStateException("Redirect without a target"); c.disconnect(); continue }
-            if (code == 404 && token.isEmpty()) throw IllegalStateException("Not found. If the repository is private, add a GitHub token in Settings › App updates.")
+            if (code == 404 || code == 401) throw IllegalStateException(
+                if (token.isEmpty()) "GitHub cannot find the repository. If it is private, add a GitHub token in Settings › App updates."
+                else "GitHub cannot find the repository with this token. It needs read access to the repository's contents.")
             if (code != 200) throw IllegalStateException("GitHub answered $code")
             return c
         }

@@ -58,7 +58,7 @@ function SyncDot() {
   return <div className="flex items-center gap-2 px-3 text-xs text-muted md:px-3" title={error ?? ""}><span className={cn('h-2 w-2 rounded-full', color)} />{text}</div>;
 }
 
-/** Layout "toolbar" (the Dyad UI style): these pages stay in the side bar, in this order; every other page becomes a text link in the top bar. */
+/** Layout "toolbar" (the Toolbar UI style): these pages stay in the side bar, in this order; every other page becomes a text link in the top bar. */
 const LIBRARY = ['/artists', '/albums', '/singles', '/eras', '/tracks', '/playlists'];
 const TOOLBAR_LABEL: Record<string, string> = { '/': 'Journal' };
 
