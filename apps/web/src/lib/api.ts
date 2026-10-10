@@ -56,6 +56,14 @@ export class Api {
   acquireStatus() {
     return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');
   }
+  /** direct download links (the browser saves them to disk without holding them in memory) */
+  exportUrl(what: 'database' | 'files') { return this.url(`/api/export/${what}?token=${encodeURIComponent(this.s.token)}`); }
+  importDatabase(file: Blob, mode: 'merge' | 'replace') {
+    return this.req<{ mode: string; read?: number; applied?: number; written?: number; removed?: number }>(`/api/import/database?mode=${mode}`, { method: 'POST', body: file, headers: { 'Content-Type': 'application/octet-stream' } });
+  }
+  importFiles(file: Blob) {
+    return this.req<{ added: number; existed: number; corrupt: number; ignored: number; bytes: number }>('/api/import/files', { method: 'POST', body: file, headers: { 'Content-Type': 'application/x-tar' } });
+  }
   /** `<audio src>` / `<img src>` cannot send headers, hence ?token= */
   fileUrl(hash: string) { return this.url(`/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`); }
 }

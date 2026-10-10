@@ -5,6 +5,7 @@ import { centreSquare, contentBox, coverCrop } from '../src/lib/image.ts';
 import { createHash, randomBytes } from 'node:crypto';
 import { sha256Sync } from '../src/lib/sha256.ts';
 import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
+import { parseBackup } from '../src/lib/backupFormat.ts';
 import { computeHealth } from '../src/lib/health.ts';
 import { assignLinks, linkGroups, looksRight, parseLinks } from '../src/lib/bulkLinks.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
@@ -151,6 +152,19 @@ describe('computeHealth', () => {
     expect(by('artist-unused')).toEqual(['z']);       // 'c' is only a credit but is still used
     expect(by('genre-unused')).toEqual(['g3']);
     expect(by('role-unused')).toEqual(['r2']);        // 'Producer' is used by a credit
+  });
+});
+
+describe('backup file', () => {
+  const good = { table: 'tracks', id: 'a', updatedAt: 1, deviceId: 'd', deleted: false, data: { title: 'x' } };
+  it('reads records and skips broken ones', () => {
+    const r = parseBackup(JSON.stringify({ format: 'curator-database', version: 1, records: [good, { table: 'nope', id: 'b' }, 5] }));
+    expect(r.records).toHaveLength(1);
+    expect(r.skipped).toBe(2);
+  });
+  it('rejects other JSON and non-JSON', () => {
+    expect(() => parseBackup('{"records":[]}')).toThrow(/not a Curator/);
+    expect(() => parseBackup('nope')).toThrow(/not valid JSON/);
   });
 });
 

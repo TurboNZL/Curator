@@ -9,6 +9,9 @@ import { Acquirer } from './acquire.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { checkTools } from './tools.ts';
+import { BackupError, databaseSnapshot, filesArchive, importFiles, readDatabaseRecords, readStream, saveUpload } from './backup.ts';
+import { Readable } from 'node:stream';
+import { rmSync } from 'node:fs';
 import { diskUsage, filePath, parseRange, saveVerified, streamFile, UploadError } from './files.ts';
 
 export const API_VERSION = 1;
@@ -88,6 +91,42 @@ export function createApp(
     const body = (await c.req.json().catch(() => ({}))) as { url?: unknown; urls?: unknown };
     try { return c.json(await importer.fetchFirstCover(Array.isArray(body.urls) ? body.urls : [body.url])); }
     catch (e) { if (e instanceof ImportError) return c.json({ error: e.message }, e.status as 400); throw e; }
+  });
+
+  // Backups. The database (the library: records only) and the data folder (audio and images) are separate downloads and uploads.
+  // `?token=` works here too, so the browser can save a download straight to disk without holding it in memory.
+  const stamp = () => new Date().toISOString().slice(0, 10);
+  app.get('/api/export/database', (c) => {
+    const snap = databaseSnapshot(config.dataDir, store);
+    const stream = readStream(snap.path);
+    stream.on('close', () => rmSync(snap.path, { force: true }));
+    return new Response(Readable.toWeb(stream) as unknown as ReadableStream, { headers: {
+      'Content-Type': 'application/vnd.sqlite3', 'Content-Length': String(snap.size), 'Content-Disposition': `attachment; filename="curator-database-${stamp()}.db"` } });
+  });
+  app.post('/api/import/database', async (c) => {
+    const mode = c.req.query('mode') === 'replace' ? 'replace' : 'merge';
+    if (!c.req.raw.body) return c.json({ error: 'empty body' }, 400);
+    let path: string | undefined;
+    try {
+      path = await saveUpload(config.dataDir, c.req.raw.body as never, 2 * 1024 * 1024 * 1024);
+      const records = readDatabaseRecords(path);
+      if (mode === 'replace') return c.json({ mode, ...store.replaceWith(records), cursor: store.cursor() });
+      const done = store.push(records);
+      return c.json({ mode, read: records.length, applied: done.applied, cursor: done.cursor });
+    } catch (e) {
+      if (e instanceof BackupError) return c.json({ error: e.message }, e.status as 400 | 413);
+      throw e;
+    } finally { if (path) rmSync(path, { force: true }); }
+  });
+  app.get('/api/export/files', (c) => {
+    const archive = filesArchive(config.dataDir, store);
+    return new Response(Readable.toWeb(Readable.from(archive.chunks)) as unknown as ReadableStream, { headers: {
+      'Content-Type': 'application/x-tar', 'Content-Length': String(archive.length), 'Content-Disposition': `attachment; filename="curator-files-${stamp()}.tar"` } });
+  });
+  app.post('/api/import/files', async (c) => {
+    if (!c.req.raw.body) return c.json({ error: 'empty body' }, 400);
+    try { return c.json(await importFiles(config.dataDir, store, Readable.fromWeb(c.req.raw.body as never))); }
+    catch (e) { if (e instanceof BackupError) return c.json({ error: e.message }, e.status as 400 | 413); throw e; }
   });
 
   app.get('/api/files', (c) => c.json(store.listFiles()));

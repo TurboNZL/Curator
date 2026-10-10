@@ -26,6 +26,8 @@ interface State {
   put(table: RecordTable, data: object, id?: string): string;
   patch(table: RecordTable, id: string, partial: object): void;
   remove(table: RecordTable, id: string): void;
+  /** restore from a backup: merge keeps whichever side is newer, replace makes this device match the backup (what it lacks becomes deleted) */
+  importRecords(records: SyncRecord[], mode: 'merge' | 'replace'): Promise<{ applied: number; removed: number }>;
   syncNow(): Promise<void>;
   /** bumped when a local file is added so image hooks re-resolve */
   filesRev: number;
@@ -186,6 +188,38 @@ export const useStore = create<State>((set, get) => {
       bump();
       void write(rec, true);
       schedulePush();
+    },
+
+    async importRecords(records, mode) {
+      const rows = get().rows;
+      const now = Date.now();
+      const me = get().settings.deviceId;
+      const db = await localDb();
+      const tx = db.transaction(['records', 'outbox'], 'readwrite');
+      const keep = (rec: SyncRecord) => { rows[rec.table].set(rec.id, rec); tx.objectStore('records').put(rec); tx.objectStore('outbox').put({ table: rec.table, id: rec.id }); };
+      let applied = 0, removed = 0;
+      if (mode === 'replace') {
+        const incoming = new Set(records.map((r) => `${r.table}\u0000${r.id}`));
+        for (const [table, map] of Object.entries(rows) as [RecordTable, Map<string, SyncRecord>][]) {
+          for (const rec of [...map.values()]) {
+            if (rec.deleted || incoming.has(`${table}\u0000${rec.id}`)) continue;
+            keep({ ...rec, updatedAt: now, deviceId: me, deleted: true, data: {} });
+            removed++;
+          }
+        }
+      }
+      for (const r of records) {
+        if (!rows[r.table]) continue; // a table this version does not know
+        const rec = mode === 'replace' ? { ...r, updatedAt: now, deviceId: me } : r;
+        if (!wins(rec, rows[r.table].get(r.id))) continue;
+        keep(rec);
+        applied++;
+      }
+      await tx.done;
+      bump();
+      setSync({ pending: await db.count('outbox') });
+      schedulePush();
+      return { applied, removed };
     },
 
     syncNow() {

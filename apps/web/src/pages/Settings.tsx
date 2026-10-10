@@ -7,6 +7,7 @@ import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
 import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
 import { AppearanceCard, WallpaperCard } from '../components/AppearanceCard.tsx';
+import { BackupCard } from '../components/BackupCard.tsx';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="card bt-panel space-y-4 p-5"><h2 className="bt-panel-title font-semibold">{title}</h2>{children}</section>;
@@ -67,6 +68,8 @@ export function SettingsPage() {
           {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'} · cookies: {status.tools.cookies ? 'set' : 'not set'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
+
+      <Section title="Backup: export and import"><BackupCard /></Section>
 
       <Section title="Audio">
         <p className="text-sm text-muted">{lib.tracks.filter((t) => t.file).length} of {lib.tracks.length} tracks have audio on the server. {missing} have a YouTube source and no file.</p>
