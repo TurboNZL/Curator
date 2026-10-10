@@ -76,7 +76,7 @@ export function displacementAt(t: number, bezel: number): number {
 /** Largest displacement over the bezel (it sets the filter's `scale`). */
 export function maxDisplacement(bezel: number): number {
   let m = 0;
-  for (let i = 0; i <= 64; i++) m = Math.max(m, displacementAt(i / 64, bezel));
+  for (let i = 0; i <= 1024; i++) m = Math.max(m, displacementAt(i / 1024, bezel));
   return m;
 }
 

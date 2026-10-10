@@ -4,6 +4,7 @@ import { useLibrary } from '../lib/derive.ts';
 import { defaultChoice, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
 import { useStore } from '../lib/store.ts';
 import { Field, Modal } from './forms.tsx';
+import { plural } from '../lib/cn.ts';
 import { Cover } from './Cover.tsx';
 
 /** Write what planAddToAlbum worked out: the track's link, the album order and the releases. */
@@ -47,7 +48,7 @@ export function ReleaseChoicePicker({ albumId, trackTitle, hasOwnCover, cover, v
           <input type="checkbox" checked={value.releaseIds.includes(r.id)} onChange={(e) => toggle(r.id, e.target.checked)} />
           <Cover hash={r.cover ?? album.cover} seed={r.title} className="h-9 w-9 shrink-0" />
           <span className="min-w-0 flex-1"><span className="block truncate font-medium">{r.title}{album.defaultReleaseId === r.id && <span className="chip ml-2">default</span>}</span>
-            <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {r.trackIds.length} tracks</span></span>
+            <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {plural(r.trackIds.length, 'track')}</span></span>
         </label>))}
     </fieldset>
   );

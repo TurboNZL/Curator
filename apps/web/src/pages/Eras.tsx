@@ -11,6 +11,7 @@ import { DetailLayout } from '../components/DetailLayout.tsx';
 import { SingleGrid } from '../components/SingleCard.tsx';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
 import { useMenu } from '../components/Menu.tsx';
+import { plural } from '../lib/cn.ts';
 import { useAlbumMenuItems } from '../components/entityMenus.tsx';
 
 /** Era > Album > Release > Track: an era groups albums and singles, and can have relational bios attached. */
@@ -33,7 +34,7 @@ export function ErasPage() {
           <Link key={era.id} to={`/eras/${era.id}`} className="group block">
             <Cover hash={cover} seed={era.name} className="transition-transform group-hover:scale-[1.02]" />
             <div className="mt-2 truncate text-sm font-medium">{era.name}</div>
-            <div className="text-xs text-muted">{albums.length} albums · {singles.length} singles</div>
+            <div className="text-xs text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
           </Link>))}
       </div>
     </div>
@@ -59,7 +60,7 @@ export function EraPage() {
         <Cover hash={cover} seed={era.name} className="w-40 shrink-0 sm:w-48" />
         <div className="min-w-0 space-y-2"><div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted"><Layers size={13} />Era</div>
           <h1 className="text-3xl font-bold">{era.name}</h1>
-          <div className="text-sm text-muted">{albums.length} albums · {singles.length} singles</div>
+          <div className="text-sm text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
           {era.description && <p className="max-w-prose text-sm">{era.description}</p>}
           <div className="flex gap-2 pt-1">
             <button className="btn btn-accent" disabled={!ids.length} onClick={() => play(ids[0], ids, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>

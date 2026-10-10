@@ -97,12 +97,15 @@ export class Importer {
   /** Try each candidate in order; returns the first that downloads, with the URL it came from. */
   async fetchFirstCover(urls: unknown): Promise<{ hash: string; url: string }> {
     const list = (Array.isArray(urls) ? urls : []).slice(0, 12);
-    let last: Error = new ImportError(400, 'No image links given');
+    if (!list.length) throw new ImportError(400, 'No image links given');
+    const why: string[] = [];
+    let invalid = 0; // links refused outright (not an allowed host, not https), as opposed to downloads that failed
     for (const url of list) {
       try { return { hash: await this.fetchCover(url), url: String(url) }; }
-      catch (e) { last = e as Error; }
+      catch (e) { if (e instanceof ImportError && e.status === 400) invalid++; let host = String(url); try { host = new URL(host).hostname; } catch { /* keep as is */ } why.push(`${host}: ${(e as Error).message}`); }
     }
-    throw last;
+    // say what went wrong for the first few links, so a network problem is not reported as "internal error"
+    throw new ImportError(invalid === list.length ? 400 : 502, `No cover could be downloaded (${why.slice(0, 3).join('; ')})`);
   }
 
   /** Fetch an image from a YouTube/Google image host into the file store; returns its hash. */
@@ -110,7 +113,9 @@ export class Importer {
     const u = safeUrl(url);
     const host = u ? new URL(u).hostname : '';
     if (!u || !u.startsWith('https://') || !COVER_HOSTS.some((h) => host === h || host.endsWith('.' + h))) throw new ImportError(400, 'Only YouTube image links are allowed');
-    const res = await (this.o.fetchImpl ?? fetch)(u);
+    let res: Response;
+    try { res = await (this.o.fetchImpl ?? fetch)(u, { headers: { Accept: 'image/*' }, signal: AbortSignal.timeout(20_000) }); }
+    catch (e) { throw new ImportError(502, `could not reach the image host (${(e as Error).cause instanceof Error ? ((e as Error).cause as Error).message : (e as Error).message})`); }
     if (!res.ok) throw new ImportError(502, `Image host said ${res.status}`);
     const type = res.headers.get('content-type') ?? '';
     if (!type.startsWith('image/')) throw new ImportError(502, 'That link is not an image');

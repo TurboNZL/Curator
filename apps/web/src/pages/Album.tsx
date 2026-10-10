@@ -7,7 +7,7 @@ import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { initialView, viewTrackIds, type AlbumView } from '../lib/albumOps.ts';
 import { useStore } from '../lib/store.ts';
-import { cn } from '../lib/cn.ts';
+import { cn, plural } from '../lib/cn.ts';
 import { Cover } from '../components/Cover.tsx';
 import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
@@ -53,7 +53,7 @@ export function AlbumPage() {
         <div className="space-y-1.5" role="radiogroup" aria-label="Release to show">
           {releases.length > 0 && (
             <button role="radio" aria-checked={view.kind === 'all'} className={cn('card flex w-full items-center gap-3 px-3 py-2 text-left text-sm', view.kind === 'all' && 'ring-2 ring-accent')} onClick={() => choose({ kind: 'all' })}>
-              <Layers size={18} className="shrink-0 text-muted" /><span className="min-w-0 flex-1"><span className="block font-medium">All tracks</span><span className="block text-xs text-muted">{album.trackIds.length} tracks</span></span></button>)}
+              <Layers size={18} className="shrink-0 text-muted" /><span className="min-w-0 flex-1"><span className="block font-medium">All tracks</span><span className="block text-xs text-muted">{plural(album.trackIds.length, 'track')}</span></span></button>)}
           {releases.map((r) => {
             const on = view.kind === 'release' && view.id === r.id;
             const isDefault = album.defaultReleaseId ? album.defaultReleaseId === r.id : releases.length > 0 && r.id === [...releases].sort((a, b) => b.trackIds.length - a.trackIds.length)[0].id;
@@ -62,7 +62,7 @@ export function AlbumPage() {
                 <button role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3 text-left text-sm" onClick={() => choose({ kind: 'release', id: r.id })}>
                   <Cover hash={r.cover || album.cover} seed={r.title} className="h-11 w-11 shrink-0" />
                   <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
-                    <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {r.trackIds.length} tracks</span></span>
+                    <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {plural(r.trackIds.length, 'track')}</span></span>
                 </button>
                 <div className="flex shrink-0 flex-col">
                   <button className="p-1 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={13} /></button>
@@ -82,7 +82,7 @@ export function AlbumPage() {
           {release && release.title !== album.title && <div className="text-sm font-medium">{release.title}{release.releaseDate && <span className="text-muted"> · {release.releaseDate}</span>}</div>}
           <div className="text-sm">
             <span className="font-medium"><ArtistLinks leads={album.leads} className="hover:underline" /></span>
-            <span className="text-muted"> · {tracks.length} tracks{album.rating != null && ` · avg ${album.rating.toFixed(1)}`}</span>
+            <span className="text-muted"> · {plural(tracks.length, 'track')}{album.rating != null && ` · avg ${album.rating.toFixed(1)}`}</span>
             {album.eraId && lib.eraById.get(album.eraId) && <> · <Link to={`/eras/${album.eraId}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(album.eraId)!.name}</Link></>}
           </div>
           <div className="flex flex-wrap gap-1.5">{album.genres.map((g) => <span key={g} className="chip">{g}</span>)}</div>

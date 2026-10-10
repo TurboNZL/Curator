@@ -46,7 +46,7 @@ export function createApp(
       cursor: store.cursor(),
       files: { count: files.length, bytes: files.reduce((n, f) => n + f.size, 0) },
       disk: diskUsage(config.dataDir),
-      tools: await checkTools({ ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir }),
+      tools: { ...(await checkTools({ ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir })), cookies: !!config.ytdlpArgs?.includes('--cookies') },
     });
   });
 

@@ -5,6 +5,7 @@ import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { Cover } from '../components/Cover.tsx';
 import { useMenu } from '../components/Menu.tsx';
+import { plural } from '../lib/cn.ts';
 import { useArtistMenuItems } from '../components/entityMenus.tsx';
 
 export function ArtistsPage() {
@@ -31,7 +32,7 @@ export function ArtistsPage() {
           <Link key={a.id} to={`/artists/${a.id}`} className="group block text-center" onContextMenu={menu.onContextMenu(itemsFor(a.id), `Actions for ${a.name}`, a.id)}>
             <Cover kind="artist" hash={a.image} seed={a.name} className="mx-auto w-full transition-transform group-hover:scale-[1.03]" />
             <div className="mt-2 truncate text-sm font-medium">{a.name}</div>
-            <div className="text-xs text-muted">{a.count} tracks</div>
+            <div className="text-xs text-muted">{plural(a.count, 'track')}</div>
           </Link>
         ))}
       </div>

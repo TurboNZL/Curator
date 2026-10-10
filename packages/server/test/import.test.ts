@@ -102,6 +102,19 @@ describe('POST /api/import/preview', () => {
   });
 });
 
+describe('POST /api/import/cover, when the network is down', () => {
+  it('says what failed instead of an internal error, and the first working link still wins', async () => {
+    const down = (async () => { throw Object.assign(new TypeError('fetch failed'), { cause: new Error('getaddrinfo ENOTFOUND i.ytimg.com') }); }) as unknown as typeof fetch;
+    const app = appWith(new Importer({ dataDir: join(dir, 'data'), store, fetchImpl: down }));
+    const res = await post(app, '/api/import/cover', { urls: ['https://i.ytimg.com/vi/a/maxresdefault.jpg', 'https://i.ytimg.com/vi/a/hqdefault.jpg'] });
+    expect(res.status).toBe(502);
+    const { error } = (await res.json()) as { error: string };
+    expect(error).toContain('No cover could be downloaded');
+    expect(error).toContain('i.ytimg.com');
+    expect(error).toContain('ENOTFOUND');
+  });
+});
+
 describe('POST /api/import/cover', () => {
   it('with several links, uses the first one that downloads', async () => {
     const bytes = Buffer.from('second-wins');

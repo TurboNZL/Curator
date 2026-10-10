@@ -10,7 +10,7 @@ export interface ServerStatus {
   files: { count: number; bytes: number };
   disk: { free: number; total: number } | Record<string, number>;
   /** versions of the programs YouTube import needs, null when the server cannot run them */
-  tools?: { ytdlp: string | null; ffmpeg: string | null };
+  tools?: { ytdlp: string | null; ffmpeg: string | null; /** a cookies file is configured for yt-dlp */ cookies?: boolean };
 }
 
 export interface ImportPreview {

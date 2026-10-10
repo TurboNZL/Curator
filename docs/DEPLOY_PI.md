@@ -47,6 +47,8 @@ Environment=CURATOR_DATA_DIR=/mnt/curator/data
 # Environment=CURATOR_PORT=47813
 # Environment=CURATOR_HOST=127.0.0.1      # only if everything goes through Tailscale/a reverse proxy (section 5)
 # Environment=CURATOR_YTDLP=/usr/local/bin/yt-dlp
+# Environment=CURATOR_YTDLP_COOKIES=/etc/curator/youtube-cookies.txt   # only if YouTube asks for proof you are not a bot: docs/YTDLP_COOKIES.md
+# Environment="CURATOR_YTDLP_ARGS=--js-runtimes node"                   # extra yt-dlp arguments, split on spaces
 ExecStart=/usr/bin/node --experimental-strip-types --disable-warning=ExperimentalWarning src/index.ts
 Restart=on-failure
 RestartSec=3
@@ -95,6 +97,8 @@ Open that URL on your phone (also on Tailscale). With this in place you can set 
 - Every client holds a full copy of what it has synced, but a client that was never online after an edit cannot restore the server, so still back up.
 
 ## 7. Updating
+**Short version:** see [UPDATING.md](UPDATING.md), one command from your login user. The step-by-step below is the same thing done by hand.
+
 From your own computer, step by step:
 ```
 # 1. log in to the Pi
@@ -131,4 +135,5 @@ Clients pick up the new web build on their next load (when online; the app shell
 - `node:sqlite` not found: Node is older than 22.13 (`node -v` as the **service** user, not your login).
 - Token rejected after moving the data dir: the token lives in `<data dir>/token`; set `CURATOR_TOKEN` to override.
 - 404 at `/`: the web client was not built, or `CURATOR_WEB_DIR` points elsewhere.
+- Downloads fail with "Sign in to confirm you're not a bot": see [YTDLP_COOKIES.md](YTDLP_COOKIES.md).
 - Downloads fail with "yt-dlp not found": set `CURATOR_YTDLP`; with ffmpeg errors, set `CURATOR_FFMPEG_DIR` to the folder containing it.
