@@ -29,6 +29,8 @@ export class Updates {
   start() {
     if (this.started) return; this.started = true;
     if (!this.packaged) { this.set({ status: 'disabled', message: 'Updates work in the installed app, not in a development run.' }); return; }
+    // the project's releases are often marked pre-release, which the default "latest stable" lookup ignores
+    autoUpdater.allowPrerelease = true;
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.on('checking-for-update', () => this.set({ status: 'checking' }));

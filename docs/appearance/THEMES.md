@@ -59,11 +59,12 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Android Holo Light | `holo-light` | light | `#ffffff` `#f3f3f3` `#0099cc` `#333333` |
 | Winamp Classic | `winamp` | dark | `#1c1c2a` `#000000` `#00e800` `#d8dbe6` |
 | LG Light | `lg-marshmallow` | light | `#f2f2f2` `#ffffff` `#0e7fa8` `#212121` |
-| LG Dark | `lg-marshmallow-dark` | dark | `#1a1a1a` `#2a2a2a` `#2aa6d1` `#f2f2f2` |
-| Fortnite Ch 1 | `fortnite-1` | dark | `#0b3a8c` `#1456c4` `#ffe400` `#ffffff` |
-| Fortnite Ch 2-3 | `fortnite-2` | dark | `#07123a` `#0f2260` `#ffd60a` `#ffffff` |
-| Fortnite Ch 4 | `fortnite-4` | dark | `#1d0b3f` `#2d1360` `#ffdd2d` `#ffffff` |
-| Fortnite Ch 5-6 | `fortnite-5` | dark | `#081a45` `#10296a` `#fff04d` `#ffffff` |
+| LG Dark | `lg-marshmallow-dark` | dark | `#1a1a1a` `#2a2a2a` `#29a7d2` `#f2f2f2` |
+| Fortnite Ch 1 | `fortnite-1` | light | `#a6b8dc` `#b6c5e2` `#f1e53c` `#121830` |
+| Fortnite Ch 2-3 | `fortnite-2` | dark | `#0a5db6` `#0a4b9a` `#e7f03b` `#d9eeff` |
+| Fortnite Ch 4 | `fortnite-4` | dark | `#0b3ab0` `#0a2f94` `#ffe600` `#ffffff` |
+| Fortnite Ch 5-6 | `fortnite-5` | dark | `#12151d` `#1b1f2b` `#ffee00` `#ffffff` |
+| Zinc | `zinc` | dark | `#09090b` `#101012` `#2564eb` `#fafafa` |
 | Material You | `material` | light | `#fef7ff` `#f7f2fa` `#6750a3` `#1d1b20` |
 | Material You Dark | `material-dark` | dark | `#141218` `#211f26` `#d0bcff` `#e6e0e9` |
 
@@ -81,18 +82,13 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Windows 98 | `win98` | `win98` | Classic: grey bevelled 3D controls, navy title bars, no animation and MS Sans Serif style type. |
 | macOS (Big Sur to Sequoia) | `macos` | `macos`, `macos-dark` | Apple's flat 2020s look: 10 px windows, flat blue default buttons, a see-through sidebar and toolbar, sheet-style dialogs, in SF. |
 | Mac OS X Aqua (2001-09) | `aqua` | `aqua` | Cheetah to Snow Leopard: pinstriped windows, glossy gel capsule buttons with a pulsing default, jewel traffic lights and a blue source list in Lucida Grande. |
+| Toolbar (first version) | `toolbar` | `zinc`, `zinc` | The first version's layout: a six-item side bar, text links and a pill search in a full-width toolbar, bordered cover tiles, uppercase black headings and a three-column player. Pairs with the Zinc colours. |
 | macOS Liquid Glass | `liquid` | `macos`, `macos-dark` | Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus. |
 | Android Holo (4.x, 2011-13) | `holo` | `holo-light`, `holo-dark` | Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto. |
 | Winamp 2 (classic skin) | `winamp` | `winamp` | The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial. |
 | LG UX 5.0 (Marshmallow) | `lgux` | `lg-marshmallow`, `lg-marshmallow-dark` | LG's Optimus-lineage skin on Android 6: flat text buttons, filled buttons with a hairline shadow, an accent-colour app bar, underlined fields and 2 px corners in Roboto. |
-| Fortnite Chapter 1 (2017-19) | `fortnite1` | `fortnite-1` | Slanted buttons and panels, hard drop shadows, a yellow Play button and condensed capitals on bright blue. |
-| Fortnite Chapter 2-3 (2019-23) | `fortnite2` | `fortnite-2` | The same slant on deep navy with see-through blue panels and a glowing Play button. |
-| Fortnite Chapter 4 Rift UI (2023) | `fortnite4` | `fortnite-4` | The lobby redesign: rounded shapes on purple, options down the left side, in Heading Now. |
-| Fortnite Chapter 5-6 (2024-) | `fortnite5` | `fortnite-5` | Rift UI refined: less rounding and blue instead of purple. |
+| Fortnite Chapter 1 (2017-19) | `fortnite1` | `fortnite-1`, `fortnite-1` | Slanted buttons and panels, hard drop shadows, a yellow Play button and condensed capitals on bright blue. |
+| Fortnite Chapter 2-3 (2019-23) | `fortnite2` | `fortnite-2`, `fortnite-2` | The same slant on deep navy with see-through blue panels and a glowing Play button. |
+| Fortnite Chapter 4 Rift UI (2023) | `fortnite4` | `fortnite-4`, `fortnite-4` | The lobby redesign: rounded shapes on purple, options down the left side, in Heading Now. |
+| Fortnite Chapter 5-6 (2024-) | `fortnite5` | `fortnite-5`, `fortnite-5` | Rift UI refined: less rounding and blue instead of purple. |
 | Material 3 | `material` | `material`, `material-dark` | Pill buttons, tonal surfaces, filled fields with an underline and rounded dialogs in Roboto. |
-
-## Research notes: LG UX 5.0 and Fortnite
-
-**What is documented** (web search, this session): LG's Optimus UI (3.0, 2012) became LG UX 2.0 / "Optimus UI 4.0" in 2013; UX 5.0 shipped with Android 6.0 Marshmallow on the G5 (2016). Reviews describe it as design-focused, cleaner than before, adopting Material Design elements, with flat and floating action buttons used consistently and a left slide-in navigation drawer (AnandTech's G5 review; GSMArena's UX 5.0 announcement). No colour values are published, so the LG palette is an approximation; the style is built from those documented traits.
-
-Fortnite: the lobby kept slanted-rectangle buttons and images from Chapter 1 through Chapter 4 Season 3 (Dexerto: no major change from Chapter 2 until Fortnitemares 2023). Chapter 2 v11.00 redesigned the Play tab with a transparent blue details pane. The "Rift UI" arrived in Chapter 4 Season 4 (v26.20 early, v26.30 lobby): curved shapes, options on the left, first with Burbank, purple backgrounds and square elements, later rounded; Chapter 5 Season 1 reduced the rounding and turned most purple backgrounds blue. Chapter 6 Season 1 only reshuffled tabs (a "Passes" tab). **Not found:** any Chapter 3 lobby redesign (so it shares Chapter 2's style), and Epic's exact colours and typefaces (Burbank Big Condensed, Heading Now are Epic's own; condensed and geometric system fonts stand in; the colours follow the lobby's look: blue ground, yellow Play, purple for the Rift UI).

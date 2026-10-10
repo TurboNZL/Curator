@@ -31,7 +31,7 @@ export function Modal({ title, onClose, children, footer, wide }: { title: strin
 }
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
-  return <label className="block space-y-1 text-sm"><span className="text-muted">{label}</span>{children}{hint && <span className="block text-xs text-muted">{hint}</span>}</label>;
+  return <label className="block space-y-1 text-sm"><span className="bt-label text-muted">{label}</span>{children}{hint && <span className="block text-xs text-muted">{hint}</span>}</label>;
 }
 
 /** Chips with suggestions from the existing genre list; unknown names are created as genre records on save. */

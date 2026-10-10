@@ -36,6 +36,8 @@ export interface CuratorDesktop {
   showLibraryFolder(): Promise<void>;
   /** Discord Rich Presence (the app's main process talks to the local Discord client) */
   setPresence(p: { title: string; artist: string; album: string; duration: number; position: number; playing: boolean } | null): void;
+  /** what Chromium got for painting: hardware (GPU) or software */
+  getGraphics?(): Promise<{ hardware: boolean; summary: string; detail: string }>;
   getDiscord(): Promise<DiscordInfo>;
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
   updates: import('./native.ts').NativeUpdates;
@@ -49,6 +51,9 @@ export function loadSettings(): DeviceSettings {
   const s: DeviceSettings = {
     deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, ...saved,
   };
+  // the first version's look was called "dyad" for a few builds
+  if (s.ui === 'dyad') s.ui = 'toolbar';
+  if (s.theme === 'dyad') s.theme = 'zinc';
   // a fresh desktop app is already connected to its own server: no address or token to type
   if (!s.token && desktop()?.token) s.token = desktop()!.token;
   saveSettings(s);

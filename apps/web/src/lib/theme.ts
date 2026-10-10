@@ -142,6 +142,16 @@ const light = (s: Spec): ThemeDef => {
   };
 };
 
+
+/** Tailwind's zinc / blue / emerald / red, which the first version of the app used everywhere (see docs/appearance/TOOLBAR.md). */
+function zinc(): ThemeDef {
+  const d = dark({ id: "zinc", label: "Zinc", bg: hex("#09090b"), primary: hex("#2563eb"), onPrimary: "0 0% 100%", fg: hx("#fafafa"), mutedFg: hx("#71717a"), motif: "grid",
+    ov: { card: "#101012", secondary: "#18181b", muted: "#18181b", accent: "#27272a", border: "#27272a", input: "#27272a" } });
+  d.vars.positive = hx("#10b981"); // emerald-500: the "Merge" links, the up-votes
+  d.vars.negative = hx("#ef4444"); // red-500: deletes
+  return d;
+}
+
 export const THEME_DEFS: ThemeDef[] = [
   ...APP_THEMES,
   light({ id: "daylight", label: "Daylight", bg: [210, 40, 96.5], primary: [221, 83, 48], fg: "222 84% 5%", mutedFg: "215 16% 42%", motif: "waves" }),
@@ -224,6 +234,8 @@ export const THEME_DEFS: ThemeDef[] = [
   // Ch 5-6: neutral dark glass, light grey "regular" buttons, a yellow "loud" button; no chapter colour any more
   dark({ id: "fortnite-5", label: "Fortnite Ch 5-6", bg: hex("#12151d"), primary: hex("#ffee00"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#a8aebb"), motif: "stars",
     ov: { card: "#1b1f2b", secondary: "#2a2f3d", muted: "#262b38", accent: "#e6e9ef", border: "#363c4b", input: "#222733" } }),
+  // The first version of the app: Tailwind zinc on near-black (zinc-950 page, zinc-900 fields, zinc-800 borders, zinc-500 captions), blue-600 buttons
+  zinc(),
   light({ id: "material", label: "Material You", bg: hex("#fef7ff"), primary: hex("#6750a4"), fg: hx("#1d1b20"), mutedFg: hx("#49454f"), motif: "dots",
     ov: { card: "#f7f2fa", secondary: "#e8def8", muted: "#ece6f0", accent: "#e8def8", border: "#cac4d0", input: "#79747e" } }),
   dark({ id: "material-dark", label: "Material You Dark", bg: hex("#141218"), primary: hex("#d0bcff"), onPrimary: hx("#381e72"), fg: hx("#e6e0e9"), mutedFg: hx("#cac4d0"), motif: "dots",
@@ -239,7 +251,7 @@ export const THEMES: { id: ThemeId; label: string; dark: boolean | null; note?: 
 /** Themes that copy a platform's palette, shown in their own group in Settings. */
 export const PLATFORM_THEME_IDS: ThemeId[] = [
   "adwaita", "adwaita-dark", "breeze", "breeze-dark", "win11", "win11-dark", "win10", "win10-dark",
-  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "material", "material-dark",
+  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "zinc", "material", "material-dark",
 ];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 

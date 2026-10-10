@@ -3,6 +3,7 @@
 `apps/android` is a native Kotlin app made of two parts:
 
 - **The app itself** (`MainActivity`): the web client (bundled in the APK) in a full-screen WebView, so everything works the same as in the browser: library, voting, offline audio, themes. Set the server (your Pi) in Settings once. Android's file picker works for uploads.
+  - The page is served from a private https address, and the server is usually plain http on the home network. The WebView allows that for data (sync), but Chromium is documented to upgrade the images, audio and video that an https page loads over http to https, which the server does not speak. That is the most likely reason the library showed as text with no pictures or sound (the symptom fits; it could not be reproduced without a device). So the app answers those downloads itself (`ServerFiles`, matched by `ServerFileRoute`: `GET /api/files/…` to the configured http server's host and port, in either scheme), forwarding `Range` so seeking works. Everything else, and an https server, goes through the WebView unchanged. The matching rules and the release picker (`Releases`) are unit tested on the JVM (`app/src/test`); the WebView part has not run on a device.
 - **Android Auto / media controls** (`PlaybackService`, a Media3 `MediaLibraryService`): Android Auto can only show a native media app, so this part browses your library (Albums, Artists, Playlists, Singles) straight from the server and plays the audio, with notification / lock screen / steering-wheel controls. The web client tells it which server you use (Settings > Server). It reads the same records as the web client; ratings are not shown in the car.
 
 To use Android Auto without the Play Store: Android Auto settings > tap "Version" 10 times > developer settings > enable "Unknown sources".
@@ -14,7 +15,9 @@ Both apps update themselves from the newest **GitHub release**:
 1. Push a tag: `git tag v0.2.0 && git push origin v0.2.0`. `.github/workflows/release.yml` builds the Windows and Linux installers (electron-builder, which also writes the update manifest) and the signed APK, and attaches them to the release.
 2. The desktop app checks at start and every 6 hours, downloads in the background and installs on quit, or from Settings > App updates > "Restart to update". The Android app checks when opened (at most every 6 hours), downloads the APK, and "Install update" opens Android's installer (first time: allow "install unknown apps" for Music Curator).
 
-**The repository is private**, so the apps need a read-only token: GitHub > Settings > Developer settings > Fine-grained tokens, only this repository, permission **Contents: read-only**. Paste it in Settings > App updates > "Private repository?" on each device. Not needed once the repository is public.
+**Pre-releases count.** Both apps pick the newest published release that has their file, whether or not GitHub marks it "pre-release" (GitHub's own "latest release" address ignores pre-releases and answers 404 when every release is one, which is how "can't find the repository" happened). Drafts are skipped. Release tags look like `v2026.10.1` (year.month.number); a higher number is newer.
+
+**If the repository is private** the apps need a read-only token: GitHub > Settings > Developer settings > Fine-grained tokens, only this repository, permission **Contents: read-only**. Paste it in Settings > App updates > "Private repository?" on each device. Not needed while the repository is public.
 
 Notes:
 - The APK is signed with `apps/android/curator.keystore`, committed on purpose (private repo, personal app): Android only installs an update signed with the same key as the installed app. Don't change it.

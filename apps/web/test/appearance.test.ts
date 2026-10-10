@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { THEME_DEFS, THEMES, OWN_THEME_IDS, PLATFORM_THEME_IDS, curatorVars, hex, isTheme, readableOn, resolveTheme } from '../src/lib/theme.ts';
-import { UI_STYLES, isUiStyle } from '../src/lib/uiStyle.ts';
+import { UI_STYLES, isUiStyle, navLayout } from '../src/lib/uiStyle.ts';
 import { inheritFromAlbum, sameCredits } from '../src/lib/defaults.ts';
 
 const TOKENS = ['bg', 'surface', 'raised', 'line', 'hover', 'fg', 'muted', 'accent', 'accent-fg', 'good', 'warn', 'bad', 'top'];
@@ -45,6 +45,30 @@ describe('colour themes', () => {
     expect(hex('#ff0000')).toEqual([0, 100, 50]);
     expect(readableOn('#f59e0b')).toBe('240 10% 8%'); // amber: dark text
     expect(readableOn('#1e3a8a')).toBe('0 0% 100%'); // navy: white text
+  });
+});
+
+describe('the Toolbar style and Zinc colours (the first version)', () => {
+  it('pairs the Toolbar UI style with the Zinc colours and uses the toolbar layout', () => {
+    expect(isUiStyle('toolbar')).toBe(true);
+    expect(isTheme('zinc')).toBe(true);
+    expect(UI_STYLES.find((x) => x.id === 'toolbar')?.matching).toEqual({ light: 'zinc', dark: 'zinc' });
+    expect(navLayout('toolbar')).toBe('toolbar');
+    expect(navLayout('default')).toBe('side');
+    expect(navLayout('nope')).toBe('side');
+  });
+
+  it('uses the original Tailwind zinc and blue values', () => {
+    const v = curatorVars(resolveTheme('zinc'));
+    const css = (colour: string) => { const [h, sat, l] = hex(colour); return `${h} ${sat}% ${l}%`; };
+    expect(v.bg).toBe(css('#09090b')); // zinc-950, the page
+    expect(v.raised).toBe(css('#18181b')); // zinc-900, fields and buttons
+    expect(v.line).toBe(css('#27272a')); // zinc-800, borders
+    expect(v.muted).toBe(css('#71717a')); // zinc-500, captions
+    expect(v.accent).toBe(css('#2563eb')); // blue-600, primary buttons
+    expect(v.good).toBe(css('#10b981')); // emerald-500
+    expect(v.bad).toBe(css('#ef4444')); // red-500
+    expect(resolveTheme('zinc').dark).toBe(true);
   });
 });
 

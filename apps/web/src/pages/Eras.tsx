@@ -30,10 +30,10 @@ export function ErasPage() {
       {!rows.length && <p className="max-w-xl text-sm text-muted">An era groups albums and singles that belong to the same period (a phase of an artist, a scene). Make one here and fill it, or choose it in an album’s or single’s editor. Eras can overlap, and notes and playlists can belong to them.</p>}
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
         {rows.map(({ era, albums, singles, cover }) => (
-          <Link key={era.id} to={`/eras/${era.id}`} className="group block">
+          <Link key={era.id} to={`/eras/${era.id}`} className="bt-tile group block">
             <Cover hash={cover} seed={era.name} className="transition-transform group-hover:scale-[1.02]" />
-            <div className="mt-2 truncate text-sm font-medium">{era.name}</div>
-            <div className="text-xs text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
+            <div className="bt-cap-t mt-2 truncate text-sm font-medium">{era.name}</div>
+            <div className="bt-cap text-xs text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
           </Link>))}
       </div>
     </div>
@@ -70,9 +70,9 @@ export function EraPage() {
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
           {albums.map((a) => (
-            <div key={a.id} onContextMenu={menu.onContextMenu(albumItems(a), `Actions for ${a.title}`, a.id)}>
-              <Link to={`/albums/${a.id}`} className="block"><Cover hash={a.cover} seed={a.title} /><div className="mt-2 truncate text-sm font-medium">{a.title}</div></Link>
-              <div className="truncate text-xs text-muted"><ArtistLinks leads={a.leads} /></div>
+            <div key={a.id} className="bt-tile" onContextMenu={menu.onContextMenu(albumItems(a), `Actions for ${a.title}`, a.id)}>
+              <Link to={`/albums/${a.id}`} className="block"><Cover hash={a.cover} seed={a.title} /><div className="bt-cap-t mt-2 truncate text-sm font-medium">{a.title}</div></Link>
+              <div className="bt-cap truncate text-xs text-muted"><ArtistLinks leads={a.leads} /></div>
             </div>))}
         </div></section>}
       {singles.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Singles</h2><SingleGrid tracks={singles} /></section>}

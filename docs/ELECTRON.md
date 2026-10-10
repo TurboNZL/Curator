@@ -22,3 +22,14 @@ pnpm --filter @curator/electron dist                   # installers in apps/elec
 the web client is copied into the app as `resources/web`. Needs Node 22.5+ for `node:sqlite`; Electron 44 ships Node 24.
 
 On Linux as root (containers, CI) add `--no-sandbox`; headless: `xvfb-run -a`.
+
+## Graphics
+The window is painted by the GPU when Chromium can use one. On Linux its built-in block list leaves GPU painting off for many drivers, so the app starts with `--ignore-gpu-blocklist --enable-gpu-rasterization`. Electron falls back to software rendering silently when the GPU process cannot start, so the app reads back what it got:
+
+- the terminal prints one line shortly after the window opens, e.g. `[curator] graphics: Hardware accelerated` or `Software rendering: Chromium found no usable GPU or GL driver`;
+- Settings > Desktop app shows the same line, with the GL implementation (or GL renderer string) beside it;
+- a crash of the GPU process is printed as it happens.
+
+Chromium reports `gpu_compositing: enabled` even with no GPU (it composites on the CPU through its own GL), so the check also looks at the GL implementation (`gl=none`), a software GL (SwiftShader, llvmpipe) and whether a GPU with a vendor id was found. Measured in a container with no GPU: it reports software, as it should. A real GPU has not been tried from the sandbox.
+
+If it says software on a computer with a GPU: check the driver (`glxinfo -B`, `vulkaninfo --summary`), then try `CURATOR_SOFTWARE_RENDERING=1` only to confirm the GPU is the problem (it turns the GPU off on purpose). Two switches that other Electron users report helping (not tried here): `--ozone-platform=x11` when the GPU process exits at start-up under Wayland, and `--disable-gpu-sandbox` for NVIDIA's proprietary driver errors ("Can't initialize nvrm channel"). Pass them to `electron .` or to the installed app, and check the line above again.

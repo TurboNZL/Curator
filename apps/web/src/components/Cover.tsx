@@ -16,7 +16,7 @@ export function Cover({ hash, seed, kind = 'album', className }: { hash: string 
   const fallback = defaultImage(useLibrary(), kind === 'artist' ? 'defaultArtistImage' : 'defaultAlbumCover');
   const url = useFileUrl(hash || fallback);
   return (
-    <div className={cn('relative aspect-square overflow-hidden bg-raised', kind === 'artist' ? 'rounded-full' : 'rounded-theme', className)}
+    <div data-kind={kind} className={cn('bt-cover relative aspect-square overflow-hidden bg-raised', kind === 'artist' ? 'rounded-full' : 'rounded-theme', className)}
       style={url ? undefined : { backgroundImage: gradient(seed) }}>
       {url
         ? <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />

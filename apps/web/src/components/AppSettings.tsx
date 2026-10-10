@@ -6,7 +6,7 @@ import { Section } from './Section.tsx';
 const describe = (s: UpdateState): string => {
   switch (s.status) {
     case 'checking': return 'Checking for updates…';
-    case 'none': return 'You are on the latest version.';
+    case 'none': return s.message ?? 'You are on the latest version.';
     case 'downloading': return `Downloading ${s.version ?? 'the update'}${s.percent != null ? ` (${s.percent}%)` : ''}…`;
     case 'ready': return `${s.version ?? 'The update'} is ready.`;
     case 'disabled': return s.message ?? 'Updates are not available here.';
@@ -83,4 +83,13 @@ export function DiscordCard() {
       <div className="text-xs text-muted">Status: {DISCORD_LABEL[info.status]}{id && !valid && ' · the ID is only digits'}</div>
     </Section>
   );
+}
+
+/** One line in Settings > Desktop app: is the window painted by the GPU, or in software? */
+export function GraphicsLine() {
+  const d = desktop();
+  const [g, setG] = useState<{ hardware: boolean; summary: string; detail: string } | null>(null);
+  useEffect(() => { void d?.getGraphics?.().then(setG).catch(() => undefined); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!g) return null;
+  return <div className="text-sm"><span className="text-muted">Graphics: </span><span className={g.hardware ? 'text-good' : 'text-warn'}>{g.summary}</span>{g.detail && <span className="text-muted"> · {g.detail}</span>}</div>;
 }

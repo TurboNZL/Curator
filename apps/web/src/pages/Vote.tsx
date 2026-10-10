@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Check, ExternalLink, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
+import { Check, ExternalLink, Loader2, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
 import type { VoteData } from '@curator/core';
 import { useLibrary, type Track } from '../lib/derive.ts';
-import { pickPair } from '../lib/pairing.ts';
+import { pairLacksAudio, pickPair, rankPool } from '../lib/pairing.ts';
 import { useStore } from '../lib/store.ts';
 import { audioSource } from '../lib/files.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -28,7 +28,14 @@ function loadPreview(file: string, volume: number): Promise<Preview | null> {
   return audioSource(file).then(({ url, local }) => new Promise<Preview | null>((resolve) => {
     const el = new Audio();
     el.preload = 'auto'; el.volume = volume;
-    el.addEventListener('loadedmetadata', () => { el.currentTime = middle(el); resolve({ el, url, local }); }, { once: true });
+    // ready = the middle of the track is buffered enough to start at once, not merely that its length is known
+    el.addEventListener('loadedmetadata', () => {
+      el.currentTime = middle(el);
+      const done = () => resolve({ el, url, local });
+      if (el.readyState >= 3 && !el.seeking) return done();
+      const slow = setTimeout(done, 8000); // a slow link or a browser that will not buffer unprompted must not leave the card waiting for ever
+      el.addEventListener('canplay', () => { clearTimeout(slow); done(); }, { once: true });
+    }, { once: true });
     el.addEventListener('error', () => { if (local) URL.revokeObjectURL(url); resolve(null); }, { once: true });
     el.src = url;
   })).catch(() => null);
@@ -65,7 +72,10 @@ export function VotePage() {
   const lib = useLibrary();
   const put = useStore((s) => s.put);
   const [pair, setPair] = useState<[string, string] | null>(null);
-  const [onlyPlayable, setOnlyPlayable] = useState(false);
+  // ranking is about listening, so tracks with audio come first by default
+  const [onlyPlayable, setOnlyPlayable] = useState(true);
+  /** the tracks of the pair on screen whose preview is buffered and can start at once */
+  const [ready, setReady] = useState<ReadonlySet<string>>(new Set());
   const [playing, setPlaying] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   /** the card that was just chosen (or both, for equal) while its animation plays */
@@ -80,7 +90,7 @@ export function VotePage() {
   const loadSeq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fit = useFitHeight();
-  const pool = useMemo(() => lib.tracks.filter((t) => !onlyPlayable || t.file), [lib, onlyPlayable]);
+  const { pool, fellBack } = useMemo(() => rankPool(lib.tracks, onlyPlayable), [lib, onlyPlayable]);
 
   const volume = usePlayer((s) => s.volume);
   const playerPlaying = usePlayer((s) => s.playing);
@@ -108,9 +118,17 @@ export function VotePage() {
   const pairKey = pair?.join('|') ?? '';
   useEffect(() => {
     const map = previews.current;
+    setReady(new Set());
     if (!pair) return;
-    for (const id of pair) { const t = lib.trackById.get(id); if (t?.file) map.set(id, loadPreview(t.file, usePlayer.getState().volume)); }
-    return () => { map.forEach((p) => void p.then(release)); map.clear(); };
+    let live = true;
+    for (const id of pair) {
+      const t = lib.trackById.get(id);
+      if (!t?.file) continue;
+      const p = loadPreview(t.file, usePlayer.getState().volume);
+      map.set(id, p);
+      void p.then((v) => { if (v && live) setReady((r) => new Set(r).add(id)); });
+    }
+    return () => { live = false; map.forEach((p) => void p.then(release)); map.clear(); };
   }, [pairKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vote = useCallback((winnerId: string | null, isEqual = false) => {
@@ -205,7 +223,11 @@ export function VotePage() {
     <div ref={fit.ref} className="mx-auto flex max-w-4xl flex-col" style={{ height: fit.height }}>
       <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
         <h1 className="mr-auto text-xl font-bold sm:text-2xl">Which is better?</h1>
-        <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => { setOnlyPlayable(e.target.checked); setPair(null); }} />Only tracks with audio</label>
+        <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => {
+          setOnlyPlayable(e.target.checked);
+          // the pair on screen stays unless it holds a track the filter now excludes
+          if (e.target.checked && pairLacksAudio(pair, lib.trackById)) setPair(null);
+        }} />Only tracks with audio{onlyPlayable && fellBack ? ' (too few have audio yet)' : ''}</label>
         <span className="text-sm text-muted tabular-nums">{lib.votes.length} votes</span>
       </div>
       {/* each card fills its share of the height that is left (on a phone they stack and share it), and lays itself out inside that space */}
@@ -234,7 +256,7 @@ export function VotePage() {
                 <Rating track={t} />
                 {t.youtubeMusicUrl && <a className="btn btn-ghost !p-1.5" href={t.youtubeMusicUrl} target="_blank" rel="noreferrer" title="Open on YouTube" aria-label="Open on YouTube"><ExternalLink size={14} /></a>}
               </div>
-              <div className="text-xs text-muted sm:text-center max-sm:[@container(max-height:11.5rem)]:hidden" aria-hidden>{!t.file ? 'No audio yet' : playing === t.id ? <span className="inline-flex items-center gap-1"><Pause size={11} />Tap to stop</span> : <span className="inline-flex items-center gap-1"><Play size={11} />Tap to preview 15 s</span>}</div>
+              <div className="text-xs text-muted sm:text-center max-sm:[@container(max-height:11.5rem)]:hidden" aria-hidden>{!t.file ? 'No audio yet' : playing === t.id ? <span className="inline-flex items-center gap-1"><Pause size={11} />Tap to stop</span> : <span className="inline-flex items-center gap-1">{ready.has(t.id) ? <><Play size={11} />Tap to preview 15 s</> : <><Loader2 size={11} className="animate-spin" />Loading preview…</>}</span>}</div>
               <button className="btn btn-accent w-full min-w-0 !px-3 !py-1.5 text-sm sm:w-auto sm:!px-4" onClick={(e) => { e.stopPropagation(); vote(t.id); }}>{i === 0 ? '← ' : ''}This one{i === 1 ? ' →' : ''}</button>
             </div>
           </div>
