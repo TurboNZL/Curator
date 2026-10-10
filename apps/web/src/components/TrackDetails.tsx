@@ -43,7 +43,7 @@ export function TrackDetails({ id, onClose }: { id: string; onClose: () => void 
         {!info.votes.length && <p className="text-sm text-muted">No votes yet. Use Rank to compare it with other tracks.</p>}
         <div className="max-h-64 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">{info.votes.map((v) => (
           <div key={v.voteId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
-            <span className={cn('w-12 text-xs font-semibold uppercase', v.result === 'won' ? 'text-good' : v.result === 'lost' ? 'text-bad' : 'text-muted')}>{v.result}</span>
+            <span className={cn('w-20 text-xs font-semibold uppercase', v.result === 'won' || v.result === 'thumb up' ? 'text-good' : v.result === 'lost' || v.result === 'thumb down' ? 'text-bad' : 'text-muted')}>{v.result}</span>
             <span className={cn('min-w-0 flex-1 truncate', !v.opponentExists && 'italic text-muted')}>{v.opponent}</span>
             <span className="shrink-0 text-xs text-muted">{new Date(v.timestamp).toLocaleDateString()}</span></div>))}</div>
       </div>

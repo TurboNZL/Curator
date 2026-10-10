@@ -49,6 +49,9 @@
   --nav-hover-bg: hsl(var(--raised)); --nav-active-bg: hsl(var(--raised)); --nav-active-fg: hsl(var(--fg)); --nav-active-shadow: none;
   --row-hover: hsl(var(--raised) / 0.6); --row-hover-fg: inherit; --row-current: hsl(var(--accent) / 0.1);
   --panel-tb-bg: transparent; --panel-tb-fg: inherit; --panel-tb-margin: 0; --panel-tb-pad: 0;
+  /* motion of the player bar (enters when something is selected, leaves when nothing is) and of the pop-ups above it */
+  --player-in: bt-slide-in 260ms var(--ease) both; --player-out: bt-slide-out 200ms var(--ease) both; --player-ms: 200ms;
+  --pop-out: bt-fade-out 140ms ease-in both; --pop-ms: 140ms;
 
   --chk-size: 1.05rem; --chk-r: 5px; --chk-border: 1.5px solid hsl(var(--muted) / 0.75); --chk-bg: hsl(var(--raised)); --chk-shadow: none;
   --chk-hover-border: hsl(var(--accent)); --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg));
@@ -69,6 +72,9 @@
 @keyframes bt-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @keyframes bt-drop-fluent { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
 @keyframes bt-reveal { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0); } }
+@keyframes bt-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes bt-slide-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(18px); } }
+@keyframes bt-thumb { 0% { transform: scale(1); } 35% { transform: scale(1.55) rotate(-14deg); } 100% { transform: scale(1); } }
 @keyframes bt-none { from { opacity: 1; } to { opacity: 1; } }
 
 /* ================== Default: the app's own look (the defaults above) ================== */
@@ -385,6 +391,7 @@ html[data-ui="win98"] { font-size: 14px; }
   100% { opacity: 1; transform: none; }
 }
 @keyframes lg-pill { 0% { transform: scale(0.82); opacity: 0.2; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: none; } }
+@keyframes lg-bar-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(18px) scale(0.97); } }
 @keyframes lg-bar-in { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
 
 [data-ui="liquid"] {
@@ -477,15 +484,16 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 
 /* the navigation layer floats above the content, inset from the edges, with corners concentric to each other */
 :is(html, div)[data-ui="liquid"] .bt-side.bt-shell { margin: 12px 0 12px 12px; border-radius: 30px; padding: 12px; animation: lg-bar-in 600ms var(--ease) both; }
-:is(html, div)[data-ui="liquid"] .bt-player.bt-shell { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; overflow: hidden; animation: lg-bar-in 600ms var(--ease) 80ms both; }
+:is(html, div)[data-ui="liquid"] .bt-player.bt-shell { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; overflow: hidden; }
 :is(html, div)[data-ui="liquid"] .bt-player.bt-shell > div:last-child { padding-block: 0.4rem; }
 :is(html, div)[data-ui="liquid"] .bt-tabbar.bt-shell { position: fixed; z-index: 31; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; padding: 4px 6px; }
 :is(html, div)[data-ui="liquid"] .bt-tab { border-radius: 9999px; transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease); }
 :is(html, div)[data-ui="liquid"] .bt-tab[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.12); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.22); animation: lg-pill 460ms var(--spring); }
 @media (min-width: 768px) { :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { left: calc(14rem + 24px); } }
 @media (max-width: 767.98px) { :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { bottom: calc(12px + 3.9rem); } }
-:is(html, div)[data-ui="liquid"] main { padding-bottom: 7.25rem; }
-@media (max-width: 767.98px) { :is(html, div)[data-ui="liquid"] main { padding-bottom: 11.75rem; } }
+:is(html, div)[data-ui="liquid"] main { padding-bottom: 1.5rem; }
+:is(html, div)[data-ui="liquid"] main.has-player { padding-bottom: 7.25rem; }
+@media (max-width: 767.98px) { :is(html, div)[data-ui="liquid"] main { padding-bottom: 6rem; } :is(html, div)[data-ui="liquid"] main.has-player { padding-bottom: 11.75rem; } }
 
 /* top bar: no band, the controls float; content fades out under it with a soft blur (the scroll edge effect) */
 :is(html, div)[data-ui="liquid"] .bt-top.bt-shell { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; isolation: isolate; }
@@ -542,3 +550,20 @@ html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
   [data-ui="liquid"] { --lg-fill: hsl(var(--surface) / 0.96); --lg-fill-strong: hsl(var(--surface)); --lg-sheen: none; --card-bg: hsl(var(--surface)); }
   :is(html, div)[data-ui="liquid"] .bt-side, :is(html, div)[data-ui="liquid"] .bt-player, :is(html, div)[data-ui="liquid"] .bt-tabbar, :is(html, div)[data-ui="liquid"] .bt-menu, :is(html, div)[data-ui="liquid"] .bt-window, :is(html, div)[data-ui="liquid"] .btn, :is(html, div)[data-ui="liquid"] .card, :is(html, div)[data-ui="liquid"] .bt-top .input, :is(html, div)[data-ui="liquid"] .bt-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
+
+
+/* ================== Player bar and pop-up motion per style ================== */
+.bt-thumb-pulse { animation: bt-thumb 420ms var(--ease); }
+.bt-cover-btn { transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+.bt-cover-btn:hover { transform: scale(1.05); }
+.bt-cover-btn:active { transform: scale(0.97); }
+[data-ui="gtk4"] { --player-in: bt-slide-in 320ms cubic-bezier(0.2, 0.8, 0.3, 1) both; --player-out: bt-slide-out 220ms ease-in both; --player-ms: 220ms; --pop-out: bt-fade-out 150ms ease-in both; --pop-ms: 150ms; }
+[data-ui="breeze"] { --player-in: bt-fade 160ms ease-in-out both; --player-out: bt-fade-out 140ms ease-in-out both; --player-ms: 140ms; --pop-out: bt-fade-out 120ms ease-in-out both; --pop-ms: 120ms; }
+[data-ui="win11"] { --player-in: bt-slide-in 320ms cubic-bezier(0.1, 0.9, 0.2, 1) both; --player-out: bt-slide-out 200ms cubic-bezier(0.7, 0, 1, 0.5) both; --player-ms: 200ms; --pop-out: bt-slide-out 150ms cubic-bezier(0.7, 0, 1, 0.5) both; --pop-ms: 150ms; }
+[data-ui="win10"] { --player-in: bt-fade 140ms linear both; --player-out: bt-fade-out 110ms linear both; --player-ms: 110ms; --pop-out: bt-fade-out 90ms linear both; --pop-ms: 90ms; }
+[data-ui="win7"] { --player-in: bt-fade 300ms ease-out both; --player-out: bt-fade-out 240ms ease-in both; --player-ms: 240ms; --pop-out: bt-fade-out 200ms ease-in both; --pop-ms: 200ms; }
+[data-ui="winxp"], [data-ui="win98"] { --player-in: none; --player-out: none; --player-ms: 0ms; --pop-out: none; --pop-ms: 0ms; }
+[data-ui="macos"] { --player-in: bt-slide-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both; --player-out: bt-slide-out 240ms ease-in both; --player-ms: 240ms; --pop-out: bt-fade-out 160ms ease-in both; --pop-ms: 160ms; }
+[data-ui="liquid"] { --player-in: lg-bar-in 600ms var(--ease) both; --player-out: lg-bar-out 340ms cubic-bezier(0.5, 0, 0.75, 0) both; --player-ms: 340ms; --pop-out: lg-menu-out 260ms cubic-bezier(0.5, 0, 0.75, 0) both; --pop-ms: 260ms; }
+[data-ui="material"] { --player-in: bt-slide-in 420ms cubic-bezier(0.05, 0.7, 0.1, 1) both; --player-out: bt-slide-out 200ms cubic-bezier(0.3, 0, 0.8, 0.15) both; --player-ms: 200ms; --pop-out: bt-fade-out 150ms cubic-bezier(0.3, 0, 0.8, 0.15) both; --pop-ms: 150ms; }
+@keyframes lg-menu-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.7, 0.55); } }

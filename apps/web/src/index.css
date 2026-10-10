@@ -116,7 +116,9 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 
   .bt-side { background: var(--side-bg); border-right: var(--bar-border); box-shadow: var(--side-shadow); }
   .bt-top { background: var(--top-bg); border-bottom: var(--bar-border); box-shadow: var(--top-shadow); }
-  .bt-player { background: var(--player-bg); border-top: var(--bar-border); box-shadow: var(--player-shadow); }
+  .bt-player { background: var(--player-bg); border-top: var(--bar-border); box-shadow: var(--player-shadow); animation: var(--player-in); }
+  .bt-player[data-leaving] { animation: var(--player-out); pointer-events: none; }
+  .bt-popover[data-leaving] { animation: var(--pop-out); pointer-events: none; }
   .bt-tabbar { background: var(--player-bg); border-top: var(--bar-border); }
   .bt-nav { border-radius: var(--nav-r); color: hsl(var(--muted)); transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
   .bt-nav:hover { background: var(--nav-hover-bg); color: hsl(var(--fg)); }

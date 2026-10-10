@@ -88,6 +88,7 @@ export function Layout() {
   const wide = matches.some(Boolean);
   const [q, setQ] = useState('');
   const toggle = usePlayer((s) => s.toggle);
+  const hasPlayer = usePlayer((s) => !!s.queue.currentId);
   // space = play/pause, unless typing in a field or pressing a button
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -110,7 +111,7 @@ export function Layout() {
           ))}
           <div className="mt-auto"><SyncDot /></div>
         </aside>
-        <main className="min-w-0 flex-1 overflow-y-auto">
+        <main className={cn('min-w-0 flex-1 overflow-y-auto', hasPlayer && 'has-player')}>
           <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
             <div className="relative mx-auto flex max-w-3xl items-center gap-3">
               <div className="md:hidden"><SyncDot /></div>

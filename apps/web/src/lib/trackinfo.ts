@@ -1,6 +1,6 @@
 import type { Library } from './library.ts';
 
-export interface VoteLine { voteId: string; opponent: string; opponentExists: boolean; result: 'won' | 'lost' | 'equal'; timestamp: number }
+export interface VoteLine { voteId: string; opponent: string; opponentExists: boolean; result: 'won' | 'lost' | 'equal' | 'thumb up' | 'thumb down'; timestamp: number }
 export interface PlayLine { logId: string; timestamp: number; seconds: number; isSkip: boolean; source: string | null }
 export interface TrackInfo {
   /** every logged play of this track, newest first */
@@ -16,6 +16,11 @@ export function trackInfo(lib: Library, trackId: string): TrackInfo {
   let wins = 0, losses = 0, draws = 0;
   for (const v of lib.votes) {
     if (v.trackAId !== trackId && v.trackBId !== trackId) continue;
+    if (v.boost) {
+      votes.push({ voteId: v.id, opponent: v.boost > 0 ? 'Thumbs up' : 'Thumbs down', opponentExists: false, result: v.boost > 0 ? 'thumb up' : 'thumb down', timestamp: v.timestamp });
+      if (v.boost > 0) wins++; else losses++;
+      continue;
+    }
     const otherId = v.trackAId === trackId ? v.trackBId : v.trackAId;
     const result = v.isEqual ? 'equal' : v.winnerId === trackId ? 'won' : 'lost';
     if (result === 'won') wins++; else if (result === 'lost') losses++; else draws++;

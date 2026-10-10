@@ -8,6 +8,8 @@ export interface Vote {
   /** null/undefined when isEqual */
   winnerId?: string | null;
   isEqual?: boolean;
+  /** A thumbs up (+1) or down (-1) on one track (trackBId is then ''): worth half a win/loss against an equal opponent. */
+  boost?: 1 | -1;
   timestamp: number;
 }
 
@@ -46,6 +48,12 @@ export function replayVotes(votes: Vote[], trackIds: Iterable<string>): Map<stri
   };
   const ordered = [...votes].sort((x, y) => x.timestamp - y.timestamp || (x.id < y.id ? -1 : 1));
   for (const v of ordered) {
+    if (v.boost) {
+      const a = get(v.trackAId);
+      a.elo += ELO_K * 0.5 * v.boost;
+      a.comparisons++;
+      continue;
+    }
     const a = get(v.trackAId);
     const b = get(v.trackBId);
     const outcome = v.isEqual ? 'equal' : v.winnerId === v.trackAId ? 'a' : 'b';

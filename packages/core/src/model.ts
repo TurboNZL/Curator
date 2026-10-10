@@ -90,6 +90,8 @@ export interface TimelineData { type: string; title: string; description: string
 export interface VoteData {
   trackAId: string; trackBId: string;
   winnerId: string | null; isEqual: boolean;
+  /** thumbs up/down on trackAId alone (trackBId is ''); see elo.ts */
+  boost?: 1 | -1;
   timestamp: number;
 }
 export interface PlaybackLogData {
