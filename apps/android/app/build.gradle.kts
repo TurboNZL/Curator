@@ -19,7 +19,7 @@ android {
         versionCode = code
         versionName = appVersion
         buildConfigField("String", "REPO_OWNER", "\"TurboNZL\"")
-        buildConfigField("String", "REPO_NAME", "\"music-curator\"")
+        buildConfigField("String", "REPO_NAME", "\"Curator\"")
     }
     buildFeatures { buildConfig = true }
 

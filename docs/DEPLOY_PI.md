@@ -108,7 +108,7 @@ ssh pi-admin@PI_ADDRESS
 sudo -u curator -H bash
 
 # 3. FIRST TIME ONLY: get the code. Skip this if ~/music-curator already exists.
-git clone https://github.com/TurboNZL/music-curator/ ~/music-curator
+git clone https://github.com/TurboNZL/Curator/ ~/music-curator
 
 # 4. update: stop the service, git pull, install, build the web client, start the service
 cd ~/music-curator

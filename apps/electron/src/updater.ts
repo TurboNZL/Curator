@@ -10,7 +10,7 @@ export type UpdateState = {
  * Self-update from the project's GitHub releases (electron-updater): checks shortly after start and every 6 hours, downloads in the
  * background and installs when the app is closed or when the user presses "Restart to update". Does nothing in development runs.
  */
-export const REPO = { owner: 'TurboNZL', repo: 'music-curator' };
+export const REPO = { owner: 'TurboNZL', repo: 'Curator' };
 
 export class Updates {
   state: UpdateState = { status: 'idle' };

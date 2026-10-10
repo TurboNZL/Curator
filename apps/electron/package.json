@@ -4,7 +4,7 @@
   "private": true,
   "description": "Music Curator desktop app: the web client plus its own server, with the library on disk",
   "author": "Music Curator",
-  "homepage": "https://github.com/TurboNZL/music-curator",
+  "homepage": "https://github.com/TurboNZL/Curator",
   "main": "dist/main.mjs",
   "type": "module",
   "scripts": {
@@ -41,7 +41,7 @@
         "to": "web"
       }
     ],
-    "publish": [{ "provider": "github", "owner": "TurboNZL", "repo": "music-curator", "releaseType": "release" }],
+    "publish": [{ "provider": "github", "owner": "TurboNZL", "repo": "Curator", "releaseType": "release" }],
     "linux": {
       "target": [
         "AppImage",

@@ -21,7 +21,7 @@ The server serves the freshly built web client from `apps/web/dist`, so this one
 
 ## Things to know
 
-- **First time only:** the code must already be on the Pi (`git clone https://github.com/TurboNZL/music-curator/ ~/music-curator` as the `curator` user), and the `curator` systemd service must exist. See [DEPLOY_PI.md](DEPLOY_PI.md) sections 2 and 3.
+- **First time only:** the code must already be on the Pi (`git clone https://github.com/TurboNZL/Curator/ ~/music-curator` as the `curator` user), and the `curator` systemd service must exist. See [DEPLOY_PI.md](DEPLOY_PI.md) sections 2 and 3.
 - **Passwordless `systemctl`.** The script runs `sudo systemctl stop|start curator`, and the `curator` user has no sudo rights by default. Allow exactly that once, from your login user:
   ```
   sudo visudo -f /etc/sudoers.d/curator
