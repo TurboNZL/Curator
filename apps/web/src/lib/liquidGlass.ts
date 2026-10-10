@@ -29,6 +29,9 @@ const TARGETS = '.bt-side, .bt-top, .bt-player, .bt-tabbar, .bt-menu, .bt-window
 /** Elements that animate their lens when they appear (they get a filter of their own). */
 const MATERIALIZE = '.bt-menu, .bt-window';
 
+/** Above this many px² (a dialog, not a button or a menu) the lens skips colour dispersion to stay cheap. */
+export const BIG_SHAPE = 150_000;
+
 /** Refractive index of the glass. */
 const N_GLASS = 1.5;
 /** Direction towards the light (top left), as a unit vector in screen space (y points down). */
@@ -91,6 +94,15 @@ export interface LensImages {
 
 const canvasFor = (w: number, h: number) => { const c = document.createElement('canvas'); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; };
 
+/** Calls `fn` for every pixel within `band` pixels of the edge of a w x h grid (all pixels when the grid is thin). */
+export function rimBand(w: number, h: number, band: number, fn: (x: number, y: number) => void) {
+  for (let y = 0; y < h; y++) {
+    if (y < band || y >= h - band || band * 2 >= w) { for (let x = 0; x < w; x++) fn(x, y); continue; }
+    for (let x = 0; x < band; x++) fn(x, y);
+    for (let x = w - band; x < w; x++) fn(x, y);
+  }
+}
+
 /** Renders both images for one geometry. Pure apart from the canvases; `dpr` only affects the crispness of the rim. */
 export function renderLens({ w, h, r }: LensGeometry, dpr = 1): LensImages {
   const bezel = bezelFor(w, h);
@@ -107,23 +119,19 @@ export function renderLens({ w, h, r }: LensGeometry, dpr = 1): LensImages {
   // the profile only depends on t, so look it up instead of calling atan/asin for every pixel
   const STEPS = 128;
   const profile = Array.from({ length: STEPS + 1 }, (_, i) => displacementAt(i / STEPS, bezel));
-  for (let y = 0; y < mh; y++) {
-    for (let x = 0; x < mw; x++) {
-      const px = ((x + 0.5) / ms) - hw, py = ((y + 0.5) / ms) - hh;
-      const { sd, nx, ny } = roundedRect(px, py, hw, hh, radius);
-      const depth = -sd; // distance inside the rim
-      let dx = 0, dy = 0;
-      if (depth < bezel) {
-        const d = profile[Math.max(0, Math.min(STEPS, Math.round((Math.max(depth, 0) / bezel) * STEPS)))];
-        dx = -nx * d; dy = -ny * d; // towards the inside
-      }
-      const i = (y * mw + x) * 4;
-      mimg.data[i] = Math.round(255 * (0.5 + dx / scale));
-      mimg.data[i + 1] = Math.round(255 * (0.5 + dy / scale));
-      mimg.data[i + 2] = 128;
-      mimg.data[i + 3] = 255;
-    }
-  }
+  // everything deeper than the bezel is "no shift" (128), so only the rim band is computed: a tall dialog has ~10x fewer pixels to
+  // do than its area, which is what made opening one stall the page
+  for (let i = 0; i < mimg.data.length; i += 4) { mimg.data[i] = 128; mimg.data[i + 1] = 128; mimg.data[i + 2] = 128; mimg.data[i + 3] = 255; }
+  rimBand(mw, mh, Math.ceil((bezel + radius * 0.3 + 2) * ms), (x, y) => {
+    const px = ((x + 0.5) / ms) - hw, py = ((y + 0.5) / ms) - hh;
+    const { sd, nx, ny } = roundedRect(px, py, hw, hh, radius);
+    const depth = -sd; // distance inside the rim
+    if (depth >= bezel) return;
+    const d = profile[Math.max(0, Math.min(STEPS, Math.round((Math.max(depth, 0) / bezel) * STEPS)))];
+    const i = (y * mw + x) * 4;
+    mimg.data[i] = Math.round(255 * (0.5 - (nx * d) / scale));
+    mimg.data[i + 1] = Math.round(255 * (0.5 - (ny * d) / scale)); // towards the inside
+  });
   mctx.putImageData(mimg, 0, 0);
 
   // specular rim, at device resolution (capped), a ~1.2 px line plus a faint wide inner glow
@@ -131,21 +139,19 @@ export function renderLens({ w, h, r }: LensGeometry, dpr = 1): LensImages {
   const sw = Math.max(2, Math.round(w * ss)), sh = Math.max(2, Math.round(h * ss));
   const sc = canvasFor(sw, sh), sctx = sc.getContext('2d')!;
   const simg = sctx.createImageData(sw, sh);
-  for (let y = 0; y < sh; y++) {
-    for (let x = 0; x < sw; x++) {
-      const px = ((x + 0.5) / ss) - hw, py = ((y + 0.5) / ss) - hh;
-      const { sd, nx, ny } = roundedRect(px, py, hw, hh, radius);
-      const depth = -sd;
-      if (depth < 0 || depth > 9) continue;
-      const facing = nx * LIGHT[0] + ny * LIGHT[1]; // 1 = edge faces the light
-      const lobe = 0.1 + 0.9 * Math.pow(Math.max(facing, 0), 1.6) + 0.5 * Math.pow(Math.max(-facing, 0), 1.6);
-      const line = Math.exp(-Math.pow(depth / 1.05, 2)) + 0.16 * Math.exp(-Math.pow(depth / 5, 2));
-      const a = Math.min(1, line * lobe);
-      const i = (y * sw + x) * 4;
-      simg.data[i] = simg.data[i + 1] = simg.data[i + 2] = 255;
-      simg.data[i + 3] = Math.round(255 * a);
-    }
-  }
+  rimBand(sw, sh, Math.ceil((10 + radius * 0.3) * ss), (x, y) => {
+    const px = ((x + 0.5) / ss) - hw, py = ((y + 0.5) / ss) - hh;
+    const { sd, nx, ny } = roundedRect(px, py, hw, hh, radius);
+    const depth = -sd;
+    if (depth < 0 || depth > 9) return;
+    const facing = nx * LIGHT[0] + ny * LIGHT[1]; // 1 = edge faces the light
+    const lobe = 0.1 + 0.9 * Math.pow(Math.max(facing, 0), 1.6) + 0.5 * Math.pow(Math.max(-facing, 0), 1.6);
+    const line = Math.exp(-Math.pow(depth / 1.05, 2)) + 0.16 * Math.exp(-Math.pow(depth / 5, 2));
+    const a = Math.min(1, line * lobe);
+    const i = (y * sw + x) * 4;
+    simg.data[i] = simg.data[i + 1] = simg.data[i + 2] = 255;
+    simg.data[i + 3] = Math.round(255 * a);
+  });
   sctx.putImageData(simg, 0, 0);
 
   return { map: mc.toDataURL('image/png'), spec: sc.toDataURL('image/png'), scale };
@@ -163,6 +169,7 @@ const cache = new Map<string, Lens>();
 const applied = new WeakMap<Element, { key: string; lens: Lens }>();
 const tracked = new Set<Element>();
 const animations = new WeakMap<Element, number>();
+const rebuild = new WeakMap<Element, number>();
 
 /** Chromium is the only engine that accepts an SVG filter inside backdrop-filter. */
 export function supportsLens(): boolean {
@@ -186,6 +193,19 @@ function buildFilter(key: string, g: LensGeometry, dpr: number, unique: boolean)
   image.setAttribute('preserveAspectRatio', 'none'); image.setAttribute('result', 'map');
   f.appendChild(image);
   const bases: Lens['bases'] = [];
+  if (g.w * g.h > BIG_SHAPE) {
+    // a big dialog: one displacement instead of three plus mixing. The colour fringe is only visible on a thin rim, and the filter's
+    // cost grows with the area, so this is what keeps the album editor smooth
+    const d = document.createElementNS(NS, 'feDisplacementMap');
+    d.setAttribute('in', 'SourceGraphic'); d.setAttribute('in2', 'map'); d.setAttribute('scale', String(img.scale));
+    d.setAttribute('xChannelSelector', 'R'); d.setAttribute('yChannelSelector', 'G'); d.setAttribute('result', 'out');
+    f.appendChild(d); bases.push({ el: d, base: img.scale });
+    root!.appendChild(f);
+    const probe = new Image(); probe.src = img.map;
+    const lens: Lens = { id, node: f, bases, spec: img.spec, ready: (probe.decode ? probe.decode() : Promise.resolve()).catch(() => undefined) };
+    if (!unique) cache.set(key, lens);
+    return lens;
+  }
   // a hint of dispersion: red, green and blue are displaced by slightly different amounts, so edges fringe like real glass
   const bands: [string, number, string][] = [['r', 1, '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'], ['g', 0.955, '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0'], ['b', 0.91, '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0']];
   for (const [name, k, matrix] of bands) {
@@ -225,7 +245,7 @@ export function cornerRadius(el: Element): number {
   return Number.isFinite(settled) ? settled : parseFloat(cs.borderTopLeftRadius) || 0;
 }
 
-function apply(el: HTMLElement) {
+function apply(el: HTMLElement, settled = false) {
   // layout size, not getBoundingClientRect: that one includes transforms, so an element animating in would look like a new shape every frame
   const w = el.offsetWidth, h = el.offsetHeight;
   if (w < 4 || h < 4 || !isLiquidScope(el)) return;
@@ -236,7 +256,13 @@ function apply(el: HTMLElement) {
   const q = (n: number) => Math.max(4, Math.round(n / 4) * 4);
   const key = unique ? `${w}x${h}r${Math.round(radius)}` : `${q(w)}x${q(h)}r${Math.round(radius)}@${dpr}`;
   const prev = applied.get(el);
-  if (prev?.key === key) return;
+  if (prev?.key === key) { clearTimeout(rebuild.get(el)); rebuild.delete(el); return; }
+  // a menu or dialog whose size keeps changing (content loading in) is rebuilt once it has settled, not at every step
+  if (prev && unique && !settled) {
+    clearTimeout(rebuild.get(el));
+    rebuild.set(el, window.setTimeout(() => { rebuild.delete(el); if (el.isConnected) apply(el as HTMLElement, true); }, 140) as unknown as number);
+    return;
+  }
   const g = { w: unique ? w : q(w), h: unique ? h : q(h), r: radius };
   const lens = (!unique && cache.get(key)) || buildFilter(key, g, dpr, unique);
   if (prev && unique) prev.lens.node.remove();
@@ -245,7 +271,10 @@ function apply(el: HTMLElement) {
   if (!supportsLens()) return;
   const first = !prev;
   // switch to the new lens only once its image has decoded, so the glass never flashes unfiltered
-  void lens.ready.then(() => {
+  // A dialog also waits for its entrance animation: re-running a full-size refraction filter on every frame of a scale animation is
+  // what made big dialogs (the album editor) stutter; they open as frosted glass and the lens then materializes.
+  const entering = first && unique && el.matches('.bt-window') ? Promise.allSettled(el.getAnimations().map((a) => a.finished)) : Promise.resolve();
+  void Promise.all([lens.ready, entering]).then(() => {
     if (applied.get(el)?.lens !== lens || !el.isConnected) return;
     el.style.setProperty('--lg-filter', `url(#${lens.id})`);
     if (first && unique) materialize(el, lens);

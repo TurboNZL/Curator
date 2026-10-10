@@ -30,7 +30,8 @@ A personal music library manager for one user (owner@example.com): library (arti
 packages/core        @curator/core  pure TS: ids (UUIDv7), elo, queue/rules, sync types+LWW rule, model.ts (canonical entity shapes)
 packages/server      @curator/server  Hono server, node:sqlite, files, sync, migration, acquire (yt-dlp)
 apps/web             @curator/web  Vite + React 19 + Tailwind 3 + zustand + idb. The new client (see below)
-apps/                planned next: electron, android
+apps/electron       @curator/electron  Electron desktop app: web client + the server embedded (127.0.0.1:47814), library in a chosen folder (docs/ELECTRON.md)
+apps/                planned next: android
 ```
 Legacy files worth reading before porting UI: `src/store/useMusicStore.ts` (all client logic), `src/components/layout/BottomPlayer.tsx`, `src/pages/*`, `src/components/ui/Rating.tsx`, `src/components/modals/*`.
 
@@ -176,3 +177,15 @@ The "Artist" selector is gone from every editor; the **Lead artist** credit is t
 - Legacy "uploads served in production" behaviour unverified (irrelevant after rewrite).
 - Need the user's answer only if a new fork appears; layout question is answered (medium density, stylish).
 - Server is HTTP; for use outside the LAN put it behind HTTPS or Tailscale (document it).
+
+## Session: Connect, Electron, Rank, covers, new styles (DONE)
+Verified in Chromium against a seeded real server (seed script kept out of the repo) and, for Electron, a real Electron 44 under Xvfb driven by Playwright (`_electron`).
+- **Play on a device (Connect)**, docs/CONNECT.md: server `connect.ts` hub (SSE stream + state + command routes, 5 tests incl. real HTTP), shared wire types/validators in `packages/core/src/connect.ts`, client `lib/connect.ts` (+ pure `connectPure.ts`), `components/Devices.tsx` (cast button in the player bar and in the top bar), `player.snapshot()/restore()`. Verified with two real browser contexts: list, remote pause/next, transfer back. Setting `deviceName`. Autoplay can block a never-clicked tab (message shown); Electron has no such rule.
+- **Electron** (`apps/electron`, docs/ELECTRON.md): main process bundles the server (`startServer` in `packages/server/src/start.ts`, also used by `index.ts`), serves the built web client from it, preload hands the token over (`window.curatorDesktop`; `loadSettings` auto-fills the token), library folder choice (File menu / Settings > Desktop app), single instance, fixed port 47814. Run: `node apps/electron/node_modules/electron/install.js` once (installs were done with `--ignore-scripts`), then `pnpm --filter @curator/electron start`. Installer packaging (`dist`) is configured but not run here. node:sqlite works in Electron 44 (Node 24).
+- **Rank**: both tracks of a pair preload as soon as the pair appears (verified: two `bytes=0-` requests before any tap, preview starts in ~50 ms). On touch screens a card can be **swiped right to pick it** (replaces "tap twice"; keyboard keeps arrow-twice). Interpretation of "double tap": the old twice-to-pick gesture; there was no literal double-tap handler.
+- **Covers**: stored at **540 px** (`COVER_PX`); the media session (lock screen/notification) now shows the cover (`sizes 540x540`). Import dialog: **upload your own cover** (overrides the link's). Cover grab fixes: pillarboxed square art is cropped to the centred full-height square (dark covers were zoomed), plus a verified iTunes Search album match (`pickItunesArtwork`, `mzstatic.com` allowed) placed after YouTube's own square art and before video frames. **Real YouTube was not reachable from the sandbox**, so the real grab is still unverified; if it fails on the Pi, read the error in the import dialog.
+- **Liquid Glass**: menu no longer animates its radius (it was a pill morphing into a square) nor non-uniform scale. Dialog lag was the backdrop effects, not the search list (measured with a trace: JS was ~60 ms; the rest was raster): the dialog's backdrop/lens only turns on when its entrance animation ends, big shapes use one displacement instead of three, the lens image is computed for the rim only, rebuilds are debounced, and the screen-wide backdrop blur is gone.
+- **UI**: release cards lost the star (default is the label) and the pencil is full height; side panels have padding so the selected outline is not clipped; the search icon is above the glass input.
+- **Notes**: orphaned note categories are deleted when a note is saved or deleted, and Health has "Note categories with no notes" with a delete-all button.
+- **New UI styles** (docs/appearance/THEMES.md has the research notes): `lgux` LG UX 5.0 / Marshmallow, `fortnite1/2/4/5` by chapter (Ch 3 shares Ch 2: no documented redesign). Palettes `lg-marshmallow(-dark)`, `fortnite-1/2/4/5`. Colours are approximations; the fonts (Burbank, Heading Now) are not shipped.
+- Gotcha: `ps | grep`/`pkill -f` patterns also match your own command line when the same text appears later in it (killed the shell twice). Start servers through a script with a pidfile.

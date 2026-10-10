@@ -3,6 +3,8 @@ import { newId } from '@curator/core';
 /** Per-device settings (never synced): where the server is, who we are, how it looks. */
 export interface DeviceSettings {
   deviceId: string;
+  /** how this device is listed in Connect; '' = guessed from the browser */
+  deviceName: string;
   /** '' = same origin (dev proxy, or the server serving this app) */
   serverUrl: string;
   token: string;
@@ -27,12 +29,22 @@ export interface DeviceSettings {
 
 const KEY = 'curator.settings';
 
+/** What the Electron desktop app (apps/electron) puts on `window`. Absent in a browser. */
+export interface CuratorDesktop {
+  token: string; version: string; dataDir: string; platform: string; port: number;
+  chooseLibraryFolder(): Promise<string | null>;
+  showLibraryFolder(): Promise<void>;
+}
+export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
+
 export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, ...saved,
   };
+  // a fresh desktop app is already connected to its own server: no address or token to type
+  if (!s.token && desktop()?.token) s.token = desktop()!.token;
   saveSettings(s);
   return s;
 }

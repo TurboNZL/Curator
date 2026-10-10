@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Disc, FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle, Star } from 'lucide-react';
+import { Disc, FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -64,10 +64,7 @@ export function AlbumPage() {
                   <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
                     <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {plural(r.trackIds.length, 'track')}</span></span>
                 </button>
-                <div className="flex shrink-0 flex-col">
-                  <button className="p-1 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={13} /></button>
-                  <button className={cn('p-1 hover:text-fg', isDefault ? 'text-accent' : 'text-muted')} aria-label={`Make ${r.title} the default`} title={isDefault ? 'Default release' : 'Make default'} disabled={isDefault} onClick={() => patch('albums', album.id, { defaultReleaseId: r.id })}><Star size={13} fill={isDefault ? 'currentColor' : 'none'} /></button>
-                </div>
+                <button className="-my-2 flex shrink-0 items-center self-stretch px-2.5 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={14} /></button>
               </div>);
           })}
         </div>

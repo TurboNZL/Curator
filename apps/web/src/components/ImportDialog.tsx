@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, ImagePlus, Loader2 } from 'lucide-react';
 import type { ArtistData } from '@curator/core';
 import { leadCredit, newAlbumData, newTrackData } from '../lib/defaults.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
@@ -8,6 +8,8 @@ import type { ImportPreview } from '../lib/api.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
 import { api, useStore } from '../lib/store.ts';
+import { saveImage } from '../lib/files.ts';
+import { Cover } from './Cover.tsx';
 import { ArtistSelect, Field, Modal, TagInput } from './forms.tsx';
 
 interface Row { id: string; title: string; url: string; on: boolean }
@@ -27,6 +29,10 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   const [newArtist, setNewArtist] = useState<string | null>(null);
   const [genres, setGenres] = useState<string[]>([]);
   const [useCover, setUseCover] = useState(true);
+  /** a picture chosen from this device; it replaces whatever the link offers */
+  const [ownCover, setOwnCover] = useState<string | null>(null);
+  const [thumbBroken, setThumbBroken] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [download, setDownload] = useState(true);
   /** set after an import whose cover could not be fetched, so the user hears about it before the dialog closes */
@@ -50,8 +56,8 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
       const picked = rows.filter((r) => r.on && r.title.trim());
       let aid = artistId;
       if (!aid) aid = put('artists', { name: (newArtist ?? pv.artist).trim(), image: null } satisfies ArtistData);
-      let cover: string | null = null, coverError = '';
-      if (useCover) {
+      let cover: string | null = ownCover, coverError = '';
+      if (!ownCover && useCover) {
         const links = pv.thumbnails?.length ? pv.thumbnails : pv.thumbnail ? [pv.thumbnail] : [];
         if (!links.length) coverError = 'YouTube gave no cover image for this link.';
         else { try { cover = await fetchCoverFromLinks(links); } catch (e) { coverError = (e as Error).message; } }
@@ -88,9 +94,20 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
           <input autoFocus className="input" placeholder="https://music.youtube.com/playlist?list=…" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && url.trim() && !busy && void lookUp()} /></Field>
       ) : (<>
         <div className="flex gap-4">
-          {pv.thumbnail && !done && <img src={pv.thumbnails?.[0] ?? pv.thumbnail} alt="" className={`h-24 w-24 shrink-0 rounded-theme object-cover ${useCover ? '' : 'opacity-30'}`} />}
+          {ownCover ? <Cover hash={ownCover} seed={title} className="h-24 w-24 shrink-0" />
+            : pv.thumbnail && !done && !thumbBroken ? <img src={pv.thumbnails?.[0] ?? pv.thumbnail} alt="" onError={() => setThumbBroken(true)} className={`h-24 w-24 shrink-0 rounded-theme object-cover ${useCover ? '' : 'opacity-30'}`} />
+            : <Cover hash={null} seed={title} className="h-24 w-24 shrink-0" />}
           <div className="min-w-0 flex-1 space-y-2"><Field label="Album title"><input className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-            {pv.thumbnail && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={useCover} onChange={(e) => setUseCover(e.target.checked)} />Use this as the cover</label>}</div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {!ownCover && pv.thumbnail && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={useCover} onChange={(e) => setUseCover(e.target.checked)} />Use the cover from the link</label>}
+              <button type="button" className="btn !py-1 text-sm" onClick={() => picker.current?.click()}><ImagePlus size={14} />{ownCover ? 'Choose another' : 'Upload a cover'}</button>
+              {ownCover && <button type="button" className="btn btn-ghost !py-1 text-sm" onClick={() => setOwnCover(null)}>Use the link’s cover</button>}
+              <input ref={picker} type="file" accept="image/*" hidden onChange={async (e) => {
+                const f = e.target.files?.[0]; e.target.value = '';
+                if (!f) return;
+                try { setOwnCover(await saveImage(f)); setError(null); } catch { setError('Could not read that image.'); }
+              }} />
+            </div></div>
         </div>
         <Field label="Lead artist (becomes the first credit)" hint={!artistId ? `No match in your library; “${newArtist}” will be created.` : 'Added as a “Lead artist” credit on the album and every track.'}>
           {artistId || newArtist === null ? <ArtistSelect value={artistId} onChange={(id) => { setArtistId(id); setNewArtist(null); }} />

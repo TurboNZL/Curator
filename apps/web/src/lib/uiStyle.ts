@@ -4,7 +4,7 @@
  */
 import type { ThemeId } from "./theme.ts";
 
-export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "winamp";
+export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5";
 
 export type UiStyleDef = {
   id: UiStyleId;
@@ -30,6 +30,11 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "liquid", label: "macOS Liquid Glass", description: "Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus.", font: "SF Pro", matching: { light: "macos", dark: "macos-dark" } },
   { id: "holo", label: "Android Holo (4.x, 2011-13)", description: "Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto.", font: "Roboto", matching: { light: "holo-light", dark: "holo-dark" } },
   { id: "winamp", label: "Winamp 2 (classic skin)", description: "The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial.", font: "Arial", matching: { light: "winamp" } },
+  { id: "lgux", label: "LG UX 5.0 (Marshmallow)", description: "LG's Optimus-lineage skin on Android 6: flat text buttons, filled buttons with a hairline shadow, an accent-colour app bar, underlined fields and 2 px corners in Roboto.", font: "Roboto", matching: { light: "lg-marshmallow", dark: "lg-marshmallow-dark" } },
+  { id: "fortnite1", label: "Fortnite Chapter 1 (2017-19)", description: "Slanted buttons and panels, hard drop shadows, a yellow Play button and condensed capitals on bright blue.", font: "Burbank Big Condensed", matching: { light: "fortnite-1", dark: "fortnite-1" } },
+  { id: "fortnite2", label: "Fortnite Chapter 2-3 (2019-23)", description: "The same slant on deep navy with see-through blue panels and a glowing Play button.", font: "Burbank Big Condensed", matching: { light: "fortnite-2", dark: "fortnite-2" } },
+  { id: "fortnite4", label: "Fortnite Chapter 4 Rift UI (2023)", description: "The lobby redesign: rounded shapes on purple, options down the left side, in Heading Now.", font: "Heading Now", matching: { light: "fortnite-4", dark: "fortnite-4" } },
+  { id: "fortnite5", label: "Fortnite Chapter 5-6 (2024-)", description: "Rift UI refined: less rounding and blue instead of purple.", font: "Heading Now", matching: { light: "fortnite-5", dark: "fortnite-5" } },
   { id: "material", label: "Material 3", description: "Pill buttons, tonal surfaces, filled fields with an underline and rounded dialogs in Roboto.", font: "Roboto", matching: { light: "material", dark: "material-dark" } },
 ];
 

@@ -8,6 +8,8 @@ import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
+import { streamSSE } from 'hono/streaming';
+import { ConnectHub, parseCommand, parseSnapshot } from './connect.ts';
 import { checkTools } from './tools.ts';
 import { BackupError, databaseSnapshot, filesArchive, importFiles, readDatabaseRecords, readStream, saveUpload } from './backup.ts';
 import { Readable } from 'node:stream';
@@ -26,6 +28,7 @@ export function createApp(
   config: Config, store: Store,
   acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs, ffmpegDir: config.ffmpegDir }),
   importer = new Importer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
+  hub = new ConnectHub(),
 ) {
   const app = new Hono();
 
@@ -51,6 +54,41 @@ export function createApp(
       disk: diskUsage(config.dataDir),
       tools: { ...(await checkTools({ ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir })), cookies: !!config.ytdlpArgs?.includes('--cookies') },
     });
+  });
+
+  // ---- Connect: see the other devices, control them, move playback between them (connect.ts) ----
+  app.get('/api/connect/stream', (c) => {
+    const id = c.req.query('device') ?? '';
+    if (!id) return c.json({ error: 'device missing' }, 400);
+    return streamSSE(c, async (stream) => {
+      const queue: string[] = [];
+      let wake: (() => void) | null = null;
+      const close = hub.connect({ id, name: c.req.query('name') ?? '', kind: c.req.query('kind') ?? 'web' }, (ev) => { queue.push(JSON.stringify(ev)); wake?.(); });
+      let open = true;
+      stream.onAbort(() => { open = false; wake?.(); });
+      try {
+        while (open) {
+          while (queue.length) await stream.writeSSE({ event: 'connect', data: queue.shift()! });
+          // a comment-sized ping every 20 s keeps proxies from closing an idle stream
+          await Promise.race([new Promise<void>((r) => { wake = r; }), new Promise<void>((r) => setTimeout(r, 20_000))]);
+          if (open && !queue.length) await stream.writeSSE({ event: 'ping', data: '1' });
+        }
+      } finally { close(); }
+    });
+  });
+  app.get('/api/connect/devices', (c) => c.json({ devices: hub.list() }));
+  app.post('/api/connect/state', async (c) => {
+    const b = (await c.req.json().catch(() => null)) as { device?: unknown; name?: unknown; state?: unknown } | null;
+    if (typeof b?.device !== 'string') return c.json({ error: 'device missing' }, 400);
+    const state = b.state == null ? null : parseSnapshot(b.state);
+    if (b.state != null && !state) return c.json({ error: 'bad state' }, 400);
+    return hub.report(b.device, state, typeof b.name === 'string' ? b.name : undefined) ? c.json({ ok: true }) : c.json({ error: 'device not connected' }, 404);
+  });
+  app.post('/api/connect/command', async (c) => {
+    const b = (await c.req.json().catch(() => null)) as { from?: unknown; to?: unknown; command?: unknown } | null;
+    const command = parseCommand(b?.command);
+    if (typeof b?.from !== 'string' || typeof b.to !== 'string' || !command) return c.json({ error: 'invalid command' }, 400);
+    return hub.command(b.from, b.to, command) ? c.json({ ok: true }) : c.json({ error: 'That device is offline' }, 404);
   });
 
   app.get('/api/sync/pull', (c) => {

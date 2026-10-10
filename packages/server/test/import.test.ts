@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { Store } from '../src/db.ts';
 import { createApp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
-import { cleanTitle, coverCandidates, Importer, parsePreview } from '../src/import.ts';
+import { cleanTitle, coverCandidates, Importer, parsePreview, pickItunesArtwork } from '../src/import.ts';
 import { filePath } from '../src/files.ts';
 
 let dir: string, store: Store;
@@ -75,9 +75,34 @@ const appWith = (importer: Importer) => {
 const post = (app: ReturnType<typeof createApp>, path: string, body: unknown) =>
   app.request(path, { method: 'POST', headers: { Authorization: 'Bearer tok', 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
+describe('iTunes cover fallback', () => {
+  const results = [
+    { collectionName: 'Love Sick (Deluxe)', artistName: 'Don Toliver', artworkUrl100: 'https://is1-ssl.mzstatic.com/image/thumb/Music/x/100x100bb.jpg' },
+    { collectionName: 'Other', artistName: 'Someone', artworkUrl100: 'https://is1-ssl.mzstatic.com/image/thumb/Music/y/100x100bb.jpg' },
+  ];
+  it('takes a 600 px cover only when title and artist both match', () => {
+    expect(pickItunesArtwork(results, 'Love Sick', 'Don Toliver')).toBe('https://is1-ssl.mzstatic.com/image/thumb/Music/x/600x600bb.jpg');
+    expect(pickItunesArtwork(results, 'Love Sick', 'Somebody Else')).toBeNull();
+    expect(pickItunesArtwork(results, 'Love', 'Don Toliver')).toBeNull();
+    expect(pickItunesArtwork([], 'x', 'y')).toBeNull();
+  });
+  it('adds it after YouTube\'s square art and before video frames; a failing lookup changes nothing', async () => {
+    const ok = (async () => new Response(JSON.stringify({ results }), { status: 200 })) as unknown as typeof fetch;
+    const info = { ...PLAYLIST, title: 'Album - Love Sick', thumbnails: [{ url: 'https://i.ytimg.com/vi/a/hqdefault.jpg', width: 480, height: 360 }, { url: 'https://lh3.googleusercontent.com/abc=w544-h544', width: 544, height: 544 }] };
+    const app = appWith(new Importer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(info), fetchImpl: ok }));
+    const p = (await (await post(app, '/api/import/preview', { url: 'https://youtu.be/x' })).json()) as { thumbnails: string[] };
+    expect(p.thumbnails[0]).toContain('googleusercontent.com');
+    expect(p.thumbnails[1]).toBe('https://is1-ssl.mzstatic.com/image/thumb/Music/x/600x600bb.jpg');
+    const down = (async () => { throw new Error('offline'); }) as unknown as typeof fetch;
+    const app2 = appWith(new Importer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(info), fetchImpl: down }));
+    const q = (await (await post(app2, '/api/import/preview', { url: 'https://youtu.be/x' })).json()) as { thumbnails: string[] };
+    expect(q.thumbnails.some((u) => u.includes('mzstatic'))).toBe(false);
+  });
+});
+
 describe('POST /api/import/preview', () => {
   it('runs yt-dlp flat (no download), passes the URL after `--`, returns the review data', async () => {
-    const app = appWith(new Importer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(PLAYLIST) }));
+    const app = appWith(new Importer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(PLAYLIST), fetchImpl: (async () => new Response('{}')) as unknown as typeof fetch }));
     const res = await post(app, '/api/import/preview', { url: 'https://www.youtube.com/playlist?list=abc' });
     expect(res.status).toBe(200);
     expect((await res.json() as { entries: unknown[] }).entries).toHaveLength(2);

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { advance, newId, pushHistory, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
+import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
 import { moveTrack } from './defaults.ts';
-import { audioSource } from './files.ts';
+import { audioSource, imageSource } from './files.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
 import { resumeEq, setBass } from './eq.ts';
@@ -40,6 +40,9 @@ interface PlayerState {
   /** the rest of the album or list becomes part of the user queue / is dropped */
   keepRest(): void;
   clearRest(): void;
+  /** the state other devices see, and the way for one of them to hand playback to this device (Connect) */
+  snapshot(): PlaybackSnapshot;
+  restore(snap: PlaybackSnapshot, opts?: { play?: boolean }): void;
   /** push the device's bass setting into the sound (creates the audio element if needed) */
   applyEq(): void;
 }
@@ -47,6 +50,9 @@ interface PlayerState {
 let audio: HTMLAudioElement | null = null;
 let loadSeq = 0;
 let objectUrl: string | null = null;
+/** where to jump to once the next track's metadata is known (a hand-over from another device) */
+let pendingSeek: number | null = null;
+let artUrl: string | null = null;
 const lib = getLibrary;
 const rules = () => lib().rules;
 
@@ -83,7 +89,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     useStore.getState().put('playbackLogs', data);
   }
 
-  function load(trackId: string | null) {
+  function load(trackId: string | null, autoStart = true) {
     const a = el();
     const seq = ++loadSeq; // a newer load supersedes one still resolving its source
     if (!trackId) { a.pause(); a.removeAttribute('src'); set({ time: 0, duration: 0, playing: false, error: null }); return true; }
@@ -95,7 +101,11 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = local ? url : null;
       a.src = url;
-      void a.play().catch(() => set({ playing: false }));
+      if (pendingSeek != null) {
+        const at = pendingSeek; pendingSeek = null;
+        a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(at, Number.isFinite(a.duration) ? a.duration : at); set({ time: a.currentTime }); }, { once: true });
+      }
+      if (autoStart) void a.play().catch((e: Error) => set(e?.name === 'NotAllowedError' ? { playing: false, error: 'Press play: this browser blocked starting by itself.' } : { playing: false }));
     });
     updateMediaSession(trackId);
     return true;
@@ -105,7 +115,15 @@ export const usePlayer = create<PlayerState>((set, get) => {
     if (!('mediaSession' in navigator)) return;
     const t = lib().trackById.get(trackId);
     if (!t) return;
-    navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.artistName, album: t.albumTitle ?? '' });
+    const meta = new MediaMetadata({ title: t.title, artist: t.artistName, album: t.albumTitle ?? '' });
+    navigator.mediaSession.metadata = meta;
+    // the lock screen / notification cover: 540 px is the size covers are stored at
+    if (t.cover) void imageSource(t.cover).then(({ url, local }) => {
+      if (lib().trackById.get(trackId) !== t || get().queue.currentId !== trackId) { if (local) URL.revokeObjectURL(url); return; }
+      if (artUrl) URL.revokeObjectURL(artUrl);
+      artUrl = local ? url : null;
+      meta.artwork = [{ src: url, sizes: '540x540', type: 'image/jpeg' }];
+    });
     navigator.mediaSession.setActionHandler('nexttrack', () => get().next());
     navigator.mediaSession.setActionHandler('previoustrack', () => get().prev());
     navigator.mediaSession.setActionHandler('play', () => void el().play());
@@ -181,6 +199,24 @@ export const usePlayer = create<PlayerState>((set, get) => {
     shuffleRest() { const q = get().queue; set({ queue: { ...q, active: shuffleWithRules(q.active, rules()) } }); },
     keepRest() { const q = get().queue; set({ queue: { ...q, user: [...q.user, ...q.active], active: [] } }); },
     clearRest() { set({ queue: { ...get().queue, active: [] } }); },
+    snapshot() {
+      const s = get();
+      return {
+        trackId: s.queue.currentId, queue: s.queue, source: s.source, history: s.history.slice(-50),
+        position: audio?.currentTime ?? s.time, duration: s.duration, playing: s.playing, volume: s.volume,
+      };
+    },
+
+    restore(snap, opts) {
+      const want = opts?.play ?? snap.playing;
+      set({ source: snap.source as Source, history: snap.history, volume: snap.volume, queue: snap.queue });
+      if (audio) audio.volume = snap.volume;
+      if (!snap.queue.currentId) { load(null); return; }
+      pendingSeek = snap.position;
+      if (!load(snap.queue.currentId, want)) { pendingSeek = null; set({ error: 'This device has no audio for that track yet' }); }
+      else set({ time: snap.position });
+    },
+
     applyEq() { const e = useStore.getState().settings; setBass(el(), e.eqOn, e.eqBass); },
   };
 });

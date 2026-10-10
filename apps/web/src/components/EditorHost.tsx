@@ -304,15 +304,22 @@ function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: s
   const add = (e: { type: GroupMemberData['entityType']; id: string }) =>
     !g.members.some((m) => m.entityType === e.type && m.entityId === e.id) && setG({ ...g, members: [...g.members, { entityType: e.type, entityId: e.id, showOnEntityPage: true }] });
   const ok = g.name.trim() && g.members.length > 0;
+  /** categories that no note uses once this note is saved with `keep` (or deleted: null) are removed, so none are left orphaned */
+  const pruneCategories = (keep: string | null) => {
+    const used = new Set(lib.groups.filter((n) => n.id !== noteId).map((n) => n.categoryId));
+    if (keep) used.add(keep);
+    for (const c of lib.noteCategories) if (!used.has(c.id)) remove('noteCategories', c.id);
+  };
   const categories = [...lib.noteCategories].sort((a, b) => a.name.localeCompare(b.name));
   return (
     <Modal title={noteId ? 'Edit note' : 'New note'} onClose={onClose} footer={<>
-      {noteId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', noteId); onClose(); } }}>Delete</button>}
+      {noteId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', noteId); pruneCategories(null); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-accent" disabled={!ok} onClick={() => {
           const { type: _old, ...rest } = g;
           const id = put('groups', { ...rest, name: g.name.trim(), label: null, description: g.description?.trim() || null, createdAt: g.createdAt ?? Date.now() }, noteId);
           if (!noteId) logJournal('bio', `New note: ${g.name.trim()}`, '', id);
+          pruneCategories(g.categoryId ?? null);
           onClose();
         }}>Save</button></div></>}>
       <Field label="Title"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>

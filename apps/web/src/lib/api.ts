@@ -1,4 +1,4 @@
-import type { PullResponse, SyncRecord } from '@curator/core';
+import type { Command, PlaybackSnapshot, PullResponse, SyncRecord } from '@curator/core';
 import type { DeviceSettings } from './settings.ts';
 
 export class ApiError extends Error {
@@ -64,6 +64,12 @@ export class Api {
   importFiles(file: Blob) {
     return this.req<{ added: number; existed: number; corrupt: number; ignored: number; bytes: number }>('/api/import/files', { method: 'POST', body: file, headers: { 'Content-Type': 'application/x-tar' } });
   }
+  /** Connect: an event stream per device (EventSource cannot send headers, hence ?token=) */
+  connectStreamUrl(device: string, name: string, kind: string) {
+    return this.url(`/api/connect/stream?device=${encodeURIComponent(device)}&name=${encodeURIComponent(name)}&kind=${kind}&token=${encodeURIComponent(this.s.token)}`);
+  }
+  connectState(device: string, name: string, state: PlaybackSnapshot | null) { return this.req<{ ok: true }>('/api/connect/state', { method: 'POST', body: JSON.stringify({ device, name, state }) }); }
+  connectCommand(from: string, to: string, command: Command) { return this.req<{ ok: true }>('/api/connect/command', { method: 'POST', body: JSON.stringify({ from, to, command }) }); }
   /** `<audio src>` / `<img src>` cannot send headers, hence ?token= */
   fileUrl(hash: string) { return this.url(`/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`); }
 }
