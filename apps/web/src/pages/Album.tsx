@@ -52,13 +52,13 @@ export function AlbumPage() {
         {!releases.length && <p className="text-sm text-muted">No releases. A release is an edition of the album (deluxe, streaming, vinyl) with its own date, cover and tracklist.</p>}
         <div className="space-y-1.5" role="radiogroup" aria-label="Release to show">
           {releases.length > 0 && (
-            <button role="radio" aria-checked={view.kind === 'all'} className={cn('card flex w-full items-center gap-3 px-3 py-2 text-left text-sm', view.kind === 'all' && 'ring-2 ring-accent')} onClick={() => choose({ kind: 'all' })}>
+            <button role="radio" aria-checked={view.kind === 'all'} data-selected={view.kind === 'all' || undefined} className="card bt-sel flex w-full items-center gap-3 px-3 py-2 text-left text-sm" onClick={() => choose({ kind: 'all' })}>
               <Layers size={18} className="shrink-0 text-muted" /><span className="min-w-0 flex-1"><span className="block font-medium">All tracks</span><span className="block text-xs text-muted">{plural(album.trackIds.length, 'track')}</span></span></button>)}
           {releases.map((r) => {
             const on = view.kind === 'release' && view.id === r.id;
             const isDefault = album.defaultReleaseId ? album.defaultReleaseId === r.id : releases.length > 0 && r.id === [...releases].sort((a, b) => b.trackIds.length - a.trackIds.length)[0].id;
             return (
-              <div key={r.id} className={cn('card group flex items-center gap-2 py-2 pl-2 pr-1', on && 'ring-2 ring-accent')}>
+              <div key={r.id} data-selected={on || undefined} className="card bt-sel group flex items-center gap-2 py-2 pl-2 pr-1">
                 <button role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3 text-left text-sm" onClick={() => choose({ kind: 'release', id: r.id })}>
                   <Cover hash={r.cover || album.cover} seed={r.title} className="h-11 w-11 shrink-0" />
                   <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>

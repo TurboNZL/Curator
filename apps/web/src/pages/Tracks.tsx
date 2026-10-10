@@ -1,3 +1,4 @@
+import { Select, albumOptions } from '../components/Select.tsx';
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../lib/derive.ts';
 import { ArrowDown, ArrowUp, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
@@ -41,9 +42,7 @@ export function TracksPage() {
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New track</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
         <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => { setQ(e.target.value); setShown(PAGE); }} />
-        <select className="input !w-auto" value={genre} onChange={(e) => setGenre(e.target.value)} aria-label="Genre">
-          <option value="">All genres</option>{lib.genres.map((g) => <option key={g.id}>{g.name}</option>)}
-        </select>
+        <Select className="!w-44" aria-label="Genre" value={genre} onChange={setGenre} options={[{ value: '', label: 'All genres' }, ...lib.genres.map((g) => ({ value: g.name, label: g.name }))]} />
         <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => setOnlyPlayable(e.target.checked)} />Has audio</label>
       </div>
       <div className="card overflow-hidden">

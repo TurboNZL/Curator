@@ -133,7 +133,7 @@ export function Layout() {
       <div className="flex min-h-0 flex-1">
         <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
           <span className="bt-ind" aria-hidden />
-          <div className="mb-3 px-3 pt-1 text-lg font-bold tracking-tight">Curator</div>
+          <div className="mb-3 flex items-center gap-2.5 px-3 pt-1 text-lg font-bold tracking-tight"><img src="/icon.svg" alt="" width={26} height={26} className="h-[26px] w-[26px] shrink-0" draggable={false} />Curator</div>
           {NAV.map(({ to, label, icon: Icon, ...rest }) => (
             <NavLink key={to} to={to} end={'end' in rest} className="bt-nav flex items-center gap-3 px-3 py-2 text-sm font-medium">
               <Icon size={18} />{label}
@@ -144,6 +144,7 @@ export function Layout() {
         <main className={cn('min-w-0 flex-1 overflow-y-auto', hasPlayer && 'has-player')}>
           <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
             <div className="relative mx-auto flex max-w-3xl items-center gap-3">
+              <img src="/icon.svg" alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0 md:hidden" draggable={false} />
               <div className="md:hidden"><SyncDot /></div>
               <div className="relative flex-1">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />

@@ -1,3 +1,4 @@
+import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AlbumData, ArtistData, Credit, EraData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
@@ -104,8 +105,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!canSave} onClick={save}>Save</button></div></>}>
       <Field label="Title"><input className="input" value={t.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
       <Field label="Album" hint="Cover, genres and (if ticked below) credits come from the album. Moving a track puts it last on the new album.">
-        <select className="input" value={albumSel} onChange={(e) => { setAlbumSel(e.target.value); const a = lib.albumById.get(e.target.value); if (a) setChoice(defaultChoice(lib, a, !!t.cover)); }}>
-          <option value="">No album (single)</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>
+        <Select value={albumSel} options={albumOptions(lib, 'No album (single)')} onChange={(v) => { setAlbumSel(v); const a = lib.albumById.get(v); if (a) setChoice(defaultChoice(lib, a, !!t.cover)); }} /></Field>
       {albumSel !== (track.albumId ?? '') && albumSel && <ReleaseChoicePicker albumId={albumSel} trackTitle={t.title || track.title} hasOwnCover={!!t.cover} cover={t.cover ?? null} value={choice} onChange={setChoice} />}
       {!albumSel && <Field label="Era" hint="Optional. Eras group albums and singles."><EraSelect value={t.eraId ?? ''} onChange={(v) => set('eraId', v || null)} /></Field>}
       <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
@@ -256,8 +256,7 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
       }}>Add track</button></div>}>
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
       {!albumId && <Field label="Album" hint="Optional. Leave empty for a single.">
-        <select className="input" value={albumSel} onChange={(e) => pickAlbum(e.target.value, !!cover)}>
-          <option value="">No album</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>}
+        <Select value={albumSel} options={albumOptions(lib, 'No album')} onChange={(v) => pickAlbum(v, !!cover)} /></Field>}
       {album && <ReleaseChoicePicker albumId={album.id} trackTitle={title || 'New track'} hasOwnCover={!!cover} cover={cover} value={choice} onChange={setChoice} />}
       {!album && <Field label="Era" hint="Optional. Eras group albums and singles."><EraSelect value={era} onChange={setEra} /></Field>}
       <Field label="Cover" hint={album ? "Optional. Without one the track shows its album's cover. With one, it is added as a release of its own." : "The single's artwork."}>

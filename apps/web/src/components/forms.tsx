@@ -1,3 +1,4 @@
+import { Select } from './Select.tsx';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
@@ -72,9 +73,8 @@ export function ArtistSelect({ value, onChange }: { value: string; onChange: (id
     <div className="flex gap-2"><input autoFocus className="input" placeholder="New artist name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); create(); } }} />
       <button type="button" className="btn btn-accent" onClick={create}>Add</button><button type="button" className="btn btn-ghost" onClick={() => setCreating(false)}>Cancel</button></div>
   ) : (
-    <div className="flex gap-2"><select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      {!lib.artistById.has(value) && <option value={value}>{value ? '(unknown artist)' : 'Choose an artist…'}</option>}
-      {sorted.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+    <div className="flex gap-2"><Select className="flex-1" value={value} onChange={onChange} placeholder="Choose an artist…"
+      options={[...(!lib.artistById.has(value) && value ? [{ value, label: '(unknown artist)' }] : []), ...sorted.map((a) => ({ value: a.id, label: a.name }))]} />
       <button type="button" className="btn shrink-0" title="Create a new artist" onClick={() => setCreating(true)}><Plus size={15} />New</button></div>
   );
 }
@@ -191,9 +191,6 @@ export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album
 export function EraSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const lib = useLibrary();
   return (
-    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">No era</option>
-      {[...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-    </select>
+    <Select value={value} onChange={onChange} options={[{ value: '', label: 'No era' }, ...[...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => ({ value: e.id, label: e.name }))]} />
   );
 }

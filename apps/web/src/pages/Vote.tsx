@@ -158,8 +158,8 @@ export function VotePage() {
         {[a, b].map((t, i) => t && (
           <div key={t.id} role="button" tabIndex={0} aria-pressed={playing === t.id} aria-label={`${playing === t.id ? 'Stop preview of' : 'Preview'} ${t.title}`}
             onClick={() => !picked && snippet(t)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!picked) snippet(t); } }}
-            className={cn('card vote-card flex min-h-0 min-w-0 cursor-pointer select-none flex-row items-center gap-3 overflow-hidden p-3 max-sm:[container-type:size] sm:flex-col sm:gap-2 sm:p-4',
-              playing === t.id && 'ring-2 ring-accent', !t.file && 'cursor-default',
+            data-selected={playing === t.id || undefined} className={cn('card bt-sel vote-card flex min-h-0 min-w-0 cursor-pointer select-none flex-row items-center gap-3 overflow-hidden p-3 max-sm:[container-type:size] sm:flex-col sm:gap-2 sm:p-4',
+              !t.file && 'cursor-default',
               picked === t.id && 'bt-vote-win', picked && picked !== t.id && picked !== 'equal' && 'bt-vote-lose', picked === 'equal' && 'bt-vote-equal')}>
             {/* a phone: a square cover as tall as the card allows (never more than 40% of its width) beside the text; wider screens give the cover all the room that is left */}
             <div className="flex shrink-0 items-center justify-center max-sm:[--s:min(40cqw,calc(100cqh-1.5rem))] max-sm:[height:var(--s)] max-sm:[width:var(--s)] sm:min-h-0 sm:w-full sm:flex-1 sm:[container-type:size]">

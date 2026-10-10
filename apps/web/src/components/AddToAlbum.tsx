@@ -1,3 +1,4 @@
+import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import type { TrackData } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
@@ -72,8 +73,7 @@ export function AddToAlbumDialog({ trackId, onClose }: { trackId: string; onClos
     <Modal title={`Add “${track.title}” to an album`} onClose={onClose} footer={<div className="ml-auto flex gap-2">
       <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
       <button className="btn btn-accent" disabled={!albumId} onClick={() => { add(trackId, albumId, choice); onClose(); }}>Add to album</button></div>}>
-      <Field label="Album"><select className="input" value={albumId} onChange={(e) => pick(e.target.value)}>
-        <option value="">Choose an album…</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>
+      <Field label="Album"><Select value={albumId} options={albumOptions(lib, 'Choose an album…')} onChange={pick} /></Field>
       {albumId && <ReleaseChoicePicker albumId={albumId} trackTitle={track.title} hasOwnCover={hasOwnCover} cover={track.cover} value={choice} onChange={setChoice} />}
     </Modal>
   );

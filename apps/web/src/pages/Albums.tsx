@@ -1,3 +1,4 @@
+import { Select, albumOptions } from '../components/Select.tsx';
 import { useMemo, useState } from 'react';
 import { Download, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -35,9 +36,7 @@ export function AlbumsPage() {
         <button className="btn" onClick={() => edit({ kind: 'import', id: '' })}><Download size={15} />Import</button>
         <button className="btn" onClick={() => edit({ kind: 'new-album', id: '' })}><Plus size={15} />New album</button>
         <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className="input !w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort">
-          <option value="title">Title</option><option value="artist">Artist</option><option value="rating">Rating</option><option value="tracks">Most tracks</option>
-        </select>
+        <Select className="!w-40" aria-label="Sort" value={sort} onChange={(v) => setSort(v as Sort)} options={[{ value: 'title', label: 'Title' }, { value: 'artist', label: 'Artist' }, { value: 'rating', label: 'Rating' }, { value: 'tracks', label: 'Most tracks' }]} />
       </div>
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
         {albums.map((a) => (

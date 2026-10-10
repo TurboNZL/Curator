@@ -121,6 +121,8 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
   .bt-footer { border-top: var(--bar-border); }
 
   .bt-menu { border-radius: var(--menu-r); background: var(--menu-bg); border: var(--menu-border); box-shadow: var(--pop-shadow); animation: var(--menu-anim); }
+  [role='option'] { transition: background-color var(--dur) var(--ease); }
+  [role='option']:hover:not(:disabled), [role='option'].bt-select-hi { background: var(--menu-hi-bg); color: var(--menu-hi-fg); outline: none; }
   [role='menuitem'] { transition: background-color var(--dur) var(--ease); }
   [role='menuitem']:hover:not(:disabled), [role='menuitem']:focus-visible { background: var(--menu-hi-bg); color: var(--menu-hi-fg); outline: none; }
 
