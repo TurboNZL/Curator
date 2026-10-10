@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
 import { startServer, type Running } from '../../../packages/server/src/start.ts';
-import { findWebDir, loadDesktopConfig, loadDiscordConfig, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
+import { findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
 import { DiscordPresence, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
 
@@ -85,6 +85,8 @@ ipcMain.handle('curator:discord-set', (_e, patch: { discordEnabled?: boolean; di
   discord.configure(c.discordClientId, c.discordEnabled);
   return discordInfo();
 });
+ipcMain.handle('curator:update-has-token', () => !!loadUpdateToken(userData()));
+ipcMain.handle('curator:update-set-token', (_e, t: unknown) => { const v = typeof t === 'string' ? t.trim() : ''; saveUpdateToken(userData(), v); updates.setToken(v); });
 ipcMain.handle('curator:update-state', () => updates.state);
 ipcMain.handle('curator:update-check', () => updates.check());
 ipcMain.on('curator:update-install', () => updates.install());
@@ -121,5 +123,6 @@ void app.whenReady().then(async () => {
   openWindow();
   const dc = loadDiscordConfig(userData());
   discord.configure(dc.discordClientId, dc.discordEnabled);
+  updates.setToken(loadUpdateToken(userData()));
   updates.start();
 });

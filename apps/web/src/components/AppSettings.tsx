@@ -19,10 +19,13 @@ const describe = (s: UpdateState): string => {
 export function AppUpdatesCard() {
   const up = nativeUpdates();
   const [state, setState] = useState<UpdateState>({ status: 'idle' });
+  const [hasToken, setHasToken] = useState(false);
+  const [token, setToken] = useState('');
   useEffect(() => {
     if (!up) return;
     let live = true;
     void up.state().then((s) => { if (live) setState(s); });
+    void up.hasToken().then((h) => { if (live) setHasToken(h); });
     const off = up.onState((s) => { if (live) setState(s); });
     return () => { live = false; off(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -36,6 +39,17 @@ export function AppUpdatesCard() {
         {state.status === 'ready' && <button className="btn btn-accent" onClick={() => up.install()}>{desktop() ? 'Restart to update' : 'Install update'}</button>}
         <span className={state.status === 'error' ? 'text-warn' : 'text-muted'}>{describe(state)}</span>
       </div>
+      <details className="text-sm">
+        <summary className="cursor-pointer text-muted">Private repository? Add a GitHub token{hasToken && ' (one is saved)'}</summary>
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-muted">While the project's repository is private, the app needs a fine-grained personal access token that can read its contents (GitHub › Settings › Developer settings › Fine-grained tokens, repository access: only this one, permission Contents: read-only). It stays on this device. Not needed once the repository is public.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="input w-80 font-mono" type="password" placeholder={hasToken ? 'saved (type a new one to replace it)' : 'github_pat_…'} value={token} onChange={(e) => setToken(e.target.value)} />
+            <button className="btn" disabled={!token.trim()} onClick={() => void up.setToken(token).then(() => { setHasToken(true); setToken(''); return up.check(); }).then(setState)}>Save &amp; check</button>
+            {hasToken && <button className="btn btn-ghost" onClick={() => void up.setToken('').then(() => setHasToken(false))}>Remove</button>}
+          </div>
+        </div>
+      </details>
     </Section>
   );
 }

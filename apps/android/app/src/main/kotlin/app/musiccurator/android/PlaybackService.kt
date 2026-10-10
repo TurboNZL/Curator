@@ -1,0 +1,127 @@
+package app.musiccurator.android
+
+import android.os.Bundle
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaSession
+import app.musiccurator.android.library.LibraryIndex
+import app.musiccurator.android.library.ServerLibrary
+import app.musiccurator.android.library.Track
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
+import java.util.concurrent.Executors
+
+/**
+ * The part of the app Android Auto talks to (it can only show a native media app, not a web page). It offers the library as a browse
+ * tree (Albums, Artists, Playlists, Singles), plays the audio from the user's server, and gives the notification, lock screen and
+ * Bluetooth/steering-wheel controls for free through Media3. Android Auto draws its own screen: there is no custom UI here.
+ */
+class PlaybackService : MediaLibraryService() {
+    private var session: MediaLibrarySession? = null
+    private val io = Executors.newSingleThreadExecutor()
+    private lateinit var library: ServerLibrary
+
+    override fun onCreate() {
+        super.onCreate()
+        library = ServerLibrary(ServerPrefs(this))
+        val player = ExoPlayer.Builder(this)
+            .setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(), true)
+            .setHandleAudioBecomingNoisy(true)
+            .build()
+        session = MediaLibrarySession.Builder(this, player, Callback()).build()
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
+
+    override fun onDestroy() {
+        session?.run { player.release(); release() }
+        session = null
+        io.shutdown()
+        super.onDestroy()
+    }
+
+    // ids: "root", "albums", "artists", "playlists", "singles", "album/<id>", "artist/<id>", "playlist/<id>",
+    // and for a track "t/<trackId>/<context>" where the context ("album/<id>", "playlist/<id>", "singles") says what to queue with it
+    private fun folder(id: String, title: String) = MediaItem.Builder().setMediaId(id).setMediaMetadata(
+        MediaMetadata.Builder().setTitle(title).setIsBrowsable(true).setIsPlayable(false).setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED).build()).build()
+
+    private fun folderWithArt(id: String, title: String, subtitle: String?, cover: String?, type: Int) = MediaItem.Builder().setMediaId(id).setMediaMetadata(
+        MediaMetadata.Builder().setTitle(title).setArtist(subtitle).setIsBrowsable(true).setIsPlayable(false).setMediaType(type)
+            .apply { cover?.let { setArtworkUri(android.net.Uri.parse(library.fileUrl(it))) } }.build()).build()
+
+    private fun trackItem(t: Track, context: String) = MediaItem.Builder()
+        .setMediaId("t/${t.id}/$context")
+        .setUri(library.fileUrl(t.file))
+        .setMediaMetadata(MediaMetadata.Builder().setTitle(t.title).setArtist(t.artistName).setAlbumTitle(t.albumTitle)
+            .setIsBrowsable(false).setIsPlayable(true).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+            .apply { t.cover?.let { setArtworkUri(android.net.Uri.parse(library.fileUrl(it))) } }.build())
+        .build()
+
+    private fun tracksOf(context: String, lib: LibraryIndex): List<Track> = when {
+        context.startsWith("album/") -> lib.albumTracks(context.removePrefix("album/"))
+        context.startsWith("playlist/") -> lib.playlistTracks(context.removePrefix("playlist/"))
+        context == "singles" -> lib.singles()
+        else -> emptyList()
+    }
+
+    private fun children(parent: String, lib: LibraryIndex): List<MediaItem> = when {
+        parent == "root" -> listOf(folder("albums", "Albums"), folder("artists", "Artists"), folder("playlists", "Playlists"), folder("singles", "Singles"))
+        parent == "albums" -> lib.albums().map { a -> folderWithArt("album/${a.id}", a.title, lib.artists().firstOrNull { it.id == a.artistId }?.name, a.cover, MediaMetadata.MEDIA_TYPE_ALBUM) }
+        parent == "artists" -> lib.artists().map { folder("artist/${it.id}", it.name) }
+        parent == "playlists" -> lib.playlists().map { folderWithArt("playlist/${it.id}", it.name, null, it.cover, MediaMetadata.MEDIA_TYPE_PLAYLIST) }
+        parent == "singles" -> lib.singles().map { trackItem(it, "singles") }
+        parent.startsWith("artist/") -> lib.artistAlbums(parent.removePrefix("artist/")).map { a -> folderWithArt("album/${a.id}", a.title, null, a.cover, MediaMetadata.MEDIA_TYPE_ALBUM) }
+        else -> tracksOf(parent, lib).map { trackItem(it, parent) }
+    }
+
+    private fun <T> background(work: () -> T): ListenableFuture<T> {
+        val f = SettableFuture.create<T>()
+        io.execute { try { f.set(work()) } catch (e: Throwable) { f.setException(e) } }
+        return f
+    }
+
+    private inner class Callback : MediaLibrarySession.Callback {
+        override fun onGetLibraryRoot(session: MediaLibrarySession, browser: MediaSession.ControllerInfo, params: LibraryParams?): ListenableFuture<LibraryResult<MediaItem>> =
+            Futures.immediateFuture(LibraryResult.ofItem(folder("root", "Music Curator"), params))
+
+        override fun onGetChildren(session: MediaLibrarySession, browser: MediaSession.ControllerInfo, parentId: String, page: Int, pageSize: Int, params: LibraryParams?): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+            background {
+                val all = children(parentId, library.get())
+                val from = (page * pageSize).coerceAtMost(all.size)
+                LibraryResult.ofItemList(ImmutableList.copyOf(all.subList(from, (from + pageSize).coerceAtMost(all.size))), params)
+            }
+
+        override fun onGetItem(session: MediaLibrarySession, browser: MediaSession.ControllerInfo, mediaId: String): ListenableFuture<LibraryResult<MediaItem>> =
+            background {
+                val lib = library.get()
+                val item = if (mediaId.startsWith("t/")) lib.track(mediaId.split('/')[1])?.let { trackItem(it, mediaId.split('/', limit = 3).getOrElse(2) { "" }) } else folder(mediaId, mediaId)
+                if (item == null) LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE) else LibraryResult.ofItem(item, null)
+            }
+
+        // Android Auto asks to play one track: queue the whole album / playlist from it, like the app does
+        override fun onSetMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo, mediaItems: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
+            background {
+                val lib = library.get()
+                val first = mediaItems.firstOrNull()
+                val parts = first?.mediaId?.split('/', limit = 3)
+                if (mediaItems.size == 1 && parts != null && parts.size == 3 && parts[0] == "t") {
+                    val context = parts[2]
+                    val list = tracksOf(context, lib)
+                    val at = list.indexOfFirst { it.id == parts[1] }
+                    if (at >= 0) return@background MediaSession.MediaItemsWithStartPosition(list.map { trackItem(it, context) }, at, startPositionMs)
+                }
+                val resolved = mediaItems.mapNotNull { m ->
+                    val p = m.mediaId.split('/', limit = 3)
+                    if (p.size >= 2 && p[0] == "t") lib.track(p[1])?.let { trackItem(it, p.getOrElse(2) { "" }) } else null
+                }
+                MediaSession.MediaItemsWithStartPosition(resolved, startIndex.coerceIn(0, (resolved.size - 1).coerceAtLeast(0)), startPositionMs)
+            }
+    }
+}

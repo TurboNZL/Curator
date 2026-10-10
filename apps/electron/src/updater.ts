@@ -10,10 +10,19 @@ export type UpdateState = {
  * Self-update from the project's GitHub releases (electron-updater): checks shortly after start and every 6 hours, downloads in the
  * background and installs when the app is closed or when the user presses "Restart to update". Does nothing in development runs.
  */
+export const REPO = { owner: 'TurboNZL', repo: 'music-curator' };
+
 export class Updates {
   state: UpdateState = { status: 'idle' };
   private started = false;
   constructor(private readonly packaged: boolean, private readonly onState: (s: UpdateState) => void) {}
+
+  /** A GitHub token with read access to the repository's contents: needed only while the repository is private. Empty clears it. */
+  setToken(token: string) {
+    const t = token.trim();
+    if (t) autoUpdater.setFeedURL({ provider: 'github', ...REPO, private: true, token: t });
+    else autoUpdater.setFeedURL({ provider: 'github', ...REPO });
+  }
 
   private set(s: UpdateState) { this.state = s; this.onState(s); }
 

@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('curatorDesktop', {
   setDiscord: (patch: unknown) => ipcRenderer.invoke('curator:discord-set', patch) as Promise<unknown>,
   updates: {
     state: () => ipcRenderer.invoke('curator:update-state') as Promise<unknown>,
+    hasToken: () => ipcRenderer.invoke('curator:update-has-token') as Promise<boolean>,
+    setToken: (t: string) => ipcRenderer.invoke('curator:update-set-token', t) as Promise<void>,
     check: () => ipcRenderer.invoke('curator:update-check') as Promise<unknown>,
     install: () => ipcRenderer.send('curator:update-install'),
     onState: (cb: (s: unknown) => void) => { const h = (_e: unknown, s: unknown) => cb(s); ipcRenderer.on('curator:update', h); return () => { ipcRenderer.removeListener('curator:update', h); }; },

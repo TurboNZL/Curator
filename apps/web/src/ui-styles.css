@@ -876,16 +876,27 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
   --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
   --chk-size: 1.2rem; --vote-ms: 380ms;
   --rng-appearance: none; --rng-h: 8px; --rng-tw: 1rem; --rng-th: 1rem;
-  text-transform: none;
 }
-[data-ui^="fortnite"] .btn, [data-ui^="fortnite"] .bt-titlebar h2, [data-ui^="fortnite"] h1, [data-ui^="fortnite"] h2 { text-transform: uppercase; letter-spacing: 0.02em; }
+/* condensed type reads small: nudge the whole UI up in the two condensed eras */
+html[data-ui="fortnite1"], html[data-ui="fortnite2"] { font-size: 17px; }
+/* the wide geometric stand-in for Heading Now takes more room: nudge down */
+html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
+/* Almost everything is capitals, as in the game; paragraphs, typed text and code keep their case so they stay readable */
+[data-ui^="fortnite"] { text-transform: uppercase; letter-spacing: 0.02em; font-weight: 700; }
+[data-ui^="fortnite"] :is(button, .btn, select, [role="menuitem"], [role="option"], h1, h2, h3, label, summary) { text-transform: inherit; letter-spacing: inherit; }
+[data-ui^="fortnite"] :is(.input, input, textarea, code, pre, p, .font-mono, [contenteditable]) { text-transform: none; letter-spacing: 0; }
+[data-ui^="fortnite"] :is(h1, h2, h3, .bt-titlebar h2) { font-family: var(--title-font); font-weight: 800; }
+[data-ui^="fortnite"] .btn { font-weight: 800; letter-spacing: 0.04em; }
+[data-ui^="fortnite"] .btn:hover:not(:disabled) { transform: translateY(-1px); }
+[data-ui^="fortnite"] .btn:active:not(:disabled) { transform: translateY(1px); }
+[data-ui="fortnite1"] .btn-accent, [data-ui="fortnite2"] .btn-accent, [data-ui="fortnite5"] :is(h1, h2, .bt-titlebar h2) { font-style: italic; }
 [data-ui^="fortnite"] .bt-titlebar svg { display: none; }
 [data-ui^="fortnite"] .btn.btn-accent { font-size: 1rem; }
 
 /* ---- Chapter 1 (2017-19): muted slate blue, bevelled rectangles, dark navy bars, cream selection ---- */
 [data-ui="fortnite1"] {
   --radius: 2px; --ctl-r: 2px; --card-r: 2px; --win-r: 2px; --menu-r: 2px; --nav-r: 2px; --chip-r: 2px; --in-r: 2px;
-  --font: "Burbank Big Condensed", "Bebas Neue", Oswald, Impact, "Haettenschweiler", "Arial Narrow", sans-serif; --title-font: var(--font);
+  --font: "Burbank Big Condensed", "Barlow Condensed", Oswald, "Arial Narrow", sans-serif; --title-font: var(--font);
   --btn-bg: #a9bdd8; --btn-fg: #1b2342; --btn-shadow: inset 0 -3px 0 rgb(255 255 255 / 0.6), 0 2px 0 rgb(24 34 70 / 0.4);
   --btn-hover-bg: #bccbe2; --btn-hover-shadow: inset 0 -3px 0 rgb(255 255 255 / 0.75), 0 2px 0 rgb(24 34 70 / 0.4);
   --btn-active-shadow: inset 0 2px 0 rgb(24 34 70 / 0.25); --btn-active-transform: translateY(1px);
@@ -912,7 +923,7 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 /* ---- Chapter 2-3 (2019-23): saturated blue, slanted tabs and buttons with cyan outlines, lime-yellow Start ---- */
 [data-ui="fortnite2"] {
   --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0; --in-r: 0;
-  --font: "Burbank Big Condensed", "Bebas Neue", Oswald, Impact, "Haettenschweiler", "Arial Narrow", sans-serif; --title-font: var(--font);
+  --font: "Burbank Big Condensed", "Barlow Condensed", Oswald, "Arial Narrow", sans-serif; --title-font: var(--font);
   --btn-bg: #0b57ad; --btn-fg: #cfeaff; --btn-shadow: inset 0 0 0 2px #22c4ff; --btn-hover-bg: #0d6bd0; --btn-hover-shadow: inset 0 0 0 2px #7ee0ff;
   --btn-active-shadow: inset 0 0 0 2px #7ee0ff; --btn-active-transform: none;
   --btn-accent-bg: #e8f03b; --btn-accent-fg: #262a00; --btn-accent-shadow: inset 0 0 0 3px rgb(255 255 255 / 0.55); --btn-accent-hover-bg: #f3fa6a; --btn-accent-hover-shadow: inset 0 0 0 3px rgb(255 255 255 / 0.8);
@@ -938,7 +949,7 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 /* ---- Chapter 4 (2023, curved-edge redesign): blue, charcoal buttons, thin white outlines, white selected row, Heading Now ---- */
 [data-ui="fortnite4"] {
   --radius: 3px; --ctl-r: 3px; --card-r: 4px; --win-r: 4px; --menu-r: 3px; --nav-r: 3px; --chip-r: 3px; --in-r: 3px;
-  --font: "Heading Now", Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --font: "Heading Now", Archivo, Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: "Heading Now", Archivo, Montserrat, "Segoe UI", system-ui, sans-serif;
   --btn-weight: 700;
   --btn-bg: #3a4254; --btn-fg: #fff; --btn-border: 1px solid rgb(255 255 255 / 0.22); --btn-shadow: none; --btn-hover-bg: #4b5570; --btn-hover-border: rgb(255 255 255 / 0.5);
   --btn-active-shadow: none; --btn-active-transform: none;
@@ -961,7 +972,7 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 /* ---- Chapter 5-6 (2023-): neutral dark glass; regular = light grey, loud = yellow, quiet = text only ---- */
 [data-ui="fortnite5"] {
   --radius: 8px; --ctl-r: 8px; --card-r: 10px; --win-r: 12px; --menu-r: 10px; --nav-r: 8px; --chip-r: 8px; --in-r: 8px;
-  --font: "Heading Now", Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --font: "Heading Now", Archivo, Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: "Heading Now", Archivo, Montserrat, "Segoe UI", system-ui, sans-serif;
   --btn-weight: 700;
   --btn-bg: #dfe2e8; --btn-fg: #12151c; --btn-shadow: none; --btn-hover-bg: #fff; --btn-active-shadow: none; --btn-active-transform: scale(0.98);
   --btn-accent-bg: #ffee00; --btn-accent-fg: #000; --btn-accent-shadow: none; --btn-accent-hover-bg: #fff35c; --btn-accent-hover-shadow: none;
@@ -979,8 +990,6 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
   --chk-border: 2px solid #a8aebb; --chk-on-fg: #000;
   --rng-track: rgb(255 255 255 / 0.2); --rng-fill: #fff; --rng-thumb: #fff; --rng-ts: none;
 }
-[data-ui="fortnite4"] .btn { letter-spacing: 0.03em; }
-[data-ui="fortnite5"] .btn, [data-ui="fortnite5"] h1, [data-ui="fortnite5"] h2, [data-ui="fortnite5"] .bt-titlebar h2 { text-transform: none; letter-spacing: 0; }
 [data-ui="fortnite5"] .btn.btn-ghost { background: transparent; color: inherit; }
 [data-ui="fortnite5"] .btn.btn-ghost:hover { background: rgb(255 255 255 / 0.1); }
 [data-ui="winxp"] .bt-side > div:last-child { color: #fff; }

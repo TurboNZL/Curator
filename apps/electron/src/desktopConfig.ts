@@ -52,3 +52,9 @@ export function loadDiscordConfig(userData: string, env: NodeJS.ProcessEnv = pro
 export function saveDiscordConfig(userData: string, patch: Partial<DiscordConfig>) {
   saveDesktopConfig(userData, patch as Partial<DesktopConfig>);
 }
+
+/** GitHub token for updates from a private repository (stored in the user's own app folder). */
+export const loadUpdateToken = (userData: string): string => {
+  try { const t = (JSON.parse(readFileSync(join(userData, FILE), 'utf8')) as { updateToken?: unknown }).updateToken; return typeof t === 'string' ? t : ''; } catch { return ''; }
+};
+export const saveUpdateToken = (userData: string, token: string) => saveDesktopConfig(userData, { updateToken: token.trim() } as Partial<DesktopConfig>);

@@ -11,11 +11,14 @@ export interface NativeUpdates {
   check(): Promise<UpdateState>;
   /** restart the app on the new version (desktop) or open the installer (Android) */
   install(): void;
+  /** a GitHub token for updates from a private repository */
+  hasToken(): Promise<boolean>;
+  setToken(token: string): Promise<void>;
   onState(cb: (s: UpdateState) => void): () => void;
 }
 
 /** What the Android app puts on `window` (a Java interface: strings only, so results come back as JSON and updates as events). */
-interface AndroidBridge { version(): string; updateState(): string; checkForUpdate(): void; installUpdate(): void }
+interface AndroidBridge { setServer(url: string, token: string): void; version(): string; updateState(): string; checkForUpdate(): void; installUpdate(): void; hasUpdateToken(): boolean; setUpdateToken(t: string): void }
 const android = (): AndroidBridge | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { CuratorAndroid?: AndroidBridge }).CuratorAndroid);
 
 export const isAndroidApp = () => !!android();
@@ -31,10 +34,17 @@ export function nativeUpdates(): NativeUpdates | null {
     state: async () => read(),
     check: async () => { a.checkForUpdate(); return read(); },
     install: () => a.installUpdate(),
+    hasToken: async () => a.hasUpdateToken(),
+    setToken: async (t) => a.setUpdateToken(t),
     onState: (cb) => {
       const h = (e: Event) => cb((e as CustomEvent<UpdateState>).detail);
       window.addEventListener('curator-update', h);
       return () => window.removeEventListener('curator-update', h);
     },
   };
+}
+
+/** Tells the Android app which server this device uses, so Android Auto browses the same library. No effect elsewhere. */
+export function syncNativeServer(serverUrl: string, token: string): void {
+  try { android()?.setServer(serverUrl, token); } catch { /* not in the app */ }
 }

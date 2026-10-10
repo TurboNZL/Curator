@@ -1,0 +1,19 @@
+package app.musiccurator.android
+
+import android.content.Context
+import android.webkit.JavascriptInterface
+import app.musiccurator.android.update.AppUpdater
+
+/** `window.CuratorAndroid` in the web client. Java interfaces carry strings only, so results are JSON and changes arrive as events. */
+class CuratorBridge(private val context: Context) {
+    private val prefs = ServerPrefs(context)
+
+    @JavascriptInterface fun version(): String = BuildConfig.VERSION_NAME
+    @JavascriptInterface fun updateState(): String = AppUpdater.state.json()
+    @JavascriptInterface fun checkForUpdate() = AppUpdater.check(context)
+    @JavascriptInterface fun installUpdate() = AppUpdater.install(context)
+    @JavascriptInterface fun hasUpdateToken(): Boolean = prefs.updateToken.isNotEmpty()
+    @JavascriptInterface fun setUpdateToken(token: String) { prefs.updateToken = token }
+    /** the web client tells the native side which server it uses, so Android Auto can browse the same library */
+    @JavascriptInterface fun setServer(url: String, token: String) { prefs.serverUrl = url; prefs.token = token }
+}
