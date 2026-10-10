@@ -228,11 +228,27 @@ describe('cover cropping (YouTube thumbnails have black bars)', () => {
     expect(coverCrop(img(1280, 720, { x: 280, y: 0, w: 720, h: 720 }), 1280, 720)).toEqual({ x: 280, y: 0, w: 720, h: 720 });
     expect(coverCrop(img(300, 300, { x: 0, y: 0, w: 300, h: 300 }), 300, 300)).toEqual({ x: 0, y: 0, w: 300, h: 300 });
   });
+  it('keeps the dark edges of square art in a wide frame (the art is the centred full-height square, not just its bright part)', () => {
+    // art 360x360 centred in 640x360, but only the middle 330x330 of it is bright
+    expect(coverCrop(img(640, 360, { x: 155, y: 15, w: 330, h: 330 }), 640, 360)).toEqual({ x: 140, y: 0, w: 360, h: 360 });
+  });
   it('centre-squares a wide picture, and ignores an all-black or tiny result', () => {
     expect(centreSquare({ x: 0, y: 45, w: 480, h: 270 })).toEqual({ x: 105, y: 45, w: 270, h: 270 });
     const black = new Uint8ClampedArray(400 * 300 * 4).map((_, i) => (i % 4 === 3 ? 255 : 0));
     expect(coverCrop(black, 400, 300)).toEqual({ x: 0, y: 0, w: 400, h: 300 });
     expect(coverCrop(img(400, 300, { x: 100, y: 100, w: 20, h: 20 }), 400, 300)).toEqual({ x: 0, y: 0, w: 400, h: 300 });
+  });
+});
+
+describe('health: note categories', () => {
+  it('lists categories no note uses, never one that is in use', () => {
+    const lib = buildLibrary(rows(
+      rec('noteCategories', 'used', { name: 'Used' }), rec('noteCategories', 'orphan', { name: 'Orphan' }),
+      rec('groups', 'n1', { name: 'A note', description: '', label: null, categoryId: 'used', members: [] }),
+    ));
+    const c = computeHealth(lib).find((x) => x.id === 'note-category-unused')!;
+    expect(c.items.map((x) => x.label)).toEqual(['Orphan']);
+    expect(c.fix?.table).toBe('noteCategories');
   });
 });
 

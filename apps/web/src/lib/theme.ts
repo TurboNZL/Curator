@@ -206,6 +206,20 @@ export const THEME_DEFS: ThemeDef[] = [
   // Winamp 2.x: bluish metal chrome, a black playlist with #00ff00 text and #000080 selection (the skin's pledit.txt defaults)
   dark({ id: "winamp", label: "Winamp Classic", bg: hex("#1c1c2a"), primary: hex("#00e800"), onPrimary: "0 0% 0%", fg: hx("#d8dbe6"), mutedFg: hx("#8e96a8"), motif: "grid",
     ov: { card: "#000000", secondary: "#34344a", muted: "#2a2a3c", accent: "#000080", border: "#46465e", input: "#5a5a72" } }),
+  // LG UX 5.0: white sheets on a light grey ground with a teal-blue app bar (approximation; LG published no palette)
+  light({ id: "lg-marshmallow", label: "LG Light", bg: hex("#f2f2f2"), primary: hex("#0e7fa8"), onPrimary: "0 0% 100%", fg: hx("#212121"), mutedFg: hx("#757575"), motif: "dots",
+    ov: { card: "#ffffff", secondary: "#e6e6e6", muted: "#ececec", accent: "#d3e6ef", border: "#dcdcdc", input: "#9e9e9e" } }),
+  dark({ id: "lg-marshmallow-dark", label: "LG Dark", bg: hex("#1a1a1a"), primary: hex("#2aa6d1"), onPrimary: "0 0% 0%", fg: hx("#f2f2f2"), mutedFg: hx("#a8a8a8"), motif: "dots",
+    ov: { card: "#2a2a2a", secondary: "#353535", muted: "#303030", accent: "#1f4456", border: "#3a3a3a", input: "#6a6a6a" } }),
+  // Fortnite: Epic's own colours are not published; these follow the lobby screenshots (blue ground, yellow Play, purple for the Rift UI)
+  dark({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#0b3a8c"), primary: hex("#ffe400"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#b9cdf2"), motif: "waves",
+    ov: { card: "#1456c4", secondary: "#2468d6", muted: "#1a5cc8", accent: "#ffe400", border: "#4f8ae8", input: "#6fa0f0" } }),
+  dark({ id: "fortnite-2", label: "Fortnite Ch 2-3", bg: hex("#07123a"), primary: hex("#ffd60a"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#9fb2e0"), motif: "grid",
+    ov: { card: "#0f2260", secondary: "#18307f", muted: "#122968", accent: "#ffd60a", border: "#2c4aa8", input: "#4a68c4" } }),
+  dark({ id: "fortnite-4", label: "Fortnite Ch 4", bg: hex("#1d0b3f"), primary: hex("#ffdd2d"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#c4b0ec"), motif: "stars",
+    ov: { card: "#2d1360", secondary: "#3d1c82", muted: "#331770", accent: "#ffdd2d", border: "#4b2a96", input: "#6c47c0" } }),
+  dark({ id: "fortnite-5", label: "Fortnite Ch 5-6", bg: hex("#081a45"), primary: hex("#fff04d"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#a9bdea"), motif: "stars",
+    ov: { card: "#10296a", secondary: "#1a3a8c", muted: "#143275", accent: "#fff04d", border: "#2a4fb0", input: "#4a70d0" } }),
   light({ id: "material", label: "Material You", bg: hex("#fef7ff"), primary: hex("#6750a4"), fg: hx("#1d1b20"), mutedFg: hx("#49454f"), motif: "dots",
     ov: { card: "#f7f2fa", secondary: "#e8def8", muted: "#ece6f0", accent: "#e8def8", border: "#cac4d0", input: "#79747e" } }),
   dark({ id: "material-dark", label: "Material You Dark", bg: hex("#141218"), primary: hex("#d0bcff"), onPrimary: hx("#381e72"), fg: hx("#e6e0e9"), mutedFg: hx("#cac4d0"), motif: "dots",
@@ -221,7 +235,7 @@ export const THEMES: { id: ThemeId; label: string; dark: boolean | null; note?: 
 /** Themes that copy a platform's palette, shown in their own group in Settings. */
 export const PLATFORM_THEME_IDS: ThemeId[] = [
   "adwaita", "adwaita-dark", "breeze", "breeze-dark", "win11", "win11-dark", "win10", "win10-dark",
-  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "material", "material-dark",
+  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "material", "material-dark",
 ];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 

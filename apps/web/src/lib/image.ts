@@ -32,5 +32,8 @@ export function coverCrop(rgba: Uint8ClampedArray, w: number, h: number): Box {
   const box = contentBox(rgba, w, h);
   const sq = centreSquare(box);
   if (box.w >= w * 0.98 && box.h >= h * 0.98) return whole; // no bars
+  // Square art pillarboxed into a wide frame (what YouTube serves for album uploads): the art is the centred square of full height.
+  // Going by the brightness box alone would also cut away the art's own dark edges, so a dark cover came out zoomed in.
+  if (w >= h * 1.15 && box.h >= h * 0.9 && h >= 100) return { x: Math.floor((w - h) / 2), y: 0, w: h, h };
   return sq.w < 100 || sq.w < Math.min(w, h) * 0.4 ? whole : sq;
 }

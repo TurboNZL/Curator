@@ -12,8 +12,8 @@ export function DetailLayout({ left, right, children }: { left?: ReactNode; righ
   return (
     <div className={`grid items-start gap-x-6 gap-y-6 ${cols}`}>
       <div className={`min-w-0 space-y-6 ${both ? 'xl:col-start-1 xl:row-span-2 xl:row-start-1 2xl:col-start-2 2xl:row-span-1' : 'xl:order-2'}`}>{children}</div>
-      {left && <aside className={`space-y-6 ${both ? 'xl:col-start-2 xl:row-start-1 2xl:col-start-1' : 'xl:order-1'} 2xl:sticky 2xl:top-20 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto`}>{left}</aside>}
-      {right && <aside className={`space-y-6 ${both ? 'xl:col-start-2 xl:row-start-2 2xl:col-start-3 2xl:row-start-1' : 'xl:order-3'} xl:sticky xl:top-20 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto`}>{right}</aside>}
+      {left && <aside className={`-m-1.5 space-y-6 p-1.5 ${both ? 'xl:col-start-2 xl:row-start-1 2xl:col-start-1' : 'xl:order-1'} 2xl:sticky 2xl:top-20 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto`}>{left}</aside>}
+      {right && <aside className={`-m-1.5 space-y-6 p-1.5 ${both ? 'xl:col-start-2 xl:row-start-2 2xl:col-start-3 2xl:row-start-1' : 'xl:order-3'} xl:sticky xl:top-20 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto`}>{right}</aside>}
     </div>
   );
 }

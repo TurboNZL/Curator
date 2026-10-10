@@ -7,6 +7,7 @@ import { useStore } from '../lib/store.ts';
 import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
+import { DevicesMenu } from './Devices.tsx';
 
 const NAV = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -147,9 +148,10 @@ export function Layout() {
               <img src="/icon.svg" alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0 md:hidden" draggable={false} />
               <div className="md:hidden"><SyncDot /></div>
               <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
               <input className="input pl-9" placeholder="Search tracks, albums, artists" value={q} onChange={(e) => setQ(e.target.value)} />
               </div>
+              <DevicesMenu />
               <AddMenu />
             </div>
           </form>

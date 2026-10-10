@@ -16,6 +16,24 @@ const SNIPPET_MS = 15_000;
 /** how long the chosen card plays its "picked" animation before the next pair appears (0 where the UI style has no motion) */
 const pickDelay = () => cssMs('--vote-ms', 440);
 
+interface Preview { el: HTMLAudioElement; url: string; local: boolean }
+const middle = (el: HTMLAudioElement) => Math.max(0, el.duration / 2 - SNIPPET_MS / 2000);
+const release = (p: Preview | null) => { if (!p) return; p.el.pause(); p.el.removeAttribute('src'); p.el.load(); if (p.local) URL.revokeObjectURL(p.url); };
+
+/**
+ * Start loading a track for the preview: its source is resolved (the copy kept on this device, else the server), and the
+ * element seeks to the middle as soon as its length is known, so the browser fetches that part of the file before it is wanted.
+ */
+function loadPreview(file: string, volume: number): Promise<Preview | null> {
+  return audioSource(file).then(({ url, local }) => new Promise<Preview | null>((resolve) => {
+    const el = new Audio();
+    el.preload = 'auto'; el.volume = volume;
+    el.addEventListener('loadedmetadata', () => { el.currentTime = middle(el); resolve({ el, url, local }); }, { once: true });
+    el.addEventListener('error', () => { if (local) URL.revokeObjectURL(url); resolve(null); }, { once: true });
+    el.src = url;
+  })).catch(() => null);
+}
+
 /**
  * The height left for the page inside the scrolling content area, so the two cards and the buttons always fit on
  * screen (on a phone the lower card used to slide under the player bar). Re-measured when the window or the player changes.
@@ -52,22 +70,25 @@ export function VotePage() {
   const [flash, setFlash] = useState<string | null>(null);
   /** the card that was just chosen (or both, for equal) while its animation plays */
   const [picked, setPicked] = useState<string | 'equal' | null>(null);
+  /** a finger dragging a card sideways: swiping a card right picks it (phones; replaces tapping twice) */
+  const [drag, setDrag] = useState<{ id: string; dx: number; settle?: boolean } | null>(null);
+  const finger = useRef<{ id: string; x: number; y: number; w: number; locked: boolean } | null>(null);
+  const swallowClick = useRef(false);
   const lastArrow = useRef<{ key: string; pair: string } | null>(null);
-  const audio = useRef<HTMLAudioElement | null>(null);
+  /** both tracks of the pair are loaded as soon as the pair appears, so a preview starts at once */
+  const previews = useRef(new Map<string, Promise<Preview | null>>());
   const loadSeq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fit = useFitHeight();
   const pool = useMemo(() => lib.tracks.filter((t) => !onlyPlayable || t.file), [lib, onlyPlayable]);
 
-  const blobUrl = useRef<string | null>(null);
   const volume = usePlayer((s) => s.volume);
   const playerPlaying = usePlayer((s) => s.playing);
 
   const stop = useCallback(() => {
     clearTimeout(timer.current);
     loadSeq.current++; // a preview still resolving its source must not start after this
-    audio.current?.pause();
-    if (blobUrl.current) { URL.revokeObjectURL(blobUrl.current); blobUrl.current = null; }
+    previews.current.forEach((p) => void p.then((v) => v?.el.pause()));
     setPlaying(null);
   }, []);
   const next = useCallback(() => {
@@ -76,12 +97,21 @@ export function VotePage() {
   }, [pool, stop]);
   useEffect(() => { if (!pair) next(); }, [pair, next]);
   useEffect(() => stop, [stop]);
-  // the preview follows the player's volume slider, also while it is playing
-  useEffect(() => { if (audio.current) audio.current.volume = volume; }, [volume]);
+  // the previews follow the player's volume slider, also while one is playing
+  useEffect(() => { previews.current.forEach((p) => void p.then((v) => { if (v) v.el.volume = volume; })); }, [volume]);
   // starting the main player (play button, a track in a list) ends a preview, so the two never overlap
   useEffect(() => { if (playerPlaying) stop(); }, [playerPlaying, stop]);
 
   const [a, b] = pair ? [lib.trackById.get(pair[0]), lib.trackById.get(pair[1])] : [];
+
+  // load both tracks of the new pair now (and let go of the last pair's)
+  const pairKey = pair?.join('|') ?? '';
+  useEffect(() => {
+    const map = previews.current;
+    if (!pair) return;
+    for (const id of pair) { const t = lib.trackById.get(id); if (t?.file) map.set(id, loadPreview(t.file, usePlayer.getState().volume)); }
+    return () => { map.forEach((p) => void p.then(release)); map.clear(); };
+  }, [pairKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vote = useCallback((winnerId: string | null, isEqual = false) => {
     if (!pair || picked) return;
@@ -125,24 +155,49 @@ export function VotePage() {
   /** Play 15 s from the middle of the track, as the original cleanup page did. The music player is paused meanwhile. */
   function snippet(t: Track, onlyStart = false) {
     if (playing === t.id) return onlyStart ? undefined : stop();
-    if (!t.file) return;
+    const loading = previews.current.get(t.id);
+    if (!t.file || !loading) return;
     stop();
     usePlayer.getState().pause();
-    const el = (audio.current ??= new Audio());
-    el.volume = usePlayer.getState().volume;
     setPlaying(t.id);
     const seq = ++loadSeq.current;
-    // same source rule as the player: the copy kept on this device when there is one, else the server
-    void audioSource(t.file).then(({ url, local }) => {
-      if (seq !== loadSeq.current) { if (local) URL.revokeObjectURL(url); return; }
-      blobUrl.current = local ? url : null;
-      el.onloadedmetadata = () => { el.currentTime = Math.max(0, el.duration / 2 - 7.5); void el.play(); };
-      el.src = url;
+    void loading.then((p) => {
+      if (!p || seq !== loadSeq.current) return;
+      p.el.volume = usePlayer.getState().volume;
+      p.el.currentTime = middle(p.el);
+      void p.el.play();
       timer.current = setTimeout(stop, SNIPPET_MS);
     });
   }
 
   previewRef.current = (t) => snippet(t, true);
+
+  const swipeHandlers = (t: Track) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.pointerType !== 'touch' || picked || (e.target as Element).closest('a, button, input')) return;
+      finger.current = { id: t.id, x: e.clientX, y: e.clientY, w: e.currentTarget.offsetWidth, locked: false };
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      const f = finger.current;
+      if (!f || f.id !== t.id) return;
+      const dx = e.clientX - f.x, dy = e.clientY - f.y;
+      if (!f.locked) {
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { finger.current = null; return; } // the page is being scrolled
+        if (Math.abs(dx) < 10) return;
+        f.locked = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }
+      setDrag({ id: t.id, dx: Math.max(0, dx) });
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => {
+      const f = finger.current; finger.current = null;
+      if (!f?.locked || f.id !== t.id) return;
+      swallowClick.current = true; // the tap that ends a drag is not a tap on the card
+      setTimeout(() => { swallowClick.current = false; }, 0);
+      if (e.clientX - f.x >= Math.max(90, f.w * 0.3)) { setDrag(null); vote(t.id); } else setDrag({ id: t.id, dx: 0, settle: true });
+    },
+    onPointerCancel: () => { finger.current = null; setDrag(null); },
+  });
 
   if (lib.tracks.length < 2) return <div className="text-muted">Add at least two tracks to start ranking.</div>;
 
@@ -157,7 +212,9 @@ export function VotePage() {
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[repeat(2,minmax(0,1fr))] gap-3 sm:grid-cols-2 sm:grid-rows-[minmax(0,1fr)] sm:gap-4">
         {[a, b].map((t, i) => t && (
           <div key={t.id} role="button" tabIndex={0} aria-pressed={playing === t.id} aria-label={`${playing === t.id ? 'Stop preview of' : 'Preview'} ${t.title}`}
-            onClick={() => !picked && snippet(t)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!picked) snippet(t); } }}
+            onClick={() => { if (swallowClick.current) return; if (!picked) snippet(t); }} {...swipeHandlers(t)}
+            style={{ touchAction: 'pan-y', ...(drag?.id === t.id ? { transform: `translateX(${drag.dx}px)`, transition: drag.settle ? 'transform 200ms ease-out' : 'none' } : null) }}
+            onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!picked) snippet(t); } }}
             data-selected={playing === t.id || undefined} className={cn('card bt-sel vote-card flex min-h-0 min-w-0 cursor-pointer select-none flex-row items-center gap-3 overflow-hidden p-3 max-sm:[container-type:size] sm:flex-col sm:gap-2 sm:p-4',
               !t.file && 'cursor-default',
               picked === t.id && 'bt-vote-win', picked && picked !== t.id && picked !== 'equal' && 'bt-vote-lose', picked === 'equal' && 'bt-vote-equal')}>
@@ -166,6 +223,7 @@ export function VotePage() {
               <div className="relative aspect-square max-sm:h-full max-sm:w-full sm:h-auto sm:[width:min(100cqw,100cqh)]">
                 <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="h-full w-full" />
                 {playing === t.id && <span className="absolute inset-0 flex items-center justify-center rounded-theme bg-black/40 text-white"><Volume2 className="animate-pulse" size={26} /></span>}
+                {drag?.id === t.id && drag.dx > 0 && <span className="absolute inset-0 flex items-center justify-center rounded-theme bg-accent/45 text-accent-fg" style={{ opacity: Math.min(1, drag.dx / 140) }}><Check size={44} strokeWidth={3} /></span>}
                 {picked === t.id && <span className="absolute inset-0 flex items-center justify-center rounded-theme bg-accent/45 text-accent-fg"><Check className="bt-vote-check" size={44} strokeWidth={3} /></span>}
               </div>
             </div>
@@ -187,7 +245,7 @@ export function VotePage() {
           <button className="btn" onClick={() => vote(null, true)} title="Both are as good as each other. This is saved as a draw and moves both ratings towards each other."><Equal size={16} />They’re equal (↓)</button>
           <button className="btn btn-ghost" onClick={() => !picked && next()} title="Not sure, or you don't want to rank this pair. Nothing is saved; you just get a new pair."><SkipForward size={16} />Skip, save nothing (↑)</button>
         </div>
-        <div className="min-h-4 text-center text-xs text-good" aria-live="polite">{flash ?? <span className="text-muted"><span className="hidden sm:inline">← or → once previews, twice picks that track. </span>Equal records a draw. Skip records nothing.</span>}</div>
+        <div className="min-h-4 text-center text-xs text-good" aria-live="polite">{flash ?? <span className="text-muted"><span className="hidden sm:inline">← or → once previews, twice picks that track. </span><span className="sm:hidden">Tap a card to preview, swipe it right to pick it. </span>Equal records a draw. Skip records nothing.</span>}</div>
       </div>
     </div>
   );

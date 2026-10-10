@@ -49,6 +49,18 @@ export function coverCandidates(info: any, entries: any[]): string[] {
   return [...new Set([...square, ...all.filter((u) => !isSquareHost(u))].map(upsize))];
 }
 
+const plain = (s: string) => s.toLowerCase().replace(/\s*[(\[][^)\]]*[)\]]/g, '').replace(/\s+-\s+(single|ep)$/i, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+/**
+ * The square cover from an iTunes Search result list, only when it is clearly the same album: the title matches (ignoring
+ * "(Deluxe)", "- Single", punctuation) and the artist matches. A near miss would put the wrong picture on an album, so no match is better.
+ */
+export function pickItunesArtwork(results: any[], title: string, artist: string): string | null {
+  const t = plain(title), a = plain(artist);
+  const hit = (Array.isArray(results) ? results : []).find((r) => typeof r?.artworkUrl100 === 'string' && plain(String(r.collectionName ?? '')) === t && (plain(String(r.artistName ?? '')).includes(a) || a.includes(plain(String(r.artistName ?? '')))));
+  return hit ? String(hit.artworkUrl100).replace(/\/\d+x\d+(bb)?\.(jpg|png)$/, '/600x600bb.jpg') : null;
+}
+
 const cleanArtist = (s: string) => s.replace(/\s*-\s*Topic$/i, '').trim();
 
 /** Turn yt-dlp's `-J --flat-playlist` output into what the review screen needs (pure; tested without yt-dlp). */
@@ -70,7 +82,7 @@ export function parsePreview(info: any): Preview {
   };
 }
 
-const COVER_HOSTS = ['ytimg.com', 'ggpht.com', 'googleusercontent.com'];
+const COVER_HOSTS = ['ytimg.com', 'ggpht.com', 'googleusercontent.com', 'mzstatic.com'];
 const MAX_COVER = 10 * 1024 * 1024;
 
 export class ImportError extends Error {
@@ -91,7 +103,26 @@ export class Importer {
     try { info = JSON.parse(out); } catch { throw new ImportError(502, 'yt-dlp returned something unreadable'); }
     const p = parsePreview(info);
     if (!p.entries.length) throw new ImportError(404, 'No tracks found at that link');
+    // YouTube Music's own square art is the best cover; when yt-dlp does not give it, a verified album match from iTunes
+    // (a real square 600 px picture) beats a cropped video frame
+    const apple = await this.itunesCover(p.title, p.artist);
+    if (apple) {
+      const squares = p.thumbnails.filter(isSquareHost);
+      p.thumbnails = [...squares, apple, ...p.thumbnails.filter((u) => !isSquareHost(u))];
+      p.thumbnail = p.thumbnails[0];
+    }
     return p;
+  }
+
+  /** A cover for exactly this album from iTunes, or null (no match, offline, or a slow answer: never fails the preview). */
+  async itunesCover(title: string, artist: string): Promise<string | null> {
+    if (!title || !artist || artist === 'Unknown artist') return null;
+    try {
+      const q = new URLSearchParams({ term: `${artist} ${title}`, entity: 'album', limit: '10' });
+      const res = await (this.o.fetchImpl ?? fetch)(`https://itunes.apple.com/search?${q}`, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) return null;
+      return pickItunesArtwork(((await res.json()) as { results?: any[] }).results ?? [], title, artist);
+    } catch { return null; }
   }
 
   /** Try each candidate in order; returns the first that downloads, with the URL it came from. */

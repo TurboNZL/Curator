@@ -1,3 +1,5 @@
+import { guessDeviceName } from '../lib/connect.ts';
+import { desktop } from '../lib/settings.ts';
 import { useEffect, useState } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import { Api, type ServerStatus } from '../lib/api.ts';
@@ -67,6 +69,17 @@ export function SettingsPage() {
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
 
+      {desktop() && <Section title="Desktop app">
+        <p className="text-sm text-muted">This app runs its own server and keeps your library in a folder. Put it on a big drive: audio you keep offline lives there too. To use your home server instead, fill in its address and token under Server.</p>
+        <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
+          <button className="btn" onClick={() => void desktop()!.showLibraryFolder()}>Show folder</button>
+          <button className="btn" onClick={() => void desktop()!.chooseLibraryFolder()}>Change folder…</button></div>
+        <p className="text-xs text-muted">Version {desktop()!.version}. Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first.</p>
+      </Section>}
+      <Section title="This device (Play on a device)">
+        <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
+        <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>
+      </Section>
       <Section title="Sound">
         <p className="text-sm text-muted">A bass boost for this device. It lifts the low end (below about 110 Hz) and trims the level a little first so loud songs do not clip, with a soft limiter as a backstop. Off by default; the Electron and Android apps will get a fuller equaliser.</p>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.eqOn} onChange={(e) => updateSettings({ eqOn: e.target.checked })} />Bass boost</label>

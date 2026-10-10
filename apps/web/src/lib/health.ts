@@ -1,12 +1,12 @@
 import { hasLead } from './defaults.ts';
 import type { Library } from './library.ts';
 
-export type HealthKind = 'track' | 'album' | 'artist' | 'genre' | 'role' | 'release';
+export type HealthKind = 'track' | 'album' | 'artist' | 'genre' | 'role' | 'release' | 'noteCategory';
 export interface HealthItem { kind: HealthKind; id: string; label: string; detail?: string }
 export interface HealthCheck {
   id: string; title: string; why: string; items: HealthItem[];
   /** only for checks that are safe to fix in one click */
-  fix?: { label: string; table: 'artists' | 'genres' | 'roleCategories' };
+  fix?: { label: string; table: 'artists' | 'genres' | 'roleCategories' | 'noteCategories' };
   /** one-click: write a "Lead artist" credit from the stored artistId onto each item */
   addLead?: { label: string };
   /** paste many links at once, album by album */
@@ -79,5 +79,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
     { id: 'role-unused', title: 'Credit roles that nothing uses', why: 'Checked against every track and album credit, so roles in use are never listed.',
       fix: { label: 'Delete these roles', table: 'roleCategories' },
       items: lib.roles.filter((r) => !usedRoles.has(r.name.toLowerCase())).map((r) => ({ kind: 'role' as const, id: r.id, label: r.name })) },
+    { id: 'note-category-unused', title: 'Note categories with no notes', why: 'Categories you made that no note uses any more. Safe to remove.',
+      fix: { label: 'Delete these categories', table: 'noteCategories' },
+      items: lib.noteCategories.filter((c) => !lib.groups.some((g) => g.categoryId === c.id)).map((c) => ({ kind: 'noteCategory' as const, id: c.id, label: c.name })) },
   ];
 }

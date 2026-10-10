@@ -13,8 +13,11 @@ export async function sha256Hex(data: ArrayBuffer): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** Covers and artist pictures are kept at 540 px on the long side: sharp on every grid and the player, a third of the bytes of 800 px. */
+export const COVER_PX = 540;
+
 /** Downscale to at most `max` px on the long side and re-encode as JPEG: covers do not need to be 4000 px. */
-export async function prepareImage(file: Blob, max = 800, trimBars = false): Promise<Blob> {
+export async function prepareImage(file: Blob, max = COVER_PX, trimBars = false): Promise<Blob> {
   const bmp = await createImageBitmap(file);
   let src = { x: 0, y: 0, w: bmp.width, h: bmp.height };
   if (trimBars) { // e.g. a YouTube thumbnail: drop the black bars, keep the centre square
@@ -46,7 +49,7 @@ const queueUpload = (hash: string) => changePending((cur) => (cur.includes(hash)
  * reference, so the record can sync immediately; the bytes follow whenever the server is reachable.
  */
 export async function saveImage(file: Blob, opts: { trimBars?: boolean } = {}): Promise<string> {
-  const blob = await prepareImage(file, 800, opts.trimBars);
+  const blob = await prepareImage(file, COVER_PX, opts.trimBars);
   const hash = await sha256Hex(await blob.arrayBuffer());
   const db = await localDb();
   await db.put('blobs', blob, hash);
@@ -104,6 +107,12 @@ export async function flushUploads(a: Api): Promise<void> {
   }
   // drop only what was sent: files queued while this ran must survive
   await changePending((cur) => cur.filter((h) => !sent.has(h)));
+}
+
+/** Where to read an image from outside React (the media session): this device's copy as an object URL (`local`, revoke it), else the server's link. */
+export async function imageSource(hash: string): Promise<{ url: string; local: boolean }> {
+  const blob = await (await localDb()).get('blobs', hash);
+  return blob ? { url: URL.createObjectURL(blob), local: true } : { url: api().fileUrl(hash), local: false };
 }
 
 /** A displayable URL for a file hash: this device's copy if it has one, else the server's. */

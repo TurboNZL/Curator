@@ -379,14 +379,17 @@ html[data-ui="win98"] { font-size: 14px; }
  * Accessibility: reduced motion removes the animation (global rule); reduced transparency makes it opaque (end).
  */
 
+/* A dialog is big: blurring and refracting what is behind it on every frame of its scale-in is what made opening one stutter, so the
+ * backdrop effect only switches on when the animation ends (the dialog's own fill is nearly opaque, so the change is hardly seen). */
 @keyframes lg-open {
-  0% { opacity: 0; transform: scale(0.72); }
+  0% { opacity: 0; transform: scale(0.72); -webkit-backdrop-filter: none; backdrop-filter: none; }
   38% { opacity: 1; }
   68% { transform: scale(1.018); }
-  100% { opacity: 1; transform: none; }
+  99% { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  100% { opacity: 1; transform: none; -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat)); backdrop-filter: blur(var(--lg-blur)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat)) brightness(var(--lg-bright)); }
 }
 @keyframes lg-menu {
-  0% { opacity: 0; transform: scale(0.6, 0.5); border-radius: 9999px; }
+  0% { opacity: 0; transform: scale(0.6); }
   30% { opacity: 1; }
   70% { transform: scale(1.012); }
   100% { opacity: 1; transform: none; }
@@ -473,7 +476,7 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
   border: 0; box-shadow: var(--lg-shadow), var(--lg-rim), inset 0 0 0 999px var(--lg-dim);
 }
 :is(html, div)[data-ui="liquid"] .bt-window { background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill-strong); box-shadow: 0 30px 80px rgb(0 0 0 / 0.45), 0 4px 14px rgb(0 0 0 / 0.25), var(--lg-rim), inset 0 0 0 999px var(--lg-dim); }
-:is(html, div)[data-ui="liquid"] .bt-backdrop { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: bt-fade 300ms ease-out both; }
+:is(html, div)[data-ui="liquid"] .bt-backdrop { animation: bt-fade 300ms ease-out both; } /* just a dim: a screen-sized blur was the costliest part of opening a dialog */
 :is(html, div)[data-ui="liquid"] .bt-menu { padding: 6px; background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill-strong); }
 :is(html, div)[data-ui="liquid"] .bt-menu [role="menuitem"] { width: 100%; border-radius: calc(var(--menu-r) - 8px); padding-inline: 0.8rem; }
 :is(html, div)[data-ui="liquid"] .bt-menu [role="menuitem"]:hover:not(:disabled), :is(html, div)[data-ui="liquid"] .bt-menu [role="menuitem"]:focus-visible {
@@ -594,7 +597,7 @@ html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
 [data-ui="macos"] { --player-in: bt-slide-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both; --player-out: bt-slide-out 240ms ease-in both; --player-ms: 240ms; --pop-out: bt-fade-out 160ms ease-in both; --pop-ms: 160ms; }
 [data-ui="liquid"] { --player-in: lg-bar-in 420ms var(--ease) both; --player-out: lg-bar-out 260ms cubic-bezier(0.5, 0, 0.75, 0) both; --player-ms: 260ms; --pop-out: lg-menu-out 200ms cubic-bezier(0.5, 0, 0.75, 0) both; --pop-ms: 200ms; }
 [data-ui="material"] { --player-in: bt-slide-in 420ms cubic-bezier(0.05, 0.7, 0.1, 1) both; --player-out: bt-slide-out 200ms cubic-bezier(0.3, 0, 0.8, 0.15) both; --player-ms: 200ms; --pop-out: bt-fade-out 150ms cubic-bezier(0.3, 0, 0.8, 0.15) both; --pop-ms: 150ms; }
-@keyframes lg-menu-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.7, 0.55); } }
+@keyframes lg-menu-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.7); } }
 
 /* A chosen card (release list, a previewing ranking card). An outline, not a ring: rings are box-shadows, which the styles use for bevels, glass and depth. */
 .bt-sel[data-selected] { outline: 2px solid hsl(var(--accent)); outline-offset: 0; }
@@ -801,3 +804,117 @@ html[data-ui="winamp"] { font-size: 13px; }
 [data-ui="winamp"] .card:not(.bt-panel):not([class*=" p-"]):not([class*=" px-"]):not([class*=" py-"]) { padding: 2px; }
 [data-ui="winamp"] .bt-player [role="slider"], [data-ui="winamp"] .bt-player .tabular-nums { color: hsl(var(--accent)); font-family: ui-monospace, "DejaVu Sans Mono", monospace; }
 html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
+
+/* ================== LG UX 5.0 (Android 6 Marshmallow, 2016) ==================
+ * LG's Optimus UI turned into UX in 2013 and by UX 5.0 (G5, V20) borrowed Material Design: flat text buttons and filled buttons
+ * with a hairline shadow, floating action buttons, underlined fields, near-square 2 px corners, white sheets and a left slide-in
+ * drawer (AnandTech: "stock flat and floating action buttons consistently"). Sources: gsmarena.com/lg_introduces_marshmallowbased_ux_50_user_interface-news-17465.php,
+ * the AnandTech LG G5 review. The exact colours are an approximation (no LG spec is public); pair it with the "LG Marshmallow" colours. */
+[data-ui="lgux"] {
+  --radius: 2px; --ctl-r: 2px; --card-r: 2px; --win-r: 2px; --menu-r: 2px; --nav-r: 2px; --chip-r: 2px; --in-r: 0;
+  --font: Roboto, "Noto Sans", "Droid Sans", "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --dur: 160ms; --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --btn-bg: transparent; --btn-fg: hsl(var(--accent)); --btn-weight: 500; --btn-border: 0 solid transparent;
+  --btn-hover-bg: color-mix(in srgb, hsl(var(--accent)) 10%, transparent); --btn-active-transform: none;
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 1px 2px rgb(0 0 0 / 0.2);
+  --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 90%, black); --btn-accent-hover-shadow: 0 3px 6px rgb(0 0 0 / 0.28);
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
+  --in-bg: transparent; --in-border: 0 solid transparent; --in-shadow: inset 0 -1px 0 color-mix(in srgb, hsl(var(--fg)) 40%, transparent);
+  --in-hover-border: transparent; --in-focus-border: transparent; --in-focus-shadow: inset 0 -2px 0 hsl(var(--accent)); --in-px: 0.25rem;
+  --card-bg: hsl(var(--surface)); --card-border: 0 solid transparent; --card-shadow: 0 1px 2px rgb(0 0 0 / 0.22), 0 0 0 1px rgb(0 0 0 / 0.04);
+  --win-bg: hsl(var(--surface)); --win-border: 0 solid transparent; --win-shadow: 0 12px 32px rgb(0 0 0 / 0.38); --dialog-anim: bt-pop 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --tb-border: 0 solid transparent; --tb-pad: 1.1rem 1.4rem 0.4rem; --tb-size: 1.25rem; --tb-weight: 500; --tb-justify: space-between;
+  --close-r: 9999px; --close-hover-bg: color-mix(in srgb, hsl(var(--fg)) 10%, transparent);
+  --bar-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
+  --menu-bg: hsl(var(--surface)); --menu-border: 0 solid transparent; --pop-shadow: 0 5px 14px rgb(0 0 0 / 0.3), 0 1px 3px rgb(0 0 0 / 0.2); --menu-anim: bt-reveal 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  --menu-hi-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
+  --side-bg: hsl(var(--surface)); --side-shadow: 1px 0 3px rgb(0 0 0 / 0.14); --top-bg: hsl(var(--accent)); --top-shadow: 0 2px 4px rgb(0 0 0 / 0.28); --player-bg: hsl(var(--surface)); --player-shadow: 0 -1px 4px rgb(0 0 0 / 0.18);
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--fg)) 6%, transparent); --nav-active-bg: color-mix(in srgb, hsl(var(--accent)) 12%, transparent); --nav-active-fg: hsl(var(--accent));
+  --row-hover: color-mix(in srgb, hsl(var(--fg)) 6%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
+  --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.15rem; --chk-r: 2px; --chk-border: 2px solid hsl(var(--muted)); --chk-bg: transparent; --chk-hover-border: hsl(var(--fg));
+  --rng-appearance: none; --rng-h: 2px; --rng-r: 0; --rng-track: color-mix(in srgb, hsl(var(--fg)) 28%, transparent);
+  --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-thumb: hsl(var(--accent)); --rng-ts: 0 1px 3px rgb(0 0 0 / 0.4);
+}
+/* the app bar is the accent colour with white text, like UX 5.0's own apps; the add button becomes a floating action button */
+[data-ui="lgux"] .bt-top { color: hsl(var(--accent-fg)); }
+[data-ui="lgux"] .bt-top .input { color: hsl(var(--accent-fg)); box-shadow: inset 0 -1px 0 hsl(var(--accent-fg) / 0.55); }
+[data-ui="lgux"] .bt-top .input::placeholder, [data-ui="lgux"] .bt-top svg { color: hsl(var(--accent-fg) / 0.75); }
+[data-ui="lgux"] .bt-top .btn-accent { background: hsl(var(--accent-fg)); color: hsl(var(--accent)); border-radius: 9999px; }
+[data-ui="lgux"] .bt-top .btn-accent svg { color: hsl(var(--accent)); }
+[data-ui="lgux"] .btn:not(.btn-accent):not(.btn-ghost) { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.8125rem; }
+[data-ui="lgux"] .bt-titlebar svg { display: none; }
+[data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -2px 0 hsl(var(--accent)); }
+
+/* ================== Fortnite, by chapter ==================
+ * Sources: Fortnite wiki / patch notes via Dexerto and Sportskeeda. What is documented: the lobby kept its slanted-rectangle buttons and
+ * images from Chapter 1 until Fortnitemares 2023 (Chapter 4 Season 4), when the "Rift UI" replaced them with curved shapes and moved the
+ * lobby options to the left; the first Rift UI used Burbank, purple backgrounds and square elements, later versions rounded, then (Chapter 5
+ * Season 1) rounded less and turned most purple backgrounds blue; Chapter 2 v11.00 gave the Play tab a transparent blue details pane.
+ * Chapter 3 has no documented lobby redesign, so it shares Chapter 2's look. Fonts: Burbank Big Condensed (Ch 1-4 S3) and Heading Now
+ * (Rift UI) are Epic's own and not shipped here; condensed / geometric system fonts stand in. Pair with the "Fortnite Chapter N" colours. */
+[data-ui^="fortnite"] {
+  --dur: 120ms; --ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --btn-bg: color-mix(in srgb, hsl(var(--fg)) 14%, hsl(var(--surface))); --btn-fg: hsl(var(--fg)); --btn-weight: 800;
+  --btn-border: 0 solid transparent; --btn-shadow: 0 3px 0 rgb(0 0 0 / 0.35); --btn-active-shadow: 0 1px 0 rgb(0 0 0 / 0.35); --btn-active-transform: translateY(2px);
+  --btn-hover-bg: color-mix(in srgb, hsl(var(--fg)) 24%, hsl(var(--surface)));
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-shadow: 0 3px 0 rgb(0 0 0 / 0.4);
+  --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: var(--btn-accent-shadow);
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 14%, transparent);
+  --in-bg: hsl(var(--bg) / 0.7); --in-border: 2px solid hsl(var(--fg) / 0.25); --in-hover-border: hsl(var(--fg) / 0.5); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: none;
+  --card-bg: hsl(var(--surface) / 0.9); --card-border: 2px solid hsl(var(--fg) / 0.14); --card-shadow: 0 4px 0 rgb(0 0 0 / 0.28);
+  --win-bg: hsl(var(--surface)); --win-border: 3px solid hsl(var(--fg) / 0.3); --win-shadow: 0 18px 0 -4px rgb(0 0 0 / 0.35), 0 30px 60px rgb(0 0 0 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --tb-bg: hsl(var(--accent)); --tb-fg: hsl(var(--accent-fg)); --tb-border: 0 solid transparent; --tb-pad: 0.6rem 1.25rem; --tb-size: 1.35rem; --tb-weight: 900; --tb-justify: space-between;
+  --close-fg: hsl(var(--accent-fg)); --close-hover-bg: rgb(0 0 0 / 0.18); --close-hover-fg: hsl(var(--accent-fg));
+  --bar-border: 2px solid hsl(var(--fg) / 0.14);
+  --menu-bg: hsl(var(--surface)); --menu-border: 2px solid hsl(var(--fg) / 0.3); --pop-shadow: 0 6px 0 rgb(0 0 0 / 0.35), 0 16px 40px rgb(0 0 0 / 0.45); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
+  --side-bg: hsl(var(--surface) / 0.92); --top-bg: hsl(var(--bg) / 0.85); --player-bg: hsl(var(--surface)); --player-shadow: 0 -3px 0 hsl(var(--accent));
+  --nav-hover-bg: hsl(var(--fg) / 0.12); --nav-active-bg: hsl(var(--accent)); --nav-active-fg: hsl(var(--accent-fg));
+  --row-hover: hsl(var(--fg) / 0.1); --row-current: hsl(var(--accent) / 0.25);
+  --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.2rem; --chk-border: 2px solid hsl(var(--fg) / 0.6); --chk-on-fg: hsl(var(--accent-fg));
+  --rng-appearance: none; --rng-h: 8px; --rng-track: hsl(var(--fg) / 0.2); --rng-tw: 1rem; --rng-th: 1rem; --rng-thumb: hsl(var(--fg)); --rng-ts: 0 2px 0 rgb(0 0 0 / 0.4);
+  --vote-ms: 380ms;
+}
+[data-ui^="fortnite"] .btn, [data-ui^="fortnite"] .bt-titlebar h2, [data-ui^="fortnite"] h1, [data-ui^="fortnite"] h2 { text-transform: uppercase; letter-spacing: 0.02em; }
+[data-ui^="fortnite"] .bt-titlebar svg { display: none; }
+[data-ui^="fortnite"] .btn.btn-accent { font-size: 1rem; }
+
+/* Chapter 1 (2017-19): bright blue, hard slanted buttons and panels, condensed capitals */
+[data-ui="fortnite1"] {
+  --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0; --in-r: 0;
+  --font: "Burbank Big Condensed", "Bebas Neue", Oswald, Impact, "Haettenschweiler", "Arial Narrow", sans-serif; --title-font: var(--font);
+}
+/* Chapter 2-4 S3 (2019-23): same slant, deeper navy, see-through blue panels */
+[data-ui="fortnite2"] {
+  --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0; --in-r: 0;
+  --font: "Burbank Big Condensed", "Bebas Neue", Oswald, Impact, "Haettenschweiler", "Arial Narrow", sans-serif; --title-font: var(--font);
+  --card-bg: hsl(var(--surface) / 0.62); --card-border: 1px solid hsl(var(--fg) / 0.25); --card-shadow: none;
+  --btn-shadow: none; --btn-active-shadow: none; --btn-accent-shadow: 0 0 18px hsl(var(--accent) / 0.45);
+}
+[data-ui="fortnite1"] .btn, [data-ui="fortnite2"] .btn, [data-ui="fortnite1"] .bt-nav, [data-ui="fortnite2"] .bt-nav, [data-ui="fortnite1"] .chip, [data-ui="fortnite2"] .chip {
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+[data-ui="fortnite1"] .bt-titlebar, [data-ui="fortnite2"] .bt-titlebar { clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+[data-ui="fortnite1"] .btn, [data-ui="fortnite2"] .btn { padding-inline: 1.15rem; font-size: 1.05rem; }
+[data-ui="fortnite1"] .btn.btn-ghost, [data-ui="fortnite2"] .btn.btn-ghost { clip-path: none; }
+/* Chapter 4 S4 - "Rift UI" (2023): rounded, purple, options down the left side */
+[data-ui="fortnite4"] {
+  --radius: 14px; --ctl-r: 12px; --card-r: 16px; --win-r: 20px; --menu-r: 14px; --nav-r: 12px; --chip-r: 9999px;
+  --font: "Heading Now", Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --btn-shadow: none; --btn-active-shadow: none; --card-shadow: none; --card-border: 1px solid hsl(var(--fg) / 0.12);
+  --win-border: 1px solid hsl(var(--fg) / 0.2); --win-shadow: 0 24px 60px rgb(0 0 0 / 0.5); --tb-bg: transparent; --tb-fg: hsl(var(--fg)); --close-fg: hsl(var(--muted)); --close-hover-fg: hsl(var(--fg));
+  --btn-accent-shadow: none; --player-shadow: none;
+}
+/* Chapter 5-6 (2024-): the same Rift UI with less rounding and blue instead of purple */
+[data-ui="fortnite5"] {
+  --radius: 8px; --ctl-r: 6px; --card-r: 8px; --win-r: 10px; --menu-r: 8px; --nav-r: 6px; --chip-r: 6px;
+  --font: "Heading Now", Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --btn-shadow: none; --btn-active-shadow: none; --card-shadow: none; --card-border: 1px solid hsl(var(--fg) / 0.1);
+  --win-border: 1px solid hsl(var(--fg) / 0.18); --win-shadow: 0 24px 60px rgb(0 0 0 / 0.5); --tb-bg: transparent; --tb-fg: hsl(var(--fg)); --close-fg: hsl(var(--muted)); --close-hover-fg: hsl(var(--fg));
+  --btn-accent-shadow: none; --player-shadow: none; --btn-weight: 700;
+}
+[data-ui="fortnite4"] .btn, [data-ui="fortnite5"] .btn { text-transform: none; letter-spacing: 0; }
+[data-ui="fortnite4"] .btn.btn-accent, [data-ui="fortnite5"] .btn.btn-accent { font-weight: 800; }
+[data-ui="fortnite4"] h1, [data-ui="fortnite4"] h2, [data-ui="fortnite5"] h1, [data-ui="fortnite5"] h2, [data-ui="fortnite4"] .bt-titlebar h2, [data-ui="fortnite5"] .bt-titlebar h2 { text-transform: none; letter-spacing: 0; }

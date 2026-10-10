@@ -84,3 +84,8 @@ data/
 public/uploads/
 server/bin/
 .dyad/
+
+# Electron build output
+apps/electron/dist
+apps/electron/release
+!apps/electron/build/
