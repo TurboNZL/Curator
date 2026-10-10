@@ -266,6 +266,18 @@ html[data-ui="winxp"] { font-size: 14.5px; }
 [data-ui="winxp"] .bt-row:hover * { color: hsl(var(--accent-fg)); }
 [data-ui="winxp"] .bt-panel { overflow: hidden; border: 3px solid var(--xp-frame); border-radius: 0.5rem 0.5rem 0.2rem 0.2rem; }
 [data-ui="winxp"] .bt-titlebar svg { color: #fff; }
+/* Explorer's task pane: a blue gradient column with pale panels of dark-blue links that turn lighter and underlined on hover */
+[data-ui="winxp"] {
+  --side-bg: linear-gradient(to bottom, color-mix(in srgb, hsl(var(--accent)) 62%, white), color-mix(in srgb, hsl(var(--accent)) 80%, #5a6fd0));
+  --side-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 12%, white); --nav-active-bg: #fff; --nav-active-fg: color-mix(in srgb, hsl(var(--accent)) 70%, black);
+}
+[data-ui="winxp"] .bt-side { padding: 0.75rem 0.6rem; gap: 0; border-right: 1px solid var(--xp-frame); }
+[data-ui="winxp"] .bt-side .bt-nav { border-radius: 0; padding: 0.3rem 0.7rem; background: #d6dff7; color: color-mix(in srgb, hsl(var(--accent)) 75%, black); font-weight: 400; }
+[data-ui="winxp"] .bt-side .bt-nav:first-of-type { border-radius: 0.4rem 0.4rem 0 0; }
+[data-ui="winxp"] .bt-side .bt-nav:last-of-type { border-radius: 0 0 0.3rem 0.3rem; }
+[data-ui="winxp"] .bt-side .bt-nav:hover { background: #d6dff7; color: color-mix(in srgb, hsl(var(--accent)) 70%, white); text-decoration: underline; }
+[data-ui="winxp"] .bt-side .bt-nav[aria-current="page"] { background: #fff; color: color-mix(in srgb, hsl(var(--accent)) 70%, black); font-weight: 700; }
 [data-ui="winxp"] .bt-titlebar h2 { font-style: italic; }
 [data-ui="winxp"] ::selection { background: hsl(var(--accent)); color: hsl(var(--accent-fg)); }
 
@@ -323,7 +335,7 @@ html[data-ui="win98"] { font-size: 14px; }
   --win-border: 0.5px solid color-mix(in srgb, hsl(var(--fg)) 22%, transparent); --win-shadow: 0 22px 60px rgb(0 0 0 / 0.4), 0 0 0 0.5px rgb(0 0 0 / 0.3); --dialog-anim: bt-pop-spring 320ms cubic-bezier(0.2, 0.9, 0.3, 1);
   --tb-bg: radial-gradient(circle 6px at 40px 50%, #febc2e 96%, transparent) no-repeat, radial-gradient(circle 6px at 60px 50%, #28c840 96%, transparent) no-repeat, color-mix(in srgb, hsl(var(--fg)) 3%, hsl(var(--surface)));
   --tb-border: 0.5px solid color-mix(in srgb, hsl(var(--fg)) 14%, transparent); --tb-pad: 0.8rem 1rem 0.7rem 5rem; --tb-size: 0.9rem; --tb-weight: 600;
-  --tb-justify: flex-start; --close-order: -1; --close-margin: 0 calc(5rem - 26px) 0 calc(13px - 5rem); --close-size: 13px; --close-pad: 0; --close-bg: #ff5f57; --close-fg: transparent; --close-hover-bg: #ff5f57; --close-hover-fg: rgb(0 0 0 / 0.65); --close-r: 9999px;
+  --tb-justify: flex-start; --close-margin: 0; --close-size: 13px; --close-pad: 0; --close-bg: #ff5f57; --close-fg: transparent; --close-hover-bg: #ff5f57; --close-hover-fg: rgb(0 0 0 / 0.65); --close-r: 9999px;
   --close-border: 0.5px solid rgb(0 0 0 / 0.2);
   --bar-border: 0.5px solid color-mix(in srgb, hsl(var(--fg)) 14%, transparent);
   --menu-bg: color-mix(in srgb, hsl(var(--surface)) 92%, transparent); --menu-border: 0.5px solid color-mix(in srgb, hsl(var(--fg)) 16%, transparent); --pop-shadow: 0 10px 30px rgb(0 0 0 / 0.28); --menu-anim: bt-fade 130ms ease-out;
@@ -689,12 +701,12 @@ html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
   --win-bg: repeating-linear-gradient(to bottom, hsl(var(--bg)) 0 2px, color-mix(in srgb, hsl(var(--bg)) 95%, black) 2px 4px);
   --win-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 55%, transparent); --win-shadow: 0 10px 28px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.4); --dialog-anim: bt-sheet 260ms ease-out;
   --tb-bg:
-    radial-gradient(circle 6.5px at 40px 50%, #9a9a9a 0 94%, transparent 100%) no-repeat,
+    radial-gradient(circle 6.5px at 40px 50%, #f4bc32 0 94%, transparent 100%) no-repeat,
     radial-gradient(circle 6.5px at 60px 50%, #4fd24a 0 94%, transparent 100%) no-repeat,
     linear-gradient(to bottom, color-mix(in srgb, hsl(var(--bg)) 40%, white), color-mix(in srgb, hsl(var(--bg)) 85%, black));
   --tb-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 45%, transparent); --tb-pad: 0.45rem 1rem 0.45rem 5rem; --tb-size: 0.9rem; --tb-weight: 400; --tb-justify: flex-start;
   --tb-text-shadow: 0 1px 0 rgb(255 255 255 / 0.7);
-  --close-order: -1; --close-margin: 0 calc(5rem - 26px) 0 calc(13px - 5rem); --close-size: 13px; --close-pad: 0; --close-r: 9999px; --close-fg: transparent; --close-hover-fg: rgb(0 0 0 / 0.6);
+  --close-margin: 0; --close-size: 13px; --close-pad: 0; --close-r: 9999px; --close-fg: transparent; --close-hover-fg: rgb(0 0 0 / 0.6);
   --close-bg: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --close-hover-bg: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%);
   --close-border: 1px solid #8e1e19; --close-shadow: inset 0 1px 1px rgb(255 255 255 / 0.6);
   --bar-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 45%, transparent);
@@ -718,6 +730,8 @@ html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
 }
 [data-ui="aqua"] .bt-titlebar { position: relative; justify-content: center; padding-left: 5rem; padding-right: 5rem; }
 [data-ui="aqua"] .bt-titlebar svg { display: none; }
+/* the three lights sit 20 px apart from x = 20: the close button is the first of them, drawn here; yellow and green are in --tb-bg */
+[data-ui="aqua"] .bt-close { position: absolute; left: 13.5px; top: 50%; transform: translateY(-50%); }
 @keyframes aq-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.14) saturate(1.1); } }
 [data-ui="aqua"] .bt-window .btn-accent:not(:disabled) { animation: aq-pulse 1.6s ease-in-out infinite; }
 [data-ui="aqua"] .bt-nav { font-size: 0.8125rem; }
@@ -847,74 +861,126 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 [data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -2px 0 hsl(var(--accent)); }
 
 /* ================== Fortnite, by chapter ==================
- * Sources: Fortnite wiki / patch notes via Dexerto and Sportskeeda. What is documented: the lobby kept its slanted-rectangle buttons and
- * images from Chapter 1 until Fortnitemares 2023 (Chapter 4 Season 4), when the "Rift UI" replaced them with curved shapes and moved the
- * lobby options to the left; the first Rift UI used Burbank, purple backgrounds and square elements, later versions rounded, then (Chapter 5
- * Season 1) rounded less and turned most purple backgrounds blue; Chapter 2 v11.00 gave the Play tab a transparent blue details pane.
- * Chapter 3 has no documented lobby redesign, so it shares Chapter 2's look. Fonts: Burbank Big Condensed (Ch 1-4 S3) and Heading Now
- * (Rift UI) are Epic's own and not shipped here; condensed / geometric system fonts stand in. Pair with the "Fortnite Chapter N" colours. */
+ * What each era looks like was read off screenshots of the settings and lobby screens, plus the patch notes: the lobby kept its slanted
+ * rectangles until Fortnitemares 2023 (Chapter 4 S4), when the curved-edge redesign moved the options to the left; Chapter 5 moved to the
+ * Heading Now typeface and dropped the per-chapter colours for neutral glass with three button weights (regular = light grey, loud = yellow,
+ * quiet = text only, the names Epic uses for UEFN's button styles). Epic's fonts (Burbank, Heading Now) are not shipped: stand-ins are used.
+ * Pair each style with the "Fortnite Ch N" colour theme. Colours are approximations. */
 [data-ui^="fortnite"] {
   --dur: 120ms; --ease: cubic-bezier(0.2, 0.9, 0.3, 1);
-  --btn-bg: color-mix(in srgb, hsl(var(--fg)) 14%, hsl(var(--surface))); --btn-fg: hsl(var(--fg)); --btn-weight: 800;
-  --btn-border: 0 solid transparent; --btn-shadow: 0 3px 0 rgb(0 0 0 / 0.35); --btn-active-shadow: 0 1px 0 rgb(0 0 0 / 0.35); --btn-active-transform: translateY(2px);
-  --btn-hover-bg: color-mix(in srgb, hsl(var(--fg)) 24%, hsl(var(--surface)));
-  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-shadow: 0 3px 0 rgb(0 0 0 / 0.4);
-  --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: var(--btn-accent-shadow);
-  --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 14%, transparent);
-  --in-bg: hsl(var(--bg) / 0.7); --in-border: 2px solid hsl(var(--fg) / 0.25); --in-hover-border: hsl(var(--fg) / 0.5); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: none;
-  --card-bg: hsl(var(--surface) / 0.9); --card-border: 2px solid hsl(var(--fg) / 0.14); --card-shadow: 0 4px 0 rgb(0 0 0 / 0.28);
-  --win-bg: hsl(var(--surface)); --win-border: 3px solid hsl(var(--fg) / 0.3); --win-shadow: 0 18px 0 -4px rgb(0 0 0 / 0.35), 0 30px 60px rgb(0 0 0 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
-  --tb-bg: hsl(var(--accent)); --tb-fg: hsl(var(--accent-fg)); --tb-border: 0 solid transparent; --tb-pad: 0.6rem 1.25rem; --tb-size: 1.35rem; --tb-weight: 900; --tb-justify: space-between;
-  --close-fg: hsl(var(--accent-fg)); --close-hover-bg: rgb(0 0 0 / 0.18); --close-hover-fg: hsl(var(--accent-fg));
-  --bar-border: 2px solid hsl(var(--fg) / 0.14);
-  --menu-bg: hsl(var(--surface)); --menu-border: 2px solid hsl(var(--fg) / 0.3); --pop-shadow: 0 6px 0 rgb(0 0 0 / 0.35), 0 16px 40px rgb(0 0 0 / 0.45); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
-  --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
-  --side-bg: hsl(var(--surface) / 0.92); --top-bg: hsl(var(--bg) / 0.85); --player-bg: hsl(var(--surface)); --player-shadow: 0 -3px 0 hsl(var(--accent));
-  --nav-hover-bg: hsl(var(--fg) / 0.12); --nav-active-bg: hsl(var(--accent)); --nav-active-fg: hsl(var(--accent-fg));
-  --row-hover: hsl(var(--fg) / 0.1); --row-current: hsl(var(--accent) / 0.25);
-  --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
-  --chk-size: 1.2rem; --chk-border: 2px solid hsl(var(--fg) / 0.6); --chk-on-fg: hsl(var(--accent-fg));
-  --rng-appearance: none; --rng-h: 8px; --rng-track: hsl(var(--fg) / 0.2); --rng-tw: 1rem; --rng-th: 1rem; --rng-thumb: hsl(var(--fg)); --rng-ts: 0 2px 0 rgb(0 0 0 / 0.4);
-  --vote-ms: 380ms;
+  --btn-weight: 800; --btn-border: 0 solid transparent;
+  --ghost-hover-bg: hsl(var(--fg) / 0.14);
+  --in-focus-shadow: none;
+  --tb-border: 0 solid transparent; --tb-pad: 0.6rem 1.25rem; --tb-size: 1.35rem; --tb-weight: 900; --tb-justify: space-between;
+  --close-hover-bg: rgb(0 0 0 / 0.18);
+  --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.2rem; --vote-ms: 380ms;
+  --rng-appearance: none; --rng-h: 8px; --rng-tw: 1rem; --rng-th: 1rem;
+  text-transform: none;
 }
 [data-ui^="fortnite"] .btn, [data-ui^="fortnite"] .bt-titlebar h2, [data-ui^="fortnite"] h1, [data-ui^="fortnite"] h2 { text-transform: uppercase; letter-spacing: 0.02em; }
 [data-ui^="fortnite"] .bt-titlebar svg { display: none; }
 [data-ui^="fortnite"] .btn.btn-accent { font-size: 1rem; }
 
-/* Chapter 1 (2017-19): bright blue, hard slanted buttons and panels, condensed capitals */
+/* ---- Chapter 1 (2017-19): muted slate blue, bevelled rectangles, dark navy bars, cream selection ---- */
 [data-ui="fortnite1"] {
-  --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0; --in-r: 0;
+  --radius: 2px; --ctl-r: 2px; --card-r: 2px; --win-r: 2px; --menu-r: 2px; --nav-r: 2px; --chip-r: 2px; --in-r: 2px;
   --font: "Burbank Big Condensed", "Bebas Neue", Oswald, Impact, "Haettenschweiler", "Arial Narrow", sans-serif; --title-font: var(--font);
+  --btn-bg: #a9bdd8; --btn-fg: #1b2342; --btn-shadow: inset 0 -3px 0 rgb(255 255 255 / 0.6), 0 2px 0 rgb(24 34 70 / 0.4);
+  --btn-hover-bg: #bccbe2; --btn-hover-shadow: inset 0 -3px 0 rgb(255 255 255 / 0.75), 0 2px 0 rgb(24 34 70 / 0.4);
+  --btn-active-shadow: inset 0 2px 0 rgb(24 34 70 / 0.25); --btn-active-transform: translateY(1px);
+  --btn-accent-bg: #fbf6c8; --btn-accent-fg: #1b2342; --btn-accent-shadow: inset 0 -3px 0 #f0e02c, 0 2px 0 rgb(24 34 70 / 0.4);
+  --btn-accent-hover-bg: #fffbe3; --btn-accent-hover-shadow: inset 0 -3px 0 #f0e02c, 0 2px 0 rgb(24 34 70 / 0.4);
+  --in-bg: #bccbe2; --in-border: 0 solid transparent; --in-shadow: inset 0 2px 0 rgb(24 34 70 / 0.18); --in-hover-border: transparent; --in-focus-border: transparent;
+  --card-bg: #9fb2d0; --card-border: 0 solid transparent; --card-shadow: 0 2px 0 rgb(24 34 70 / 0.3);
+  --win-bg: #8a9dc0; --win-border: 0 solid transparent; --win-shadow: 0 18px 40px rgb(10 16 40 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --tb-bg: #1c2340; --tb-fg: #fff; --close-fg: #fff; --close-hover-fg: #fff;
+  --bar-border: 0 solid transparent;
+  --menu-bg: #9fb2d0; --menu-border: 0 solid transparent; --pop-shadow: 0 6px 0 rgb(24 34 70 / 0.3), 0 16px 30px rgb(10 16 40 / 0.4); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-hi-bg: #0063d1; --menu-hi-fg: #fff;
+  --side-bg: linear-gradient(to bottom, #8ea2c4, #7b8fb3); --top-bg: #1c2340; --player-bg: #1c2340; --player-shadow: none;
+  --nav-hover-bg: rgb(255 255 255 / 0.28); --nav-active-bg: #fbf6c8; --nav-active-fg: #1b2342; --nav-active-shadow: inset 0 -3px 0 #f0e02c;
+  --row-hover: rgb(255 255 255 / 0.25); --row-current: rgb(251 246 200 / 0.55);
+  --panel-tb-fg: #1b2342;
+  --chk-border: 2px solid #1b2342; --chk-on-fg: #1b2342;
+  --rng-track: #587aa5; --rng-fill: #0063d1; --rng-thumb: #fbf6c8; --rng-ts: 0 2px 0 rgb(24 34 70 / 0.4);
 }
-/* Chapter 2-4 S3 (2019-23): same slant, deeper navy, see-through blue panels */
+[data-ui="fortnite1"] :is(.bt-top, .bt-player, .bt-titlebar) { --fg: 0 0% 100%; --muted: 222 40% 80%; color: #fff; }
+[data-ui="fortnite1"] .bt-top .input { background: #2d3866; color: #fff; }
+[data-ui="fortnite1"] .bt-top .btn:not(.btn-accent), [data-ui="fortnite1"] .bt-player .btn:not(.btn-accent) { background: #2d3866; color: #fff; box-shadow: inset 0 -3px 0 rgb(255 255 255 / 0.18); }
+
+/* ---- Chapter 2-3 (2019-23): saturated blue, slanted tabs and buttons with cyan outlines, lime-yellow Start ---- */
 [data-ui="fortnite2"] {
   --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0; --in-r: 0;
   --font: "Burbank Big Condensed", "Bebas Neue", Oswald, Impact, "Haettenschweiler", "Arial Narrow", sans-serif; --title-font: var(--font);
-  --card-bg: hsl(var(--surface) / 0.62); --card-border: 1px solid hsl(var(--fg) / 0.25); --card-shadow: none;
-  --btn-shadow: none; --btn-active-shadow: none; --btn-accent-shadow: 0 0 18px hsl(var(--accent) / 0.45);
+  --btn-bg: #0b57ad; --btn-fg: #cfeaff; --btn-shadow: inset 0 0 0 2px #22c4ff; --btn-hover-bg: #0d6bd0; --btn-hover-shadow: inset 0 0 0 2px #7ee0ff;
+  --btn-active-shadow: inset 0 0 0 2px #7ee0ff; --btn-active-transform: none;
+  --btn-accent-bg: #e8f03b; --btn-accent-fg: #262a00; --btn-accent-shadow: inset 0 0 0 3px rgb(255 255 255 / 0.55); --btn-accent-hover-bg: #f3fa6a; --btn-accent-hover-shadow: inset 0 0 0 3px rgb(255 255 255 / 0.8);
+  --in-bg: #0a4a9a; --in-border: 2px solid #22b6ff; --in-hover-border: #7ee0ff; --in-focus-border: #e8f03b;
+  --card-bg: rgb(10 74 154 / 0.78); --card-border: 0 solid transparent; --card-shadow: none;
+  --win-bg: #0a58b0; --win-border: 0 solid transparent; --win-shadow: 0 20px 50px rgb(0 20 70 / 0.6); --dialog-anim: bt-pop 140ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --tb-bg: #0a4a9a; --tb-fg: #cfeaff; --close-fg: #cfeaff; --close-hover-fg: #fff;
+  --bar-border: 0 solid transparent;
+  --menu-bg: #0a4a9a; --menu-border: 2px solid #22b6ff; --pop-shadow: 0 12px 30px rgb(0 20 70 / 0.55); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-hi-bg: #19b0f2; --menu-hi-fg: #fff;
+  --side-bg: linear-gradient(to bottom, #0a62c0, #0a85dc); --top-bg: #0a56b0; --player-bg: #0a4a9a; --player-shadow: inset 0 2px 0 #22b6ff;
+  --nav-hover-bg: rgb(34 182 255 / 0.3); --nav-active-bg: #19b0f2; --nav-active-fg: #fff; --nav-active-shadow: inset 0 0 0 2px #fff;
+  --row-hover: rgb(34 182 255 / 0.22); --row-current: rgb(232 240 59 / 0.2);
+  --panel-tb-fg: #9ee3ff;
+  --chk-border: 2px solid #22c4ff; --chk-on-fg: #262a00;
+  --rng-track: #0a4a9a; --rng-fill: #19b0f2; --rng-thumb: #e8f03b; --rng-ts: none;
 }
-[data-ui="fortnite1"] .btn, [data-ui="fortnite2"] .btn, [data-ui="fortnite1"] .bt-nav, [data-ui="fortnite2"] .bt-nav, [data-ui="fortnite1"] .chip, [data-ui="fortnite2"] .chip {
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-}
-[data-ui="fortnite1"] .bt-titlebar, [data-ui="fortnite2"] .bt-titlebar { clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
-[data-ui="fortnite1"] .btn, [data-ui="fortnite2"] .btn { padding-inline: 1.15rem; font-size: 1.05rem; }
-[data-ui="fortnite1"] .btn.btn-ghost, [data-ui="fortnite2"] .btn.btn-ghost { clip-path: none; }
-/* Chapter 4 S4 - "Rift UI" (2023): rounded, purple, options down the left side */
+[data-ui="fortnite2"] .btn, [data-ui="fortnite2"] .bt-nav, [data-ui="fortnite2"] .chip { clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+[data-ui="fortnite2"] .bt-titlebar { clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+[data-ui="fortnite2"] .btn { padding-inline: 1.15rem; font-size: 1.05rem; }
+[data-ui="fortnite2"] .btn.btn-ghost { clip-path: none; }
+
+/* ---- Chapter 4 (2023, curved-edge redesign): blue, charcoal buttons, thin white outlines, white selected row, Heading Now ---- */
 [data-ui="fortnite4"] {
-  --radius: 14px; --ctl-r: 12px; --card-r: 16px; --win-r: 20px; --menu-r: 14px; --nav-r: 12px; --chip-r: 9999px;
+  --radius: 3px; --ctl-r: 3px; --card-r: 4px; --win-r: 4px; --menu-r: 3px; --nav-r: 3px; --chip-r: 3px; --in-r: 3px;
   --font: "Heading Now", Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
-  --btn-shadow: none; --btn-active-shadow: none; --card-shadow: none; --card-border: 1px solid hsl(var(--fg) / 0.12);
-  --win-border: 1px solid hsl(var(--fg) / 0.2); --win-shadow: 0 24px 60px rgb(0 0 0 / 0.5); --tb-bg: transparent; --tb-fg: hsl(var(--fg)); --close-fg: hsl(var(--muted)); --close-hover-fg: hsl(var(--fg));
-  --btn-accent-shadow: none; --player-shadow: none;
+  --btn-weight: 700;
+  --btn-bg: #3a4254; --btn-fg: #fff; --btn-border: 1px solid rgb(255 255 255 / 0.22); --btn-shadow: none; --btn-hover-bg: #4b5570; --btn-hover-border: rgb(255 255 255 / 0.5);
+  --btn-active-shadow: none; --btn-active-transform: none;
+  --btn-accent-bg: #ffe500; --btn-accent-fg: #000; --btn-accent-border: 1px solid #fff4a0; --btn-accent-border-color: #fff4a0; --btn-accent-shadow: none; --btn-accent-hover-bg: #fff04d; --btn-accent-hover-shadow: none;
+  --in-bg: #161d3e; --in-border: 1px solid rgb(255 255 255 / 0.3); --in-hover-border: rgb(255 255 255 / 0.6); --in-focus-border: #fff;
+  --card-bg: rgb(10 47 148 / 0.7); --card-border: 1px solid rgb(255 255 255 / 0.18); --card-shadow: none;
+  --win-bg: #0b3bb0; --win-border: 1px solid rgb(255 255 255 / 0.35); --win-shadow: 0 24px 60px rgb(0 10 60 / 0.6); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --tb-bg: #141a38; --tb-fg: #fff; --close-fg: #fff; --close-hover-fg: #fff;
+  --bar-border: 1px solid rgb(255 255 255 / 0.15);
+  --menu-bg: #141a38; --menu-border: 1px solid rgb(255 255 255 / 0.3); --pop-shadow: 0 12px 30px rgb(0 10 60 / 0.55); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-hi-bg: #fff; --menu-hi-fg: #0a2a78;
+  --side-bg: linear-gradient(to bottom, #0c40b8, #0a2f94); --top-bg: #141a38; --player-bg: #141a38; --player-shadow: none;
+  --nav-hover-bg: rgb(255 255 255 / 0.14); --nav-active-bg: #fff; --nav-active-fg: #0a2a78; --nav-active-shadow: none;
+  --row-hover: rgb(255 255 255 / 0.12); --row-current: rgb(255 255 255 / 0.2);
+  --panel-tb-fg: #fff;
+  --chk-border: 2px solid #fff; --chk-on-fg: #0a2a78;
+  --rng-track: #161d3e; --rng-fill: #fff; --rng-thumb: #fff; --rng-ts: none;
 }
-/* Chapter 5-6 (2024-): the same Rift UI with less rounding and blue instead of purple */
+
+/* ---- Chapter 5-6 (2023-): neutral dark glass; regular = light grey, loud = yellow, quiet = text only ---- */
 [data-ui="fortnite5"] {
-  --radius: 8px; --ctl-r: 6px; --card-r: 8px; --win-r: 10px; --menu-r: 8px; --nav-r: 6px; --chip-r: 6px;
+  --radius: 8px; --ctl-r: 8px; --card-r: 10px; --win-r: 12px; --menu-r: 10px; --nav-r: 8px; --chip-r: 8px; --in-r: 8px;
   --font: "Heading Now", Montserrat, "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
-  --btn-shadow: none; --btn-active-shadow: none; --card-shadow: none; --card-border: 1px solid hsl(var(--fg) / 0.1);
-  --win-border: 1px solid hsl(var(--fg) / 0.18); --win-shadow: 0 24px 60px rgb(0 0 0 / 0.5); --tb-bg: transparent; --tb-fg: hsl(var(--fg)); --close-fg: hsl(var(--muted)); --close-hover-fg: hsl(var(--fg));
-  --btn-accent-shadow: none; --player-shadow: none; --btn-weight: 700;
+  --btn-weight: 700;
+  --btn-bg: #dfe2e8; --btn-fg: #12151c; --btn-shadow: none; --btn-hover-bg: #fff; --btn-active-shadow: none; --btn-active-transform: scale(0.98);
+  --btn-accent-bg: #ffee00; --btn-accent-fg: #000; --btn-accent-shadow: none; --btn-accent-hover-bg: #fff35c; --btn-accent-hover-shadow: none;
+  --in-bg: rgb(255 255 255 / 0.08); --in-border: 1px solid rgb(255 255 255 / 0.16); --in-hover-border: rgb(255 255 255 / 0.4); --in-focus-border: #e6e9ef;
+  --card-bg: rgb(20 24 34 / 0.78); --card-border: 1px solid rgb(255 255 255 / 0.1); --card-shadow: none;
+  --win-bg: #171b26; --win-border: 1px solid rgb(255 255 255 / 0.14); --win-shadow: 0 24px 60px rgb(0 0 0 / 0.55); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --tb-bg: transparent; --tb-fg: #fff; --close-fg: #a8aebb; --close-hover-fg: #fff;
+  --bar-border: 1px solid rgb(255 255 255 / 0.1);
+  --menu-bg: #1b2030; --menu-border: 1px solid rgb(255 255 255 / 0.14); --pop-shadow: 0 12px 30px rgb(0 0 0 / 0.5); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-hi-bg: #e6e9ef; --menu-hi-fg: #12151c;
+  --side-bg: rgb(14 17 25 / 0.82); --top-bg: rgb(14 17 25 / 0.82); --player-bg: rgb(20 24 34 / 0.92); --player-shadow: none;
+  --nav-hover-bg: rgb(255 255 255 / 0.1); --nav-active-bg: #e6e9ef; --nav-active-fg: #12151c; --nav-active-shadow: none;
+  --row-hover: rgb(255 255 255 / 0.08); --row-current: rgb(255 238 0 / 0.16);
+  --panel-tb-fg: #fff;
+  --chk-border: 2px solid #a8aebb; --chk-on-fg: #000;
+  --rng-track: rgb(255 255 255 / 0.2); --rng-fill: #fff; --rng-thumb: #fff; --rng-ts: none;
 }
-[data-ui="fortnite4"] .btn, [data-ui="fortnite5"] .btn { text-transform: none; letter-spacing: 0; }
-[data-ui="fortnite4"] .btn.btn-accent, [data-ui="fortnite5"] .btn.btn-accent { font-weight: 800; }
-[data-ui="fortnite4"] h1, [data-ui="fortnite4"] h2, [data-ui="fortnite5"] h1, [data-ui="fortnite5"] h2, [data-ui="fortnite4"] .bt-titlebar h2, [data-ui="fortnite5"] .bt-titlebar h2 { text-transform: none; letter-spacing: 0; }
+[data-ui="fortnite4"] .btn { letter-spacing: 0.03em; }
+[data-ui="fortnite5"] .btn, [data-ui="fortnite5"] h1, [data-ui="fortnite5"] h2, [data-ui="fortnite5"] .bt-titlebar h2 { text-transform: none; letter-spacing: 0; }
+[data-ui="fortnite5"] .btn.btn-ghost { background: transparent; color: inherit; }
+[data-ui="fortnite5"] .btn.btn-ghost:hover { background: rgb(255 255 255 / 0.1); }
+[data-ui="winxp"] .bt-side > div:last-child { color: #fff; }
