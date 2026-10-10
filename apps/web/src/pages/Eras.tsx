@@ -5,7 +5,6 @@ import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
-import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { DetailLayout } from '../components/DetailLayout.tsx';
 import { SingleGrid } from '../components/SingleCard.tsx';
@@ -14,13 +13,13 @@ import { useMenu } from '../components/Menu.tsx';
 import { plural } from '../lib/cn.ts';
 import { useAlbumMenuItems } from '../components/entityMenus.tsx';
 
-/** Era > Album > Release > Track: an era groups albums and singles, and can have relational bios attached. */
+/** An era is a collection of albums, singles and playlists (they can overlap); notes can be tied to it. */
 export function ErasPage() {
   const lib = useLibrary();
   const edit = useEditor((s) => s.open);
   const rows = useMemo(() => [...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => {
-    const albums = lib.albums.filter((a) => a.eraId === e.id);
-    return { era: e, albums, singles: lib.singles.filter((t) => t.eraId === e.id), cover: e.cover || albums.find((a) => a.cover)?.cover || null };
+    const albums = e.albumIds.flatMap((id) => lib.albumById.get(id) ?? []);
+    return { era: e, albums, singles: e.trackIds.flatMap((id) => lib.trackById.get(id) ?? []), cover: e.cover || albums.find((a) => a.cover)?.cover || null };
   }), [lib]);
   return (
     <div>
@@ -28,7 +27,7 @@ export function ErasPage() {
         <h1 className="mr-auto text-2xl font-bold">Eras <span className="text-base font-normal text-muted">{rows.length}</span></h1>
         <button className="btn" onClick={() => edit({ kind: 'new-era', id: '' })}><Plus size={15} />New era</button>
       </div>
-      {!rows.length && <p className="max-w-xl text-sm text-muted">An era groups albums and singles that belong to the same period (a phase of an artist, a scene). Make one here, then choose it in an album’s or single’s editor. Relational bios can be attached to an era.</p>}
+      {!rows.length && <p className="max-w-xl text-sm text-muted">An era groups albums and singles that belong to the same period (a phase of an artist, a scene). Make one here and fill it, or choose it in an album’s or single’s editor. Eras can overlap, and notes and playlists can belong to them.</p>}
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
         {rows.map(({ era, albums, singles, cover }) => (
           <Link key={era.id} to={`/eras/${era.id}`} className="group block">
@@ -50,20 +49,22 @@ export function EraPage() {
   const albumItems = useAlbumMenuItems();
   const era = id ? lib.eraById.get(id) : undefined;
   if (!era) return <div className="text-muted">Era not found.</div>;
-  const albums = lib.albums.filter((a) => a.eraId === era.id);
-  const singles = lib.singles.filter((t) => t.eraId === era.id);
+  const albums = era.albumIds.flatMap((id) => lib.albumById.get(id) ?? []);
+  const singles = era.trackIds.flatMap((id) => lib.trackById.get(id) ?? []);
+  const playlists = era.playlistIds.flatMap((id) => lib.playlists.find((p) => p.id === id) ?? []);
   const ids = [...albums.flatMap((a) => a.trackIds), ...singles.map((t) => t.id)].filter((t) => lib.trackById.get(t)?.file);
   const cover = era.cover || albums.find((a) => a.cover)?.cover || null;
   return (
-    <DetailLayout right={<><Bios lib={lib} type="era" id={era.id} /><Notes lib={lib} type="era" id={era.id} /></>}>
+    <DetailLayout right={<Notes lib={lib} type="era" id={era.id} />}>
       <div className="flex items-center gap-5">
         <Cover hash={cover} seed={era.name} className="w-40 shrink-0 sm:w-48" />
         <div className="min-w-0 space-y-2"><div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted"><Layers size={13} />Era</div>
           <h1 className="text-3xl font-bold">{era.name}</h1>
-          <div className="text-sm text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
+          <div className="text-sm text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}{playlists.length > 0 && ` · ${plural(playlists.length, 'playlist')}`}</div>
           {era.description && <p className="max-w-prose text-sm">{era.description}</p>}
           <div className="flex gap-2 pt-1">
             <button className="btn btn-accent" disabled={!ids.length} onClick={() => play(ids[0], ids, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
+            <Link className="btn btn-ghost" to={`/tracks?era=${era.id}`}><Layers size={15} />Tracks in this era</Link>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'era', id: era.id })}><Pencil size={15} />Edit</button></div></div>
       </div>
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>
@@ -75,7 +76,10 @@ export function EraPage() {
             </div>))}
         </div></section>}
       {singles.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Singles</h2><SingleGrid tracks={singles} /></section>}
-      {!albums.length && !singles.length && <p className="text-sm text-muted">Nothing in this era yet. Choose it in an album’s or a single’s editor.</p>}
+      {playlists.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Playlists</h2>
+        <div className="grid gap-3 sm:grid-cols-2">{playlists.map((p) => (
+          <Link key={p.id} to="/playlists" className="card flex items-center gap-3 p-3 hover:bg-raised/50"><Cover hash={p.cover} seed={p.name} className="h-12 w-12 shrink-0" /><div className="min-w-0"><div className="truncate font-medium">{p.name}</div><div className="text-xs text-muted">{plural(p.trackIds.length, 'track')}</div></div></Link>))}</div></section>}
+      {!albums.length && !singles.length && !playlists.length && <p className="text-sm text-muted">Nothing in this era yet. Edit the era to add albums, singles and playlists, or choose it in an album’s or single’s editor.</p>}
       {menu.element}
     </DetailLayout>
   );

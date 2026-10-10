@@ -1,14 +1,15 @@
+import { Select } from './Select.tsx';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
-import type { ArtistData, Credit } from '@curator/core';
+import type { ArtistData, Credit, EraData } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { AUDIO_ACCEPT, hasLead, LEAD_ROLE } from '../lib/defaults.ts';
 import { saveAudio, saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from './Cover.tsx';
 
-export function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', h);
@@ -19,7 +20,7 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
   useLayoutEffect(() => { if (win.current) win.current.style.transformOrigin = originFor(win.current.getBoundingClientRect()); }, []);
   return (
     <div className="bt-backdrop fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={win} role="dialog" aria-label={title} className="bt-window flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden">
+      <div ref={win} role="dialog" aria-label={title} className={`bt-window flex max-h-[92vh] w-full flex-col overflow-hidden ${wide ? 'max-w-3xl' : 'max-w-xl'}`}>
         <div className="bt-titlebar flex items-center"><h2 className="font-semibold">{title}</h2>
           <button className="bt-close" aria-label="Close" onClick={onClose}><X size={18} /></button></div>
         <div className="bt-body space-y-4 overflow-y-auto p-5">{children}</div>
@@ -53,29 +54,15 @@ export function TagInput({ value, onChange, suggestions, placeholder = 'Add genr
   );
 }
 
-/** Pick an artist, or create one on the spot. */
+/** Pick an artist by searching; a name that does not exist is offered as "Create artist: …" at the top of the results. */
 export function ArtistSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const lib = useLibrary();
   const put = useStore((s) => s.put);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const create = () => {
-    const n = name.trim();
-    if (!n) return;
-    const existing = lib.artists.find((a) => a.name.toLowerCase() === n.toLowerCase());
-    const data: ArtistData = { name: n, image: null };
-    onChange(existing?.id ?? put('artists', data));
-    setCreating(false); setName('');
-  };
   const sorted = [...lib.artists].sort((a, b) => a.name.localeCompare(b.name));
-  return creating ? (
-    <div className="flex gap-2"><input autoFocus className="input" placeholder="New artist name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); create(); } }} />
-      <button type="button" className="btn btn-accent" onClick={create}>Add</button><button type="button" className="btn btn-ghost" onClick={() => setCreating(false)}>Cancel</button></div>
-  ) : (
-    <div className="flex gap-2"><select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      {!lib.artistById.has(value) && <option value={value}>{value ? '(unknown artist)' : 'Choose an artist…'}</option>}
-      {sorted.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-      <button type="button" className="btn shrink-0" title="Create a new artist" onClick={() => setCreating(true)}><Plus size={15} />New</button></div>
+  return (
+    <Select value={value} onChange={onChange} placeholder="Search artists…" searchable
+      options={[...(!lib.artistById.has(value) && value ? [{ value, label: '(unknown artist)' }] : []), ...sorted.map((a) => ({ value: a.id, label: a.name }))]}
+      creatable={{ label: (n) => `Create artist: “${n}”`, create: (n) => put('artists', { name: n, image: null } satisfies ArtistData) }} />
   );
 }
 
@@ -171,7 +158,7 @@ export function CreditsEditor({ value, onChange, requireLead, readOnly }: { valu
 }
 
 /** Search artists, albums and tracks and pick one (for bios). */
-export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album' | 'track' | 'era'; id: string }) => void }) {
+export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album' | 'track' | 'era' | 'playlist'; id: string }) => void }) {
   const lib = useLibrary();
   const [q, setQ] = useState('');
   const n = q.trim().toLowerCase();
@@ -179,21 +166,27 @@ export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album
     ...lib.artists.filter((a) => a.name.toLowerCase().includes(n)).map((a) => ({ type: 'artist' as const, id: a.id, label: a.name })),
     ...lib.eras.filter((a) => a.name.toLowerCase().includes(n)).map((a) => ({ type: 'era' as const, id: a.id, label: a.name })),
     ...lib.albums.filter((a) => a.title.toLowerCase().includes(n)).map((a) => ({ type: 'album' as const, id: a.id, label: a.title })),
+    ...lib.playlists.filter((p) => p.name.toLowerCase().includes(n)).map((p) => ({ type: 'playlist' as const, id: p.id, label: p.name })),
     ...lib.tracks.filter((t) => `${t.title} ${t.artistName}`.toLowerCase().includes(n)).map((t) => ({ type: 'track' as const, id: t.id, label: `${t.title} · ${t.artistName}` })),
   ].slice(0, 8);
-  return <div className="relative"><input className="input" placeholder="Link an artist, era, album or track…" value={q} onChange={(e) => setQ(e.target.value)} />
+  return <div className="relative"><input className="input" placeholder="Tie it to an artist, era, album, track or playlist…" value={q} onChange={(e) => setQ(e.target.value)} />
     {hits.length > 0 && <div className="card absolute z-10 mt-1 w-full overflow-hidden shadow-xl">{hits.map((h) => (
       <button key={`${h.type}${h.id}`} type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => { onPick(h); setQ(''); }}>
         <span className="chip">{h.type}</span><span className="truncate">{h.label}</span></button>))}</div>}</div>;
 }
 
-/** Choose an era (or none). */
-export function EraSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+/** The eras something is in: chips, and a search that can create a new era. Eras overlap, so there can be several. */
+export function EraPicker({ value, onChange }: { value: string[]; onChange: (ids: string[]) => void }) {
   const lib = useLibrary();
+  const put = useStore((s) => s.put);
+  const eras = [...lib.eras].sort((a, b) => a.name.localeCompare(b.name));
   return (
-    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">No era</option>
-      {[...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-    </select>
+    <div className="space-y-2">
+      {value.length > 0 && <div className="flex flex-wrap gap-1.5">{value.map((id) => (
+        <span key={id} className="chip gap-1 !text-fg">{lib.eraById.get(id)?.name ?? '(deleted era)'}<button type="button" aria-label="Take out of this era" onClick={() => onChange(value.filter((x) => x !== id))}><X size={12} /></button></span>))}</div>}
+      <Select value="" placeholder={value.length ? 'Add to another era…' : 'Add to an era…'} searchable onChange={(id) => id && !value.includes(id) && onChange([...value, id])}
+        options={eras.filter((e) => !value.includes(e.id)).map((e) => ({ value: e.id, label: e.name }))}
+        creatable={{ label: (n) => `Create era: “${n}”`, create: (n) => put('eras', { name: n, description: null, cover: null, albumIds: [], trackIds: [], playlistIds: [] } satisfies EraData) }} />
+    </div>
   );
 }

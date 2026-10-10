@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
+import { Check, ExternalLink, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
 import type { VoteData } from '@curator/core';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { pickPair } from '../lib/pairing.ts';
@@ -9,9 +9,12 @@ import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
 import { Rating } from '../components/Rating.tsx';
 import { cn } from '../lib/cn.ts';
+import { cssMs } from '../lib/presence.ts';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
 
 const SNIPPET_MS = 15_000;
+/** how long the chosen card plays its "picked" animation before the next pair appears (0 where the UI style has no motion) */
+const pickDelay = () => cssMs('--vote-ms', 440);
 
 /**
  * The height left for the page inside the scrolling content area, so the two cards and the buttons always fit on
@@ -47,6 +50,9 @@ export function VotePage() {
   const [onlyPlayable, setOnlyPlayable] = useState(false);
   const [playing, setPlaying] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  /** the card that was just chosen (or both, for equal) while its animation plays */
+  const [picked, setPicked] = useState<string | 'equal' | null>(null);
+  const lastArrow = useRef<{ key: string; pair: string } | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
   const loadSeq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -78,29 +84,47 @@ export function VotePage() {
   const [a, b] = pair ? [lib.trackById.get(pair[0]), lib.trackById.get(pair[1])] : [];
 
   const vote = useCallback((winnerId: string | null, isEqual = false) => {
-    if (!pair) return;
+    if (!pair || picked) return;
     const data: VoteData = { trackAId: pair[0], trackBId: pair[1], winnerId, isEqual, timestamp: Date.now() };
     put('votes', data);
     setFlash(isEqual ? 'Marked equal' : `Voted for ${lib.trackById.get(winnerId!)?.title}`);
     setTimeout(() => setFlash(null), 1500);
-    setPair(null);
-  }, [pair, put, lib]);
+    lastArrow.current = null;
+    const wait = pickDelay();
+    if (!wait) { setPair(null); return; }
+    stop();
+    setPicked(isEqual ? 'equal' : winnerId);
+    setTimeout(() => { setPicked(null); setPair(null); }, wait);
+  }, [pair, picked, put, lib, stop]);
 
+  /** Starts a preview (never stops one: the key that previews is also the first half of "pick") */
+  const previewRef = useRef<(t: Track) => void>(() => undefined);
+
+  // ← / → once previews that side, the same arrow again picks it; the other arrow starts over. ↑ skips, ↓ is equal.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).tagName === 'INPUT' || !pair) return;
-      if (e.key === 'ArrowLeft') vote(pair[0]);
-      else if (e.key === 'ArrowRight') vote(pair[1]);
-      else if (e.key === 'ArrowDown') vote(null, true);
-      else if (e.key === 's') next();
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !pair || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const id = pair[e.key === 'ArrowLeft' ? 0 : 1];
+        const key = pair.join('|');
+        if (lastArrow.current?.key === e.key && lastArrow.current.pair === key) vote(id);
+        else {
+          lastArrow.current = { key: e.key, pair: key };
+          const t = lib.trackById.get(id);
+          if (t) previewRef.current(t);
+        }
+      } else if (e.key === 'ArrowDown') { e.preventDefault(); vote(null, true); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (!picked) next(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pair, vote, next]);
+  }, [pair, picked, vote, next, lib]);
 
   /** Play 15 s from the middle of the track, as the original cleanup page did. The music player is paused meanwhile. */
-  function snippet(t: Track) {
-    if (playing === t.id) return stop();
+  function snippet(t: Track, onlyStart = false) {
+    if (playing === t.id) return onlyStart ? undefined : stop();
     if (!t.file) return;
     stop();
     usePlayer.getState().pause();
@@ -118,36 +142,42 @@ export function VotePage() {
     });
   }
 
+  previewRef.current = (t) => snippet(t, true);
+
   if (lib.tracks.length < 2) return <div className="text-muted">Add at least two tracks to start ranking.</div>;
 
   return (
     <div ref={fit.ref} className="mx-auto flex max-w-4xl flex-col" style={{ height: fit.height }}>
-      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1">
         <h1 className="mr-auto text-xl font-bold sm:text-2xl">Which is better?</h1>
         <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => { setOnlyPlayable(e.target.checked); setPair(null); }} />Only tracks with audio</label>
         <span className="text-sm text-muted tabular-nums">{lib.votes.length} votes</span>
       </div>
+      {/* each card fills its share of the height that is left (on a phone they stack and share it), and lays itself out inside that space */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[repeat(2,minmax(0,1fr))] gap-3 sm:grid-cols-2 sm:grid-rows-[minmax(0,1fr)] sm:gap-4">
         {[a, b].map((t, i) => t && (
           <div key={t.id} role="button" tabIndex={0} aria-pressed={playing === t.id} aria-label={`${playing === t.id ? 'Stop preview of' : 'Preview'} ${t.title}`}
-            onClick={() => snippet(t)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); snippet(t); } }}
-            className={cn('card flex min-h-0 min-w-0 cursor-pointer select-none flex-row items-center gap-3 overflow-hidden p-3 transition-shadow sm:flex-col sm:gap-2 sm:p-4', playing === t.id && 'ring-2 ring-accent', !t.file && 'cursor-default')}>
-            {/* a phone shows a small cover beside the text; wider screens give the cover all the room that is left, as a square that never overflows */}
-            <div className="flex h-full max-h-28 min-h-0 shrink-0 items-center justify-center sm:max-h-none sm:w-full sm:flex-1 sm:[container-type:size]">
-              <div className="relative aspect-square h-full sm:h-auto sm:[width:min(100cqw,100cqh)]">
+            onClick={() => !picked && snippet(t)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!picked) snippet(t); } }}
+            data-selected={playing === t.id || undefined} className={cn('card bt-sel vote-card flex min-h-0 min-w-0 cursor-pointer select-none flex-row items-center gap-3 overflow-hidden p-3 max-sm:[container-type:size] sm:flex-col sm:gap-2 sm:p-4',
+              !t.file && 'cursor-default',
+              picked === t.id && 'bt-vote-win', picked && picked !== t.id && picked !== 'equal' && 'bt-vote-lose', picked === 'equal' && 'bt-vote-equal')}>
+            {/* a phone: a square cover as tall as the card allows (never more than 40% of its width) beside the text; wider screens give the cover all the room that is left */}
+            <div className="flex shrink-0 items-center justify-center max-sm:[--s:min(40cqw,calc(100cqh-1.5rem))] max-sm:[height:var(--s)] max-sm:[width:var(--s)] sm:min-h-0 sm:w-full sm:flex-1 sm:[container-type:size]">
+              <div className="relative aspect-square max-sm:h-full max-sm:w-full sm:h-auto sm:[width:min(100cqw,100cqh)]">
                 <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="h-full w-full" />
                 {playing === t.id && <span className="absolute inset-0 flex items-center justify-center rounded-theme bg-black/40 text-white"><Volume2 className="animate-pulse" size={26} /></span>}
+                {picked === t.id && <span className="absolute inset-0 flex items-center justify-center rounded-theme bg-accent/45 text-accent-fg"><Check className="bt-vote-check" size={44} strokeWidth={3} /></span>}
               </div>
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:w-full sm:flex-none sm:items-center">
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:w-full sm:flex-none sm:items-center">
               <div className="min-w-0 text-left sm:text-center"><div className="truncate text-base font-semibold sm:text-lg">{t.title}</div>
                 <div className="truncate text-sm text-muted" onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
-              <div className="flex flex-wrap items-center gap-2 sm:justify-center" onClick={(e) => e.stopPropagation()}>
+              <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-center" onClick={(e) => e.stopPropagation()}>
                 <Rating track={t} />
                 {t.youtubeMusicUrl && <a className="btn btn-ghost !p-1.5" href={t.youtubeMusicUrl} target="_blank" rel="noreferrer" title="Open on YouTube" aria-label="Open on YouTube"><ExternalLink size={14} /></a>}
               </div>
-              <div className="text-xs text-muted sm:text-center" aria-hidden>{!t.file ? 'No audio yet' : playing === t.id ? <span className="inline-flex items-center gap-1"><Pause size={11} />Tap to stop</span> : <span className="inline-flex items-center gap-1"><Play size={11} />Tap to preview 15 s</span>}</div>
-              <button className="btn btn-accent !px-4 !py-1.5 text-sm sm:w-auto" onClick={(e) => { e.stopPropagation(); vote(t.id); }}>{i === 0 ? '← ' : ''}This one{i === 1 ? ' →' : ''}</button>
+              <div className="text-xs text-muted sm:text-center max-sm:[@container(max-height:11.5rem)]:hidden" aria-hidden>{!t.file ? 'No audio yet' : playing === t.id ? <span className="inline-flex items-center gap-1"><Pause size={11} />Tap to stop</span> : <span className="inline-flex items-center gap-1"><Play size={11} />Tap to preview 15 s</span>}</div>
+              <button className="btn btn-accent w-full min-w-0 !px-3 !py-1.5 text-sm sm:w-auto sm:!px-4" onClick={(e) => { e.stopPropagation(); vote(t.id); }}>{i === 0 ? '← ' : ''}This one{i === 1 ? ' →' : ''}</button>
             </div>
           </div>
         ))}
@@ -155,9 +185,9 @@ export function VotePage() {
       <div className="mt-3 flex shrink-0 flex-col items-center gap-1.5">
         <div className="flex flex-wrap justify-center gap-2">
           <button className="btn" onClick={() => vote(null, true)} title="Both are as good as each other. This is saved as a draw and moves both ratings towards each other."><Equal size={16} />They’re equal (↓)</button>
-          <button className="btn btn-ghost" onClick={next} title="Not sure, or you don't want to rank this pair. Nothing is saved; you just get a new pair."><SkipForward size={16} />Skip, save nothing (S)</button>
+          <button className="btn btn-ghost" onClick={() => !picked && next()} title="Not sure, or you don't want to rank this pair. Nothing is saved; you just get a new pair."><SkipForward size={16} />Skip, save nothing (↑)</button>
         </div>
-        <div className="h-4 text-center text-xs text-good" aria-live="polite">{flash ?? <span className="text-muted">Equal records a draw. Skip records nothing.</span>}</div>
+        <div className="min-h-4 text-center text-xs text-good" aria-live="polite">{flash ?? <span className="text-muted"><span className="hidden sm:inline">← or → once previews, twice picks that track. </span>Equal records a draw. Skip records nothing.</span>}</div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@
  * What the CSS cannot do is real refraction. Apple's Liquid Glass bends the light behind it ("lensing") at the
  * rim of every shape, and shows a thin specular highlight along that rim. For the web this is the established
  * recipe (a convex bezel, Snell's law, an SVG displacement map used from `backdrop-filter`; see the notes in
- * docs/LIQUID_GLASS.md), and it is what this file implements:
+ * docs/appearance/LIQUID_GLASS.md), and it is what this file implements:
  *
  *  1. For a rounded rectangle of a given size and corner radius, treat the outer `bezel` pixels as a convex
  *     "squircle" surface, h(t) = (1 - (1 - t)^4)^(1/4), t = distance from the rim / bezel width.
@@ -25,7 +25,7 @@
 const NS = 'http://www.w3.org/2000/svg';
 
 /** Floating chrome that is glass in Apple's design: the navigation layer, menus, dialogs and the controls in the bars. */
-const TARGETS = '.bt-side, .bt-top, .bt-player, .bt-tabbar, .bt-menu, .bt-window, .bt-top .btn, .bt-player .btn, .bt-top .input';
+const TARGETS = '.bt-side, .bt-top, .bt-player, .bt-tabbar, .bt-menu, .bt-window, .bt-top .btn, .bt-top .input';
 /** Elements that animate their lens when they appear (they get a filter of their own). */
 const MATERIALIZE = '.bt-menu, .bt-window';
 
@@ -213,11 +213,23 @@ function buildFilter(key: string, g: LensGeometry, dpr: number, unique: boolean)
 
 const isLiquidScope = (el: Element) => (el.closest('[data-ui]') as HTMLElement | null)?.dataset.ui === 'liquid';
 
+/**
+ * The corner radius the shape settles at. Menus and dialogs animate their radius (they start as a pill and grow into
+ * their shape), so the computed value on the first frame is the pill's, and a lens built from it was a circle. Their final
+ * radius is in the style's variables.
+ */
+export function cornerRadius(el: Element): number {
+  const cs = getComputedStyle(el);
+  const v = el.matches('.bt-menu') ? '--menu-r' : el.matches('.bt-window') ? '--win-r' : null;
+  const settled = v ? parseFloat(cs.getPropertyValue(v)) : NaN;
+  return Number.isFinite(settled) ? settled : parseFloat(cs.borderTopLeftRadius) || 0;
+}
+
 function apply(el: HTMLElement) {
   // layout size, not getBoundingClientRect: that one includes transforms, so an element animating in would look like a new shape every frame
   const w = el.offsetWidth, h = el.offsetHeight;
   if (w < 4 || h < 4 || !isLiquidScope(el)) return;
-  const radius = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, w / 2, h / 2);
+  const radius = Math.min(cornerRadius(el), w / 2, h / 2);
   const dpr = window.devicePixelRatio || 1;
   // shapes within 4 px of each other share a lens, so the many equal buttons cost one filter
   const unique = el.matches(MATERIALIZE);
@@ -240,18 +252,17 @@ function apply(el: HTMLElement) {
   });
 }
 
-/** Ease the lens in from nothing (Apple: glass materializes by modulating its light bending, not by fading). */
-function materialize(el: Element, lens: Lens, ms = 460) {
+/**
+ * Ease the lens in from nothing (Apple: glass materializes by modulating its light bending, not by fading). Changing an SVG
+ * filter's scale re-renders it, which is the expensive part, so this takes a handful of steps timed for the eye instead of
+ * one per frame: on a 200 Hz display a per-frame loop did a thousand filter updates for one menu.
+ */
+const STEPS = [0.28, 0.58, 0.8, 0.93, 1];
+function materialize(el: Element, lens: Lens, ms = 300) {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  const start = performance.now();
   const set = (k: number) => lens.bases.forEach(({ el: d, base }) => d.setAttribute('scale', String(base * k)));
   set(0);
-  const step = (now: number) => {
-    const p = Math.min(1, (now - start) / ms);
-    set(1 - Math.pow(1 - p, 3));
-    if (p < 1 && lens.node.isConnected) animations.set(el, requestAnimationFrame(step));
-  };
-  animations.set(el, requestAnimationFrame(step));
+  STEPS.forEach((k, i) => animations.set(el, window.setTimeout(() => { if (lens.node.isConnected) set(k); }, ((i + 1) / STEPS.length) * ms) as unknown as number));
 }
 
 function scan() {

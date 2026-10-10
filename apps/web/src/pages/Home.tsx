@@ -32,7 +32,7 @@ export function HomePage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Library" value={String(lib.tracks.length)} to="/tracks" />
         <Tile label="Avg. rating" value={avg.toFixed(2)} to="/stats" />
-        <Tile label="Relational bios" value={String(lib.groups.length)} to="/bios" />
+        <Tile label="Notes" value={String(lib.groups.length)} to="/notes" />
         <Tile label="Ranked" value={`${pct}%`} to="/vote" />
       </div>
       <section className="space-y-3">

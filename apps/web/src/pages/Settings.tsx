@@ -6,11 +6,10 @@ import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
 import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
-import { AppearanceCard, WallpaperCard } from '../components/AppearanceCard.tsx';
+import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
+import { Section } from '../components/Section.tsx';
+import { BackupCard } from '../components/BackupCard.tsx';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="card bt-panel space-y-4 p-5"><h2 className="bt-panel-title font-semibold">{title}</h2>{children}</section>;
-}
 
 export function SettingsPage() {
   const { settings, updateSettings, sync, syncNow } = useStore();
@@ -53,7 +52,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
 
-      <Section title="Appearance"><p className="text-sm text-muted">Pick a colour theme and a UI style; any combination works. Saved on this device.</p><AppearanceCard /></Section>
+      <AppearanceLayout />
 
       <Section title="Wallpaper"><WallpaperCard /></Section>
 
@@ -67,6 +66,15 @@ export function SettingsPage() {
           {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'} · cookies: {status.tools.cookies ? 'set' : 'not set'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
+
+      <Section title="Sound">
+        <p className="text-sm text-muted">A bass boost for this device. It lifts the low end (below about 110 Hz) and trims the level a little first so loud songs do not clip, with a soft limiter as a backstop. Off by default; the Electron and Android apps will get a fuller equaliser.</p>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.eqOn} onChange={(e) => updateSettings({ eqOn: e.target.checked })} />Bass boost</label>
+        <label className={cn('block text-sm', !settings.eqOn && 'opacity-50')}><span className="mb-1 flex justify-between"><span className="font-medium">Amount</span><span className="tabular-nums text-muted">+{settings.eqBass} dB</span></span>
+          <input type="range" min={0} max={12} step={1} className="bt-range h-1 w-full" style={{ '--p': `${(settings.eqBass / 12) * 100}%` } as React.CSSProperties} disabled={!settings.eqOn} value={settings.eqBass} onChange={(e) => updateSettings({ eqBass: Number(e.target.value) })} aria-label="Bass boost in decibels" /></label>
+      </Section>
+
+      <Section title="Backup: export and import"><BackupCard /></Section>
 
       <Section title="Audio">
         <p className="text-sm text-muted">{lib.tracks.filter((t) => t.file).length} of {lib.tracks.length} tracks have audio on the server. {missing} have a YouTube source and no file.</p>

@@ -67,6 +67,38 @@ export class Store {
     return { applied, cursor: this.cursor() };
   }
 
+  /**
+   * Make the library exactly `records` (a restore). Records that are not in it become tombstones, and everything
+   * is stamped `now`, so every device converges on the restored state instead of resurrecting what was removed.
+   */
+  replaceWith(records: SyncRecord[], now = Date.now()): { written: number; removed: number } {
+    const put = this.db.prepare(`
+      INSERT INTO records (tbl, id, seq, updated_at, device_id, deleted, data) VALUES (?, ?, ?, ?, 'restore', ?, ?)
+      ON CONFLICT (tbl, id) DO UPDATE SET seq = excluded.seq, updated_at = excluded.updated_at, device_id = 'restore', deleted = excluded.deleted, data = excluded.data`);
+    const incoming = new Set(records.map((r) => `${r.table}\u0000${r.id}`));
+    let removed = 0;
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const live = this.db.prepare(`SELECT tbl, id FROM records WHERE deleted = 0`).all() as { tbl: string; id: string }[];
+      for (const r of live) {
+        if (incoming.has(`${r.tbl}\u0000${r.id}`)) continue;
+        put.run(r.tbl, r.id, this.nextSeq(), now, 1, '{}');
+        removed++;
+      }
+      for (const r of records) put.run(r.table, r.id, this.nextSeq(), now, r.deleted ? 1 : 0, JSON.stringify(r.data));
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      throw e;
+    }
+    return { written: records.length, removed };
+  }
+
+  /** a consistent single-file copy of the database (safe while the server is running) */
+  snapshotTo(path: string): void {
+    this.db.exec(`VACUUM INTO '${path.replaceAll("'", "''")}'`);
+  }
+
   cursor(): number {
     return (this.db.prepare(`SELECT v FROM meta WHERE k = 'seq'`).get() as { v: number }).v;
   }

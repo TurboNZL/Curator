@@ -1,3 +1,5 @@
+import { X } from 'lucide-react';
+import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AlbumData, ArtistData, Credit, EraData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
@@ -9,9 +11,12 @@ import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
 import { newAlbumData, newTrackData, inheritFromAlbum, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadCredit, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
-import { defaultChoice, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
+import { defaultChoice, defaultRelease, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
+import { albumCover, coverPicked, coverPool } from '../lib/covers.ts';
+import { CoverPool } from './CoverPool.tsx';
 import { saveRules } from '../lib/profile.ts';
-import { AudioPicker, CreditsEditor, EntityPicker, EraSelect, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { eraPatches } from '../lib/eraOps.ts';
+import { AudioPicker, CreditsEditor, EntityPicker, EraPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 import { AddToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
 import { AddToAlbumDialog, ReleaseChoicePicker } from './AddToAlbum.tsx';
 
@@ -56,19 +61,21 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const [first, setFirst] = useState(rule?.playFirstOnShuffle ?? true);
   const [albumOnly, setAlbumOnly] = useState(rule?.applyToAlbumSource ?? false);
   const [albumSel, setAlbumSel] = useState(track?.albumId ?? '');
+  const [eraIds, setEraIds] = useState<string[]>(() => (track?.albumId ? [] : track?.eraIds ?? []));
   const [choice, setChoice] = useState<ReleaseChoice>({ releaseIds: [], newRelease: false });
   if (!track || !t) return null;
   const set = <K extends keyof TrackData>(k: K, v: TrackData[K]) => setT((p) => ({ ...p!, [k]: v }));
   const selAlbum = albumSel ? lib.albumById.get(albumSel) : undefined;
   const albumCredits = selAlbum?.credits ?? [];
   /** a track that follows its album shows the album's credits, read-only */
-  const follows = !!t.syncWithAlbumCredits && hasLead(albumCredits);
+  const follows = !!albumSel && !!t.syncWithAlbumCredits && hasLead(albumCredits);
   const credits = cleanCredits(t.credits ?? []);
   const canSave = follows || hasLead(credits);
 
   function save() {
     const { artistId: _legacy, ...base } = t!;
-    const d = { ...base, credits, cover: t!.cover || null };
+    // a single has no album to follow
+    const d = { ...base, credits, cover: t!.cover || null, syncWithAlbumCredits: albumSel ? base.syncWithAlbumCredits : false };
     if (!d.syncWithAlbumCredits) ensureGenres(d.genres ?? []);
     ensureRoles(follows ? [] : credits);
     // moving the track to another album (or none): its first album link is the one it shows, and both albums' orders follow
@@ -76,7 +83,9 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
     const kept = { ...d, albums: (d.albums ?? []).filter((l) => l.albumId !== track!.albumId) };
     const plan = moved && selAlbum ? planAddToAlbum(lib, kept, id, selAlbum, choice) : null;
     const albums = moved ? (plan ? plan.trackAlbums : kept.albums) : d.albums;
-    put('tracks', { ...d, albums, eraId: albumSel ? null : d.eraId ?? null }, id);
+    put('tracks', { ...d, albums, eraId: null }, id);
+    // eras are collections: a single is listed in them, a track on an album is in them through its album
+    for (const e of eraPatches(lib, 'track', id, albumSel ? [] : eraIds)) patch('eras', e.id, e.patch);
     if (moved) {
       const from = track!.albumId ? lib.albumById.get(track!.albumId) : undefined;
       if (from) {
@@ -104,19 +113,18 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!canSave} onClick={save}>Save</button></div></>}>
       <Field label="Title"><input className="input" value={t.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
       <Field label="Album" hint="Cover, genres and (if ticked below) credits come from the album. Moving a track puts it last on the new album.">
-        <select className="input" value={albumSel} onChange={(e) => { setAlbumSel(e.target.value); const a = lib.albumById.get(e.target.value); if (a) setChoice(defaultChoice(lib, a, !!t.cover)); }}>
-          <option value="">No album (single)</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>
+        <Select value={albumSel} options={albumOptions(lib, 'No album (single)')} onChange={(v) => { setAlbumSel(v); const a = lib.albumById.get(v); if (a) setChoice(defaultChoice(lib, a, !!t.cover)); }} /></Field>
       {albumSel !== (track.albumId ?? '') && albumSel && <ReleaseChoicePicker albumId={albumSel} trackTitle={t.title || track.title} hasOwnCover={!!t.cover} cover={t.cover ?? null} value={choice} onChange={setChoice} />}
-      {!albumSel && <Field label="Era" hint="Optional. Eras group albums and singles."><EraSelect value={t.eraId ?? ''} onChange={(v) => set('eraId', v || null)} /></Field>}
+      {!albumSel && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
       <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
         <ImagePicker hash={t.cover ?? null} onChange={(h) => set('cover', h)} seed={t.title || 'track'} /></Field>
       <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
+      {albumSel && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
         const on = e.target.checked;
         // switching to track-specific credits starts from the album's, unless the track already has its own lead
         setT((p) => ({ ...p!, syncWithAlbumCredits: on, credits: !on && !hasLead(p!.credits ?? []) ? albumCredits.map((c) => ({ ...c, role: [...c.role] })) : p!.credits }));
-      }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>
-      {!t.syncWithAlbumCredits && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
+      }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>}
+      {(!albumSel || !t.syncWithAlbumCredits) && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
       <Field label="Spotify URL"><input className="input" value={t.spotifyUrl ?? ''} onChange={(e) => set('spotifyUrl', e.target.value || null)} /></Field>
@@ -136,11 +144,12 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
 
 function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const lib = useLibrary();
-  const { put, remove } = useStore();
+  const { put, patch, remove } = useStore();
   const nav = useNavigate();
   const ensureGenres = useEnsureGenres();
   const ensureRoles = useEnsureRoles();
   const album = lib.albumById.get(id);
+  const [eraIds, setEraIds] = useState<string[]>(() => lib.albumById.get(id)?.eraIds ?? []);
   const [a, setA] = useState<AlbumData | null>(() => {
     const d = raw<AlbumData>('albums', id);
     return d ? { ...d, credits: withLeadFallback(d.credits ?? [], d.artistId) } : null;
@@ -148,18 +157,28 @@ function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
   if (!album || !a) return null;
   const set = <K extends keyof AlbumData>(k: K, v: AlbumData[K]) => setA((p) => ({ ...p!, [k]: v }));
   const credits = cleanCredits(a.credits ?? []);
+  const mine = lib.releases.filter((r) => r.albumId === id);
+  const pool = coverPool(a, mine);
+  /** images something still points at: releases' covers cannot be dropped from here */
+  const inUse = new Set(mine.flatMap((r) => (r.cover ? [r.cover] : [])));
+  const inherited = albumCover({ ...a, coverPicked: false }, mine, defaultRelease(lib, album));
   return (
     <Modal title="Edit album" onClose={onClose} footer={<>
       <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${album.title}”? Its tracks stay in your library.`)) { remove('albums', id); onClose(); nav('/albums'); } }}>Delete</button>
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!hasLead(credits)} onClick={() => {
         const { artistId: _legacy, ...rest } = a;
-        ensureGenres(a.genres ?? []); ensureRoles(credits); put('albums', { ...rest, credits }, id);
+        ensureGenres(a.genres ?? []); ensureRoles(credits); put('albums', { ...rest, credits, eraId: null }, id);
+        for (const e of eraPatches(lib, 'album', id, eraIds)) patch('eras', e.id, e.patch);
         onClose();
       }}>Save</button></div></>}>
-      <ImagePicker hash={a.cover ?? null} onChange={(h) => set('cover', h)} seed={album.title} />
+      <Field label="Cover" hint="Every image of this album is in one pool, including its releases' covers. The album shows its default release's cover unless you choose another.">
+        <CoverPool seed={album.title} pool={pool} value={coverPicked(a) ? a.cover ?? null : null} inheritHash={inherited} inheritLabel="Use the default release's cover"
+          onChange={(h) => setA((p) => ({ ...p!, cover: h, coverPicked: !!h }))}
+          onAdd={(h) => setA((p) => ({ ...p!, covers: (p!.covers ?? []).includes(h) ? p!.covers : [...(p!.covers ?? []), h], cover: h, coverPicked: true }))}
+          onRemove={(h) => { if (!inUse.has(h)) setA((p) => ({ ...p!, covers: (p!.covers ?? []).filter((x) => x !== h) })); }} /></Field>
       <Field label="Title"><input className="input" value={a.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
       <Field label="Genres" hint="Tracks that use the album's genres follow these"><TagInput value={a.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>
-      <Field label="Era" hint="Optional. Eras group albums and singles."><EraSelect value={a.eraId ?? ''} onChange={(v) => set('eraId', v || null)} /></Field>
+      <Field label="Eras" hint="Optional. An album can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>
       <Field label="Credits"><CreditsEditor requireLead value={a.credits ?? []} onChange={(v) => set('credits', v)} /></Field>
     </Modal>
   );
@@ -199,7 +218,7 @@ function NewAlbumDialog({ onClose }: { onClose: () => void }) {
   const ok = title.trim() && hasLead(clean);
   return (
     <Modal title="New album" onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); ensureRoles(clean); const id = put('albums', newAlbumData({ title: title.trim(), credits: clean, genres, cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(clean.find((c) => c.artistId)?.artistId ?? '')?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
+      <button className="btn btn-accent" disabled={!ok} onClick={() => { ensureGenres(genres); ensureRoles(clean); const id = put('albums', newAlbumData({ title: title.trim(), credits: clean, genres, cover, covers: cover ? [cover] : [], coverPicked: !!cover })); logJournal('add', `Added album: ${title.trim()}`, lib.artistById.get(clean.find((c) => c.artistId)?.artistId ?? '')?.name ?? '', id); onClose(); nav(`/albums/${id}`); }}>Create</button></div>}>
       <ImagePicker hash={cover} onChange={setCover} seed={title || 'new'} />
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
       <Field label="Credits"><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
@@ -226,7 +245,7 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
   const [file, setFile] = useState<string | null>(null);
   const [bitrate, setBitrate] = useState<string | null>(null);
   const [cover, setCover] = useState<string | null>(null);
-  const [era, setEra] = useState('');
+  const [eraIds, setEraIds] = useState<string[]>([]);
   const [choice, setChoice] = useState<ReleaseChoice>(() => (album ? defaultChoice(lib, album, false) : { releaseIds: [], newRelease: false }));
   const ensureRoles = useEnsureRoles();
   if (albumId && !lib.albumById.has(albumId)) return null;
@@ -242,8 +261,9 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
     <Modal title={album && albumId ? `Add a track to ${album.title}` : 'New track'} onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
       <button className="btn btn-accent" disabled={!ok} onClick={() => {
         ensureRoles(clean);
-        const data = newTrackData({ title: title.trim(), credits: clean, ...inheritFromAlbum(album, clean), file, bitrate, cover, eraId: album ? null : era || null, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null });
+        const data = newTrackData({ title: title.trim(), credits: clean, ...inheritFromAlbum(album, clean), file, bitrate, cover, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null });
         const id = put('tracks', data);
+        if (!album) for (const e of eraPatches(lib, 'track', id, eraIds)) patch('eras', e.id, e.patch);
         if (album) {
           const plan = planAddToAlbum(lib, data, id, album, choice);
           put('tracks', { ...data, albums: plan.trackAlbums }, id);
@@ -256,10 +276,9 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
       }}>Add track</button></div>}>
       <Field label="Title"><input autoFocus className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
       {!albumId && <Field label="Album" hint="Optional. Leave empty for a single.">
-        <select className="input" value={albumSel} onChange={(e) => pickAlbum(e.target.value, !!cover)}>
-          <option value="">No album</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>}
+        <Select value={albumSel} options={albumOptions(lib, 'No album')} onChange={(v) => pickAlbum(v, !!cover)} /></Field>}
       {album && <ReleaseChoicePicker albumId={album.id} trackTitle={title || 'New track'} hasOwnCover={!!cover} cover={cover} value={choice} onChange={setChoice} />}
-      {!album && <Field label="Era" hint="Optional. Eras group albums and singles."><EraSelect value={era} onChange={setEra} /></Field>}
+      {!album && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
       <Field label="Cover" hint={album ? "Optional. Without one the track shows its album's cover. With one, it is added as a release of its own." : "The single's artwork."}>
         <ImagePicker hash={cover} onChange={(h) => { setCover(h); if (album) setChoice(defaultChoice(lib, album, !!h)); }} seed={title || 'new'} /></Field>
       <Field label="Credits" hint={album ? "Starts from the album's credits" : undefined}><CreditsEditor requireLead value={credits} onChange={setCredits} /></Field>
@@ -270,32 +289,39 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
   );
 }
 
-const BIO_TYPES: GroupData['type'][] = ['relationship', 'collective', 'thematic', 'era'];
-
-/** Create or edit a relational bio. `initial` pre-links an entity ("album:xyz") when started from its page. */
-function BioDialog({ groupId, initial, onClose }: { groupId?: string; initial?: string; onClose: () => void }) {
+/** Create or edit a note: a titled write-up tied to at least one thing. `initial` pre-links an entity ("album:xyz") when started from its page. */
+function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, remove } = useStore();
-  const existing = groupId ? lib.groups.find((g) => g.id === groupId) : undefined;
+  const existing = noteId ? lib.groups.find((g) => g.id === noteId) : undefined;
   const [g, setG] = useState<GroupData>(() => {
     if (existing) return { ...existing };
     const [t, i] = (initial ?? '').split(':');
-    const pre: GroupMemberData[] = t && i ? [{ entityType: t as GroupMemberData['entityType'], entityId: i, showOnEntityPage: t !== 'track' }] : [];
-    return { name: '', description: '', label: null, type: 'relationship', members: pre };
+    const pre: GroupMemberData[] = t && i ? [{ entityType: t as GroupMemberData['entityType'], entityId: i, showOnEntityPage: true }] : [];
+    return { name: '', description: '', label: null, categoryId: null, members: pre };
   });
-  if (groupId && !existing) return null;
-  const add = (e: { type: 'artist' | 'album' | 'track' | 'era'; id: string }) =>
-    !g.members.some((m) => m.entityType === e.type && m.entityId === e.id) && setG({ ...g, members: [...g.members, { entityType: e.type, entityId: e.id, showOnEntityPage: e.type !== 'track' }] });
+  if (noteId && !existing) return null;
+  const add = (e: { type: GroupMemberData['entityType']; id: string }) =>
+    !g.members.some((m) => m.entityType === e.type && m.entityId === e.id) && setG({ ...g, members: [...g.members, { entityType: e.type, entityId: e.id, showOnEntityPage: true }] });
   const ok = g.name.trim() && g.members.length > 0;
+  const categories = [...lib.noteCategories].sort((a, b) => a.name.localeCompare(b.name));
   return (
-    <Modal title={groupId ? 'Edit relational bio' : 'New relational bio'} onClose={onClose} footer={<>
-      {groupId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', groupId); onClose(); } }}>Delete</button>}
+    <Modal title={noteId ? 'Edit note' : 'New note'} onClose={onClose} footer={<>
+      {noteId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', noteId); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-accent" disabled={!ok} onClick={() => { const bid = put('groups', { ...g, name: g.name.trim(), label: g.label ?? g.name.trim(), description: g.description?.trim() || null }, groupId); if (!groupId) logJournal('bio', `New relational bio: ${g.name.trim()}`, '', bid); onClose(); }}>Save</button></div></>}>
-      <Field label="Name"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>
-      <Field label="Type"><select className="input" value={g.type} onChange={(e) => setG({ ...g, type: e.target.value })}>{BIO_TYPES.map((t) => <option key={t}>{t}</option>)}</select></Field>
-      <Field label="Description"><textarea className="input" rows={4} value={g.description ?? ''} onChange={(e) => setG({ ...g, description: e.target.value })} /></Field>
-      <div className="space-y-2"><div className="text-sm text-muted">Linked ({g.members.length}), and whether the bio shows on that page</div>
+        <button className="btn btn-accent" disabled={!ok} onClick={() => {
+          const { type: _old, ...rest } = g;
+          const id = put('groups', { ...rest, name: g.name.trim(), label: null, description: g.description?.trim() || null, createdAt: g.createdAt ?? Date.now() }, noteId);
+          if (!noteId) logJournal('bio', `New note: ${g.name.trim()}`, '', id);
+          onClose();
+        }}>Save</button></div></>}>
+      <Field label="Title"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>
+      <Field label="Category" hint="Your own: type a name that does not exist yet to create it."><Select value={g.categoryId ?? ''} placeholder="No category" searchable
+        options={[{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} onChange={(v) => setG({ ...g, categoryId: v || null })}
+        creatable={{ label: (n) => `Create category: “${n}”`, create: (n) => put('noteCategories', { name: n }) }} /></Field>
+      <Field label="Text"><textarea className="input" rows={5} value={g.description ?? ''} onChange={(e) => setG({ ...g, description: e.target.value })} /></Field>
+      <div className="space-y-2"><div className="text-sm text-muted">Tied to ({g.members.length}), and whether the note shows on that page</div>
+        {g.members.length === 0 && <div role="alert" className="rounded-theme bg-warn/15 p-3 text-sm text-warn">A note has to be tied to at least one thing. Search below.</div>}
         {g.members.map((m, i) => { const r = resolveEntity(lib, m.entityType, m.entityId); return (
           <div key={i} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-2 text-sm">
             <span className="chip">{m.entityType}</span><span className="min-w-0 flex-1 truncate">{r?.label ?? '(deleted)'}</span>
@@ -312,15 +338,21 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
   const { put, patch, remove } = useStore();
   const existing = releaseId ? lib.releases.find((r) => r.id === releaseId) : undefined;
   const album = lib.albumById.get(existing?.albumId ?? albumId ?? '');
+  const [added, setAdded] = useState<string[]>([]);
   const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: album.title, cover: null, releaseDate: null, trackIds: [...album.trackIds] } : null);
   if (!r || !album) return null;
   const live = r.trackIds.filter((id) => lib.trackById.has(id));
-  const save = () => { put('releases', { ...r, trackIds: live }, releaseId); onClose(); };
+  const save = () => {
+    if (added.length) { const raw = useStore.getState().rows.albums.get(album.id)?.data as AlbumData | undefined; patch('albums', album.id, { covers: [...new Set([...(raw?.covers ?? []), ...added])] }); }
+    put('releases', { ...r, trackIds: live }, releaseId); onClose();
+  };
   return (
     <Modal title={releaseId ? 'Edit release' : `New release of ${album.title}`} onClose={onClose} footer={<>
       {releaseId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete release “${r.title}”?`)) { remove('releases', releaseId); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!r.title.trim()} onClick={save}>Save</button></div></>}>
-      <ImagePicker hash={r.cover} onChange={(h) => setR({ ...r, cover: h })} seed={r.title} />
+      <Field label="Cover" hint="Any image of the album can be used, including ones uploaded to the album itself. A new upload joins the album's pool.">
+        <CoverPool seed={r.title} pool={[...album.coverPool, ...added.filter((h) => !album.coverPool.includes(h))]} value={r.cover} inheritHash={album.cover} inheritLabel="Use the album's cover"
+          onChange={(h) => setR({ ...r, cover: h })} onAdd={(h) => { setAdded((x) => [...x, h]); setR({ ...r, cover: h }); }} /></Field>
       <Field label="Title"><input autoFocus className="input" value={r.title} onChange={(e) => setR({ ...r, title: e.target.value })} /></Field>
       <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} /></Field>
       <div className="space-y-1"><div className="text-sm text-muted">Tracklist ({live.length})</div>
@@ -335,28 +367,49 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
   );
 }
 
-/** Create or edit an era: a named group of albums and singles (Era > Album > Release > Track). */
+/** Create or edit an era: a collection of albums, singles and playlists. Things can be in several eras at once. */
 function EraDialog({ eraId, onClose }: { eraId?: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, remove, patch } = useStore();
   const nav = useNavigate();
   const existing = eraId ? lib.eraById.get(eraId) : undefined;
   const [e, setE] = useState<EraData>(() => (existing ? { name: existing.name, description: existing.description, cover: existing.cover } : { name: '', description: '', cover: null }));
+  const [albumIds, setAlbumIds] = useState<string[]>(existing?.albumIds ?? []);
+  const [trackIds, setTrackIds] = useState<string[]>(existing?.trackIds ?? []);
+  const [playlistIds, setPlaylistIds] = useState<string[]>(existing?.playlistIds ?? []);
   if (eraId && !existing) return null;
-  const albums = eraId ? lib.albums.filter((a) => a.eraId === eraId) : [];
-  const singles = eraId ? lib.singles.filter((t) => t.eraId === eraId) : [];
+  const rawEra = (table: 'albums' | 'tracks', id: string) => (useStore.getState().rows[table].get(id)?.data as { eraId?: string | null } | undefined)?.eraId;
+  /** a list of chips with a search to add more */
+  const list = <T extends { id: string }>(label: string, ids: string[], setIds: (v: string[]) => void, all: T[], name: (x: T) => string) => (
+    <Field label={label}>
+      <div className="space-y-2">
+        {ids.length > 0 && <div className="flex flex-wrap gap-1.5">{ids.map((id) => (
+          <span key={id} className="chip gap-1 !text-fg">{(all.find((x) => x.id === id) && name(all.find((x) => x.id === id)!)) ?? '(deleted)'}<button type="button" aria-label="Take it out" onClick={() => setIds(ids.filter((x) => x !== id))}><X size={12} /></button></span>))}</div>}
+        <Select value="" placeholder={`Add…`} searchable onChange={(id) => id && !ids.includes(id) && setIds([...ids, id])}
+          options={all.filter((x) => !ids.includes(x.id)).map((x) => ({ value: x.id, label: name(x) })).sort((p, q) => p.label.localeCompare(q.label))} />
+      </div>
+    </Field>);
+  const save = () => {
+    const id = put('eras', { ...e, name: e.name.trim(), description: e.description?.trim() || null, albumIds, trackIds, playlistIds }, eraId);
+    // an old single-era field would keep a removed item in the era: clear it
+    if (existing) {
+      for (const a of existing.albumIds.filter((x) => !albumIds.includes(x))) if (rawEra('albums', a) === existing.id) patch('albums', a, { eraId: null });
+      for (const t of existing.trackIds.filter((x) => !trackIds.includes(x))) if (rawEra('tracks', t) === existing.id) patch('tracks', t, { eraId: null });
+    }
+    onClose(); if (!eraId) nav(`/eras/${id}`);
+  };
   return (
     <Modal title={eraId ? 'Edit era' : 'New era'} onClose={onClose} footer={<>
-      {eraId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete the era “${e.name}”? Its albums and singles stay in your library.`)) {
-        for (const a of albums) patch('albums', a.id, { eraId: null });
-        for (const t of singles) patch('tracks', t.id, { eraId: null });
-        remove('eras', eraId); onClose(); nav('/eras'); } }}>Delete</button>}
+      {eraId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete the era “${e.name}”? Everything in it stays in your library.`)) { remove('eras', eraId); onClose(); nav('/eras'); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-accent" disabled={!e.name.trim()} onClick={() => { const id = put('eras', { ...e, name: e.name.trim(), description: e.description?.trim() || null }, eraId); onClose(); if (!eraId) nav(`/eras/${id}`); }}>Save</button></div></>}>
+        <button className="btn btn-accent" disabled={!e.name.trim()} onClick={save}>Save</button></div></>}>
       <ImagePicker hash={e.cover} onChange={(h) => setE({ ...e, cover: h })} seed={e.name || 'era'} />
-      <Field label="Name"><input autoFocus className="input" value={e.name} onChange={(x) => setE({ ...e, name: x.target.value })} /></Field>
-      <Field label="Description"><textarea className="input" rows={4} value={e.description ?? ''} onChange={(x) => setE({ ...e, description: x.target.value })} /></Field>
-      {eraId && <p className="text-xs text-muted">{albums.length} albums and {singles.length} singles. Put an album or single in this era from its own editor.</p>}
+      <Field label="Name" hint="An era is a collection of albums, singles and playlists: a phase of an artist, a feud, a scene. Collections can overlap."><input autoFocus className="input" value={e.name} onChange={(x) => setE({ ...e, name: x.target.value })} /></Field>
+      <Field label="Description"><textarea className="input" rows={3} value={e.description ?? ''} onChange={(x) => setE({ ...e, description: x.target.value })} /></Field>
+      {list('Albums', albumIds, setAlbumIds, lib.albums, (a) => `${a.title} · ${a.artistName}`)}
+      {list('Singles', trackIds, setTrackIds, lib.singles, (t) => `${t.title} · ${t.artistName}`)}
+      {list('Playlists', playlistIds, setPlaylistIds, lib.playlists, (p) => p.name)}
+      <p className="text-xs text-muted">Notes can be tied to an era from the note’s own editor, or with the + on the era’s page.</p>
     </Modal>
   );
 }
@@ -369,8 +422,8 @@ export function EditorHost() {
   if (target.kind === 'release') return <ReleaseDialog key={key} releaseId={target.id} onClose={close} />;
   if (target.kind === 'new-release') return <ReleaseDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'import') return <ImportDialog key="import" onClose={close} />;
-  if (target.kind === 'bio') return <BioDialog key={key} groupId={target.id} onClose={close} />;
-  if (target.kind === 'new-bio') return <BioDialog key={key} initial={target.id} onClose={close} />;
+  if (target.kind === 'note') return <NoteDialog key={key} noteId={target.id} onClose={close} />;
+  if (target.kind === 'new-note') return <NoteDialog key={key} initial={target.id} onClose={close} />;
   if (target.kind === 'new-album') return <NewAlbumDialog key="new-album" onClose={close} />;
   if (target.kind === 'new-artist') return <NewArtistDialog key="new-artist" onClose={close} />;
   if (target.kind === 'upload') return <UploadDialog key={key} albumId={target.id} onClose={close} />;

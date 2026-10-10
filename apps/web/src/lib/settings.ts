@@ -20,6 +20,9 @@ export interface DeviceSettings {
   storageLimitMb: number;
   /** when the limit is reached, drop the least recently played offline tracks instead of stopping */
   evictOldest: boolean;
+  /** bass boost in the player (lib/eq.ts) */
+  eqOn: boolean;
+  eqBass: number;
 }
 
 const KEY = 'curator.settings';
@@ -28,7 +31,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, ...saved,
+    deviceId: newId(), serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, ...saved,
   };
   saveSettings(s);
   return s;

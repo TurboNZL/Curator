@@ -67,3 +67,48 @@ export function viewTrackIds(lib: Library, album: Album, view: AlbumView): strin
   const r = lib.releases.find((x) => x.id === view.id && x.albumId === album.id);
   return r ? r.trackIds.filter((id) => lib.trackById.has(id)) : album.trackIds;
 }
+
+/**
+ * An album whose releases each hold just one song (and it is the same song) is really a single. Returns that track's
+ * id, or null when the album is not such a thing.
+ */
+export function singleTrackOf(lib: Library, album: Album): string | null {
+  const releases = lib.releases.filter((r) => r.albumId === album.id);
+  if (!releases.length || album.trackIds.length !== 1) return null;
+  const id = album.trackIds[0];
+  return releases.every((r) => r.trackIds.length === 1 && r.trackIds[0] === id) ? id : null;
+}
+
+export interface SinglePlan {
+  trackId: string;
+  /** fields to merge into the raw track record */
+  trackPatch: Pick<TrackData, 'albums' | 'cover' | 'credits' | 'genres' | 'syncWithAlbumCredits'>;
+  removeReleaseIds: string[];
+  removeAlbumId: string;
+  /** the eras the album was in: the single takes its place in them */
+  eraIds: string[];
+}
+
+/**
+ * The track leaves the album and keeps what it showed: the default release's cover, the album's era, and the credits
+ * and genres it had (copied, since it no longer has an album to follow). The album and its releases are then removed.
+ */
+export function planConvertToSingle(lib: Library, album: Album): SinglePlan | null {
+  const trackId = singleTrackOf(lib, album);
+  const t = trackId ? lib.trackById.get(trackId) : undefined;
+  if (!trackId || !t) return null;
+  const rel = defaultRelease(lib, album);
+  return {
+    trackId,
+    trackPatch: {
+      albums: (t.albums ?? []).filter((l) => l.albumId !== album.id),
+      cover: rel?.cover || album.cover || t.cover || null,
+      credits: t.credits.map((c) => ({ ...c, role: [...c.role] })),
+      genres: [...t.allGenres],
+      syncWithAlbumCredits: false,
+    },
+    removeReleaseIds: lib.releases.filter((r) => r.albumId === album.id).map((r) => r.id),
+    removeAlbumId: album.id,
+    eraIds: album.eraIds,
+  };
+}

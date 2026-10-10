@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle, Star } from 'lucide-react';
+import { Disc, FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle, Star } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
-import { initialView, viewTrackIds, type AlbumView } from '../lib/albumOps.ts';
+import { initialView, singleTrackOf, viewTrackIds, type AlbumView } from '../lib/albumOps.ts';
 import { useStore } from '../lib/store.ts';
 import { cn, plural } from '../lib/cn.ts';
 import { Cover } from '../components/Cover.tsx';
-import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { KeepOffline } from '../components/KeepOffline.tsx';
 import { TracklistEditor } from '../components/TracklistEditor.tsx';
@@ -17,7 +16,7 @@ import { TrackTable } from '../components/TrackTable.tsx';
 import { DetailLayout } from '../components/DetailLayout.tsx';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
 import { useMenu } from '../components/Menu.tsx';
-import { useAlbumMenuItems } from '../components/entityMenus.tsx';
+import { useAlbumMenuItems, useConvertToSingle } from '../components/entityMenus.tsx';
 
 export function AlbumPage() {
   const { id } = useParams();
@@ -27,6 +26,7 @@ export function AlbumPage() {
   const patch = useStore((s) => s.patch);
   const menu = useMenu();
   const itemsFor = useAlbumMenuItems();
+  const convert = useConvertToSingle();
   const [params, setParams] = useSearchParams();
   const [arranging, setArranging] = useState(false);
   const album = id ? lib.albumById.get(id) : undefined;
@@ -52,13 +52,13 @@ export function AlbumPage() {
         {!releases.length && <p className="text-sm text-muted">No releases. A release is an edition of the album (deluxe, streaming, vinyl) with its own date, cover and tracklist.</p>}
         <div className="space-y-1.5" role="radiogroup" aria-label="Release to show">
           {releases.length > 0 && (
-            <button role="radio" aria-checked={view.kind === 'all'} className={cn('card flex w-full items-center gap-3 px-3 py-2 text-left text-sm', view.kind === 'all' && 'ring-2 ring-accent')} onClick={() => choose({ kind: 'all' })}>
+            <button role="radio" aria-checked={view.kind === 'all'} data-selected={view.kind === 'all' || undefined} className="card bt-sel flex w-full items-center gap-3 px-3 py-2 text-left text-sm" onClick={() => choose({ kind: 'all' })}>
               <Layers size={18} className="shrink-0 text-muted" /><span className="min-w-0 flex-1"><span className="block font-medium">All tracks</span><span className="block text-xs text-muted">{plural(album.trackIds.length, 'track')}</span></span></button>)}
           {releases.map((r) => {
             const on = view.kind === 'release' && view.id === r.id;
             const isDefault = album.defaultReleaseId ? album.defaultReleaseId === r.id : releases.length > 0 && r.id === [...releases].sort((a, b) => b.trackIds.length - a.trackIds.length)[0].id;
             return (
-              <div key={r.id} className={cn('card group flex items-center gap-2 py-2 pl-2 pr-1', on && 'ring-2 ring-accent')}>
+              <div key={r.id} data-selected={on || undefined} className="card bt-sel group flex items-center gap-2 py-2 pl-2 pr-1">
                 <button role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3 text-left text-sm" onClick={() => choose({ kind: 'release', id: r.id })}>
                   <Cover hash={r.cover || album.cover} seed={r.title} className="h-11 w-11 shrink-0" />
                   <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
@@ -72,7 +72,7 @@ export function AlbumPage() {
           })}
         </div>
       </section>}
-      right={<><Bios lib={lib} type="album" id={album.id} /><Notes lib={lib} type="album" id={album.id} /></>}>
+      right={<Notes lib={lib} type="album" id={album.id} />}>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end" onContextMenu={menu.onContextMenu(itemsFor(album, ids), `Actions for ${album.title}`, 'album')}>
         <Cover hash={cover} seed={album.title} className="w-48 shrink-0 sm:w-56" />
@@ -83,7 +83,7 @@ export function AlbumPage() {
           <div className="text-sm">
             <span className="font-medium"><ArtistLinks leads={album.leads} className="hover:underline" /></span>
             <span className="text-muted"> · {plural(tracks.length, 'track')}{album.rating != null && ` · avg ${album.rating.toFixed(1)}`}</span>
-            {album.eraId && lib.eraById.get(album.eraId) && <> · <Link to={`/eras/${album.eraId}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(album.eraId)!.name}</Link></>}
+            {album.eraIds.map((e) => lib.eraById.get(e) && <span key={e}> · <Link to={`/eras/${e}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(e)!.name}</Link></span>)}
           </div>
           <div className="flex flex-wrap gap-1.5">{album.genres.map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <div className="flex flex-wrap gap-2 pt-2">
@@ -94,6 +94,7 @@ export function AlbumPage() {
               ? <button className={`btn ${arranging ? 'btn-accent' : 'btn-ghost'}`} onClick={() => setArranging(!arranging)}><ListOrdered size={15} />{arranging ? 'Done' : 'Edit tracks'}</button>
               : <button className="btn btn-ghost" onClick={() => edit({ kind: 'release', id: view.id })}><ListOrdered size={15} />Edit release</button>}
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'upload', id: album.id })}><FileAudio size={15} />Add files</button>
+            {singleTrackOf(lib, album) && <button className="btn btn-ghost" title="Every release holds just this one song" onClick={() => convert(album)}><Disc size={15} />Convert to single</button>}
             <KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
             <button data-menu-trigger className="btn btn-ghost !p-2" aria-label="More actions" aria-haspopup="menu" onClick={(e) => menu.toggle(e.currentTarget, 'album', itemsFor(album, ids), `Actions for ${album.title}`)}><MoreHorizontal size={16} /></button>
           </div>

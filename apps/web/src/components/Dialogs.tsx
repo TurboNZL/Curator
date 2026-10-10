@@ -1,3 +1,4 @@
+import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, FileAudio, Plus } from 'lucide-react';
@@ -139,8 +140,7 @@ export function UploadDialog({ albumId, onClose }: { albumId: string; onClose: (
       <button className="btn btn-ghost" disabled={busy} onClick={onClose}>{progress?.failed.length ? 'Close' : 'Cancel'}</button>
       <button className="btn btn-accent" disabled={!ok || busy} onClick={() => void run()}>{busy ? `Adding ${progress!.done}/${files.length}…` : `Add ${files.length || ''} track${files.length === 1 ? '' : 's'}`}</button></div>}>
       <Field label="Album" hint="Optional. Without one, the tracks are singles.">
-        <select className="input" value={album} disabled={!!progress} onChange={(e) => setAlbum(e.target.value)}>
-          <option value="">No album (singles)</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>
+        <Select value={album} disabled={!!progress} options={albumOptions(lib, 'No album (singles)')} onChange={setAlbum} /></Field>
       <div className="space-y-2">
         <label className="btn cursor-pointer"><FileAudio size={15} />Choose files
           <input type="file" multiple hidden accept={AUDIO_ACCEPT} disabled={!!progress} onChange={(e) => { pick(e.target.files); e.target.value = ''; }} /></label>

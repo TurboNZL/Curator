@@ -11,14 +11,27 @@ export interface FileRef { hash: string | null }
 
 export interface ArtistData { name: string; image: string | null }
 /** An era groups albums and singles (Era > Album > Release > Track). Relational bios can be attached to it. */
-export interface EraData { name: string; description: string | null; cover: string | null }
+export interface EraData {
+  name: string; description: string | null; cover: string | null;
+  /** an era is a collection: it lists what is in it, and things can be in several eras at once */
+  albumIds?: string[];
+  /** tracks in the era on their own (singles); the tracks of its albums are in it through them */
+  trackIds?: string[];
+  playlistIds?: string[];
+}
 export interface AlbumData {
   title: string;
   credits: Credit[];
   /** @deprecated the old single-artist field. Credits (Lead artist) are the only artist now; kept only so old records can be migrated. */
   artistId?: string;
   genres: string[];
+  /** the cover the user picked from the pool; only counts when `coverPicked` (old records: when set) */
   cover: string | null;
+  /** images uploaded to the album (its pool); the pool also includes the picked cover and every release's cover */
+  covers?: string[];
+  /** false = inherit the default release's cover. Absent on old records, where a set `cover` counts as picked */
+  coverPicked?: boolean;
+  /** @deprecated old single-era field; membership now lives in EraData.albumIds. Still read, dropped when the album is saved. */
   eraId?: string | null;
   defaultReleaseId?: string | null;
   /** explicit track order (ids); wins over the release tracklist. Set when the user reorders or adds tracks by hand. */
@@ -39,7 +52,7 @@ export interface TrackData {
   credits: Credit[];
   /** the track's own cover (a single's artwork); an album track without one shows its album's cover */
   cover?: string | null;
-  /** only for tracks that are not on an album: the era they belong to */
+  /** @deprecated old single-era field of a single; membership now lives in EraData.trackIds */
   eraId?: string | null;
   /** only used when syncWithAlbumCredits is false; otherwise genres come from the album */
   genres: string[];
@@ -65,17 +78,30 @@ export interface PlaylistData {
   trackIds: string[];
 }
 export interface GroupMemberData {
-  entityType: 'artist' | 'album' | 'track' | 'release' | 'era';
+  entityType: 'artist' | 'album' | 'track' | 'release' | 'era' | 'playlist';
   entityId: string;
   showOnEntityPage: boolean;
 }
+/**
+ * A note: a titled write-up tied to one or more things (the old "relational bios" and "notes" are the same thing now:
+ * a note on one artist is just a note with one link). Stored in the `groups` table.
+ */
 export interface GroupData {
+  /** the title */
   name: string;
+  /** the text */
   description: string | null;
   label: string | null;
-  type: string;
+  /** @deprecated the old fixed type (relationship, collective, ...); replaced by categories. Dropped by the migration. */
+  type?: string;
+  /** one of the user's own categories (NoteCategoryData), created on the spot like an artist */
+  categoryId?: string | null;
+  /** at least one */
   members: GroupMemberData[];
+  createdAt?: number;
 }
+export interface NoteCategoryData { name: string }
+/** @deprecated the old per-entity notes; migrated into notes (GroupData) by the client */
 export interface NoteData {
   entityType: string;
   entityId: string;
@@ -90,6 +116,8 @@ export interface TimelineData { type: string; title: string; description: string
 export interface VoteData {
   trackAId: string; trackBId: string;
   winnerId: string | null; isEqual: boolean;
+  /** thumbs up/down on trackAId alone (trackBId is ''); see elo.ts */
+  boost?: 1 | -1;
   timestamp: number;
 }
 export interface PlaybackLogData {

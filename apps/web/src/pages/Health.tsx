@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { CheckCircle2, ChevronDown, ImageDown } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ClipboardPaste, ImageDown } from 'lucide-react';
+import { BulkLinks } from '../components/BulkLinks.tsx';
+import type { LinkKind } from '../lib/bulkLinks.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
 import { thumbnailUrls, youtubeId } from '../lib/youtube.ts';
 import { computeHealth, type HealthItem } from '../lib/health.ts';
@@ -19,6 +21,7 @@ export function HealthPage() {
   const put = useStore((s) => s.put);
   const configured = useStore((s) => !!s.settings.token);
   const [covers, setCovers] = useState<{ running: boolean; done: number; total: number; failed: number } | null>(null);
+  const [bulk, setBulk] = useState<LinkKind | null>(null);
   const checks = computeHealth(lib);
 
   /** Best effort: use the first track's YouTube thumbnail as the cover. Failures are skipped, never fatal. */
@@ -32,7 +35,9 @@ export function HealthPage() {
     let done = 0, failed = 0;
     for (const { id, vid } of todo) {
       try {
-        patch('albums', id, { cover: await fetchCoverFromLinks(thumbnailUrls(vid)) });
+        const hash = await fetchCoverFromLinks(thumbnailUrls(vid));
+        const raw = useStore.getState().rows.albums.get(id)?.data as { covers?: string[] } | undefined;
+        patch('albums', id, { covers: [...(raw?.covers ?? []), hash] }); // into the pool; the album shows it until a release has its own
       } catch { failed++; }
       setCovers({ running: true, done: ++done, total: todo.length, failed });
     }
@@ -68,6 +73,7 @@ export function HealthPage() {
               {c.id === 'album-no-cover' && <div className="flex flex-wrap items-center gap-3 px-4 pb-2">
                 <button className="btn" disabled={!configured || covers?.running} onClick={() => void fillCovers(c.items.map((i) => i.id))}><ImageDown size={15} />Try YouTube thumbnails</button>
                 <span className="text-xs text-muted">{!configured ? 'Needs a server (Settings).' : covers ? `${covers.done}/${covers.total} done${covers.failed ? `, ${covers.failed} failed` : ''}${covers.running ? '…' : ''}` : 'Uses each album\'s first track link. Check the results; replace any that look wrong.'}</span></div>}
+              {c.bulk && <div className="px-4 pb-2"><button className="btn" onClick={() => setBulk(c.bulk!)}><ClipboardPaste size={15} />Paste links by album</button></div>}
               {c.addLead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`${c.addLead!.label} (${c.items.length})?`) && addLeadCredits(c.items)}>{c.addLead.label}</button></div>}
               {c.fix && <div className="px-4 pb-2"><button className="btn text-bad" onClick={() => confirm(`${c.fix!.label} (${c.items.length})?`) && c.items.forEach((i) => remove(c.fix!.table, i.id))}>{c.fix.label}</button></div>}
               <div className="max-h-80 divide-y divide-line/60 overflow-y-auto">{c.items.slice(0, 200).map((i) => (
@@ -76,6 +82,7 @@ export function HealthPage() {
                 {c.items.length > 200 && <div className="px-4 py-2 text-xs text-muted">…and {c.items.length - 200} more</div>}</div>
             </div>)}
         </section>))}
+      {bulk && <BulkLinks kind={bulk} onClose={() => setBulk(null)} />}
     </div>
   );
 }

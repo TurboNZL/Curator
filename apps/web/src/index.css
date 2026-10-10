@@ -55,6 +55,16 @@ body { @apply bg-bg text-fg font-sans antialiased; margin: 0; }
 [data-theme='classic'] h2 { @apply font-black uppercase tracking-widest text-sm; }
 [data-theme='classic'] .card { border-radius: var(--radius); background: hsl(var(--surface) / 0.5); }
 
+/* The Rank page: the chosen card lifts and shows a tick, the other one steps back. The pace comes from the UI style (--vote-ms). */
+@keyframes bt-vote-win { 0% { transform: none; } 35% { transform: scale(1.035); box-shadow: 0 0 0 3px hsl(var(--accent)), 0 14px 40px hsl(var(--accent) / 0.35); } 100% { transform: scale(1.02); box-shadow: 0 0 0 3px hsl(var(--accent)), 0 10px 30px hsl(var(--accent) / 0.25); } }
+@keyframes bt-vote-lose { to { opacity: 0.25; transform: scale(0.94); filter: saturate(0.4); } }
+@keyframes bt-vote-equal { 50% { transform: scale(0.97); } 100% { transform: scale(0.985); box-shadow: 0 0 0 2px hsl(var(--muted)); } }
+@keyframes bt-vote-check { 0% { transform: scale(0.2) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.25) rotate(4deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
+.bt-vote-win { animation: bt-vote-win var(--vote-ms, 440ms) var(--ease) both; position: relative; z-index: 1; }
+.bt-vote-lose { animation: bt-vote-lose var(--vote-ms, 440ms) var(--ease) both; pointer-events: none; }
+.bt-vote-equal { animation: bt-vote-equal var(--vote-ms, 440ms) var(--ease) both; }
+.bt-vote-check { animation: bt-vote-check calc(var(--vote-ms, 440ms) * 0.9) var(--ease) both; }
+
 /* Wallpaper (Settings > Appearance): a fixed layer behind the page; panels turn slightly see-through */
 #bt-wallpaper { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 #bt-wallpaper .bt-wp-img, #bt-wallpaper .bt-wp-dim { position: absolute; inset: 0; }
@@ -111,12 +121,16 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
   .bt-footer { border-top: var(--bar-border); }
 
   .bt-menu { border-radius: var(--menu-r); background: var(--menu-bg); border: var(--menu-border); box-shadow: var(--pop-shadow); animation: var(--menu-anim); }
+  [role='option'] { transition: background-color var(--dur) var(--ease); }
+  [role='option']:hover:not(:disabled), [role='option'].bt-select-hi { background: var(--menu-hi-bg); color: var(--menu-hi-fg); outline: none; }
   [role='menuitem'] { transition: background-color var(--dur) var(--ease); }
   [role='menuitem']:hover:not(:disabled), [role='menuitem']:focus-visible { background: var(--menu-hi-bg); color: var(--menu-hi-fg); outline: none; }
 
   .bt-side { background: var(--side-bg); border-right: var(--bar-border); box-shadow: var(--side-shadow); }
   .bt-top { background: var(--top-bg); border-bottom: var(--bar-border); box-shadow: var(--top-shadow); }
-  .bt-player { background: var(--player-bg); border-top: var(--bar-border); box-shadow: var(--player-shadow); }
+  .bt-player { background: var(--player-bg); border-top: var(--bar-border); box-shadow: var(--player-shadow); animation: var(--player-in); }
+  .bt-player[data-leaving] { animation: var(--player-out); pointer-events: none; }
+  .bt-popover[data-leaving] { animation: var(--pop-out); pointer-events: none; }
   .bt-tabbar { background: var(--player-bg); border-top: var(--bar-border); }
   .bt-nav { border-radius: var(--nav-r); color: hsl(var(--muted)); transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
   .bt-nav:hover { background: var(--nav-hover-bg); color: hsl(var(--fg)); }

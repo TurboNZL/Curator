@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SyncRecord, TrackData } from '@curator/core';
 import { buildLibrary } from '../src/lib/library.ts';
-import { defaultChoice, defaultRelease, initialView, planAddToAlbum, viewTrackIds } from '../src/lib/albumOps.ts';
+import { defaultChoice, defaultRelease, initialView, planAddToAlbum, planConvertToSingle, singleTrackOf, viewTrackIds } from '../src/lib/albumOps.ts';
 import { leadCredit, withoutLegacyArtist } from '../src/lib/defaults.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
@@ -42,9 +42,18 @@ describe('credits-only artists, singles, eras', () => {
   });
   it('singles are the tracks on no album, and eras collect albums and singles', () => {
     expect(lib.singles.map((t) => t.id).sort()).toEqual(['s1', 's2']);
-    expect(lib.trackById.get('s1')!.eraId).toBe('e1');
-    expect(lib.trackById.get('t1')!.eraId).toBe('e1'); // an album track follows its album's era
+    expect(lib.trackById.get('s1')!.eraIds).toEqual(['e1']);
+    expect(lib.trackById.get('t1')!.eraIds).toEqual(['e1']); // an album track follows its album's eras
     expect(lib.eraById.get('e1')!.name).toBe('Era');
+  });
+  it('eras can overlap: an album and a single can be in several, and an era can hold playlists', () => {
+    const l = buildLibrary(rows(...data,
+      rec('eras', 'e2', { name: 'Beef', description: null, cover: null, albumIds: ['al', 'gone'], trackIds: ['s2'], playlistIds: ['p1'] })));
+    expect(l.albumById.get('al')!.eraIds.sort()).toEqual(['e1', 'e2']);
+    expect(l.trackById.get('t1')!.eraIds.sort()).toEqual(['e1', 'e2']);
+    expect(l.trackById.get('s2')!.eraIds).toEqual(['e2']);
+    expect(l.eraById.get('e2')).toMatchObject({ albumIds: ['al'], trackIds: ['s2'], playlistIds: ['p1'] }); // ids of deleted things drop out
+    expect(l.eraById.get('e1')!.albumIds).toEqual(['al']); // the legacy eraId still counts
   });
   it('a legacy artistId still names the artist until it is moved into the credits, and that move drops the field', () => {
     const legacy = { title: 'Old', artistId: 'a', credits: [], genres: [], albums: [], file: null };
@@ -108,5 +117,32 @@ describe('switching between releases on the album page', () => {
   });
   it('ignores a release id that belongs to another album', () => {
     expect(viewTrackIds(lib, album, { kind: 'release', id: 'ghost' })).toEqual(album.trackIds);
+  });
+});
+
+describe('convert an album to a single', () => {
+  const one = [
+    rec('artists', 'a', { name: 'Artist', image: null }),
+    rec('albums', 'al', { title: 'Tiny', credits: leadCredit('a'), genres: ['Pop'], cover: 'albumcover', eraId: 'e1', defaultReleaseId: 'r1' }),
+    rec('tracks', 't1', track('Only', { albums: [{ albumId: 'al', order: 0 }] })),
+    rec('releases', 'r1', { albumId: 'al', title: 'Standard', cover: 'relcover', releaseDate: null, trackIds: ['t1'] }),
+    rec('releases', 'r2', { albumId: 'al', title: 'Alt', cover: 'alt', releaseDate: null, trackIds: ['t1'] }),
+  ];
+  it('is offered only when every release holds the one song', () => {
+    const lib = buildLibrary(rows(...one));
+    expect(singleTrackOf(lib, lib.albumById.get('al')!)).toBe('t1');
+    const two = buildLibrary(rows(...one, rec('tracks', 't2', track('Second', { albums: [{ albumId: 'al', order: 1 }] }))));
+    expect(singleTrackOf(two, two.albumById.get('al')!)).toBeNull();
+    const none = buildLibrary(rows(...one.filter((r) => r.table !== 'releases')));
+    expect(singleTrackOf(none, none.albumById.get('al')!)).toBeNull();
+  });
+  it('keeps the cover, era, credits and genres, and removes the album and its releases', () => {
+    const lib = buildLibrary(rows(...one));
+    const p = planConvertToSingle(lib, lib.albumById.get('al')!)!;
+    expect(p.trackPatch).toMatchObject({ albums: [], cover: 'relcover', syncWithAlbumCredits: false, genres: ['Pop'] });
+    expect(p.trackPatch.credits).toEqual(leadCredit('a'));
+    expect(p.removeReleaseIds.sort()).toEqual(['r1', 'r2']);
+    expect(p.removeAlbumId).toBe('al');
+    expect(p.eraIds).toEqual([]); // 'e1' is not an era that exists in this data
   });
 });

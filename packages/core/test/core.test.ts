@@ -11,6 +11,15 @@ describe('ids', () => {
 });
 
 describe('elo', () => {
+  it('thumbs are worth half a win against an equal opponent and need no opponent', () => {
+    const r = replayVotes([
+      { id: '1', trackAId: 'x', trackBId: '', boost: 1, timestamp: 1 },
+      { id: '2', trackAId: 'y', trackBId: '', boost: -1, timestamp: 2 },
+    ], ['x', 'y']);
+    expect(r.get('x')).toEqual({ elo: 1016, comparisons: 1 });
+    expect(r.get('y')).toEqual({ elo: 984, comparisons: 1 });
+    expect(r.size).toBe(2); // the empty opponent is not a track
+  });
   it('is zero-sum and symmetric', () => {
     const r = applyVote(1000, 1000, 'a');
     expect(r.a).toBeCloseTo(1016); expect(r.b).toBeCloseTo(984);

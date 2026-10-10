@@ -1,5 +1,6 @@
 import { leadArtistId, leadArtistIds, hasLead } from './defaults.ts';
-import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData, type EraData } from '@curator/core';
+import { albumCover, coverPool } from './covers.ts';
+import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData, type EraData, type NoteCategoryData } from '@curator/core';
 
 export type Row<T> = T & { id: string };
 
@@ -22,29 +23,37 @@ export interface Track extends Omit<Row<TrackData>, 'artistId'> {
   albumTitle: string | null;
   /** the track's own cover, else its album's */
   cover: string | null;
-  /** era of the album, or of the single itself */
-  eraId: string | null;
+  /** every era this track is in: its album's, plus its own for a single */
+  eraIds: string[];
+  /** when its album came out (default release's date), "YYYY", "YYYY-MM" or "YYYY-MM-DD"; null if unknown */
+  releaseDate: string | null;
   allGenres: string[];
 }
+
+/** An era is a collection; these are what is in it, legacy single-era fields folded in. Albums' tracks are in it through their album. */
+export type Era = Row<EraData> & { albumIds: string[]; trackIds: string[]; playlistIds: string[] };
 
 export interface Library {
   tracks: Track[];
   trackById: Map<string, Track>;
   artists: Row<ArtistData>[];
   artistById: Map<string, Row<ArtistData>>;
-  eras: Row<EraData>[];
-  eraById: Map<string, Row<EraData>>;
+  eras: Era[];
+  eraById: Map<string, Era>;
   /** tracks that are not on any album */
   singles: Track[];
-  albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null })[];
+  albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null; /** every era the album is in */ eraIds: string[]; /** the default release's date, else the earliest release date */ releaseDate: string | null; /** every image of the album: uploads, its picked cover and its releases' covers */ coverPool: string[] })[];
   albumById: Map<string, Library['albums'][number]>;
   releases: Row<ReleaseData>[];
   playlists: Row<PlaylistData>[];
   genres: Row<GenreData>[];
   roles: Row<RoleCategoryData>[];
   timeline: Row<TimelineData>[];
+  /** the notes (stored as `groups`): titled write-ups tied to one or more things */
   groups: Row<GroupData>[];
-  notes: Row<NoteData>[];
+  noteCategories: Row<NoteCategoryData>[];
+  /** the old per-entity notes, kept only so they can be migrated */
+  legacyNotes: Row<NoteData>[];
   votes: Row<VoteData>[];
   logs: Row<PlaybackLogData>[];
   profile: Row<ProfileData> | null;
@@ -64,6 +73,17 @@ const leadsOf = (credits: Credit[], legacy: string | undefined, artistById: Map<
 };
 const namesOf = (leads: Lead[]) => (leads.length ? leads.map((l) => l.name).join(', ') : 'Unknown artist');
 
+/** Folds the legacy `eraId` of albums and singles into each era's lists, drops ids of things that no longer exist. */
+function withMembers(eras: Row<EraData>[], albums: Row<AlbumData>[], tracks: Row<TrackData>[]): Era[] {
+  const albumIds = new Set(albums.map((a) => a.id)), trackIds = new Set(tracks.map((t) => t.id));
+  return eras.map((e) => ({
+    ...e,
+    albumIds: [...new Set([...(e.albumIds ?? []), ...albums.filter((a) => a.eraId === e.id).map((a) => a.id)])].filter((id) => albumIds.has(id)),
+    trackIds: [...new Set([...(e.trackIds ?? []), ...tracks.filter((t) => t.eraId === e.id).map((t) => t.id)])].filter((id) => trackIds.has(id)),
+    playlistIds: [...(e.playlistIds ?? [])],
+  }));
+}
+
 const by = <T extends { id: string }>(xs: T[]) => new Map(xs.map((x) => [x.id, x]));
 
 export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Library {
@@ -77,8 +97,20 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   const ranked = replayVotes(votes.map((v) => ({ ...v })), rawTracks.map((t) => t.id));
   const ratings = balancedRatings(ranked, new Map(rawTracks.map((t) => [t.id, t.initialRating])));
 
+  const releases = live<ReleaseData>(rows.releases);
+  // the album's cover is its picked one, else its default release's (see covers.ts); everything below sees the derived cover
+  const defaultRel = (a: Row<AlbumData>) => { const mine = releases.filter((r) => r.albumId === a.id); return mine.find((r) => r.id === a.defaultReleaseId) ?? [...mine].sort((x, y) => y.trackIds.length - x.trackIds.length)[0]; };
+  const coveredAlbums = rawAlbums.map((a) => ({ ...a, cover: albumCover(a, releases.filter((r) => r.albumId === a.id), defaultRel(a)) }));
+  const eras = withMembers(live<EraData>(rows.eras), rawAlbums, rawTracks);
+  const erasOfAlbum = new Map<string, string[]>(), erasOfTrack = new Map<string, string[]>();
+  for (const e of eras) {
+    for (const id of e.albumIds) erasOfAlbum.set(id, [...(erasOfAlbum.get(id) ?? []), e.id]);
+    for (const id of e.trackIds) erasOfTrack.set(id, [...(erasOfTrack.get(id) ?? []), e.id]);
+  }
+  const dateOf = (a: Row<AlbumData>) => defaultRel(a)?.releaseDate || releases.filter((r) => r.albumId === a.id && r.releaseDate).map((r) => r.releaseDate!).sort()[0] || null;
+  const albumDate = new Map(rawAlbums.map((a) => [a.id, dateOf(a)]));
   const albumOf = new Map<string, Row<AlbumData>>();
-  const albumsById = by(rawAlbums);
+  const albumsById = by(coveredAlbums);
   const trackIdsByAlbum = new Map<string, { id: string; order: number }[]>();
   for (const t of rawTracks) {
     for (const link of t.albums ?? []) {
@@ -104,7 +136,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
       ...t, credits, artistId, leads, elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
       artistName: namesOf(leads),
       albumId: album?.id ?? null, albumTitle: album?.title ?? null, cover: t.cover || album?.cover || null,
-      eraId: album ? album.eraId ?? null : t.eraId ?? null,
+      releaseDate: album ? albumDate.get(album.id) ?? null : null,
+      eraIds: [...new Set([...(album ? erasOfAlbum.get(album.id) ?? [] : []), ...(erasOfTrack.get(t.id) ?? [])])],
       allGenres: genres ?? [],
     };
   });
@@ -113,15 +146,13 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
 
   // Legacy data has album_tracks.order = 0 almost everywhere, but every album has an ordered release,
   // so a track's position comes from the album's default release (else its longest one), then `order`.
-  const releases = live<ReleaseData>(rows.releases);
-  const eras = live<EraData>(rows.eras);
   const position = (albumId: string, defaultReleaseId?: string | null) => {
     const mine = releases.filter((r) => r.albumId === albumId);
     const rel = mine.find((r) => r.id === defaultReleaseId) ?? mine.sort((x, y) => y.trackIds.length - x.trackIds.length)[0];
     return new Map((rel?.trackIds ?? []).map((id, i) => [id, i]));
   };
 
-  const albums = rawAlbums.map((a) => {
+  const albums = coveredAlbums.map((a) => {
     // an explicit order (set when the user reorders/adds by hand) wins over the release tracklist
     const pos = a.trackOrder?.length ? new Map(a.trackOrder.map((id, i) => [id, i])) : position(a.id, a.defaultReleaseId);
     const at = (id: string) => pos.get(id) ?? Number.MAX_SAFE_INTEGER;
@@ -129,7 +160,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const rated = ids.map((id) => trackById.get(id)!.effectiveRating).filter((x) => x > 0);
     const artistId = leadArtistId(a.credits ?? [], a.artistId ?? '');
     const leads = leadsOf(a.credits ?? [], a.artistId, artistById);
-    return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids,
+    const raw = rawAlbums.find((x) => x.id === a.id)!;
+    return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids, eraIds: erasOfAlbum.get(a.id) ?? [], releaseDate: albumDate.get(a.id) ?? null, coverPool: coverPool(raw, releases.filter((r) => r.albumId === a.id)),
       rating: rated.length ? rated.reduce((s, x) => s + x, 0) / rated.length : null };
   });
 
@@ -137,7 +169,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     tracks, trackById, artists, artistById, albums, albumById: by(albums),
     eras: eras, eraById: by(eras), singles: tracks.filter((t) => !t.albumId),
     releases, playlists: live<PlaylistData>(rows.playlists),
-    genres: live<GenreData>(rows.genres), roles: live<RoleCategoryData>(rows.roleCategories), timeline: live<TimelineData>(rows.timeline), groups: live<GroupData>(rows.groups), notes: live<NoteData>(rows.notes),
+    genres: live<GenreData>(rows.genres), roles: live<RoleCategoryData>(rows.roleCategories), timeline: live<TimelineData>(rows.timeline), groups: live<GroupData>(rows.groups), noteCategories: live<NoteCategoryData>(rows.noteCategories), legacyNotes: live<NoteData>(rows.notes),
     votes, logs: live<PlaybackLogData>(rows.playbackLogs), profile, rules: profile?.playbackRules ?? [],
   };
 }
