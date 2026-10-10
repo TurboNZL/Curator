@@ -5,7 +5,6 @@ import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
-import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { DetailLayout } from '../components/DetailLayout.tsx';
 import { SingleGrid } from '../components/SingleCard.tsx';
@@ -55,7 +54,7 @@ export function EraPage() {
   const ids = [...albums.flatMap((a) => a.trackIds), ...singles.map((t) => t.id)].filter((t) => lib.trackById.get(t)?.file);
   const cover = era.cover || albums.find((a) => a.cover)?.cover || null;
   return (
-    <DetailLayout right={<><Bios lib={lib} type="era" id={era.id} /><Notes lib={lib} type="era" id={era.id} /></>}>
+    <DetailLayout right={<Notes lib={lib} type="era" id={era.id} />}>
       <div className="flex items-center gap-5">
         <Cover hash={cover} seed={era.name} className="w-40 shrink-0 sm:w-48" />
         <div className="min-w-0 space-y-2"><div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted"><Layers size={13} />Era</div>

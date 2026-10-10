@@ -5,7 +5,6 @@ import { usePlayer } from '../lib/player.ts';
 import { Link, useParams } from 'react-router-dom';
 import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
-import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { Cover } from '../components/Cover.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
@@ -38,7 +37,7 @@ export function ArtistPage() {
   const visible = tracks.slice(0, shown);
   const left = tracks.length - visible.length;
   return (
-    <DetailLayout right={<><Bios lib={lib} type="artist" id={artist.id} /><Notes lib={lib} type="artist" id={artist.id} /></>}>
+    <DetailLayout right={<Notes lib={lib} type="artist" id={artist.id} />}>
       <div className="flex items-center gap-5" onContextMenu={menu.onContextMenu(artistItems(artist.id), `Actions for ${artist.name}`, 'artist')}>
         <Cover kind="artist" hash={artist.image} seed={artist.name} className="w-32 shrink-0 sm:w-40" />
         <div><div className="text-xs uppercase tracking-wider text-muted">Artist</div><h1 className="text-3xl font-bold">{artist.name}</h1>

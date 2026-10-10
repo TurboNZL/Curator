@@ -281,32 +281,39 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
   );
 }
 
-const BIO_TYPES: GroupData['type'][] = ['relationship', 'collective', 'thematic', 'era'];
-
-/** Create or edit a relational bio. `initial` pre-links an entity ("album:xyz") when started from its page. */
-function BioDialog({ groupId, initial, onClose }: { groupId?: string; initial?: string; onClose: () => void }) {
+/** Create or edit a note: a titled write-up tied to at least one thing. `initial` pre-links an entity ("album:xyz") when started from its page. */
+function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, remove } = useStore();
-  const existing = groupId ? lib.groups.find((g) => g.id === groupId) : undefined;
+  const existing = noteId ? lib.groups.find((g) => g.id === noteId) : undefined;
   const [g, setG] = useState<GroupData>(() => {
     if (existing) return { ...existing };
     const [t, i] = (initial ?? '').split(':');
-    const pre: GroupMemberData[] = t && i ? [{ entityType: t as GroupMemberData['entityType'], entityId: i, showOnEntityPage: t !== 'track' }] : [];
-    return { name: '', description: '', label: null, type: 'relationship', members: pre };
+    const pre: GroupMemberData[] = t && i ? [{ entityType: t as GroupMemberData['entityType'], entityId: i, showOnEntityPage: true }] : [];
+    return { name: '', description: '', label: null, categoryId: null, members: pre };
   });
-  if (groupId && !existing) return null;
-  const add = (e: { type: 'artist' | 'album' | 'track' | 'era'; id: string }) =>
-    !g.members.some((m) => m.entityType === e.type && m.entityId === e.id) && setG({ ...g, members: [...g.members, { entityType: e.type, entityId: e.id, showOnEntityPage: e.type !== 'track' }] });
+  if (noteId && !existing) return null;
+  const add = (e: { type: GroupMemberData['entityType']; id: string }) =>
+    !g.members.some((m) => m.entityType === e.type && m.entityId === e.id) && setG({ ...g, members: [...g.members, { entityType: e.type, entityId: e.id, showOnEntityPage: true }] });
   const ok = g.name.trim() && g.members.length > 0;
+  const categories = [...lib.noteCategories].sort((a, b) => a.name.localeCompare(b.name));
   return (
-    <Modal title={groupId ? 'Edit relational bio' : 'New relational bio'} onClose={onClose} footer={<>
-      {groupId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', groupId); onClose(); } }}>Delete</button>}
+    <Modal title={noteId ? 'Edit note' : 'New note'} onClose={onClose} footer={<>
+      {noteId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', noteId); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-accent" disabled={!ok} onClick={() => { const bid = put('groups', { ...g, name: g.name.trim(), label: g.label ?? g.name.trim(), description: g.description?.trim() || null }, groupId); if (!groupId) logJournal('bio', `New relational bio: ${g.name.trim()}`, '', bid); onClose(); }}>Save</button></div></>}>
-      <Field label="Name"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>
-      <Field label="Type"><select className="input" value={g.type} onChange={(e) => setG({ ...g, type: e.target.value })}>{BIO_TYPES.map((t) => <option key={t}>{t}</option>)}</select></Field>
-      <Field label="Description"><textarea className="input" rows={4} value={g.description ?? ''} onChange={(e) => setG({ ...g, description: e.target.value })} /></Field>
-      <div className="space-y-2"><div className="text-sm text-muted">Linked ({g.members.length}), and whether the bio shows on that page</div>
+        <button className="btn btn-accent" disabled={!ok} onClick={() => {
+          const { type: _old, ...rest } = g;
+          const id = put('groups', { ...rest, name: g.name.trim(), label: null, description: g.description?.trim() || null, createdAt: g.createdAt ?? Date.now() }, noteId);
+          if (!noteId) logJournal('bio', `New note: ${g.name.trim()}`, '', id);
+          onClose();
+        }}>Save</button></div></>}>
+      <Field label="Title"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>
+      <Field label="Category" hint="Your own: type a name that does not exist yet to create it."><Select value={g.categoryId ?? ''} placeholder="No category" searchable
+        options={[{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} onChange={(v) => setG({ ...g, categoryId: v || null })}
+        creatable={{ label: (n) => `Create category: “${n}”`, create: (n) => put('noteCategories', { name: n }) }} /></Field>
+      <Field label="Text"><textarea className="input" rows={5} value={g.description ?? ''} onChange={(e) => setG({ ...g, description: e.target.value })} /></Field>
+      <div className="space-y-2"><div className="text-sm text-muted">Tied to ({g.members.length}), and whether the note shows on that page</div>
+        {g.members.length === 0 && <div role="alert" className="rounded-theme bg-warn/15 p-3 text-sm text-warn">A note has to be tied to at least one thing. Search below.</div>}
         {g.members.map((m, i) => { const r = resolveEntity(lib, m.entityType, m.entityId); return (
           <div key={i} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-2 text-sm">
             <span className="chip">{m.entityType}</span><span className="min-w-0 flex-1 truncate">{r?.label ?? '(deleted)'}</span>
@@ -386,8 +393,8 @@ export function EditorHost() {
   if (target.kind === 'release') return <ReleaseDialog key={key} releaseId={target.id} onClose={close} />;
   if (target.kind === 'new-release') return <ReleaseDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'import') return <ImportDialog key="import" onClose={close} />;
-  if (target.kind === 'bio') return <BioDialog key={key} groupId={target.id} onClose={close} />;
-  if (target.kind === 'new-bio') return <BioDialog key={key} initial={target.id} onClose={close} />;
+  if (target.kind === 'note') return <NoteDialog key={key} noteId={target.id} onClose={close} />;
+  if (target.kind === 'new-note') return <NoteDialog key={key} initial={target.id} onClose={close} />;
   if (target.kind === 'new-album') return <NewAlbumDialog key="new-album" onClose={close} />;
   if (target.kind === 'new-artist') return <NewArtistDialog key="new-artist" onClose={close} />;
   if (target.kind === 'upload') return <UploadDialog key={key} albumId={target.id} onClose={close} />;

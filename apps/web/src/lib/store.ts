@@ -6,6 +6,7 @@ import { getMeta, localDb, setMeta } from './idb.ts';
 import { loadSettings, saveSettings, type DeviceSettings } from './settings.ts';
 import { applyAppearance, watchSystemTheme } from './appearance.ts';
 import { withoutLegacyArtist } from './defaults.ts';
+import { planNoteMigration } from './noteMigration.ts';
 
 export type SyncState = 'unconfigured' | 'idle' | 'syncing' | 'offline' | 'error';
 export interface SyncInfo { state: SyncState; lastSync: number | null; pending: number; error: string | null }
@@ -91,6 +92,7 @@ export const useStore = create<State>((set, get) => {
         if (!page.more) break;
       }
       migrateLegacyArtists();
+      migrateNotes();
       const pending = (await db.count('outbox'));
       setSync({ state: 'idle', lastSync: Date.now(), pending });
       await setMeta('lastSync', Date.now());
@@ -113,6 +115,15 @@ export const useStore = create<State>((set, get) => {
         if (next) get().put(table, next, id);
       }
     }
+  }
+
+  /** Notes and relational bios became one thing (see noteMigration.ts). */
+  function migrateNotes() {
+    const live = (t: RecordTable) => [...get().rows[t].values()].filter((r) => !r.deleted).map((r) => ({ id: r.id, data: r.data as never }));
+    const plan = planNoteMigration(live('notes'), live('groups'), live('noteCategories'));
+    for (const c of plan.categories) get().put('noteCategories', c.data, c.id);
+    for (const g of plan.groups) get().put('groups', g.data, g.id);
+    for (const id of plan.removeNotes) get().remove('notes', id);
   }
 
   async function applyRemote(records: SyncRecord[]) {
@@ -150,7 +161,7 @@ export const useStore = create<State>((set, get) => {
       const rows = emptyRows();
       for (const r of await db.getAll('records')) rows[r.table]?.set(r.id, r);
       set({ rows, audioCache: await getMeta('audioCache', {}), ready: true, rev: 1, sync: { ...get().sync, lastSync: await getMeta('lastSync', null), pending: await db.count('outbox'), state: configured() ? 'idle' : 'unconfigured' } });
-      if (!configured()) migrateLegacyArtists();
+      if (!configured()) { migrateLegacyArtists(); migrateNotes(); }
       void get().syncNow();
       clearInterval(timer);
       timer = setInterval(() => void get().syncNow(), 30_000);

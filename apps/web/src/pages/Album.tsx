@@ -9,7 +9,6 @@ import { initialView, singleTrackOf, viewTrackIds, type AlbumView } from '../lib
 import { useStore } from '../lib/store.ts';
 import { cn, plural } from '../lib/cn.ts';
 import { Cover } from '../components/Cover.tsx';
-import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { KeepOffline } from '../components/KeepOffline.tsx';
 import { TracklistEditor } from '../components/TracklistEditor.tsx';
@@ -73,7 +72,7 @@ export function AlbumPage() {
           })}
         </div>
       </section>}
-      right={<><Bios lib={lib} type="album" id={album.id} /><Notes lib={lib} type="album" id={album.id} /></>}>
+      right={<Notes lib={lib} type="album" id={album.id} />}>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end" onContextMenu={menu.onContextMenu(itemsFor(album, ids), `Actions for ${album.title}`, 'album')}>
         <Cover hash={cover} seed={album.title} className="w-48 shrink-0 sm:w-56" />

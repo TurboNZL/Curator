@@ -7,6 +7,7 @@ import { sha256Sync } from '../src/lib/sha256.ts';
 import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { parseBackup } from '../src/lib/backupFormat.ts';
 import { albumCover, coverPicked, coverPool } from '../src/lib/covers.ts';
+import { planNoteMigration } from '../src/lib/noteMigration.ts';
 import { computeHealth } from '../src/lib/health.ts';
 import { assignLinks, linkGroups, looksRight, parseLinks } from '../src/lib/bulkLinks.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
@@ -356,5 +357,24 @@ describe('album cover pool', () => {
     expect(l.albumById.get('al')!.cover).toBe('c2');
     expect(l.albumById.get('al')!.coverPool).toEqual(['up', 'c1', 'c2']);
     expect(l.trackById.get('t')!.cover).toBe('c2');
+  });
+});
+
+describe('notes and relational bios are one thing', () => {
+  const note = (id: string, label: string) => ({ id, data: { entityType: 'album', entityId: 'al', label, content: 'text', isLinked: false, createdAt: 5 } });
+  const bio = (id: string, type: string | undefined, extra: object = {}) => ({ id, data: { name: id, description: null, label: null, type, members: [{ entityType: 'artist' as const, entityId: 'a', showOnEntityPage: true }], ...extra } });
+  it('turns an old note into a note with one link, under its own id', () => {
+    const p = planNoteMigration([note('n1', 'Liner notes')], [], []);
+    expect(p.removeNotes).toEqual(['n1']);
+    expect(p.groups[0]).toMatchObject({ id: 'n1', data: { name: 'Liner notes', description: 'text', createdAt: 5, members: [{ entityType: 'album', entityId: 'al', showOnEntityPage: true }] } });
+  });
+  it('turns a bio type into the note\'s own category, and drops "era" as a kind', () => {
+    const p = planNoteMigration([], [bio('b1', 'relationship'), bio('b2', 'relationship'), bio('b3', 'era')], []);
+    expect(p.categories).toEqual([{ id: 'cat-relationship', data: { name: 'Relationship' } }]);
+    expect(p.groups.map((g) => [g.id, g.data.categoryId, 'type' in g.data])).toEqual([['b1', 'cat-relationship', false], ['b2', 'cat-relationship', false], ['b3', null, false]]);
+  });
+  it('has nothing left to do once migrated', () => {
+    const p = planNoteMigration([], [bio('b1', undefined, { categoryId: 'cat-relationship' })], [{ id: 'cat-relationship', data: { name: 'Relationship' } }]);
+    expect(p).toEqual({ categories: [], groups: [], removeNotes: [] });
   });
 });

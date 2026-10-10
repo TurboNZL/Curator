@@ -23,7 +23,6 @@ export function computeHealth(lib: Library): HealthCheck[] {
   for (const x of lib.tracks) { usedArtists.add(x.artistId); x.credits.forEach((c) => usedArtists.add(c.artistId)); }
   for (const a of lib.albums) { usedArtists.add(a.artistId); a.credits.forEach((c) => usedArtists.add(c.artistId)); }
   for (const g of lib.groups) g.members.forEach((m) => m.entityType === 'artist' && usedArtists.add(m.entityId));
-  for (const n of lib.notes) if (n.entityType === 'artist') usedArtists.add(n.entityId);
 
   const usedGenres = new Set<string>();
   for (const x of lib.tracks) x.genres.forEach((g) => usedGenres.add(g.toLowerCase()));

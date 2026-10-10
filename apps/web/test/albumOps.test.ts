@@ -42,9 +42,18 @@ describe('credits-only artists, singles, eras', () => {
   });
   it('singles are the tracks on no album, and eras collect albums and singles', () => {
     expect(lib.singles.map((t) => t.id).sort()).toEqual(['s1', 's2']);
-    expect(lib.trackById.get('s1')!.eraId).toBe('e1');
-    expect(lib.trackById.get('t1')!.eraId).toBe('e1'); // an album track follows its album's era
+    expect(lib.trackById.get('s1')!.eraIds).toEqual(['e1']);
+    expect(lib.trackById.get('t1')!.eraIds).toEqual(['e1']); // an album track follows its album's eras
     expect(lib.eraById.get('e1')!.name).toBe('Era');
+  });
+  it('eras can overlap: an album and a single can be in several, and an era can hold playlists', () => {
+    const l = buildLibrary(rows(...data,
+      rec('eras', 'e2', { name: 'Beef', description: null, cover: null, albumIds: ['al', 'gone'], trackIds: ['s2'], playlistIds: ['p1'] })));
+    expect(l.albumById.get('al')!.eraIds.sort()).toEqual(['e1', 'e2']);
+    expect(l.trackById.get('t1')!.eraIds.sort()).toEqual(['e1', 'e2']);
+    expect(l.trackById.get('s2')!.eraIds).toEqual(['e2']);
+    expect(l.eraById.get('e2')).toMatchObject({ albumIds: ['al'], trackIds: ['s2'], playlistIds: ['p1'] }); // ids of deleted things drop out
+    expect(l.eraById.get('e1')!.albumIds).toEqual(['al']); // the legacy eraId still counts
   });
   it('a legacy artistId still names the artist until it is moved into the credits, and that move drops the field', () => {
     const legacy = { title: 'Old', artistId: 'a', credits: [], genres: [], albums: [], file: null };

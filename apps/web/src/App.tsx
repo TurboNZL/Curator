@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout.tsx';
 import { useStore } from './lib/store.ts';
 import { HealthPage } from './pages/Health.tsx';
 import { HomePage } from './pages/Home.tsx';
-import { BiosPage } from './pages/BiosPage.tsx';
+import { NotesPage } from './pages/NotesPage.tsx';
 import { AlbumsPage } from './pages/Albums.tsx';
 import { AlbumPage } from './pages/Album.tsx';
 import { SinglesPage } from './pages/Singles.tsx';
@@ -29,7 +29,8 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="health" element={<HealthPage />} />
-        <Route path="bios" element={<BiosPage />} />
+        <Route path="notes" element={<NotesPage />} />
+        <Route path="bios" element={<Navigate to="/notes" replace />} />
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:id" element={<AlbumPage />} />
         <Route path="singles" element={<SinglesPage />} />

@@ -18,7 +18,7 @@ const NAV = [
   { to: '/vote', label: 'Rank', icon: Swords },
   { to: '/playlists', label: 'Playlists', icon: ListMusic },
   { to: '/queue', label: 'Queue', icon: ListOrdered },
-  { to: '/bios', label: 'Bios', icon: Network },
+  { to: '/notes', label: 'Notes', icon: Network },
   { to: '/stats', label: 'Stats', icon: BarChart3 },
   { to: '/health', label: 'Health', icon: Stethoscope },
   { to: '/settings', label: 'Settings', icon: Settings },
@@ -56,7 +56,7 @@ function SyncDot() {
   return <div className="flex items-center gap-2 px-3 text-xs text-muted md:px-3" title={error ?? ""}><span className={cn('h-2 w-2 rounded-full', color)} />{text}</div>;
 }
 
-const MOBILE_HIDDEN = ['/singles', '/eras', '/playlists', '/stats', '/queue', '/bios', '/health', '/settings'];
+const MOBILE_HIDDEN = ['/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
 
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
