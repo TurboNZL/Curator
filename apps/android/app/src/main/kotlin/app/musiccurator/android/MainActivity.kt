@@ -13,11 +13,13 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.FrameLayout
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewAssetLoader
 import app.musiccurator.android.update.AppUpdater
@@ -40,12 +42,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         web = WebView(this)
-        setContentView(web)
-        ViewCompat.setOnApplyWindowInsetsListener(web) { v, insets ->
+        // Android 15 draws apps edge to edge, and a WebView does not apply its own padding to the page, so the insets go on a
+        // container around it (status bar, navigation bar/buttons, display cutout and keyboard).
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val root = FrameLayout(this).apply { setBackgroundColor(0xFF0B0B10.toInt()) }
+        root.addView(web, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        setContentView(root)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val b = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime())
             v.setPadding(b.left, b.top, b.right, b.bottom)
-            insets
+            WindowInsetsCompat.CONSUMED
         }
+        // the app is always dark behind the bars: light icons
+        WindowCompat.getInsetsController(window, root).apply { isAppearanceLightStatusBars = false; isAppearanceLightNavigationBars = false }
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 
         web.settings.apply {
