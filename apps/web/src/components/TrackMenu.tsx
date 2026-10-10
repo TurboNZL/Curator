@@ -1,51 +1,32 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Info, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Minus } from 'lucide-react';
+import { Info, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Minus, Disc3, User } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
+import type { EditTarget } from '../lib/editor.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
+import type { MenuItem } from './Menu.tsx';
 
-export interface MenuAt { track: Track; x: number; y: number }
-
-/** The per-track menu (the old right-click menu). Rendered in a portal so tables that clip their content cannot cut it off. */
-export function TrackMenu({ at, onClose, onPlay }: { at: MenuAt; onClose: () => void; onPlay: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ left: at.x, top: at.y });
+/** The per-track menu (the old right-click menu) as menu items; shown by useMenu()/ContextMenu. */
+export function useTrackMenuItems() {
   const edit = useEditor((s) => s.open);
   const enqueue = usePlayer((s) => s.enqueue);
   const patch = useStore((s) => s.patch);
-  const t = at.track;
-
-  // keep the menu on screen
-  useLayoutEffect(() => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    setPos({ left: Math.max(8, Math.min(at.x, window.innerWidth - r.width - 8)), top: Math.max(8, Math.min(at.y, window.innerHeight - r.height - 8)) });
-  }, [at.x, at.y]);
-  useEffect(() => {
-    const down = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('mousedown', down); window.addEventListener('keydown', key); window.addEventListener('scroll', onClose, true); window.addEventListener('resize', onClose);
-    return () => { window.removeEventListener('mousedown', down); window.removeEventListener('keydown', key); window.removeEventListener('scroll', onClose, true); window.removeEventListener('resize', onClose); };
-  }, [onClose]);
-
-  const item = (icon: React.ReactNode, label: string, run: () => void, disabled = false) => (
-    <button role="menuitem" disabled={disabled} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm disabled:opacity-40"
-      onClick={() => { run(); onClose(); }}>{icon}{label}</button>
-  );
-  const memories = t.memories ?? 0;
-  return createPortal(
-    <div ref={ref} role="menu" aria-label={`Actions for ${t.title}`} className="bt-menu fixed z-[60] w-56 overflow-hidden py-1" style={pos}>
-      {item(<Play size={15} />, 'Play', onPlay, !t.file)}
-      {item(<ListStart size={15} />, 'Play next', () => enqueue(t.id, 'next'), !t.file)}
-      {item(<ListEnd size={15} />, 'Add to queue', () => enqueue(t.id, 'last'), !t.file)}
-      {item(<ListPlus size={15} />, 'Add to playlist…', () => edit({ kind: 'add-to-playlist', id: t.id }))}
-      <div className="my-1 border-t border-line/60" />
-      {item(<Plus size={15} />, `Add memory (${memories})`, () => patch('tracks', t.id, { memories: memories + 1 }))}
-      {item(<Minus size={15} />, 'Remove a memory', () => patch('tracks', t.id, { memories: Math.max(0, memories - 1) }), memories < 1)}
-      <div className="my-1 border-t border-line/60" />
-      {item(<Info size={15} />, 'Details', () => edit({ kind: 'track-details', id: t.id }))}
-      {item(<Pencil size={15} />, 'Edit…', () => edit({ kind: 'track', id: t.id }))}
-    </div>, document.body);
+  return (t: Track, onPlay: () => void): MenuItem[] => {
+    const memories = t.memories ?? 0;
+    const open = (target: EditTarget) => () => edit(target);
+    return [
+      { label: 'Play', icon: <Play size={15} />, run: onPlay, disabled: !t.file },
+      { label: 'Play next', icon: <ListStart size={15} />, run: () => enqueue(t.id, 'next'), disabled: !t.file },
+      { label: 'Add to queue', icon: <ListEnd size={15} />, run: () => enqueue(t.id, 'last'), disabled: !t.file },
+      { label: 'Add to playlist…', icon: <ListPlus size={15} />, run: open({ kind: 'add-to-playlist', id: t.id }) },
+      ...(t.albumId ? [] : [{ label: 'Add to album…', icon: <Disc3 size={15} />, run: open({ kind: 'add-to-album', id: t.id }) }]),
+      { separator: true },
+      { label: `Add memory (${memories})`, icon: <Plus size={15} />, run: () => patch('tracks', t.id, { memories: memories + 1 }) },
+      { label: 'Remove a memory', icon: <Minus size={15} />, run: () => patch('tracks', t.id, { memories: Math.max(0, memories - 1) }), disabled: memories < 1 },
+      { separator: true },
+      ...t.leads.map((l) => ({ label: `Go to ${l.name}`, icon: <User size={15} />, to: `/artists/${l.id}` })),
+      { label: 'Details', icon: <Info size={15} />, run: open({ kind: 'track-details', id: t.id }) },
+      { label: 'Edit…', icon: <Pencil size={15} />, run: open({ kind: 'track', id: t.id }) },
+    ];
+  };
 }

@@ -167,17 +167,29 @@ export function CreditsEditor({ value, onChange, requireLead, readOnly }: { valu
 }
 
 /** Search artists, albums and tracks and pick one (for bios). */
-export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album' | 'track'; id: string }) => void }) {
+export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album' | 'track' | 'era'; id: string }) => void }) {
   const lib = useLibrary();
   const [q, setQ] = useState('');
   const n = q.trim().toLowerCase();
   const hits = n.length < 2 ? [] : [
     ...lib.artists.filter((a) => a.name.toLowerCase().includes(n)).map((a) => ({ type: 'artist' as const, id: a.id, label: a.name })),
+    ...lib.eras.filter((a) => a.name.toLowerCase().includes(n)).map((a) => ({ type: 'era' as const, id: a.id, label: a.name })),
     ...lib.albums.filter((a) => a.title.toLowerCase().includes(n)).map((a) => ({ type: 'album' as const, id: a.id, label: a.title })),
     ...lib.tracks.filter((t) => `${t.title} ${t.artistName}`.toLowerCase().includes(n)).map((t) => ({ type: 'track' as const, id: t.id, label: `${t.title} · ${t.artistName}` })),
   ].slice(0, 8);
-  return <div className="relative"><input className="input" placeholder="Link an artist, album or track…" value={q} onChange={(e) => setQ(e.target.value)} />
+  return <div className="relative"><input className="input" placeholder="Link an artist, era, album or track…" value={q} onChange={(e) => setQ(e.target.value)} />
     {hits.length > 0 && <div className="card absolute z-10 mt-1 w-full overflow-hidden shadow-xl">{hits.map((h) => (
       <button key={`${h.type}${h.id}`} type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => { onPick(h); setQ(''); }}>
         <span className="chip">{h.type}</span><span className="truncate">{h.label}</span></button>))}</div>}</div>;
+}
+
+/** Choose an era (or none). */
+export function EraSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const lib = useLibrary();
+  return (
+    <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">No era</option>
+      {[...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+    </select>
+  );
 }

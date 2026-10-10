@@ -1,67 +1,109 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FileAudio, ListOrdered, Pencil, Play, Plus, Shuffle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle, Star } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
+import { initialView, viewTrackIds, type AlbumView } from '../lib/albumOps.ts';
+import { useStore } from '../lib/store.ts';
+import { cn } from '../lib/cn.ts';
 import { Cover } from '../components/Cover.tsx';
 import { Bios } from '../components/Bios.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { KeepOffline } from '../components/KeepOffline.tsx';
 import { TracklistEditor } from '../components/TracklistEditor.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
+import { DetailLayout } from '../components/DetailLayout.tsx';
+import { ArtistLinks } from '../components/ArtistLinks.tsx';
+import { useMenu } from '../components/Menu.tsx';
+import { useAlbumMenuItems } from '../components/entityMenus.tsx';
 
 export function AlbumPage() {
   const { id } = useParams();
   const lib = useLibrary();
   const play = usePlayer((s) => s.play);
   const edit = useEditor((s) => s.open);
+  const patch = useStore((s) => s.patch);
+  const menu = useMenu();
+  const itemsFor = useAlbumMenuItems();
+  const [params, setParams] = useSearchParams();
   const [arranging, setArranging] = useState(false);
   const album = id ? lib.albumById.get(id) : undefined;
+  const releases = useMemo(() => (album ? lib.releases.filter((r) => r.albumId === album.id).sort((a, b) => (a.releaseDate ?? '9').localeCompare(b.releaseDate ?? '9') || a.title.localeCompare(b.title)) : []), [lib, album]);
   if (!album) return <div className="text-muted">Album not found.</div>;
-  const tracks = album.trackIds.map((t) => lib.trackById.get(t)!);
+
+  // which tracks to show: the release picked in the side panel (kept in the link, ?release=), else the default release or all tracks
+  const asked = params.get('release');
+  const view: AlbumView = asked === 'all' ? { kind: 'all' } : asked && releases.some((r) => r.id === asked) ? { kind: 'release', id: asked } : initialView(lib, album);
+  const release = view.kind === 'release' ? releases.find((r) => r.id === view.id) : undefined;
+  const choose = (v: AlbumView) => { setArranging(false); setParams(v.kind === 'all' ? { release: 'all' } : { release: v.id }, { replace: true }); };
+
+  const ids = viewTrackIds(lib, album, view);
+  const tracks = ids.map((t) => lib.trackById.get(t)!);
   const playable = tracks.filter((t) => t.file).map((t) => t.id);
-  const releases = lib.releases.filter((r) => r.albumId === album.id);
+  const cover = release?.cover || album.cover;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
-        <Cover hash={album.cover} seed={album.title} className="w-48 shrink-0 sm:w-56" />
+    <DetailLayout
+      left={<section className="space-y-2" aria-label="Releases">
+        <div className="flex items-center gap-2"><h2 className="text-lg font-semibold">Releases</h2>
+          <button className="btn btn-ghost !p-1.5" aria-label="New release" onClick={() => edit({ kind: 'new-release', id: album.id })}><Plus size={16} /></button></div>
+        {!releases.length && <p className="text-sm text-muted">No releases. A release is an edition of the album (deluxe, streaming, vinyl) with its own date, cover and tracklist.</p>}
+        <div className="space-y-1.5" role="radiogroup" aria-label="Release to show">
+          {releases.length > 0 && (
+            <button role="radio" aria-checked={view.kind === 'all'} className={cn('card flex w-full items-center gap-3 px-3 py-2 text-left text-sm', view.kind === 'all' && 'ring-2 ring-accent')} onClick={() => choose({ kind: 'all' })}>
+              <Layers size={18} className="shrink-0 text-muted" /><span className="min-w-0 flex-1"><span className="block font-medium">All tracks</span><span className="block text-xs text-muted">{album.trackIds.length} tracks</span></span></button>)}
+          {releases.map((r) => {
+            const on = view.kind === 'release' && view.id === r.id;
+            const isDefault = album.defaultReleaseId ? album.defaultReleaseId === r.id : releases.length > 0 && r.id === [...releases].sort((a, b) => b.trackIds.length - a.trackIds.length)[0].id;
+            return (
+              <div key={r.id} className={cn('card group flex items-center gap-2 py-2 pl-2 pr-1', on && 'ring-2 ring-accent')}>
+                <button role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3 text-left text-sm" onClick={() => choose({ kind: 'release', id: r.id })}>
+                  <Cover hash={r.cover || album.cover} seed={r.title} className="h-11 w-11 shrink-0" />
+                  <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
+                    <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {r.trackIds.length} tracks</span></span>
+                </button>
+                <div className="flex shrink-0 flex-col">
+                  <button className="p-1 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={13} /></button>
+                  <button className={cn('p-1 hover:text-fg', isDefault ? 'text-accent' : 'text-muted')} aria-label={`Make ${r.title} the default`} title={isDefault ? 'Default release' : 'Make default'} disabled={isDefault} onClick={() => patch('albums', album.id, { defaultReleaseId: r.id })}><Star size={13} fill={isDefault ? 'currentColor' : 'none'} /></button>
+                </div>
+              </div>);
+          })}
+        </div>
+      </section>}
+      right={<><Bios lib={lib} type="album" id={album.id} /><Notes lib={lib} type="album" id={album.id} /></>}>
+
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end" onContextMenu={menu.onContextMenu(itemsFor(album, ids), `Actions for ${album.title}`, 'album')}>
+        <Cover hash={cover} seed={album.title} className="w-48 shrink-0 sm:w-56" />
         <div className="min-w-0 space-y-2">
-          <div className="text-xs uppercase tracking-wider text-muted">Album</div>
+          <div className="text-xs uppercase tracking-wider text-muted">{release ? 'Release' : 'Album'}</div>
           <h1 className="text-3xl font-bold leading-tight">{album.title}</h1>
+          {release && release.title !== album.title && <div className="text-sm font-medium">{release.title}{release.releaseDate && <span className="text-muted"> · {release.releaseDate}</span>}</div>}
           <div className="text-sm">
-            <Link to={`/artists/${album.artistId}`} className="font-medium hover:underline">{album.artistName}</Link>
+            <span className="font-medium"><ArtistLinks leads={album.leads} className="hover:underline" /></span>
             <span className="text-muted"> · {tracks.length} tracks{album.rating != null && ` · avg ${album.rating.toFixed(1)}`}</span>
+            {album.eraId && lib.eraById.get(album.eraId) && <> · <Link to={`/eras/${album.eraId}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(album.eraId)!.name}</Link></>}
           </div>
           <div className="flex flex-wrap gap-1.5">{album.genres.map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <div className="flex flex-wrap gap-2 pt-2">
             <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'album', id: album.id })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'album', id: album.id }); }}><Shuffle size={16} />Shuffle</button>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'album', id: album.id })}><Pencil size={15} />Edit</button>
-            <button className={`btn ${arranging ? 'btn-accent' : 'btn-ghost'}`} onClick={() => setArranging(!arranging)}><ListOrdered size={15} />{arranging ? 'Done' : 'Edit tracks'}</button>
+            {view.kind === 'all'
+              ? <button className={`btn ${arranging ? 'btn-accent' : 'btn-ghost'}`} onClick={() => setArranging(!arranging)}><ListOrdered size={15} />{arranging ? 'Done' : 'Edit tracks'}</button>
+              : <button className="btn btn-ghost" onClick={() => edit({ kind: 'release', id: view.id })}><ListOrdered size={15} />Edit release</button>}
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'upload', id: album.id })}><FileAudio size={15} />Add files</button>
             <KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
+            <button data-menu-trigger className="btn btn-ghost !p-2" aria-label="More actions" aria-haspopup="menu" onClick={(e) => menu.toggle(e.currentTarget, 'album', itemsFor(album, ids), `Actions for ${album.title}`)}><MoreHorizontal size={16} /></button>
           </div>
           {!playable.length && <div className="text-xs text-muted">No audio on the server yet. Use Settings → Download missing audio.</div>}
         </div>
       </div>
 
-      {arranging ? <TracklistEditor album={album} lib={lib} />
+      {arranging && view.kind === 'all' ? <TracklistEditor album={album} lib={lib} />
         : <div className="card overflow-hidden"><TrackTable tracks={tracks} source="album" sourceId={album.id} numbered showAlbum={false} />{!tracks.length && <div className="px-4 pb-4 text-center text-xs text-muted">Use “Edit tracks” to add some.</div>}</div>}
-
-      <section className="space-y-2">
-        <div className="flex items-center gap-2"><h2 className="text-lg font-semibold">Releases</h2>
-          <button className="btn btn-ghost !p-1.5" aria-label="New release" onClick={() => edit({ kind: 'new-release', id: album.id })}><Plus size={16} /></button></div>
-        {!releases.length && <p className="text-sm text-muted">No releases. A release is an edition of the album (deluxe, streaming, vinyl) with its own date and tracklist.</p>}
-        <div className="grid gap-2 sm:grid-cols-2">{releases.map((r) => (
-          <button key={r.id} className="card px-4 py-3 text-left text-sm hover:bg-raised/50" onClick={() => edit({ kind: 'release', id: r.id })}>
-            <div className="flex items-center justify-between gap-2"><span className="font-medium">{r.title}</span>{album.defaultReleaseId === r.id && <span className="chip">default</span>}</div>
-            <div className="text-xs text-muted">{r.releaseDate ?? 'undated'} · {r.trackIds.length} tracks</div></button>))}</div>
-      </section>
-      <Bios lib={lib} type="album" id={album.id} />
-      <Notes lib={lib} type="album" id={album.id} />
-    </div>
+      {menu.element}
+    </DetailLayout>
   );
 }

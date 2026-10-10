@@ -7,7 +7,8 @@ import type { Store } from './db.ts';
 import { filePath } from './files.ts';
 
 export interface PreviewEntry { id: string; title: string; rawTitle: string; url: string; duration: number | null }
-export interface Preview { title: string; artist: string; thumbnail: string | null; entries: PreviewEntry[] }
+/** `thumbnail` is the best candidate; `thumbnails` lists every candidate best-first so a failing one can be skipped. */
+export interface Preview { title: string; artist: string; thumbnail: string | null; thumbnails: string[]; entries: PreviewEntry[] }
 
 const NOISE = /\s*[(\[]\s*(official\s*(music\s*)?(video|audio|lyric\s*video|visuali[sz]er)|lyrics?(\s*video)?|audio|visuali[sz]er|hd|hq|explicit)\s*[)\]]\s*/gi;
 
@@ -22,6 +23,32 @@ export function cleanTitle(title: string, artist?: string): string {
   return t || title.trim();
 }
 
+const SQUARE_HOSTS = ['googleusercontent.com', 'ggpht.com'];
+const isSquareHost = (u: string) => { try { const h = new URL(u).hostname; return SQUARE_HOSTS.some((x) => h === x || h.endsWith('.' + x)); } catch { return false; } };
+/** Google image URLs end in `=w544-h544-...`: ask for a bigger square. */
+const upsize = (u: string) => (isSquareHost(u) ? u.replace(/=w\d+-h\d+/, '=w1200-h1200') : u);
+
+/**
+ * Every plausible cover for a playlist, best first: real square album art (YouTube Music serves it from Google
+ * image hosts), then the playlist's own thumbnails by size, then the first track's, then the standard video
+ * thumbnails by id. The caller tries them in order, so one dead link does not lose the cover.
+ */
+export function coverCandidates(info: any, entries: any[]): string[] {
+  const listed = (o: any): string[] => {
+    const arr: any[] = Array.isArray(o?.thumbnails) ? o.thumbnails.filter((t: any) => typeof t?.url === 'string') : [];
+    // biggest first; when yt-dlp gives no sizes, the later entries are the larger ones
+    const ranked = arr.map((t, i) => ({ url: t.url as string, size: (t.width ?? 0) * (t.height ?? 0) || (t.preference ?? 0), i }))
+      .sort((a, b) => b.size - a.size || b.i - a.i).map((t) => t.url);
+    return [...(typeof o?.thumbnail === 'string' ? [o.thumbnail] : []), ...ranked];
+  };
+  const own = [...listed(info), ...entries.slice(0, 1).flatMap(listed)];
+  const first = entries[0]?.id;
+  const byId = first ? ['maxresdefault', 'hq720', 'sddefault', 'hqdefault'].map((n) => `https://i.ytimg.com/vi/${first}/${n}.jpg`) : [];
+  const all = [...own, ...byId].filter((u) => safeUrl(u));
+  const square = all.filter(isSquareHost);
+  return [...new Set([...square, ...all.filter((u) => !isSquareHost(u))].map(upsize))];
+}
+
 const cleanArtist = (s: string) => s.replace(/\s*-\s*Topic$/i, '').trim();
 
 /** Turn yt-dlp's `-J --flat-playlist` output into what the review screen needs (pure; tested without yt-dlp). */
@@ -31,10 +58,10 @@ export function parsePreview(info: any): Preview {
   const artist = cleanArtist(String(info?.uploader ?? info?.channel ?? info?.artist ?? raw[0]?.uploader ?? raw[0]?.channel ?? '') || 'Unknown artist');
   let title = String(info?.title ?? 'Untitled album').trim();
   if (isList) title = title.replace(/^(album|single|ep)\s*[-–—:]\s*/i, '').trim() || title; // YouTube Music prefixes "Album - "
-  const pickThumb = (o: any): string | null => o?.thumbnail ?? (Array.isArray(o?.thumbnails) && o.thumbnails.length ? o.thumbnails[o.thumbnails.length - 1].url : null) ?? null;
+  const thumbs = coverCandidates(info, raw);
   return {
     title, artist,
-    thumbnail: pickThumb(info) ?? pickThumb(raw[0]),
+    thumbnail: thumbs[0] ?? null, thumbnails: thumbs,
     entries: raw.map((e) => ({
       id: String(e.id), rawTitle: String(e.title ?? ''), title: cleanTitle(String(e.title ?? 'Unknown track'), artist),
       url: e.webpage_url ?? e.url ?? `https://www.youtube.com/watch?v=${e.id}`,
@@ -52,8 +79,8 @@ export class ImportError extends Error {
 }
 
 export class Importer {
-  private o: { dataDir: string; store: Store; ytdlp?: string; fetchImpl?: typeof fetch };
-  constructor(o: { dataDir: string; store: Store; ytdlp?: string; fetchImpl?: typeof fetch }) { this.o = o; }
+  private o: { dataDir: string; store: Store; ytdlp?: string; ytdlpArgs?: string[]; fetchImpl?: typeof fetch };
+  constructor(o: { dataDir: string; store: Store; ytdlp?: string; ytdlpArgs?: string[]; fetchImpl?: typeof fetch }) { this.o = o; }
 
   /** Metadata only (no downloads), so the user can review before anything is fetched. */
   async preview(url: unknown): Promise<Preview> {
@@ -65,6 +92,17 @@ export class Importer {
     const p = parsePreview(info);
     if (!p.entries.length) throw new ImportError(404, 'No tracks found at that link');
     return p;
+  }
+
+  /** Try each candidate in order; returns the first that downloads, with the URL it came from. */
+  async fetchFirstCover(urls: unknown): Promise<{ hash: string; url: string }> {
+    const list = (Array.isArray(urls) ? urls : []).slice(0, 12);
+    let last: Error = new ImportError(400, 'No image links given');
+    for (const url of list) {
+      try { return { hash: await this.fetchCover(url), url: String(url) }; }
+      catch (e) { last = e as Error; }
+    }
+    throw last;
   }
 
   /** Fetch an image from a YouTube/Google image host into the file store; returns its hash. */
@@ -94,7 +132,7 @@ export class Importer {
 
   private run(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
-      const child = spawn(this.o.ytdlp ?? 'yt-dlp', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      const child = spawn(this.o.ytdlp ?? 'yt-dlp', [...(this.o.ytdlpArgs ?? []), ...args], { stdio: ['ignore', 'pipe', 'pipe'] });
       let out = '', err = '';
       const timer = setTimeout(() => { child.kill(); reject(new ImportError(504, 'yt-dlp took too long')); }, 90_000);
       child.stdout.on('data', (d) => { out += d; if (out.length > 20_000_000) child.kill(); });

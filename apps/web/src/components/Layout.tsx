@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Stethoscope, Disc3, Download, FileAudio, Home, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
+import { NavLink, Outlet, useMatch, useNavigate } from 'react-router-dom';
+import { BarChart3, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
@@ -11,6 +11,8 @@ import { PlayerBar } from './PlayerBar.tsx';
 const NAV = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/albums', label: 'Albums', icon: Disc3 },
+  { to: '/singles', label: 'Singles', icon: Disc },
+  { to: '/eras', label: 'Eras', icon: Layers },
   { to: '/artists', label: 'Artists', icon: Users },
   { to: '/tracks', label: 'Tracks', icon: Music2 },
   { to: '/vote', label: 'Rank', icon: Swords },
@@ -29,7 +31,7 @@ function SyncDot() {
   return <div className="flex items-center gap-2 px-3 text-xs text-muted md:px-3" title={error ?? ""}><span className={cn('h-2 w-2 rounded-full', color)} />{text}</div>;
 }
 
-const MOBILE_HIDDEN = ['/playlists', '/stats', '/queue', '/bios', '/health', '/settings'];
+const MOBILE_HIDDEN = ['/singles', '/eras', '/playlists', '/stats', '/queue', '/bios', '/health', '/settings'];
 
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
@@ -81,6 +83,9 @@ function MoreMenu() {
 
 export function Layout() {
   const nav = useNavigate();
+  // album, artist and era pages put their side panels beside the content, so they get more width
+  const matches = [useMatch('/albums/:id'), useMatch('/artists/:id'), useMatch('/eras/:id')];
+  const wide = matches.some(Boolean);
   const [q, setQ] = useState('');
   const toggle = usePlayer((s) => s.toggle);
   // space = play/pause, unless typing in a field or pressing a button
@@ -116,7 +121,7 @@ export function Layout() {
               <AddMenu />
             </div>
           </form>
-          <div className="mx-auto max-w-6xl p-4 md:p-6"><Outlet /></div>
+          <div className={cn('mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><Outlet /></div>
         </main>
       </div>
       <PlayerBar />

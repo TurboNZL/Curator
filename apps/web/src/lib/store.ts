@@ -5,6 +5,7 @@ import { flushUploads, type CacheEntry } from './files.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';
 import { loadSettings, saveSettings, type DeviceSettings } from './settings.ts';
 import { applyAppearance, watchSystemTheme } from './appearance.ts';
+import { withoutLegacyArtist } from './defaults.ts';
 
 export type SyncState = 'unconfigured' | 'idle' | 'syncing' | 'offline' | 'error';
 export interface SyncInfo { state: SyncState; lastSync: number | null; pending: number; error: string | null }
@@ -87,12 +88,28 @@ export const useStore = create<State>((set, get) => {
         await setMeta('cursor', cursor);
         if (!page.more) break;
       }
+      migrateLegacyArtists();
       const pending = (await db.count('outbox'));
       setSync({ state: 'idle', lastSync: Date.now(), pending });
       await setMeta('lastSync', Date.now());
     } catch (e) {
       const offline = e instanceof TypeError; // fetch() network failure
       setSync({ state: offline ? 'offline' : 'error', error: offline ? 'Server unreachable' : (e as Error).message });
+    }
+  }
+
+  /**
+   * The old single-artist field is gone: every track and album that still has `artistId` gets it as a Lead
+   * artist credit and loses the field. Runs after a successful pull (so it never works on half-synced data) and
+   * is a no-op once nothing has the field any more, which also makes it safe on several devices.
+   */
+  function migrateLegacyArtists() {
+    for (const table of ['tracks', 'albums'] as const) {
+      for (const [id, rec] of [...get().rows[table]]) {
+        if (rec.deleted) continue;
+        const next = withoutLegacyArtist(rec.data as { artistId?: string; credits?: never[] });
+        if (next) get().put(table, next, id);
+      }
     }
   }
 
@@ -131,6 +148,7 @@ export const useStore = create<State>((set, get) => {
       const rows = emptyRows();
       for (const r of await db.getAll('records')) rows[r.table]?.set(r.id, r);
       set({ rows, audioCache: await getMeta('audioCache', {}), ready: true, rev: 1, sync: { ...get().sync, lastSync: await getMeta('lastSync', null), pending: await db.count('outbox'), state: configured() ? 'idle' : 'unconfigured' } });
+      if (!configured()) migrateLegacyArtists();
       void get().syncNow();
       clearInterval(timer);
       timer = setInterval(() => void get().syncNow(), 30_000);

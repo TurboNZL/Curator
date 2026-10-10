@@ -21,8 +21,8 @@ function tokenOk(given: string | undefined, expected: string): boolean {
 
 export function createApp(
   config: Config, store: Store,
-  acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir }),
-  importer = new Importer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp }),
+  acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs, ffmpegDir: config.ffmpegDir }),
+  importer = new Importer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
 ) {
   const app = new Hono();
 
@@ -85,8 +85,8 @@ export function createApp(
   });
   // Step 2: save the suggested cover image (YouTube image hosts only) and return its file hash.
   app.post('/api/import/cover', async (c) => {
-    const body = (await c.req.json().catch(() => ({}))) as { url?: unknown };
-    try { return c.json({ hash: await importer.fetchCover(body.url) }); }
+    const body = (await c.req.json().catch(() => ({}))) as { url?: unknown; urls?: unknown };
+    try { return c.json(await importer.fetchFirstCover(Array.isArray(body.urls) ? body.urls : [body.url])); }
     catch (e) { if (e instanceof ImportError) return c.json({ error: e.message }, e.status as 400); throw e; }
   });
 

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { CheckCircle2, ChevronDown, ImageDown } from 'lucide-react';
-import { saveImage } from '../lib/files.ts';
+import { fetchCoverFromLinks } from '../lib/cover.ts';
 import { thumbnailUrls, youtubeId } from '../lib/youtube.ts';
 import { computeHealth, type HealthItem } from '../lib/health.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
-import { api, useStore } from '../lib/store.ts';
+import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
-import { withLeadFallback } from '../lib/defaults.ts';
+import { withoutLegacyArtist } from '../lib/defaults.ts';
 import type { Credit } from '@curator/core';
 
 export function HealthPage() {
@@ -16,6 +16,7 @@ export function HealthPage() {
   const remove = useStore((s) => s.remove);
   const [open, setOpen] = useState<string | null>(null);
   const patch = useStore((s) => s.patch);
+  const put = useStore((s) => s.put);
   const configured = useStore((s) => !!s.settings.token);
   const [covers, setCovers] = useState<{ running: boolean; done: number; total: number; failed: number } | null>(null);
   const checks = computeHealth(lib);
@@ -31,24 +32,20 @@ export function HealthPage() {
     let done = 0, failed = 0;
     for (const { id, vid } of todo) {
       try {
-        let raw: string | null = null;
-        for (const url of thumbnailUrls(vid)) { try { raw = (await api().importCover(url)).hash; break; } catch { /* try the next size */ } }
-        if (!raw) throw new Error('no thumbnail');
-        const blob = await (await fetch(api().fileUrl(raw))).blob();
-        patch('albums', id, { cover: await saveImage(blob, { trimBars: true }) });
+        patch('albums', id, { cover: await fetchCoverFromLinks(thumbnailUrls(vid)) });
       } catch { failed++; }
       setCovers({ running: true, done: ++done, total: todo.length, failed });
     }
     setCovers({ running: false, done, total: todo.length, failed });
   }
-  /** write a Lead artist credit onto the stored record, from its artistId */
+  /** write a Lead artist credit onto records whose only artist is a stored (legacy) artistId, then drop that field */
   function addLeadCredits(items: HealthItem[]) {
     for (const i of items) {
       const table = i.kind === 'album' ? 'albums' : 'tracks';
       const d = useStore.getState().rows[table].get(i.id)?.data as { credits?: Credit[]; artistId?: string } | undefined;
       if (!d) continue;
-      const credits = withLeadFallback(d.credits ?? [], d.artistId);
-      if (credits !== (d.credits ?? [])) patch(table, i.id, { credits });
+      const next = withoutLegacyArtist(d);
+      if (next) put(table, next, i.id);
     }
   }
   const problems = checks.filter((c) => c.items.length);

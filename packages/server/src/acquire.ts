@@ -11,6 +11,8 @@ export interface AcquireOptions {
   store: Store;
   /** yt-dlp executable; resolved from PATH when bare. Linux/macOS/Windows/Pi all work - no hard-coded .exe. */
   ytdlp?: string;
+  /** extra arguments for every yt-dlp call (cookies, a JS runtime, ...) */
+  ytdlpArgs?: string[];
   /** directory containing ffmpeg/ffprobe if not on PATH */
   ffmpegDir?: string;
   concurrency?: number;
@@ -29,6 +31,17 @@ export function safeUrl(u: unknown): string | null {
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : null;
   } catch { return null; }
 }
+
+/** YouTube's "prove you are not a bot" answer to a download. */
+export const isBotCheck = (message: string) => /confirm you.?re not a bot|sign in to confirm/i.test(message);
+
+/**
+ * Clients that need no PO token. Tried once more when the default client is stopped by the bot check
+ * (it often works for a track the default client was refused).
+ */
+export const FALLBACK_CLIENTS = ['--extractor-args', 'youtube:player_client=android_vr,web_embedded'];
+
+export const BOT_HELP = 'YouTube wants proof that this server is not a bot. Give yt-dlp a cookies file: set CURATOR_YTDLP_COOKIES (see docs/YTDLP_COOKIES.md), then press “Download missing audio” again.';
 
 export class Acquirer {
   readonly jobs = new Map<string, Job>();
@@ -80,7 +93,12 @@ export class Acquirer {
     job.state = 'running';
     const work = mkdtempSync(join(this.o.dataDir, 'tmp', 'dl-'));
     try {
-      await this.exec(job.url, work);
+      try { await this.exec(job.url, work); }
+      catch (e) {
+        if (!(e instanceof Error) || !isBotCheck(e.message)) throw e;
+        try { await this.exec(job.url, work, FALLBACK_CLIENTS); }
+        catch (e2) { throw new Error(isBotCheck((e2 as Error).message) ? `${BOT_HELP} (${(e2 as Error).message.slice(-200)})` : (e2 as Error).message); }
+      }
       const out = readdirSync(work).find((f) => /\.(mp3|m4a|opus|ogg|flac|wav)$/i.test(f));
       if (!out) throw new Error('yt-dlp finished but produced no audio file');
       const path = join(work, out);
@@ -105,8 +123,9 @@ export class Acquirer {
     this.o.store.push([{ table: 'tracks', id: trackId, updatedAt, deviceId: 'server', deleted: false, data: { ...cur.data, file: hash } }]);
   }
 
-  private exec(url: string, cwd: string): Promise<void> {
+  private exec(url: string, cwd: string, extra: string[] = []): Promise<void> {
     const args = [
+      ...(this.o.ytdlpArgs ?? []), ...extra, '--retries', '3',
       '--no-playlist', '--no-progress', '-x', '--audio-format', 'mp3', '--audio-quality', '0',
       '-o', join(cwd, '%(id)s.%(ext)s'),
       ...(this.o.ffmpegDir ? ['--ffmpeg-location', this.o.ffmpegDir] : []),

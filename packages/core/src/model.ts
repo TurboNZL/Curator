@@ -10,10 +10,13 @@ export interface Credit { artistId: string; role: string[] }
 export interface FileRef { hash: string | null }
 
 export interface ArtistData { name: string; image: string | null }
+/** An era groups albums and singles (Era > Album > Release > Track). Relational bios can be attached to it. */
+export interface EraData { name: string; description: string | null; cover: string | null }
 export interface AlbumData {
   title: string;
-  artistId: string;
   credits: Credit[];
+  /** @deprecated the old single-artist field. Credits (Lead artist) are the only artist now; kept only so old records can be migrated. */
+  artistId?: string;
   genres: string[];
   cover: string | null;
   eraId?: string | null;
@@ -31,8 +34,13 @@ export interface ReleaseData {
 }
 export interface TrackData {
   title: string;
-  artistId: string;
+  /** @deprecated see AlbumData.artistId */
+  artistId?: string;
   credits: Credit[];
+  /** the track's own cover (a single's artwork); an album track without one shows its album's cover */
+  cover?: string | null;
+  /** only for tracks that are not on an album: the era they belong to */
+  eraId?: string | null;
   /** only used when syncWithAlbumCredits is false; otherwise genres come from the album */
   genres: string[];
   albums: { albumId: string; order: number }[];
@@ -57,7 +65,7 @@ export interface PlaylistData {
   trackIds: string[];
 }
 export interface GroupMemberData {
-  entityType: 'artist' | 'album' | 'track' | 'release';
+  entityType: 'artist' | 'album' | 'track' | 'release' | 'era';
   entityId: string;
   showOnEntityPage: boolean;
 }

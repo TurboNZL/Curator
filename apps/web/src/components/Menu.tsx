@@ -1,0 +1,65 @@
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+
+export type MenuItem =
+  | { separator: true }
+  | { label: string; icon?: ReactNode; run?: () => void; to?: string; disabled?: boolean; danger?: boolean };
+
+export interface MenuAt { x: number; y: number; items: MenuItem[]; label: string; key?: string }
+
+/**
+ * A pop-up menu at a screen position, in a portal so a list that clips its content cannot cut it off. Closes on
+ * Escape, scrolling, resizing and a press outside. Presses on an element marked `data-menu-trigger` are ignored
+ * here because that element toggles the menu itself (otherwise its own press closes the menu and its click reopens it).
+ */
+export function ContextMenu({ at, onClose }: { at: MenuAt; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const nav = useNavigate();
+  const [pos, setPos] = useState({ left: at.x, top: at.y });
+
+  // keep the menu on screen
+  useLayoutEffect(() => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    setPos({ left: Math.max(8, Math.min(at.x, window.innerWidth - r.width - 8)), top: Math.max(8, Math.min(at.y, window.innerHeight - r.height - 8)) });
+  }, [at.x, at.y]);
+  useEffect(() => {
+    const down = (e: MouseEvent) => {
+      const el = e.target as Element;
+      if (ref.current?.contains(el) || el.closest?.('[data-menu-trigger]')) return;
+      onClose();
+    };
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('mousedown', down); window.addEventListener('keydown', key); window.addEventListener('scroll', onClose, true); window.addEventListener('resize', onClose);
+    return () => { window.removeEventListener('mousedown', down); window.removeEventListener('keydown', key); window.removeEventListener('scroll', onClose, true); window.removeEventListener('resize', onClose); };
+  }, [onClose]);
+
+  return createPortal(
+    <div ref={ref} role="menu" aria-label={at.label} className="bt-menu fixed z-[60] w-56 overflow-hidden py-1"
+      style={{ ...pos, transformOrigin: pos.top < at.y ? 'bottom left' : 'top left' }}
+      onContextMenu={(e) => e.preventDefault()}>
+      {at.items.map((it, i) => 'separator' in it
+        ? <div key={i} role="separator" className="my-1 border-t border-line/60" />
+        : <button key={i} role="menuitem" disabled={it.disabled} className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm disabled:opacity-40 ${it.danger ? 'text-bad' : ''}`}
+            onClick={() => { onClose(); if (it.to) nav(it.to); it.run?.(); }}>{it.icon}{it.label}</button>)}
+    </div>, document.body);
+}
+
+/**
+ * State for one menu. `onContextMenu(items, label)` is for right-click; `toggle(el, key, items, label)` is for a ⋯ button:
+ * pressing it again closes the menu instead of reopening it.
+ */
+export function useMenu() {
+  const [at, setAt] = useState<MenuAt | null>(null);
+  const close = useCallback(() => setAt(null), []);
+  return {
+    at, close,
+    onContextMenu: (items: MenuItem[], label: string, key?: string) => (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setAt({ x: e.clientX, y: e.clientY, items, label, key }); },
+    toggle: (el: HTMLElement, key: string, items: MenuItem[], label: string) => {
+      const r = el.getBoundingClientRect();
+      setAt((cur) => (cur?.key === key ? null : { x: r.right - 224, y: r.bottom + 4, items, label, key }));
+    },
+    element: at ? <ContextMenu at={at} onClose={close} /> : null,
+  };
+}

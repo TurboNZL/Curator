@@ -6,7 +6,7 @@ import { z } from 'zod';
  * ties broken by deviceId, so every peer converges to the same state.
  */
 export const RECORD_TABLES = [
-  'artists', 'albums', 'releases', 'tracks', 'playlists', 'groups',
+  'artists', 'eras', 'albums', 'releases', 'tracks', 'playlists', 'groups',
   'genres', 'roleCategories', 'timeline', 'votes', 'playbackLogs', 'profiles', 'notes',
 ] as const;
 export type RecordTable = (typeof RECORD_TABLES)[number];

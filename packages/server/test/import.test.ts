@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { Store } from '../src/db.ts';
 import { createApp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
-import { cleanTitle, Importer, parsePreview } from '../src/import.ts';
+import { cleanTitle, coverCandidates, Importer, parsePreview } from '../src/import.ts';
 import { filePath } from '../src/files.ts';
 
 let dir: string, store: Store;
@@ -30,6 +30,20 @@ describe('cleanTitle', () => {
     expect(cleanTitle('Song (feat. Someone)', 'X')).toBe('Song (feat. Someone)');
     expect(cleanTitle('Other Artist - Song', 'Don Toliver')).toBe('Other Artist - Song');
     expect(cleanTitle('(Official Audio)')).toBe('(Official Audio)'); // never return empty
+  });
+});
+
+describe('coverCandidates', () => {
+  it('puts real square album art first (enlarged), then playlist thumbnails by size, then per-id fallbacks, no duplicates', () => {
+    const info = { thumbnails: [{ url: 'https://i.ytimg.com/vi/a/hqdefault.jpg', width: 480, height: 360 }, { url: 'https://lh3.googleusercontent.com/abc=w544-h544-l90-rj', width: 544, height: 544 }, { url: 'https://i.ytimg.com/vi/a/maxresdefault.jpg', width: 1280, height: 720 }] };
+    const c = coverCandidates(info, [{ id: 'aaa' }]);
+    expect(c[0]).toBe('https://lh3.googleusercontent.com/abc=w1200-h1200-l90-rj');
+    expect(c.slice(1, 3)).toEqual(['https://i.ytimg.com/vi/a/maxresdefault.jpg', 'https://i.ytimg.com/vi/a/hqdefault.jpg']);
+    expect(c).toContain('https://i.ytimg.com/vi/aaa/hq720.jpg');
+    expect(new Set(c).size).toBe(c.length);
+  });
+  it('still offers the standard thumbnails when yt-dlp lists none', () => {
+    expect(coverCandidates({}, [{ id: 'xyz' }])[0]).toBe('https://i.ytimg.com/vi/xyz/maxresdefault.jpg');
   });
 });
 
@@ -89,6 +103,15 @@ describe('POST /api/import/preview', () => {
 });
 
 describe('POST /api/import/cover', () => {
+  it('with several links, uses the first one that downloads', async () => {
+    const bytes = Buffer.from('second-wins');
+    const flaky = (async (url: string) => url.includes('dead')
+      ? { ok: false, status: 404, headers: new Headers(), arrayBuffer: async () => new ArrayBuffer(0) }
+      : { ok: true, status: 200, headers: new Headers({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length) }) as unknown as typeof fetch;
+    const app = appWith(new Importer({ dataDir: join(dir, 'data'), store, fetchImpl: flaky }));
+    const res = await post(app, '/api/import/cover', { urls: ['https://i.ytimg.com/vi/dead/maxresdefault.jpg', 'https://evil.example.com/x.jpg', 'https://i.ytimg.com/vi/ok/hqdefault.jpg'] });
+    expect(await res.json()).toEqual({ hash: createHash('sha256').update(bytes).digest('hex'), url: 'https://i.ytimg.com/vi/ok/hqdefault.jpg' });
+  });
   const png = Buffer.from('fake-image-bytes');
   const fakeFetch = (async (url: string) => ({ ok: true, status: 200, headers: new Headers({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => png.buffer.slice(png.byteOffset, png.byteOffset + png.length), url })) as unknown as typeof fetch;
   it('stores an image from a YouTube image host, content-addressed, and is idempotent', async () => {
@@ -96,7 +119,7 @@ describe('POST /api/import/cover', () => {
     const expected = createHash('sha256').update(png).digest('hex');
     for (let i = 0; i < 2; i++) {
       const res = await post(app, '/api/import/cover', { url: 'https://i.ytimg.com/vi/abc/maxresdefault.jpg' });
-      expect(await res.json()).toEqual({ hash: expected });
+      expect(await res.json()).toEqual({ hash: expected, url: 'https://i.ytimg.com/vi/abc/maxresdefault.jpg' });
     }
     expect(existsSync(filePath(join(dir, 'data'), expected))).toBe(true);
     expect(store.fileInfo(expected)?.size).toBe(png.length);
