@@ -4,6 +4,7 @@
   "private": true,
   "description": "Music Curator desktop app: the web client plus its own server, with the library on disk",
   "author": "Music Curator",
+  "homepage": "https://github.com/TurboNZL/music-curator",
   "main": "dist/main.mjs",
   "type": "module",
   "scripts": {
@@ -47,7 +48,13 @@
         "deb"
       ],
       "category": "Audio",
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "executableName": "music-curator",
+      "maintainer": "Music Curator <noreply@musiccurator.app>",
+      "synopsis": "Personal music library and ranking"
+    },
+    "deb": {
+      "packageName": "music-curator"
     },
     "win": {
       "target": [
