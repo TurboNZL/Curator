@@ -69,7 +69,7 @@ During development run `pnpm --filter @curator/web dev`; it proxies `/api` to th
 
 To bring an old library across: `node --experimental-strip-types --disable-warning=ExperimentalWarning packages/server/src/cli-migrate.ts --db <old>/data/curator.db [--public <old>/public]` (run with `CURATOR_DATA_DIR` set; it is idempotent).
 
-More guides: [docs/TESTING.md](docs/TESTING.md) (trying it with your own library), [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups), [docs/UPDATING.md](docs/UPDATING.md) (the one command that updates the Pi), [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) (YouTube's "not a bot" error), [docs/LIQUID_GLASS.md](docs/LIQUID_GLASS.md) (the Liquid Glass UI style), [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) and [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
+More guides: [docs/TESTING.md](docs/TESTING.md) (trying it with your own library), [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups), [docs/UPDATING.md](docs/UPDATING.md) (the one command that updates the Pi), [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) (YouTube's "not a bot" error), [docs/appearance/LIQUID_GLASS.md](docs/appearance/LIQUID_GLASS.md) (the Liquid Glass UI style), [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) and [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
 
 ## Tests
 

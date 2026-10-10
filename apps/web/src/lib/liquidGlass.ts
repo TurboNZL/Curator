@@ -4,7 +4,7 @@
  * What the CSS cannot do is real refraction. Apple's Liquid Glass bends the light behind it ("lensing") at the
  * rim of every shape, and shows a thin specular highlight along that rim. For the web this is the established
  * recipe (a convex bezel, Snell's law, an SVG displacement map used from `backdrop-filter`; see the notes in
- * docs/LIQUID_GLASS.md), and it is what this file implements:
+ * docs/appearance/LIQUID_GLASS.md), and it is what this file implements:
  *
  *  1. For a rounded rectangle of a given size and corner radius, treat the outer `bezel` pixels as a convex
  *     "squircle" surface, h(t) = (1 - (1 - t)^4)^(1/4), t = distance from the rim / bezel width.
