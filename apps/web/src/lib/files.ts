@@ -5,6 +5,7 @@ import { audioMime } from './defaults.ts';
 import { coverCrop } from './image.ts';
 import { pickEvictions, type CacheEntry } from './cachePolicy.ts';
 import { sha256Sync } from './sha256.ts';
+import { isAndroidApp } from './native.ts';
 import { api, useStore } from './store.ts';
 
 export async function sha256Hex(data: ArrayBuffer): Promise<string> {
@@ -109,10 +110,25 @@ export async function flushUploads(a: Api): Promise<void> {
   await changePending((cur) => cur.filter((h) => !sent.has(h)));
 }
 
+/**
+ * The Android app shows the web client from a private https address, and its WebView refuses (or upgrades to a https the server does not
+ * speak) images and audio that such a page loads over plain http. `fetch` is allowed, so in the app the file is downloaded and handed
+ * over as a blob. Elsewhere the server's link is used directly (streaming, seeking).
+ */
+const needsFetch = () => isAndroidApp() && /^http:/i.test(useStore.getState().settings.serverUrl.trim());
+
+async function fetchedUrl(hash: string): Promise<string> {
+  const res = await fetch(api().fileUrl(hash));
+  if (!res.ok) throw new Error(`Server said ${res.status}`);
+  return URL.createObjectURL(await res.blob());
+}
+
 /** Where to read an image from outside React (the media session): this device's copy as an object URL (`local`, revoke it), else the server's link. */
 export async function imageSource(hash: string): Promise<{ url: string; local: boolean }> {
   const blob = await (await localDb()).get('blobs', hash);
-  return blob ? { url: URL.createObjectURL(blob), local: true } : { url: api().fileUrl(hash), local: false };
+  if (blob) return { url: URL.createObjectURL(blob), local: true };
+  if (needsFetch()) { try { return { url: await fetchedUrl(hash), local: true }; } catch { /* fall back to the link */ } }
+  return { url: api().fileUrl(hash), local: false };
 }
 
 /** A displayable URL for a file hash: this device's copy if it has one, else the server's. */
@@ -127,7 +143,9 @@ export function useFileUrl(hash: string | null | undefined): string | null {
     void localDb().then((db) => db.get('blobs', hash)).then((blob) => {
       if (!live) return;
       if (blob) setUrl((revoke = URL.createObjectURL(blob)));
-      else if (configured) setUrl(api().fileUrl(hash));
+      else if (configured && needsFetch()) {
+        fetchedUrl(hash).then((u) => { if (live) setUrl((revoke = u)); else URL.revokeObjectURL(u); }, () => { if (live) setUrl(api().fileUrl(hash)); });
+      } else if (configured) setUrl(api().fileUrl(hash));
     });
     return () => { live = false; if (revoke) URL.revokeObjectURL(revoke); };
   }, [hash, configured, filesRev]);
@@ -182,6 +200,7 @@ export async function audioSource(hash: string): Promise<{ url: string; local: b
     const blob = await (await localDb()).get('blobs', hash);
     if (blob) return { url: URL.createObjectURL(blob), local: true };
   }
+  if (needsFetch()) return { url: await fetchedUrl(hash), local: true };
   return { url: api().fileUrl(hash), local: false };
 }
 
