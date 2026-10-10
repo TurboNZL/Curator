@@ -8,7 +8,7 @@
 
 ---
 
-> **Status snapshot (kept short on purpose; the authoritative, detailed state is `CLAUDE.md`).** `@curator/core`, `@curator/server` and a working **web client (`apps/web`) are built and on `main`**: local-first sync, library browsing, This-or-That voting with the exact rating rules, editing (credits-only artist entry), album import from YouTube, a library-health page that replaced the legacy cleanup queue, themes (default / Classic / light), offline audio caching and an installable PWA. The user has installed and run it on their Linux machine. **Not built yet:** Electron, the Android app (and therefore Android Auto), Pi deployment docs, automatic offline-cache eviction. Sections 6 and 10 below describe the *intended* end state and the legacy behaviour used as the spec; read them together with this snapshot, not as a to-do list from zero.
+> **Status snapshot (kept short on purpose; the authoritative, detailed state is `CLAUDE.md`).** `@curator/core`, `@curator/server` and a working **web client (`apps/web`) are built and on `main`**: local-first sync, library browsing, This-or-That voting with the exact rating rules, editing (credits-only artist entry), album import from YouTube, a library-health page that replaced the legacy cleanup queue, a full theme system (colour themes x UI styles, accent, wallpaper; see CLAUDE.md), offline audio caching and an installable PWA. The user has installed and run it on their Linux machine. **Not built yet:** Electron, the Android app (and therefore Android Auto), Pi deployment docs, automatic offline-cache eviction. Sections 6 and 10 below describe the *intended* end state and the legacy behaviour used as the spec; read them together with this snapshot, not as a to-do list from zero.
 
 ## 1. The one-paragraph version
 
@@ -40,7 +40,7 @@ Music Curator is a **personal music library for one person** who owns their musi
 | **Artist** | A person/group. Has a name and an image. |
 | **Album** | A body of work with a primary `artistId`, album-level `credits`, `genres`, and a cover. Tracks belong to albums (a track can be in several, with an `order` in each). **Genres belong to albums**; a track shows its album's genres when `syncWithAlbumCredits` is true, otherwise its own `genres`. |
 | **Release** | A specific edition/appearance of an album (e.g. "Streaming", a deluxe edition) with its own cover, `releaseDate` and ordered `trackIds`. An album can have several; `defaultReleaseId` picks which is shown. |
-| **Track** | One song. Has `title`, primary `artistId`, `credits`, a source `file` (content hash), links (`spotifyUrl`, `geniusUrl`, `youtubeMusicUrl`), `bitrate`, `bpm`, `key`, `memories` (a manual counter of personal significance), `isFavorite`, `initialRating`, `queueRules`. |
+| **Track** | One song. Has `title`, primary `artistId`, `credits`, a source `file` (content hash), links (`spotifyUrl`, `geniusUrl`, `youtubeMusicUrl`), `bitrate`, `bpm`, `key`, `memories` (a manual counter of personal significance), `initialRating`, `queueRules`. |
 | **Credit** | `{artistId, role: string[]}`. Roles come from **Role Categories** (e.g. "Lead artist", "Writer"); "Lead artist" is built in and not removable. Display name logic: show the lead-artist credits; fall back to the primary artist. |
 | **Vote** | One "This or That" decision: `{trackAId, trackBId, winnerId \| null, isEqual, timestamp}`. Append-only. The source of truth for ranking. |
 | **Elo** | Per-track score starting at 1000, K=32. **Derived** by replaying votes in time order. Never stored as authoritative state. |
@@ -177,7 +177,7 @@ Status key: DONE / PARTIAL / TODO. (Detailed as-built state: `CLAUDE.md`.)
 3. **Electron app**: **TODO.** *Done when:* offline library on disk, optional embedded server toggle, packaged build for the user's OS (their legacy binary names suggest Windows; they have also run the web stack on Linux, so ask which).
 4. **Android app + Android Auto**: **TODO.** *Done when:* installs via sideload, plays offline, syncs, appears in Android Auto with Unknown sources enabled, browse tree and voice search work on the user's phone/car (DHU first). Needs the user's device testing.
 5. **Pi deployment guide**: **WRITTEN, untested on a Pi** (`docs/DEPLOY_PI.md`). Original scope: systemd unit and/or Docker, installing yt-dlp + ffmpeg on arm64, external-drive mount/permissions (exFAT/NTFS lack unix modes; symlink caveat is already in `docs/TESTING.md`), backups of `curator.db` + `files/`, HTTPS/Tailscale (7.4), updating. Note: **service workers (PWA install/offline shell) need HTTPS or localhost**, so over plain-HTTP LAN the web app works online but is not installable; this makes the HTTPS/Tailscale decision more pressing.
-6. **Polish**: **PARTIAL.** Automatic offline-cache eviction is done (opt-in setting, LRU). Remaining: smarter pair selection for voting (optional), more themes, keyboard shortcuts, export/backup.
+6. **Polish**: **PARTIAL.** Automatic offline-cache eviction is done (opt-in setting, LRU). Themes are done (see CLAUDE.md). Remaining: smarter pair selection for voting (optional), keyboard shortcuts, export/backup.
 
 ## 11. Open questions and risks (track these; resolve with evidence)
 

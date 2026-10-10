@@ -18,7 +18,6 @@ export function TracksPage() {
   const [sort, setSort] = useState<SortKey>('rating');
   const [dir, setDir] = useState<SortDir>('desc');
   const [genre, setGenre] = useState('');
-  const [onlyFav, setOnlyFav] = useState(false);
   const [onlyPlayable, setOnlyPlayable] = useState(false);
   const [shown, setShown] = useState(PAGE);
 
@@ -26,9 +25,9 @@ export function TracksPage() {
     const needle = q.toLowerCase();
     const f = lib.tracks.filter((t) =>
       (!needle || `${t.title} ${t.artistName} ${t.albumTitle ?? ''}`.toLowerCase().includes(needle)) &&
-      (!genre || t.allGenres.includes(genre)) && (!onlyFav || t.isFavorite) && (!onlyPlayable || t.file));
+      (!genre || t.allGenres.includes(genre)) && (!onlyPlayable || t.file));
     return sortTracks(f, sort, dir);
-  }, [lib, q, sort, dir, genre, onlyFav, onlyPlayable]);
+  }, [lib, q, sort, dir, genre, onlyPlayable]);
 
   const playable = tracks.filter((t) => t.file).map((t) => t.id);
   const pick = (k: SortKey) => { if (k === sort) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(k); setDir(defaultDir(k)); } };
@@ -45,7 +44,6 @@ export function TracksPage() {
         <select className="input !w-auto" value={genre} onChange={(e) => setGenre(e.target.value)} aria-label="Genre">
           <option value="">All genres</option>{lib.genres.map((g) => <option key={g.id}>{g.name}</option>)}
         </select>
-        <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyFav} onChange={(e) => setOnlyFav(e.target.checked)} />Favourites</label>
         <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => setOnlyPlayable(e.target.checked)} />Has audio</label>
       </div>
       <div className="card overflow-hidden">

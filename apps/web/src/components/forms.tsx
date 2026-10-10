@@ -14,12 +14,12 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label={title} className="card flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between border-b border-line px-5 py-3"><h2 className="font-semibold">{title}</h2>
-          <button className="p-1 text-muted hover:text-fg" aria-label="Close" onClick={onClose}><X size={18} /></button></div>
-        <div className="space-y-4 overflow-y-auto p-5">{children}</div>
-        {footer && <div className="flex items-center gap-2 border-t border-line px-5 py-3">{footer}</div>}
+    <div className="bt-backdrop fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-label={title} className="bt-window flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden">
+        <div className="bt-titlebar flex items-center"><h2 className="font-semibold">{title}</h2>
+          <button className="bt-close" aria-label="Close" onClick={onClose}><X size={18} /></button></div>
+        <div className="bt-body space-y-4 overflow-y-auto p-5">{children}</div>
+        {footer && <div className="bt-footer flex items-center gap-2 px-5 py-3">{footer}</div>}
       </div>
     </div>
   );

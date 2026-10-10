@@ -46,7 +46,6 @@ export interface TrackData {
   bpm: number | null;
   key: string | null;
   memories: number;
-  isFavorite: boolean;
   syncWithAlbumCredits: boolean;
   queueRules: Record<string, unknown>;
 }

@@ -22,7 +22,7 @@ const rows = (...rs: SyncRecord[]) => {
 };
 const track = (title: string, extra: object = {}) => ({
   title, artistId: 'a', credits: [], genres: [], albums: [{ albumId: 'al', order: 0 }], file: null, initialRating: null,
-  syncWithAlbumCredits: true, isFavorite: false, ...extra });
+  syncWithAlbumCredits: true, ...extra });
 const vote = (id: string, a: string, b: string, winner: string, t: number) =>
   rec('votes', id, { trackAId: a, trackBId: b, winnerId: winner, isEqual: false, timestamp: t });
 
@@ -120,7 +120,7 @@ describe('album editing helpers', () => {
   });
   it('new tracks/albums are complete records', () => {
     const t = newTrackData({ title: 'x', artistId: 'a' });
-    expect(t).toMatchObject({ file: null, albums: [], syncWithAlbumCredits: true, isFavorite: false, credits: [{ artistId: 'a', role: ['Lead artist'] }] });
+    expect(t).toMatchObject({ file: null, albums: [], syncWithAlbumCredits: true, credits: [{ artistId: 'a', role: ['Lead artist'] }] });
     expect(newAlbumData({ title: 'y', artistId: 'a' }).genres).toEqual([]);
   });
 });

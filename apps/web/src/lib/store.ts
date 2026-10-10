@@ -4,7 +4,7 @@ import { Api } from './api.ts';
 import { flushUploads, type CacheEntry } from './files.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';
 import { loadSettings, saveSettings, type DeviceSettings } from './settings.ts';
-import { applyTheme } from './theme.ts';
+import { applyAppearance, watchSystemTheme } from './appearance.ts';
 
 export type SyncState = 'unconfigured' | 'idle' | 'syncing' | 'offline' | 'error';
 export interface SyncInfo { state: SyncState; lastSync: number | null; pending: number; error: string | null }
@@ -125,7 +125,8 @@ export const useStore = create<State>((set, get) => {
     async init() {
       if (get().ready) return;
       const s = get().settings;
-      applyTheme(s.theme, s.accent);
+      applyAppearance(s);
+      watchSystemTheme(() => get().settings);
       const db = await localDb();
       const rows = emptyRows();
       for (const r of await db.getAll('records')) rows[r.table]?.set(r.id, r);
@@ -139,7 +140,7 @@ export const useStore = create<State>((set, get) => {
     updateSettings(patch) {
       const settings = { ...get().settings, ...patch };
       saveSettings(settings);
-      applyTheme(settings.theme, settings.accent);
+      applyAppearance(settings);
       set({ settings });
       if ('token' in patch || 'serverUrl' in patch) void get().syncNow();
     },

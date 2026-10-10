@@ -3,7 +3,9 @@ import { ExternalLink, Pause, Play, Equal, SkipForward } from 'lucide-react';
 import type { VoteData } from '@curator/core';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { pickPair } from '../lib/pairing.ts';
-import { api, useStore } from '../lib/store.ts';
+import { useStore } from '../lib/store.ts';
+import { audioSource } from '../lib/files.ts';
+import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
 import { Rating } from '../components/Rating.tsx';
 import { cn } from '../lib/cn.ts';
@@ -18,16 +20,31 @@ export function VotePage() {
   const [playing, setPlaying] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
+  const loadSeq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pool = useMemo(() => lib.tracks.filter((t) => !onlyPlayable || t.file), [lib, onlyPlayable]);
 
-  const stop = useCallback(() => { clearTimeout(timer.current); audio.current?.pause(); setPlaying(null); }, []);
+  const blobUrl = useRef<string | null>(null);
+  const volume = usePlayer((s) => s.volume);
+  const playerPlaying = usePlayer((s) => s.playing);
+
+  const stop = useCallback(() => {
+    clearTimeout(timer.current);
+    loadSeq.current++; // a preview still resolving its source must not start after this
+    audio.current?.pause();
+    if (blobUrl.current) { URL.revokeObjectURL(blobUrl.current); blobUrl.current = null; }
+    setPlaying(null);
+  }, []);
   const next = useCallback(() => {
     stop();
     setPair((prev) => { const p = pickPair(pool, Math.random, prev ?? undefined); return p ? [p[0].id, p[1].id] : null; });
   }, [pool, stop]);
   useEffect(() => { if (!pair) next(); }, [pair, next]);
   useEffect(() => stop, [stop]);
+  // the preview follows the player's volume slider, also while it is playing
+  useEffect(() => { if (audio.current) audio.current.volume = volume; }, [volume]);
+  // starting the main player (play button, a track in a list) ends a preview, so the two never overlap
+  useEffect(() => { if (playerPlaying) stop(); }, [playerPlaying, stop]);
 
   const [a, b] = pair ? [lib.trackById.get(pair[0]), lib.trackById.get(pair[1])] : [];
 
@@ -52,16 +69,24 @@ export function VotePage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [pair, vote, next]);
 
-  /** Play 15 s from the middle of the track, as the original cleanup page did. */
+  /** Play 15 s from the middle of the track, as the original cleanup page did. The music player is paused meanwhile. */
   function snippet(t: Track) {
     if (playing === t.id) return stop();
     if (!t.file) return;
     stop();
+    usePlayer.getState().pause();
     const el = (audio.current ??= new Audio());
-    el.src = api().fileUrl(t.file);
-    el.onloadedmetadata = () => { el.currentTime = Math.max(0, el.duration / 2 - 7.5); void el.play(); };
+    el.volume = usePlayer.getState().volume;
     setPlaying(t.id);
-    timer.current = setTimeout(stop, SNIPPET_MS);
+    const seq = ++loadSeq.current;
+    // same source rule as the player: the copy kept on this device when there is one, else the server
+    void audioSource(t.file).then(({ url, local }) => {
+      if (seq !== loadSeq.current) { if (local) URL.revokeObjectURL(url); return; }
+      blobUrl.current = local ? url : null;
+      el.onloadedmetadata = () => { el.currentTime = Math.max(0, el.duration / 2 - 7.5); void el.play(); };
+      el.src = url;
+      timer.current = setTimeout(stop, SNIPPET_MS);
+    });
   }
 
   if (lib.tracks.length < 2) return <div className="text-muted">Add at least two tracks to start ranking.</div>;

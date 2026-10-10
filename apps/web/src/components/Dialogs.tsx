@@ -6,7 +6,7 @@ import { useLibrary } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { saveAudio } from '../lib/files.ts';
 import { logJournal } from '../lib/journal.ts';
-import { AUDIO_ACCEPT, appendTrack, cleanCredits, hasLead, LEAD_ROLE, leadArtistId, newTrackData, titleFromFilename, withLeadFallback } from '../lib/defaults.ts';
+import { AUDIO_ACCEPT, appendTrack, cleanCredits, hasLead, LEAD_ROLE, leadArtistId, newTrackData, inheritFromAlbum, titleFromFilename, withLeadFallback } from '../lib/defaults.ts';
 import { CreditsEditor, Field, ImagePicker, Modal } from './forms.tsx';
 
 export function NewArtistDialog({ onClose }: { onClose: () => void }) {
@@ -121,7 +121,7 @@ export function UploadDialog({ albumId, onClose }: { albumId: string; onClose: (
         const r = await saveAudio(f.file);
         const own = follows ? withLeadFallback(a!.credits, a!.artistId) : clean;
         const id = put('tracks', newTrackData({
-          title: f.title.trim(), artistId: leadArtistId(own, ''), credits: own, syncWithAlbumCredits: follows, file: r.hash, bitrate: r.bitrate,
+          title: f.title.trim(), artistId: leadArtistId(own, ''), credits: own, ...(follows ? { syncWithAlbumCredits: true, genres: [] } : inheritFromAlbum(a, own)), file: r.hash, bitrate: r.bitrate,
           albums: a ? [{ albumId: a.id, order: order.length }] : [],
         }));
         order = appendTrack(order, id);
