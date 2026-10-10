@@ -25,6 +25,8 @@ export interface Track extends Omit<Row<TrackData>, 'artistId'> {
   cover: string | null;
   /** every era this track is in: its album's, plus its own for a single */
   eraIds: string[];
+  /** when its album came out (default release's date), "YYYY", "YYYY-MM" or "YYYY-MM-DD"; null if unknown */
+  releaseDate: string | null;
   allGenres: string[];
 }
 
@@ -40,7 +42,7 @@ export interface Library {
   eraById: Map<string, Era>;
   /** tracks that are not on any album */
   singles: Track[];
-  albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null; /** every era the album is in */ eraIds: string[]; /** every image of the album: uploads, its picked cover and its releases' covers */ coverPool: string[] })[];
+  albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null; /** every era the album is in */ eraIds: string[]; /** the default release's date, else the earliest release date */ releaseDate: string | null; /** every image of the album: uploads, its picked cover and its releases' covers */ coverPool: string[] })[];
   albumById: Map<string, Library['albums'][number]>;
   releases: Row<ReleaseData>[];
   playlists: Row<PlaylistData>[];
@@ -105,6 +107,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     for (const id of e.albumIds) erasOfAlbum.set(id, [...(erasOfAlbum.get(id) ?? []), e.id]);
     for (const id of e.trackIds) erasOfTrack.set(id, [...(erasOfTrack.get(id) ?? []), e.id]);
   }
+  const dateOf = (a: Row<AlbumData>) => defaultRel(a)?.releaseDate || releases.filter((r) => r.albumId === a.id && r.releaseDate).map((r) => r.releaseDate!).sort()[0] || null;
+  const albumDate = new Map(rawAlbums.map((a) => [a.id, dateOf(a)]));
   const albumOf = new Map<string, Row<AlbumData>>();
   const albumsById = by(coveredAlbums);
   const trackIdsByAlbum = new Map<string, { id: string; order: number }[]>();
@@ -132,6 +136,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
       ...t, credits, artistId, leads, elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
       artistName: namesOf(leads),
       albumId: album?.id ?? null, albumTitle: album?.title ?? null, cover: t.cover || album?.cover || null,
+      releaseDate: album ? albumDate.get(album.id) ?? null : null,
       eraIds: [...new Set([...(album ? erasOfAlbum.get(album.id) ?? [] : []), ...(erasOfTrack.get(t.id) ?? [])])],
       allGenres: genres ?? [],
     };
@@ -156,7 +161,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const artistId = leadArtistId(a.credits ?? [], a.artistId ?? '');
     const leads = leadsOf(a.credits ?? [], a.artistId, artistById);
     const raw = rawAlbums.find((x) => x.id === a.id)!;
-    return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids, eraIds: erasOfAlbum.get(a.id) ?? [], coverPool: coverPool(raw, releases.filter((r) => r.albumId === a.id)),
+    return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids, eraIds: erasOfAlbum.get(a.id) ?? [], releaseDate: albumDate.get(a.id) ?? null, coverPool: coverPool(raw, releases.filter((r) => r.albumId === a.id)),
       rating: rated.length ? rated.reduce((s, x) => s + x, 0) / rated.length : null };
   });
 

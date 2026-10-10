@@ -8,6 +8,8 @@ import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { parseBackup } from '../src/lib/backupFormat.ts';
 import { albumCover, coverPicked, coverPool } from '../src/lib/covers.ts';
 import { planNoteMigration } from '../src/lib/noteMigration.ts';
+import { dateRange, makeChip, matchesAll, ratingTest, splitTyped, trackSubject } from '../src/lib/filters.ts';
+
 import { computeHealth } from '../src/lib/health.ts';
 import { assignLinks, linkGroups, looksRight, parseLinks } from '../src/lib/bulkLinks.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
@@ -20,7 +22,7 @@ import { pickPair } from '../src/lib/pairing.ts';
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
 const rows = (...rs: SyncRecord[]) => {
   const out: Record<string, Map<string, SyncRecord>> = Object.fromEntries(
-    ['artists', 'albums', 'releases', 'tracks', 'playlists', 'groups', 'genres', 'roleCategories', 'timeline', 'votes', 'playbackLogs', 'profiles', 'notes'].map((t) => [t, new Map()]));
+    ['artists', 'eras', 'noteCategories', 'albums', 'releases', 'tracks', 'playlists', 'groups', 'genres', 'roleCategories', 'timeline', 'votes', 'playbackLogs', 'profiles', 'notes'].map((t) => [t, new Map()]));
   for (const r of rs) out[r.table].set(r.id, r);
   return out;
 };
@@ -376,5 +378,54 @@ describe('notes and relational bios are one thing', () => {
   it('has nothing left to do once migrated', () => {
     const p = planNoteMigration([], [bio('b1', undefined, { categoryId: 'cat-relationship' })], [{ id: 'cat-relationship', data: { name: 'Relationship' } }]);
     expect(p).toEqual({ categories: [], groups: [], removeNotes: [] });
+  });
+});
+
+describe('filters', () => {
+  const lib = buildLibrary(rows(
+    rec('artists', 'a', { name: 'Kendrick Lamar', image: null }), rec('artists', 'b', { name: 'Drake', image: null }),
+    rec('eras', 'e1', { name: 'The feud', description: null, cover: null, albumIds: ['al'], trackIds: [], playlistIds: [] }),
+    rec('albums', 'al', { title: 'GNX', credits: [{ artistId: 'a', role: ['Lead artist'] }], genres: ['Hip hop'], cover: null, defaultReleaseId: 'r' }),
+    rec('releases', 'r', { albumId: 'al', title: 'GNX', cover: null, releaseDate: '2024-11-22', trackIds: ['t1'] }),
+    rec('tracks', 't1', track('Squabble Up', { artistId: undefined, albums: [{ albumId: 'al', order: 0 }], file: 'f', memories: 3, credits: [{ artistId: 'a', role: ['Lead artist'] }] })),
+    rec('tracks', 't2', track('Loose', { artistId: undefined, albums: [], credits: [{ artistId: 'b', role: ['Lead artist'] }], memories: 9 })),
+  ));
+  const t1 = trackSubject(lib, lib.trackById.get('t1')!), t2 = trackSubject(lib, lib.trackById.get('t2')!);
+  const chip = (key: Parameters<typeof makeChip>[1], text: string) => makeChip(lib, key, text)!;
+  it('reads dates as the period they cover', () => {
+    expect(dateRange('2019')).toEqual({ from: '2019-01-01', to: '2019-12-31' });
+    expect(dateRange('2024-02')).toEqual({ from: '2024-02-01', to: '2024-02-29' });
+    expect(dateRange('2024-02-30')).toBeNull();
+    expect(dateRange('last week')).toBeNull();
+  });
+  it('before and after compare whole periods, and skip what has no date', () => {
+    expect(matchesAll([chip('before', '2025')], t1)).toBe(true);
+    expect(matchesAll([chip('before', '2024-11')], t1)).toBe(false);
+    expect(matchesAll([chip('after', '2024-10')], t1)).toBe(true);
+    expect(matchesAll([chip('after', '2024')], t1)).toBe(false); // released within 2024, not after it
+    expect(matchesAll([chip('before', '2025')], t2)).toBe(false); // a single with no date never matches a date filter
+  });
+  it('artist, era, album, has and rating narrow the list, all together', () => {
+    expect(chip('artist', 'kendrick')).toMatchObject({ value: 'a', label: 'Kendrick Lamar' });
+    expect(matchesAll([chip('artist', 'kendrick')], t1)).toBe(true);
+    expect(matchesAll([chip('artist', 'kendrick')], t2)).toBe(false);
+    expect(matchesAll([chip('era', 'feud')], t1)).toBe(true);
+    expect(matchesAll([chip('era', 'feud')], t2)).toBe(false);
+    expect(matchesAll([chip('has', 'audio'), chip('genre', 'hip')], t1)).toBe(true);
+    expect(matchesAll([chip('has', 'audio')], t2)).toBe(false);
+    expect(matchesAll([chip('has', 'memories')], t2)).toBe(true);
+    expect(makeChip(lib, 'has', 'lyrics')).toBeNull();
+    expect(makeChip(lib, 'before', 'soon')).toBeNull();
+  });
+  it('parses rating tests and typed keys', () => {
+    expect(ratingTest('>7')!(8)).toBe(true); expect(ratingTest('>7')!(7)).toBe(false);
+    expect(ratingTest('7-9')!(9)).toBe(true); expect(ratingTest('8')!(7.6)).toBe(true); expect(ratingTest('lots')).toBeNull();
+    expect(splitTyped('Artist: Drake')).toEqual({ key: 'artist', rest: 'Drake' });
+    expect(splitTyped('artists')).toBeNull();
+  });
+  it('sorts by memories and by release date', () => {
+    expect(sortTracks(lib.tracks, 'memories', 'desc').map((t) => t.id)).toEqual(['t2', 't1']);
+    expect(sortTracks(lib.tracks, 'released', 'desc').map((t) => t.id)).toEqual(['t1', 't2']); // undated last either way
+    expect(sortTracks(lib.tracks, 'released', 'asc').map((t) => t.id)).toEqual(['t1', 't2']);
   });
 });

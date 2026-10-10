@@ -1,4 +1,6 @@
-import { Select, albumOptions } from '../components/Select.tsx';
+import { FilterBar } from '../components/FilterBar.tsx';
+import { makeChip, matchesAll, splitTyped, trackSubject, type Chip, type FilterKey } from '../lib/filters.ts';
+import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../lib/derive.ts';
 import { ArrowDown, ArrowUp, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
@@ -18,17 +20,22 @@ export function TracksPage() {
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<SortKey>('rating');
   const [dir, setDir] = useState<SortDir>('desc');
-  const [genre, setGenre] = useState('');
-  const [onlyPlayable, setOnlyPlayable] = useState(false);
+  // a link such as /tracks?era=<id> or ?artist=<id> starts with that filter already on
+  const [params] = useSearchParams();
+  const [chips, setChips] = useState<Chip[]>(() => (['artist', 'era', 'album', 'genre'] as FilterKey[]).flatMap((k) => {
+    const v = params.get(k);
+    if (!v) return [];
+    const label = k === 'artist' ? lib.artistById.get(v)?.name : k === 'era' ? lib.eraById.get(v)?.name : k === 'album' ? lib.albumById.get(v)?.title : v;
+    return label ? [{ key: k, value: v, label }] : makeChip(lib, k, v) ? [makeChip(lib, k, v)!] : [];
+  }));
   const [shown, setShown] = useState(PAGE);
 
   const tracks = useMemo(() => {
-    const needle = q.toLowerCase();
+    const needle = splitTyped(q) ? '' : q.toLowerCase(); // while a `key:` is being typed it is not a search word
     const f = lib.tracks.filter((t) =>
-      (!needle || `${t.title} ${t.artistName} ${t.albumTitle ?? ''}`.toLowerCase().includes(needle)) &&
-      (!genre || t.allGenres.includes(genre)) && (!onlyPlayable || t.file));
+      (!needle || `${t.title} ${t.artistName} ${t.albumTitle ?? ''}`.toLowerCase().includes(needle)) && matchesAll(chips, trackSubject(lib, t)));
     return sortTracks(f, sort, dir);
-  }, [lib, q, sort, dir, genre, onlyPlayable]);
+  }, [lib, q, sort, dir, chips]);
 
   const playable = tracks.filter((t) => t.file).map((t) => t.id);
   const pick = (k: SortKey) => { if (k === sort) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(k); setDir(defaultDir(k)); } };
@@ -41,14 +48,12 @@ export function TracksPage() {
         <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New track</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
-        <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => { setQ(e.target.value); setShown(PAGE); }} />
-        <Select className="!w-44" aria-label="Genre" value={genre} onChange={setGenre} options={[{ value: '', label: 'All genres' }, ...lib.genres.map((g) => ({ value: g.name, label: g.name }))]} />
-        <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={onlyPlayable} onChange={(e) => setOnlyPlayable(e.target.checked)} />Has audio</label>
       </div>
+      <div className="mb-4"><FilterBar scope="tracks" chips={chips} onChips={(c) => { setChips(c); setShown(PAGE); }} text={q} onText={(t) => { setQ(t); setShown(PAGE); }} /></div>
       <div className="card overflow-hidden">
         <div className="flex items-center gap-1 border-b border-line/60 px-3 py-1.5 text-xs text-muted" role="toolbar" aria-label="Sort by">
           <span className="mr-1">Sort</span>
-          {([['title', 'Title'], ['artist', 'Artist'], ['album', 'Album'], ['comparisons', 'Compared']] as const).map(([k, label]) => <SortButton key={k} k={k} label={label} sort={sort} dir={dir} onPick={pick} />)}
+          {([['title', 'Title'], ['artist', 'Artist'], ['album', 'Album'], ['released', 'Released'], ['memories', 'Memories'], ['comparisons', 'Compared']] as const).map(([k, label]) => <SortButton key={k} k={k} label={label} sort={sort} dir={dir} onPick={pick} />)}
           <span className="ml-auto"><SortButton k="rating" label="Rating" sort={sort} dir={dir} onPick={pick} /></span>
         </div>
         <TrackTable tracks={tracks.slice(0, shown)} source="search" numbered />

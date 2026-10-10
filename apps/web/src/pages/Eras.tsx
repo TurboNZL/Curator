@@ -64,6 +64,7 @@ export function EraPage() {
           {era.description && <p className="max-w-prose text-sm">{era.description}</p>}
           <div className="flex gap-2 pt-1">
             <button className="btn btn-accent" disabled={!ids.length} onClick={() => play(ids[0], ids, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
+            <Link className="btn btn-ghost" to={`/tracks?era=${era.id}`}><Layers size={15} />Tracks in this era</Link>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'era', id: era.id })}><Pencil size={15} />Edit</button></div></div>
       </div>
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>
