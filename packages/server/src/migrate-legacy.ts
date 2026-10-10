@@ -157,7 +157,6 @@ export async function migrateLegacy(opts: MigrateOptions): Promise<MigrationRepo
       spotifyUrl: str(t.spotify_url), geniusUrl: str(t.genius_url), youtubeMusicUrl: str(t.youtube_music_url),
       bitrate: str(t.bitrate), bpm: t.bpm ?? null, key: str(t.key),
       memories: t.memories ?? 0,
-      isFavorite: !!t.is_favorite,
       syncWithAlbumCredits: !!t.sync_with_album_credits,
       queueRules: unwrapJson<Record<string, unknown>>(t.queue_rules, {}),
     });

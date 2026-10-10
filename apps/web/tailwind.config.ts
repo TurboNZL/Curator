@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: c('bg'), surface: c('surface'), raised: c('raised'), line: c('line'),
+        bg: c('bg'), surface: c('surface'), raised: c('raised'), line: c('line'), hover: c('hover'),
         fg: c('fg'), muted: c('muted'), accent: c('accent'), 'accent-fg': c('accent-fg'),
         good: c('good'), warn: c('warn'), bad: c('bad'), top: c('top'),
       },

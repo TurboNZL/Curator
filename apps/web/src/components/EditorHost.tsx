@@ -8,7 +8,7 @@ import { useStore } from '../lib/store.ts';
 import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
-import { newAlbumData, newTrackData, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadArtistId, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
+import { newAlbumData, newTrackData, inheritFromAlbum, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadArtistId, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
 import { saveRules } from '../lib/profile.ts';
 import { AudioPicker, CreditsEditor, EntityPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 import { AddToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
@@ -53,9 +53,11 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const [after, setAfter] = useState<string | null>(rule?.trackBId ?? null);
   const [first, setFirst] = useState(rule?.playFirstOnShuffle ?? true);
   const [albumOnly, setAlbumOnly] = useState(rule?.applyToAlbumSource ?? false);
+  const [albumSel, setAlbumSel] = useState(track?.albumId ?? '');
   if (!track || !t) return null;
   const set = <K extends keyof TrackData>(k: K, v: TrackData[K]) => setT((p) => ({ ...p!, [k]: v }));
-  const albumCredits = track.albumId ? lib.albumById.get(track.albumId)?.credits ?? [] : [];
+  const selAlbum = albumSel ? lib.albumById.get(albumSel) : undefined;
+  const albumCredits = selAlbum?.credits ?? [];
   /** a track that follows its album shows the album's credits, read-only */
   const follows = !!t.syncWithAlbumCredits && hasLead(albumCredits);
   const credits = cleanCredits(t.credits ?? []);
@@ -66,7 +68,17 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
     if (!d.syncWithAlbumCredits) ensureGenres(d.genres ?? []);
     ensureRoles(follows ? [] : credits);
     // artistId is only a cache of the lead credit; it is never edited directly
-    put('tracks', { ...d, artistId: leadArtistId(follows ? albumCredits : credits, d.artistId) }, id);
+    // moving the track to another album (or none): its first album link is the one it shows, and both albums' orders follow
+    const moved = albumSel !== (track!.albumId ?? '');
+    const albums = moved
+      ? [...(albumSel ? [{ albumId: albumSel, order: selAlbum?.trackIds.length ?? 0 }] : []), ...(d.albums ?? []).filter((l) => l.albumId !== track!.albumId && l.albumId !== albumSel)]
+      : d.albums;
+    put('tracks', { ...d, albums, artistId: leadArtistId(follows ? albumCredits : credits, d.artistId) }, id);
+    if (moved) {
+      const from = track!.albumId ? lib.albumById.get(track!.albumId) : undefined;
+      if (from) patch('albums', from.id, { trackOrder: removeTrack(from.trackIds, id) });
+      if (selAlbum) patch('albums', selAlbum.id, { trackOrder: appendTrack(selAlbum.trackIds, id) });
+    }
     // playback rule lives on the profile: replace this track's rule
     const others = lib.rules.filter((r) => r.trackAId !== id);
     const rules: PlaybackRule[] = after ? [...others, { trackAId: id, trackBId: after, playFirstOnShuffle: first, applyToAlbumSource: albumOnly }] : others;
@@ -81,6 +93,9 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${track.title}”? Its votes stay in the history.`)) { remove('tracks', id); onClose(); } }}>Delete</button>
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!canSave} onClick={save}>Save</button></div></>}>
       <Field label="Title"><input className="input" value={t.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
+      <Field label="Album" hint="Cover, genres and (if ticked below) credits come from the album. Moving a track puts it last on the new album.">
+        <select className="input" value={albumSel} onChange={(e) => setAlbumSel(e.target.value)}>
+          <option value="">No album (single)</option>{[...lib.albums].sort((x, y) => x.title.localeCompare(y.title)).map((x) => <option key={x.id} value={x.id}>{x.title} · {x.artistName}</option>)}</select></Field>
       <div className="grid grid-cols-3 gap-3">
         <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
         <Field label="BPM"><input className="input" inputMode="numeric" value={t.bpm ?? ''} onChange={(e) => set('bpm', numOrNull(e.target.value))} /></Field>
@@ -90,7 +105,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
         const on = e.target.checked;
         // switching to track-specific credits starts from the album's, unless the track already has its own lead
         setT((p) => ({ ...p!, syncWithAlbumCredits: on, credits: !on && !hasLead(p!.credits ?? []) ? albumCredits.map((c) => ({ ...c, role: [...c.role] })) : p!.credits }));
-      }} />Use the album's credits and genres{track.albumTitle ? ` (${track.albumTitle})` : ''}</label>
+      }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>
       {!t.syncWithAlbumCredits && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
@@ -99,7 +114,6 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       <Field label={follows ? 'Credits (from the album)' : 'Credits'}>{follows
         ? <CreditsEditor readOnly value={albumCredits} onChange={() => undefined} />
         : <CreditsEditor requireLead value={t.credits ?? []} onChange={(v) => set('credits', v)} />}</Field>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.isFavorite} onChange={(e) => set('isFavorite', e.target.checked)} />Favourite</label>
       <div className="space-y-2 rounded-theme border border-line p-3">
         <div className="text-sm font-medium">Playback rule: play another track right after this one</div>
         <TrackPicker value={after} onChange={setAfter} exclude={id} />
@@ -210,7 +224,7 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
     <Modal title={album && albumId ? `Add a track to ${album.title}` : 'New track'} onClose={onClose} footer={<div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
       <button className="btn btn-accent" disabled={!ok} onClick={() => {
         ensureRoles(clean);
-        const id = put('tracks', newTrackData({ title: title.trim(), artistId: leadArtistId(clean, ''), credits: clean, syncWithAlbumCredits: false, file, bitrate, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null, albums: album ? [{ albumId: album.id, order: album.trackIds.length }] : [] }));
+        const id = put('tracks', newTrackData({ title: title.trim(), artistId: leadArtistId(clean, ''), credits: clean, ...inheritFromAlbum(album, clean), file, bitrate, youtubeMusicUrl: yt.trim() || null, spotifyUrl: sp.trim() || null, albums: album ? [{ albumId: album.id, order: album.trackIds.length }] : [] }));
         if (album) patch('albums', album.id, { trackOrder: appendTrack(album.trackIds, id) });
         onClose();
         if (!albumId && album) nav(`/albums/${album.id}`);

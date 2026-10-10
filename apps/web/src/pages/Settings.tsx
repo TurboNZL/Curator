@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Check, Download, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
 import { Api, type ServerStatus } from '../lib/api.ts';
 import { useLibrary } from '../lib/derive.ts';
-import { ACCENTS, THEMES } from '../lib/theme.ts';
 import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
 import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
+import { AppearanceCard, WallpaperCard } from '../components/AppearanceCard.tsx';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="card space-y-4 p-5"><h2 className="font-semibold">{title}</h2>{children}</section>;
+  return <section className="card bt-panel space-y-4 p-5"><h2 className="bt-panel-title font-semibold">{title}</h2>{children}</section>;
 }
 
 export function SettingsPage() {
@@ -45,17 +45,12 @@ export function SettingsPage() {
   const audioBytes = cacheBytes(audioCache);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-4xl space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
 
-      <Section title="Appearance">
-        <div className="grid gap-3 sm:grid-cols-3">{THEMES.map((t) => (
-          <button key={t.id} onClick={() => updateSettings({ theme: t.id })} className={cn('rounded-theme border p-3 text-left', settings.theme === t.id ? 'border-accent bg-accent/10' : 'border-line hover:bg-raised')}>
-            <div className="flex items-center justify-between text-sm font-medium">{t.name}{settings.theme === t.id && <Check size={14} />}</div><div className="text-xs text-muted">{t.note}</div></button>))}</div>
-        <div className="flex items-center gap-2"><span className="mr-2 text-sm text-muted">Accent</span>
-          <button className={cn('h-6 w-6 rounded-full border border-line bg-raised text-[10px]', !settings.accent && 'ring-2 ring-fg')} title="Theme default" onClick={() => updateSettings({ accent: null })}>·</button>
-          {ACCENTS.map((c) => <button key={c} aria-label={c} onClick={() => updateSettings({ accent: c })} className={cn('h-6 w-6 rounded-full', settings.accent === c && 'ring-2 ring-fg ring-offset-2 ring-offset-bg')} style={{ background: c }} />)}</div>
-      </Section>
+      <Section title="Appearance"><p className="text-sm text-muted">Pick a colour theme and a UI style; any combination works. Saved on this device.</p><AppearanceCard /></Section>
+
+      <Section title="Wallpaper"><WallpaperCard /></Section>
 
       <Section title="Server">
         <p className="text-sm text-muted">Optional. Everything works offline; with a server this device syncs your library, votes and audio. Leave the URL empty if this app is served by the server itself.</p>

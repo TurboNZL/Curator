@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowDownToLine, Heart, Info, ListEnd, ListStart, MoreHorizontal, Pencil, Play } from 'lucide-react';
+import { ArrowDownToLine, Info, ListEnd, ListStart, MoreHorizontal, Pencil, Play } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
@@ -19,7 +19,6 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const play = usePlayer((s) => s.play);
   const enqueue = usePlayer((s) => s.enqueue);
   const current = usePlayer((s) => s.queue.currentId);
-  const patch = useStore((s) => s.patch);
   const edit = useEditor((s) => s.open);
   const cache = useStore((s) => s.audioCache);
   const ids = tracks.map((t) => t.id);
@@ -28,7 +27,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   return (
     <div className="divide-y divide-line/60">
       {tracks.map((t, i) => (
-        <div key={t.id} className={cn('group flex items-center gap-3 px-3 hover:bg-raised/60', current === t.id && 'bg-accent/10')} style={{ paddingBlock: 'var(--row-y)' }}
+        <div key={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
           onContextMenu={(e) => { e.preventDefault(); setMenu({ track: t, x: e.clientX, y: e.clientY }); }}>
           <button className="relative w-6 shrink-0 text-center text-sm text-muted disabled:cursor-not-allowed" disabled={!t.file}
             onClick={() => play(t.id, ids, { type: source, id: sourceId })} title={t.file ? 'Play' : 'No audio file yet'}>
@@ -45,10 +44,6 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
           <div className="hidden w-40 justify-end gap-1 overflow-hidden sm:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <span className="w-4 text-muted" title={t.file && cache[t.file] ? 'Saved on this device' : ''}>{t.file && cache[t.file] && <ArrowDownToLine size={13} />}</span>
           <div className="hidden w-14 text-right text-xs tabular-nums text-muted md:block">{t.bitrate ?? ''}</div>
-          <button className={cn('p-1 text-muted hover:text-fg', t.isFavorite && 'text-bad')} title="Favourite"
-            onClick={() => patch('tracks', t.id, { isFavorite: !t.isFavorite })}>
-            <Heart size={15} fill={t.isFavorite ? 'currentColor' : 'none'} />
-          </button>
           <div className="hidden w-28 justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 md:flex">
             <button className="p-1 text-muted hover:text-fg" title="Details" onClick={() => edit({ kind: 'track-details', id: t.id })}><Info size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Edit" onClick={() => edit({ kind: 'track', id: t.id })}><Pencil size={15} /></button>

@@ -6,12 +6,15 @@ import { cn, fmtTime } from '../lib/cn.ts';
 import { Cover } from './Cover.tsx';
 import { Rating } from './Rating.tsx';
 
+/** The filled part of a range, for the styles that draw their own track. */
+const pct = (v: number, max: number) => ({ '--p': `${max > 0 ? Math.min(100, (v / max) * 100) : 0}%` }) as React.CSSProperties;
+
 export function PlayerBar() {
   const lib = useLibrary();
   const p = usePlayer();
   const track = p.queue.currentId ? lib.trackById.get(p.queue.currentId) : undefined;
   return (
-    <div className="border-t border-line bg-surface">
+    <div className="bt-player">
       {p.error && <div className="bg-bad/15 px-4 py-1 text-center text-xs text-bad">{p.error}</div>}
       <div className="flex items-center gap-3 px-3 py-2 md:gap-6 md:px-4">
         <div className="flex w-1/3 min-w-0 items-center gap-3">
@@ -33,13 +36,13 @@ export function PlayerBar() {
           </div>
           <div className="hidden w-full max-w-xl items-center gap-2 text-xs tabular-nums text-muted sm:flex">
             <span className="w-9 text-right">{fmtTime(p.time)}</span>
-            <input type="range" aria-label="Seek" className="h-1 flex-1 accent-[hsl(var(--accent))]" min={0} max={p.duration || 1} step={0.1} value={p.time} onChange={(e) => p.seek(Number(e.target.value))} />
+            <input type="range" aria-label="Seek" className="bt-range h-1 flex-1" style={pct(p.time, p.duration)} min={0} max={p.duration || 1} step={0.1} value={p.time} onChange={(e) => p.seek(Number(e.target.value))} />
             <span className="w-9">{fmtTime(p.duration)}</span>
           </div>
         </div>
         <div className="hidden w-1/3 items-center justify-end gap-2 md:flex">
           <Volume2 size={16} className="text-muted" />
-          <input type="range" aria-label="Volume" className="h-1 w-24 accent-[hsl(var(--accent))]" min={0} max={1} step={0.01} value={p.volume} onChange={(e) => p.setVolume(Number(e.target.value))} />
+          <input type="range" aria-label="Volume" className="bt-range h-1 w-24" style={pct(p.volume, 1)} min={0} max={1} step={0.01} value={p.volume} onChange={(e) => p.setVolume(Number(e.target.value))} />
         </div>
       </div>
     </div>

@@ -20,6 +20,8 @@ interface PlayerState {
   error: string | null;
   play(trackId: string, list: string[], source?: Source): void;
   toggle(): void;
+  /** pause without losing the position (a ranking preview does this) */
+  pause(): void;
   next(): void;
   prev(): void;
   seek(t: number): void;
@@ -131,6 +133,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (!get().queue.currentId) return;
       if (a.paused) void a.play(); else a.pause();
     },
+
+    pause() { if (audio) audio.pause(); },
 
     next() {
       const q = get().queue;

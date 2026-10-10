@@ -21,7 +21,8 @@ export function TracklistEditor({ album, lib }: { album: Album; lib: Library }) 
   };
   const addExisting = (id: string | null) => {
     if (!id) return;
-    patch('tracks', id, { albums: [...rawAlbums(id).filter((l) => l.albumId !== album.id), { albumId: album.id, order: album.trackIds.length }] });
+    // the link added here goes first: a track's album, cover and genres come from its first link, and the user just put it here
+    patch('tracks', id, { albums: [{ albumId: album.id, order: album.trackIds.length }, ...rawAlbums(id).filter((l) => l.albumId !== album.id)] });
     setOrder(appendTrack(album.trackIds, id));
   };
 
