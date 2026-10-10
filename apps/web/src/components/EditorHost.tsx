@@ -63,13 +63,14 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const selAlbum = albumSel ? lib.albumById.get(albumSel) : undefined;
   const albumCredits = selAlbum?.credits ?? [];
   /** a track that follows its album shows the album's credits, read-only */
-  const follows = !!t.syncWithAlbumCredits && hasLead(albumCredits);
+  const follows = !!albumSel && !!t.syncWithAlbumCredits && hasLead(albumCredits);
   const credits = cleanCredits(t.credits ?? []);
   const canSave = follows || hasLead(credits);
 
   function save() {
     const { artistId: _legacy, ...base } = t!;
-    const d = { ...base, credits, cover: t!.cover || null };
+    // a single has no album to follow
+    const d = { ...base, credits, cover: t!.cover || null, syncWithAlbumCredits: albumSel ? base.syncWithAlbumCredits : false };
     if (!d.syncWithAlbumCredits) ensureGenres(d.genres ?? []);
     ensureRoles(follows ? [] : credits);
     // moving the track to another album (or none): its first album link is the one it shows, and both albums' orders follow
@@ -111,12 +112,12 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
         <ImagePicker hash={t.cover ?? null} onChange={(h) => set('cover', h)} seed={t.title || 'track'} /></Field>
       <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
+      {albumSel && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
         const on = e.target.checked;
         // switching to track-specific credits starts from the album's, unless the track already has its own lead
         setT((p) => ({ ...p!, syncWithAlbumCredits: on, credits: !on && !hasLead(p!.credits ?? []) ? albumCredits.map((c) => ({ ...c, role: [...c.role] })) : p!.credits }));
-      }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>
-      {!t.syncWithAlbumCredits && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
+      }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>}
+      {(!albumSel || !t.syncWithAlbumCredits) && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
       <Field label="Spotify URL"><input className="input" value={t.spotifyUrl ?? ''} onChange={(e) => set('spotifyUrl', e.target.value || null)} /></Field>

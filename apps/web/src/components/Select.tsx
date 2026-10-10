@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Plus } from 'lucide-react';
 import { cn } from '../lib/cn.ts';
 import { usePresence } from '../lib/presence.ts';
 
@@ -11,8 +11,10 @@ export interface SelectOption { value: string; label: string; hint?: string; ico
  * can touch). The list is a `bt-menu`, so it has the style's shape, motion and highlight; long lists get a search box.
  * Keyboard: Up/Down, Home/End, Enter or Space to choose, Escape to close, typing jumps to a match.
  */
-export function Select({ value, onChange, options, placeholder = 'Choose…', className, disabled, 'aria-label': ariaLabel, searchable }: {
+export function Select({ value, onChange, options, placeholder = 'Choose…', className, disabled, 'aria-label': ariaLabel, searchable, creatable }: {
   value: string; onChange: (v: string) => void; options: SelectOption[]; placeholder?: string; className?: string; disabled?: boolean; 'aria-label'?: string; searchable?: boolean;
+  /** typing a name that is not in the list offers "create it" as the first result; `create` makes it and returns the new value */
+  creatable?: { label: (typed: string) => string; create: (typed: string) => string };
 }) {
   const [open, setOpen] = useState(false);
   const { mounted, leaving } = usePresence(open);
@@ -22,8 +24,14 @@ export function Select({ value, onChange, options, placeholder = 'Choose…', cl
   const [q, setQ] = useState('');
   const [hi, setHi] = useState(0);
   const id = useId();
-  const withSearch = searchable ?? options.length > 12;
-  const shown = useMemo(() => (q ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : options), [options, q]);
+  const withSearch = searchable ?? (!!creatable || options.length > 12);
+  const CREATE = '\u0000create';
+  const shown = useMemo(() => {
+    const found = q ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : options;
+    const typed = q.trim();
+    const exact = options.some((o) => o.label.toLowerCase() === typed.toLowerCase());
+    return creatable && typed && !exact ? [{ value: CREATE, label: creatable.label(typed), icon: <Plus size={14} className="shrink-0 text-accent" /> } as SelectOption, ...found] : found;
+  }, [options, q, creatable]);
   const current = options.find((o) => o.value === value);
 
   useLayoutEffect(() => {
@@ -51,7 +59,7 @@ export function Select({ value, onChange, options, placeholder = 'Choose…', cl
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { list.current?.querySelector<HTMLElement>(`[data-i="${hi}"]`)?.scrollIntoView({ block: 'nearest' }); }, [hi, mounted]);
 
-  const choose = (o: SelectOption) => { if (o.disabled) return; onChange(o.value); setOpen(false); btn.current?.focus(); };
+  const choose = (o: SelectOption) => { if (o.disabled) return; onChange(o.value === CREATE ? creatable!.create(q.trim()) : o.value); setOpen(false); btn.current?.focus(); };
   const key = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') { e.preventDefault(); setOpen(false); btn.current?.focus(); return; }
     if (e.key === 'ArrowDown') { e.preventDefault(); setHi((h) => Math.min(shown.length - 1, h + 1)); }

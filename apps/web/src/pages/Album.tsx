@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle, Star } from 'lucide-react';
+import { Disc, FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle, Star } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
-import { initialView, viewTrackIds, type AlbumView } from '../lib/albumOps.ts';
+import { initialView, singleTrackOf, viewTrackIds, type AlbumView } from '../lib/albumOps.ts';
 import { useStore } from '../lib/store.ts';
 import { cn, plural } from '../lib/cn.ts';
 import { Cover } from '../components/Cover.tsx';
@@ -17,7 +17,7 @@ import { TrackTable } from '../components/TrackTable.tsx';
 import { DetailLayout } from '../components/DetailLayout.tsx';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
 import { useMenu } from '../components/Menu.tsx';
-import { useAlbumMenuItems } from '../components/entityMenus.tsx';
+import { useAlbumMenuItems, useConvertToSingle } from '../components/entityMenus.tsx';
 
 export function AlbumPage() {
   const { id } = useParams();
@@ -27,6 +27,7 @@ export function AlbumPage() {
   const patch = useStore((s) => s.patch);
   const menu = useMenu();
   const itemsFor = useAlbumMenuItems();
+  const convert = useConvertToSingle();
   const [params, setParams] = useSearchParams();
   const [arranging, setArranging] = useState(false);
   const album = id ? lib.albumById.get(id) : undefined;
@@ -94,6 +95,7 @@ export function AlbumPage() {
               ? <button className={`btn ${arranging ? 'btn-accent' : 'btn-ghost'}`} onClick={() => setArranging(!arranging)}><ListOrdered size={15} />{arranging ? 'Done' : 'Edit tracks'}</button>
               : <button className="btn btn-ghost" onClick={() => edit({ kind: 'release', id: view.id })}><ListOrdered size={15} />Edit release</button>}
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'upload', id: album.id })}><FileAudio size={15} />Add files</button>
+            {singleTrackOf(lib, album) && <button className="btn btn-ghost" title="Every release holds just this one song" onClick={() => convert(album)}><Disc size={15} />Convert to single</button>}
             <KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
             <button data-menu-trigger className="btn btn-ghost !p-2" aria-label="More actions" aria-haspopup="menu" onClick={(e) => menu.toggle(e.currentTarget, 'album', itemsFor(album, ids), `Actions for ${album.title}`)}><MoreHorizontal size={16} /></button>
           </div>

@@ -54,28 +54,15 @@ export function TagInput({ value, onChange, suggestions, placeholder = 'Add genr
   );
 }
 
-/** Pick an artist, or create one on the spot. */
+/** Pick an artist by searching; a name that does not exist is offered as "Create artist: …" at the top of the results. */
 export function ArtistSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const lib = useLibrary();
   const put = useStore((s) => s.put);
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const create = () => {
-    const n = name.trim();
-    if (!n) return;
-    const existing = lib.artists.find((a) => a.name.toLowerCase() === n.toLowerCase());
-    const data: ArtistData = { name: n, image: null };
-    onChange(existing?.id ?? put('artists', data));
-    setCreating(false); setName('');
-  };
   const sorted = [...lib.artists].sort((a, b) => a.name.localeCompare(b.name));
-  return creating ? (
-    <div className="flex gap-2"><input autoFocus className="input" placeholder="New artist name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); create(); } }} />
-      <button type="button" className="btn btn-accent" onClick={create}>Add</button><button type="button" className="btn btn-ghost" onClick={() => setCreating(false)}>Cancel</button></div>
-  ) : (
-    <div className="flex gap-2"><Select className="flex-1" value={value} onChange={onChange} placeholder="Choose an artist…"
-      options={[...(!lib.artistById.has(value) && value ? [{ value, label: '(unknown artist)' }] : []), ...sorted.map((a) => ({ value: a.id, label: a.name }))]} />
-      <button type="button" className="btn shrink-0" title="Create a new artist" onClick={() => setCreating(true)}><Plus size={15} />New</button></div>
+  return (
+    <Select value={value} onChange={onChange} placeholder="Search artists…" searchable
+      options={[...(!lib.artistById.has(value) && value ? [{ value, label: '(unknown artist)' }] : []), ...sorted.map((a) => ({ value: a.id, label: a.name }))]}
+      creatable={{ label: (n) => `Create artist: “${n}”`, create: (n) => put('artists', { name: n, image: null } satisfies ArtistData) }} />
   );
 }
 

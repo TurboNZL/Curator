@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SyncRecord, TrackData } from '@curator/core';
 import { buildLibrary } from '../src/lib/library.ts';
-import { defaultChoice, defaultRelease, initialView, planAddToAlbum, viewTrackIds } from '../src/lib/albumOps.ts';
+import { defaultChoice, defaultRelease, initialView, planAddToAlbum, planConvertToSingle, singleTrackOf, viewTrackIds } from '../src/lib/albumOps.ts';
 import { leadCredit, withoutLegacyArtist } from '../src/lib/defaults.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
@@ -108,5 +108,31 @@ describe('switching between releases on the album page', () => {
   });
   it('ignores a release id that belongs to another album', () => {
     expect(viewTrackIds(lib, album, { kind: 'release', id: 'ghost' })).toEqual(album.trackIds);
+  });
+});
+
+describe('convert an album to a single', () => {
+  const one = [
+    rec('artists', 'a', { name: 'Artist', image: null }),
+    rec('albums', 'al', { title: 'Tiny', credits: leadCredit('a'), genres: ['Pop'], cover: 'albumcover', eraId: 'e1', defaultReleaseId: 'r1' }),
+    rec('tracks', 't1', track('Only', { albums: [{ albumId: 'al', order: 0 }] })),
+    rec('releases', 'r1', { albumId: 'al', title: 'Standard', cover: 'relcover', releaseDate: null, trackIds: ['t1'] }),
+    rec('releases', 'r2', { albumId: 'al', title: 'Alt', cover: 'alt', releaseDate: null, trackIds: ['t1'] }),
+  ];
+  it('is offered only when every release holds the one song', () => {
+    const lib = buildLibrary(rows(...one));
+    expect(singleTrackOf(lib, lib.albumById.get('al')!)).toBe('t1');
+    const two = buildLibrary(rows(...one, rec('tracks', 't2', track('Second', { albums: [{ albumId: 'al', order: 1 }] }))));
+    expect(singleTrackOf(two, two.albumById.get('al')!)).toBeNull();
+    const none = buildLibrary(rows(...one.filter((r) => r.table !== 'releases')));
+    expect(singleTrackOf(none, none.albumById.get('al')!)).toBeNull();
+  });
+  it('keeps the cover, era, credits and genres, and removes the album and its releases', () => {
+    const lib = buildLibrary(rows(...one));
+    const p = planConvertToSingle(lib, lib.albumById.get('al')!)!;
+    expect(p.trackPatch).toMatchObject({ albums: [], cover: 'relcover', eraId: 'e1', syncWithAlbumCredits: false, genres: ['Pop'] });
+    expect(p.trackPatch.credits).toEqual(leadCredit('a'));
+    expect(p.removeReleaseIds.sort()).toEqual(['r1', 'r2']);
+    expect(p.removeAlbumId).toBe('al');
   });
 });

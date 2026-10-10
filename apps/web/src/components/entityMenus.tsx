@@ -1,8 +1,11 @@
-import { FileAudio, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Disc, FileAudio, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary, type Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
+import { planConvertToSingle } from '../lib/albumOps.ts';
+import { useStore } from '../lib/store.ts';
 import type { MenuItem } from './Menu.tsx';
 
 /** What a menu does to a list of tracks: play it, shuffle it (with the playback rules), queue it. */
@@ -25,16 +28,37 @@ function useTrackListActions() {
 
 type Album = Library['albums'][number];
 
+/** Turns an album that is really one song into a single (after asking). Returns false when the album is not eligible. */
+export function useConvertToSingle() {
+  const lib = useLibrary();
+  const { patch, remove } = useStore.getState();
+  const nav = useNavigate();
+  return (album: Album) => {
+    const plan = planConvertToSingle(lib, album);
+    if (!plan) return false;
+    const t = lib.trackById.get(plan.trackId)!;
+    if (!confirm(`Turn “${album.title}” into a single?\n\n“${t.title}” keeps its cover, credits and genres and leaves the album. The album and its ${plan.removeReleaseIds.length} release${plan.removeReleaseIds.length === 1 ? '' : 's'} are deleted (other releases' covers are lost).`)) return true;
+    patch('tracks', plan.trackId, plan.trackPatch);
+    for (const r of plan.removeReleaseIds) remove('releases', r);
+    remove('albums', plan.removeAlbumId);
+    nav('/singles');
+    return true;
+  };
+}
+
 /** The right-click / ⋯ menu of an album (cards, the album page). `ids` overrides the tracks when a release is being viewed. */
 export function useAlbumMenuItems() {
   const edit = useEditor((s) => s.open);
   const actions = useTrackListActions();
+  const lib = useLibrary();
+  const convert = useConvertToSingle();
   return (album: Album, ids: string[] = album.trackIds): MenuItem[] => [
     ...actions(ids, { type: 'album', id: album.id }),
     { separator: true },
     { label: 'Edit album…', icon: <Pencil size={15} />, run: () => edit({ kind: 'album', id: album.id }) },
     { label: 'Add audio files…', icon: <FileAudio size={15} />, run: () => edit({ kind: 'upload', id: album.id }) },
     { label: 'New release…', icon: <Plus size={15} />, run: () => edit({ kind: 'new-release', id: album.id }) },
+    ...(planConvertToSingle(lib, album) ? [{ label: 'Convert to a single…', icon: <Disc size={15} />, run: () => convert(album) }] : []),
     { separator: true },
     ...album.leads.map((l) => ({ label: `Go to ${l.name}`, icon: <User size={15} />, to: `/artists/${l.id}` })),
     ...(album.eraId ? [{ label: 'Go to its era', icon: <Layers size={15} />, to: `/eras/${album.eraId}` }] : []),
