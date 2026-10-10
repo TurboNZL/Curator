@@ -83,7 +83,7 @@ export function AlbumPage() {
           <div className="text-sm">
             <span className="font-medium"><ArtistLinks leads={album.leads} className="hover:underline" /></span>
             <span className="text-muted"> · {plural(tracks.length, 'track')}{album.rating != null && ` · avg ${album.rating.toFixed(1)}`}</span>
-            {album.eraId && lib.eraById.get(album.eraId) && <> · <Link to={`/eras/${album.eraId}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(album.eraId)!.name}</Link></>}
+            {album.eraIds.map((e) => lib.eraById.get(e) && <span key={e}> · <Link to={`/eras/${e}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(e)!.name}</Link></span>)}
           </div>
           <div className="flex flex-wrap gap-1.5">{album.genres.map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <div className="flex flex-wrap gap-2 pt-2">

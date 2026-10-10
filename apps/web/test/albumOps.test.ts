@@ -139,9 +139,10 @@ describe('convert an album to a single', () => {
   it('keeps the cover, era, credits and genres, and removes the album and its releases', () => {
     const lib = buildLibrary(rows(...one));
     const p = planConvertToSingle(lib, lib.albumById.get('al')!)!;
-    expect(p.trackPatch).toMatchObject({ albums: [], cover: 'relcover', eraId: 'e1', syncWithAlbumCredits: false, genres: ['Pop'] });
+    expect(p.trackPatch).toMatchObject({ albums: [], cover: 'relcover', syncWithAlbumCredits: false, genres: ['Pop'] });
     expect(p.trackPatch.credits).toEqual(leadCredit('a'));
     expect(p.removeReleaseIds.sort()).toEqual(['r1', 'r2']);
     expect(p.removeAlbumId).toBe('al');
+    expect(p.eraIds).toEqual([]); // 'e1' is not an era that exists in this data
   });
 });

@@ -5,6 +5,7 @@ import { useLibrary, type Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { planConvertToSingle } from '../lib/albumOps.ts';
+import { eraPatches } from '../lib/eraOps.ts';
 import { useStore } from '../lib/store.ts';
 import type { MenuItem } from './Menu.tsx';
 
@@ -39,6 +40,8 @@ export function useConvertToSingle() {
     const t = lib.trackById.get(plan.trackId)!;
     if (!confirm(`Turn “${album.title}” into a single?\n\n“${t.title}” keeps its cover, credits and genres and leaves the album. The album and its ${plan.removeReleaseIds.length} release${plan.removeReleaseIds.length === 1 ? '' : 's'} are deleted (other releases' covers are lost).`)) return true;
     patch('tracks', plan.trackId, plan.trackPatch);
+    for (const e of eraPatches(lib, 'album', plan.removeAlbumId, [])) patch('eras', e.id, e.patch); // the album leaves its eras...
+    for (const e of eraPatches(lib, 'track', plan.trackId, plan.eraIds)) patch('eras', e.id, e.patch); // ...and the single joins them
     for (const r of plan.removeReleaseIds) remove('releases', r);
     remove('albums', plan.removeAlbumId);
     nav('/singles');
@@ -61,7 +64,7 @@ export function useAlbumMenuItems() {
     ...(planConvertToSingle(lib, album) ? [{ label: 'Convert to a single…', icon: <Disc size={15} />, run: () => convert(album) }] : []),
     { separator: true },
     ...album.leads.map((l) => ({ label: `Go to ${l.name}`, icon: <User size={15} />, to: `/artists/${l.id}` })),
-    ...(album.eraId ? [{ label: 'Go to its era', icon: <Layers size={15} />, to: `/eras/${album.eraId}` }] : []),
+    ...album.eraIds.flatMap((e) => lib.eraById.get(e) ?? []).map((e) => ({ label: `Go to ${e.name}`, icon: <Layers size={15} />, to: `/eras/${e.id}` })),
   ];
 }
 

@@ -82,9 +82,11 @@ export function singleTrackOf(lib: Library, album: Album): string | null {
 export interface SinglePlan {
   trackId: string;
   /** fields to merge into the raw track record */
-  trackPatch: Pick<TrackData, 'albums' | 'cover' | 'eraId' | 'credits' | 'genres' | 'syncWithAlbumCredits'>;
+  trackPatch: Pick<TrackData, 'albums' | 'cover' | 'credits' | 'genres' | 'syncWithAlbumCredits'>;
   removeReleaseIds: string[];
   removeAlbumId: string;
+  /** the eras the album was in: the single takes its place in them */
+  eraIds: string[];
 }
 
 /**
@@ -101,12 +103,12 @@ export function planConvertToSingle(lib: Library, album: Album): SinglePlan | nu
     trackPatch: {
       albums: (t.albums ?? []).filter((l) => l.albumId !== album.id),
       cover: rel?.cover || album.cover || t.cover || null,
-      eraId: album.eraId ?? null,
       credits: t.credits.map((c) => ({ ...c, role: [...c.role] })),
       genres: [...t.allGenres],
       syncWithAlbumCredits: false,
     },
     removeReleaseIds: lib.releases.filter((r) => r.albumId === album.id).map((r) => r.id),
     removeAlbumId: album.id,
+    eraIds: album.eraIds,
   };
 }

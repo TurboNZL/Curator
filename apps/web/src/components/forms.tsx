@@ -2,7 +2,7 @@ import { Select } from './Select.tsx';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
-import type { ArtistData, Credit } from '@curator/core';
+import type { ArtistData, Credit, EraData } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { AUDIO_ACCEPT, hasLead, LEAD_ROLE } from '../lib/defaults.ts';
 import { saveAudio, saveImage } from '../lib/files.ts';
@@ -175,10 +175,18 @@ export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album
         <span className="chip">{h.type}</span><span className="truncate">{h.label}</span></button>))}</div>}</div>;
 }
 
-/** Choose an era (or none). */
-export function EraSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+/** The eras something is in: chips, and a search that can create a new era. Eras overlap, so there can be several. */
+export function EraPicker({ value, onChange }: { value: string[]; onChange: (ids: string[]) => void }) {
   const lib = useLibrary();
+  const put = useStore((s) => s.put);
+  const eras = [...lib.eras].sort((a, b) => a.name.localeCompare(b.name));
   return (
-    <Select value={value} onChange={onChange} options={[{ value: '', label: 'No era' }, ...[...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => ({ value: e.id, label: e.name }))]} />
+    <div className="space-y-2">
+      {value.length > 0 && <div className="flex flex-wrap gap-1.5">{value.map((id) => (
+        <span key={id} className="chip gap-1 !text-fg">{lib.eraById.get(id)?.name ?? '(deleted era)'}<button type="button" aria-label="Take out of this era" onClick={() => onChange(value.filter((x) => x !== id))}><X size={12} /></button></span>))}</div>}
+      <Select value="" placeholder={value.length ? 'Add to another era…' : 'Add to an era…'} searchable onChange={(id) => id && !value.includes(id) && onChange([...value, id])}
+        options={eras.filter((e) => !value.includes(e.id)).map((e) => ({ value: e.id, label: e.name }))}
+        creatable={{ label: (n) => `Create era: “${n}”`, create: (n) => put('eras', { name: n, description: null, cover: null, albumIds: [], trackIds: [], playlistIds: [] } satisfies EraData) }} />
+    </div>
   );
 }
