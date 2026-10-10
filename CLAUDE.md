@@ -197,3 +197,7 @@ Verified in Chromium against a seeded real server (seed script kept out of the r
 - **Repo is PRIVATE** so updaters need a read-only GitHub token (Settings > App updates). Releases come from `.github/workflows/release.yml` on `v*` tags. See docs/ANDROID.md.
 - **Android** (`apps/android`): WebView shell + Media3 MediaLibraryService for Android Auto + AppUpdater. NOT compiled anywhere (no Android SDK reachable from the sandbox; Google Maven redirects to a blocked host). Pure logic (`library/LibraryIndex.kt`) was meant to be JVM-tested; that check was skipped. First CI run will show compile errors, if any. Signing key is committed (`curator.keystore`) on purpose.
 
+
+## Session: Fortnite weights and Ch 6 hover (DONE)
+- Cause of the thin text in Ch 1-3: Tailwind `font-medium/semibold` on nav items, labels and cells (specificity 0,1,0) beat the style's base weight, so the condensed stand-in rendered at 500. `ui-styles.css` now forces `--fn-weight` on those utilities (900 in Ch 1-2, 700 in Ch 4-6), headings 900; Barlow Condensed/Archivo 900 (+italic) are imported in `fortnite-fonts.css`.
+- Ch 5-6 (`fortnite5`): hovered/focused buttons, nav, chips, rows, menu items get a 2 px white `outline` (offset, so no layout shift); inputs a softer one. Verified in Chromium (computed styles + screenshots). The exact in-game hover frame could not be checked against Epic sources (sandbox cannot fetch them; web search only describes the era's shapes), so the white frame follows the lobby's known focus look.

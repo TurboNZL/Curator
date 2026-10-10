@@ -892,6 +892,14 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
 [data-ui="fortnite1"] .btn-accent, [data-ui="fortnite2"] .btn-accent, [data-ui="fortnite5"] :is(h1, h2, .bt-titlebar h2) { font-style: italic; }
 [data-ui^="fortnite"] .bt-titlebar svg { display: none; }
 [data-ui^="fortnite"] .btn.btn-accent { font-size: 1rem; }
+/* Weight: Tailwind's font-medium/semibold/normal/light on nav items, labels and cells (specificity 0,1,0) used to beat the style's base weight, which left
+ * the condensed stand-in at 500 and far thinner than Burbank. Burbank Big Condensed is a heavy face (Black is its top weight), so every Fortnite style forces a
+ * heavy weight on those utilities; the two condensed eras go to 900. */
+[data-ui^="fortnite"] { --fn-weight: 700; }
+[data-ui="fortnite1"], [data-ui="fortnite2"] { --fn-weight: 900; font-weight: 900; }
+[data-ui^="fortnite"] :is(.font-light, .font-normal, .font-medium, .font-semibold, .bt-nav, .bt-tab, .chip, th, label, [role="menuitem"], [role="option"], .btn) { font-weight: var(--fn-weight); }
+[data-ui^="fortnite"] :is(.font-bold, .font-extrabold, h1, h2, h3, .bt-titlebar h2) { font-weight: 900; }
+[data-ui="fortnite1"] :is(.btn, .bt-nav, .bt-tab), [data-ui="fortnite2"] :is(.btn, .bt-nav, .bt-tab) { letter-spacing: 0.05em; }
 
 /* ---- Chapter 1 (2017-19): muted slate blue, bevelled rectangles, dark navy bars, cream selection ---- */
 [data-ui="fortnite1"] {
@@ -990,6 +998,13 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
   --chk-border: 2px solid #a8aebb; --chk-on-fg: #000;
   --rng-track: rgb(255 255 255 / 0.2); --rng-fill: #fff; --rng-thumb: #fff; --rng-ts: none;
 }
+/* Hover/focus outline: in the current lobby a hovered or focused control gets a white frame instead of only changing fill. Drawn with outline so nothing shifts. */
+[data-ui="fortnite5"] :is(.btn, .bt-nav, .chip, .bt-tab, .bt-close, .bt-row, .input, [role="menuitem"], [role="option"], a.card, button.card) { outline: 2px solid transparent; outline-offset: 2px; transition: outline-color var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease); }
+[data-ui="fortnite5"] :is(.btn, .bt-nav, .chip, .bt-tab, .bt-close, .bt-row, a.card, button.card):is(:hover, :focus-visible):not(:disabled) { outline-color: #fff; }
+[data-ui="fortnite5"] .bt-row:is(:hover, :focus-visible) { outline-offset: -2px; }
+[data-ui="fortnite5"] .input:is(:hover, :focus-visible) { outline-color: rgb(255 255 255 / 0.7); outline-offset: 1px; }
+[data-ui="fortnite5"] :is([role="menuitem"], [role="option"]):is(:hover, :focus-visible) { outline: 2px solid #fff; outline-offset: -3px; }
+[data-ui="fortnite5"] .bt-nav[aria-current="page"]:hover { outline-color: #fff; }
 [data-ui="fortnite5"] .btn.btn-ghost { background: transparent; color: inherit; }
 [data-ui="fortnite5"] .btn.btn-ghost:hover { background: rgb(255 255 255 / 0.1); }
 [data-ui="winxp"] .bt-side > div:last-child { color: #fff; }
