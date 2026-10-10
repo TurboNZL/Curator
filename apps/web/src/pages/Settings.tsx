@@ -11,6 +11,7 @@ import { DefaultImages, PlaybackRules, Vocabulary } from '../components/Settings
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
+import { AppUpdatesCard, DiscordCard } from '../components/AppSettings.tsx';
 
 
 export function SettingsPage() {
@@ -76,6 +77,8 @@ export function SettingsPage() {
           <button className="btn" onClick={() => void desktop()!.chooseLibraryFolder()}>Change folder…</button></div>
         <p className="text-xs text-muted">Version {desktop()!.version}. Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first.</p>
       </Section>}
+      <DiscordCard />
+      <AppUpdatesCard />
       <Section title="This device (Play on a device)">
         <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
         <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>

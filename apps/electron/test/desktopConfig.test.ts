@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DESKTOP_PORT, findWebDir, loadDesktopConfig, saveDesktopConfig } from '../src/desktopConfig.ts';
+import { DESKTOP_PORT, findWebDir, loadDesktopConfig, loadDiscordConfig, saveDesktopConfig, saveDiscordConfig } from '../src/desktopConfig.ts';
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'curator-desktop-')); });
@@ -34,3 +34,15 @@ describe('desktop config', () => {
     expect(findWebDir(join(dir, 'none'), join(dir, 'none'))).toBeNull();
   });
 });
+
+describe('discord config', () => {
+  it('is on but has no application id by default, and only accepts a numeric id', () => {
+    expect(loadDiscordConfig(dir, {})).toEqual({ discordEnabled: true, discordClientId: '' });
+    saveDiscordConfig(dir, { discordClientId: 'not an id' });
+    expect(loadDiscordConfig(dir, {}).discordClientId).toBe('');
+    saveDiscordConfig(dir, { discordClientId: '123456789012345678', discordEnabled: false });
+    expect(loadDiscordConfig(dir, {})).toEqual({ discordEnabled: false, discordClientId: '123456789012345678' });
+    expect(loadDesktopConfig(dir, {}).port).toBe(DESKTOP_PORT); // sharing the file does not disturb the other settings
+  });
+});
+

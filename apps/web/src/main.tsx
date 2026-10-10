@@ -6,11 +6,13 @@ import './index.css';
 import './ui-styles.css';
 import { applyAppearance } from './lib/appearance.ts';
 import { startConnect } from './lib/connect.ts';
+import { startPresence } from './lib/discordPresence.ts';
 import { useStore } from './lib/store.ts';
 
 // before the first paint, so a saved theme does not flash the default one
 applyAppearance(useStore.getState().settings);
 startConnect();
+startPresence();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode><BrowserRouter><App /></BrowserRouter></StrictMode>,

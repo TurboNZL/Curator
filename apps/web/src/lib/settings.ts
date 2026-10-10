@@ -34,7 +34,13 @@ export interface CuratorDesktop {
   token: string; version: string; dataDir: string; platform: string; port: number;
   chooseLibraryFolder(): Promise<string | null>;
   showLibraryFolder(): Promise<void>;
+  /** Discord Rich Presence (the app's main process talks to the local Discord client) */
+  setPresence(p: { title: string; artist: string; album: string; duration: number; position: number; playing: boolean } | null): void;
+  getDiscord(): Promise<DiscordInfo>;
+  setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
+  updates: import('./native.ts').NativeUpdates;
 }
+export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; status: 'off' | 'no-id' | 'connecting' | 'connected' };
 export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
 
 export function loadSettings(): DeviceSettings {

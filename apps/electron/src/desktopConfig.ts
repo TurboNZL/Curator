@@ -38,3 +38,17 @@ export function findWebDir(resourcesPath: string, devDir: string): string | null
   for (const dir of [join(resourcesPath, 'web'), devDir]) if (existsSync(join(dir, 'index.html'))) return dir;
   return null;
 }
+
+/** Discord Rich Presence settings. Kept apart from DesktopConfig because they are optional and have no effect on where the library is. */
+export interface DiscordConfig { discordEnabled: boolean; discordClientId: string }
+
+export function loadDiscordConfig(userData: string, env: NodeJS.ProcessEnv = process.env): DiscordConfig {
+  let saved: Partial<DiscordConfig> = {};
+  try { saved = JSON.parse(readFileSync(join(userData, FILE), 'utf8')) as Partial<DiscordConfig>; } catch { /* none yet */ }
+  const id = String(env.CURATOR_DISCORD_CLIENT_ID ?? saved.discordClientId ?? '').trim();
+  return { discordEnabled: saved.discordEnabled !== false, discordClientId: /^\d{15,25}$/.test(id) ? id : '' };
+}
+
+export function saveDiscordConfig(userData: string, patch: Partial<DiscordConfig>) {
+  saveDesktopConfig(userData, patch as Partial<DesktopConfig>);
+}
