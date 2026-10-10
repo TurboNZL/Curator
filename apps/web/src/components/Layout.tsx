@@ -1,6 +1,6 @@
-import { NavLink, Outlet, useMatch, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { BarChart3, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
 import { useStore } from '../lib/store.ts';
@@ -23,6 +23,31 @@ const NAV = [
   { to: '/health', label: 'Health', icon: Stethoscope },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
+
+/**
+ * Keeps the CSS variables --ind-x/-y/-w/-h at the active link's box, for the `.bt-ind` element that some UI styles slide
+ * across (Liquid Glass: the lit pill; Windows 11: the accent bar). The first placement does not animate.
+ */
+function useIndicator<T extends HTMLElement>(key: string) {
+  const ref = useRef<T>(null);
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    const place = () => {
+      const a = box.querySelector<HTMLElement>('[aria-current="page"]');
+      box.style.setProperty('--ind-o', a ? '1' : '0');
+      if (!a) return;
+      box.style.setProperty('--ind-x', `${a.offsetLeft}px`); box.style.setProperty('--ind-y', `${a.offsetTop}px`);
+      box.style.setProperty('--ind-w', `${a.offsetWidth}px`); box.style.setProperty('--ind-h', `${a.offsetHeight}px`);
+    };
+    place();
+    const raf = requestAnimationFrame(() => box.setAttribute('data-ind-ready', ''));
+    const ro = new ResizeObserver(place);
+    ro.observe(box);
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }, [key]);
+  return ref;
+}
 
 function SyncDot() {
   const { state, error } = useStore((s) => s.sync);
@@ -83,6 +108,9 @@ function MoreMenu() {
 
 export function Layout() {
   const nav = useNavigate();
+  const { pathname } = useLocation();
+  const sideRef = useIndicator<HTMLElement>(pathname);
+  const tabRef = useIndicator<HTMLElement>(pathname);
   // album, artist and era pages put their side panels beside the content, so they get more width
   const matches = [useMatch('/albums/:id'), useMatch('/artists/:id'), useMatch('/eras/:id')];
   const wide = matches.some(Boolean);
@@ -101,8 +129,10 @@ export function Layout() {
   }, [toggle]);
   return (
     <div className="flex h-full flex-col">
+      <div className="bt-scrim" aria-hidden />
       <div className="flex min-h-0 flex-1">
-        <aside className="bt-side bt-shell hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
+        <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
+          <span className="bt-ind" aria-hidden />
           <div className="mb-3 px-3 pt-1 text-lg font-bold tracking-tight">Curator</div>
           {NAV.map(({ to, label, icon: Icon, ...rest }) => (
             <NavLink key={to} to={to} end={'end' in rest} className="bt-nav flex items-center gap-3 px-3 py-2 text-sm font-medium">
@@ -127,7 +157,8 @@ export function Layout() {
       </div>
       <PlayerBar />
       <EditorHost />
-      <nav className="bt-tabbar bt-shell flex md:hidden">
+      <nav ref={tabRef} className="bt-tabbar bt-shell relative flex md:hidden">
+        <span className="bt-ind" aria-hidden />
         {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
           <NavLink key={to} to={to} end={'end' in rest} className="bt-tab flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]">
             <Icon size={20} />{label}

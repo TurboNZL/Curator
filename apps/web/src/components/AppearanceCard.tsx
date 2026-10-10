@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { create } from 'zustand';
+import { Section } from './Section.tsx';
 import { Check, Eye, ImageIcon, ImageOff, Search, Upload, Wand2 } from 'lucide-react';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
@@ -55,125 +57,136 @@ export function PreviewApp({ theme, ui }: { theme: ThemeId; ui: UiStyleId }) {
   );
 }
 
-type Tab = 'colours' | 'platform' | 'style';
 type Tone = 'all' | 'dark' | 'light';
 
-/**
- * Colour theme + UI style. The choices sit in one bounded, scrolling panel with tabs (they used to be one long
- * list that pushed the rest of Settings far down), next to a preview that stays in view.
- */
-export function AppearanceCard() {
-  const { settings, updateSettings } = useStore();
-  const theme = settings.theme;
-  const ui: UiStyleId = isUiStyle(settings.ui) ? settings.ui : 'default';
-  const def = resolveTheme(theme);
-  const [tab, setTab] = useState<Tab>('colours');
-  const [tone, setTone] = useState<Tone>('all');
-  // hovering or focusing an option previews it, combined with the other current choice
-  const [hoverTheme, setHoverTheme] = useState<ThemeId | null>(null);
-  const [hoverUi, setHoverUi] = useState<UiStyleId | null>(null);
-  const shownTheme = hoverTheme ?? theme;
-  const shownUi = hoverUi ?? ui;
-  const label = (id: ThemeId) => THEMES.find((t) => t.id === id)?.label;
+/** What the preview shows: the option under the pointer, else the current choice. Shared by the two sections and the preview column. */
+const usePreview = create<{ theme: ThemeId | null; ui: UiStyleId | null; setTheme(t: ThemeId | null): void; setUi(u: UiStyleId | null): void }>((set) => ({
+  theme: null, ui: null, setTheme: (theme) => set({ theme }), setUi: (ui) => set({ ui }),
+}));
 
+const label = (id: ThemeId) => THEMES.find((t) => t.id === id)?.label;
+const currentUi = (s: string): UiStyleId => (isUiStyle(s) ? s : 'default');
+
+/** A compact swatch: four stripes of the theme's own colours and its name. */
+function ThemeTile({ t }: { t: (typeof THEMES)[number] }) {
+  const { settings, updateSettings } = useStore();
+  const setHover = usePreview((s) => s.setTheme);
+  const selected = settings.theme === t.id;
+  const d = resolveTheme(t.id);
+  return (
+    <button type="button" role="radio" aria-checked={selected} title={t.note ? `${t.label}: ${t.note}` : t.label}
+      onClick={() => updateSettings({ theme: t.id })}
+      onMouseEnter={() => setHover(t.id)} onFocus={() => setHover(t.id)} onBlur={() => setHover(null)}
+      className={cn('flex min-w-0 items-center gap-2 rounded-theme border bg-raised/40 px-1.5 py-1 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+      <span data-theme={d.id} style={themeStyle(t.id)} className="flex h-5 w-9 shrink-0 overflow-hidden rounded border border-line/60 bg-bg" aria-hidden>
+        <span className="h-full flex-1 bg-bg" /><span className="h-full flex-1 bg-surface" /><span className="h-full flex-1 bg-accent" /><span className="h-full flex-1 bg-top" />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs font-medium">{t.label}</span>
+      {selected && <Check size={12} className="shrink-0 text-accent" />}
+    </button>
+  );
+}
+
+const TILE_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(8.25rem,1fr))] gap-1.5';
+
+/** Colour themes: three groups in one panel that grows with its content (no inner scrolling), dark/light filter on top. */
+export function ColourThemeSection() {
+  const [tone, setTone] = useState<Tone>('all');
+  const setHover = usePreview((s) => s.setTheme);
+  const tonal = (t: (typeof THEMES)[number]) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
+  const groups = [
+    { title: 'Curator', note: 'The app\'s own looks; System follows your device.', list: THEMES.filter((t) => (t.id === 'system' || OWN_THEME_IDS.includes(t.id)) && tonal(t)) },
+    { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && tonal(t)) },
+    { title: 'Platform palettes', note: 'Copied from a desktop or OS; they pair with the matching UI style.', list: THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id) && tonal(t)) },
+  ];
+  return (
+    <Section title="Colour theme">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto text-sm text-muted">Colours only: the accent comes from the theme. Any theme works with any UI style.</p>
+        <div role="group" aria-label="Show" className="flex gap-1 text-xs">
+          {(['all', 'dark', 'light'] as Tone[]).map((t) => <button key={t} aria-pressed={tone === t} onClick={() => setTone(t)} className={cn('rounded-full border px-2.5 py-0.5 capitalize', tone === t ? 'border-accent text-accent' : 'border-line text-muted hover:text-fg')}>{t}</button>)}
+        </div>
+      </div>
+      {groups.filter((g) => g.list.length).map((g) => (
+        <div key={g.title} className="space-y-1.5">
+          <div className="flex items-baseline gap-2"><h3 className="text-xs font-semibold uppercase tracking-wider text-muted">{g.title}</h3>{g.note && <span className="truncate text-[11px] text-muted">{g.note}</span>}</div>
+          <div role="radiogroup" aria-label={g.title} className={TILE_GRID} onMouseLeave={() => setHover(null)}>{g.list.map((t) => <ThemeTile key={t.id} t={t} />)}</div>
+        </div>))}
+    </Section>
+  );
+}
+
+/** UI styles: shape, type and motion. Every style is visible at once; hovering one previews it. */
+export function UiStyleSection() {
+  const { settings, updateSettings } = useStore();
+  const ui = currentUi(settings.ui);
+  const def = resolveTheme(settings.theme);
+  const setHoverUi = usePreview((s) => s.setUi);
+  const setHoverTheme = usePreview((s) => s.setTheme);
   // the platform's own palette for a UI style, in the light or dark variant matching the current theme
   const m = UI_STYLES.find((s) => s.id === ui)?.matching;
   const matching = m ? (def.dark ? m.dark ?? m.light : m.light) : null;
+  return (
+    <Section title="UI style">
+      <p className="text-sm text-muted">Shape, type, depth and motion: how buttons, menus, dialogs and the bars look and move. Colours stay as chosen above.</p>
+      {matching && matching !== settings.theme && (
+        <button type="button" className="btn text-xs" onClick={() => updateSettings({ theme: matching })} onMouseEnter={() => setHoverTheme(matching)} onMouseLeave={() => setHoverTheme(null)}>
+          <Wand2 size={14} />Use matching colours ({label(matching)})</button>)}
+      <div role="radiogroup" aria-label="UI style" className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2" onMouseLeave={() => setHoverUi(null)}>
+        {UI_STYLES.map((s) => {
+          const selected = ui === s.id;
+          return (
+            <button key={s.id} type="button" role="radio" aria-checked={selected} title={s.description} onClick={() => updateSettings({ ui: s.id })}
+              onMouseEnter={() => setHoverUi(s.id)} onFocus={() => setHoverUi(s.id)} onBlur={() => setHoverUi(null)}
+              className={cn('rounded-theme border bg-raised/40 px-3 py-2 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+              <span className="flex items-center justify-between gap-2"><span className="text-sm font-medium">{s.label}</span>{selected && <Check size={14} className="text-accent" />}</span>
+              <span className="mt-0.5 block text-[11px] leading-snug text-muted">{s.description}</span>
+            </button>
+          );
+        })}
+      </div>
+      {ui === 'liquid' && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span className="font-medium">Glass</span>
+          <div role="radiogroup" aria-label="Glass variant" className="flex rounded-theme bg-raised p-0.5">
+            {(['regular', 'clear'] as const).map((g) => (
+              <button key={g} role="radio" aria-checked={settings.glass === g} onClick={() => updateSettings({ glass: g })}
+                className={cn('rounded-[calc(var(--radius)-3px)] px-3 py-1 text-xs font-medium capitalize', settings.glass === g ? 'bg-surface text-fg shadow-sm' : 'text-muted hover:text-fg')}>{g}</button>))}
+          </div>
+          <span className="text-xs text-muted">{settings.glass === 'clear' ? 'Clear: more see-through, with a dimming layer for legibility. Best over bold artwork.' : 'Regular: adapts to what is behind it. The default.'}</span>
+        </div>)}
+    </Section>
+  );
+}
 
-  const themeButton = (t: (typeof THEMES)[number]) => {
-    const selected = theme === t.id;
-    const d = resolveTheme(t.id);
-    return (
-      <button key={t.id} type="button" role="radio" aria-checked={selected} title={t.note ? `${t.label}: ${t.note}` : t.label}
-        onClick={() => updateSettings({ theme: t.id })}
-        onMouseEnter={() => setHoverTheme(t.id)} onFocus={() => setHoverTheme(t.id)} onBlur={() => setHoverTheme(null)}
-        className={cn('rounded-theme border p-1.5 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
-        <span data-theme={d.id} style={themeStyle(t.id)} className="relative flex h-7 overflow-hidden rounded-md border border-line/60 bg-bg" aria-hidden>
-          <span className="h-full flex-1 bg-bg" /><span className="h-full flex-1 bg-surface" /><span className="h-full flex-1 bg-accent" /><span className="h-full flex-1 bg-top" />
-        </span>
-        <span className="mt-1 flex items-center justify-between gap-1 text-[11px] font-medium leading-tight"><span className="truncate">{t.label}</span>{selected && <Check size={12} className="shrink-0 text-accent" />}</span>
-      </button>
-    );
-  };
-  const grid = 'grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-1.5';
-  const tonal = (t: (typeof THEMES)[number]) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
-  const own = THEMES.filter((t) => (t.id === 'system' || OWN_THEME_IDS.includes(t.id)) && tonal(t));
-  const colours = THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && tonal(t));
-  const platform = THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id) && tonal(t));
+/** The framed preview that stays in view beside the two sections. */
+export function AppearancePreview() {
+  const { settings } = useStore();
+  const hoverTheme = usePreview((s) => s.theme);
+  const hoverUi = usePreview((s) => s.ui);
+  const theme = hoverTheme ?? settings.theme;
+  const ui = hoverUi ?? currentUi(settings.ui);
+  return (
+    <div className="lg:sticky lg:top-20">
+      <div className="rounded-theme border-2 border-dashed border-accent bg-accent/10 p-2">
+        <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 font-bold uppercase tracking-wider text-accent-fg"><Eye size={12} />Preview</span>
+          <span className="truncate font-medium">{label(theme)} + {UI_STYLES.find((s) => s.id === ui)?.label}</span>
+        </div>
+        <PreviewApp theme={theme} ui={ui} />
+        <p className="mt-1.5 text-center text-[11px] text-muted">Not your real page. Hover an option to try it, click to apply.</p>
+      </div>
+      <p className="mt-2 text-xs text-muted">Now: <span className="font-medium text-fg">{label(settings.theme)}</span> + <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === currentUi(settings.ui))?.label}</span></p>
+    </div>
+  );
+}
 
-  const tabs: { id: Tab; text: string }[] = [{ id: 'colours', text: 'Colour themes' }, { id: 'platform', text: 'Platform colours' }, { id: 'style', text: 'UI style' }];
-
+/** Colour theme and UI style as two separate sections, with one preview beside them. */
+export function AppearanceLayout() {
   return (
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <div className="min-w-0 space-y-3 lg:order-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <div role="tablist" aria-label="Appearance options" className="flex rounded-theme bg-raised p-0.5">
-            {tabs.map((x) => (
-              <button key={x.id} role="tab" aria-selected={tab === x.id} onClick={() => setTab(x.id)}
-                className={cn('rounded-[calc(var(--radius)-3px)] px-3 py-1 text-sm font-medium transition-colors', tab === x.id ? 'bg-surface text-fg shadow-sm' : 'text-muted hover:text-fg')}>{x.text}</button>))}
-          </div>
-          {tab !== 'style' && (
-            <div role="group" aria-label="Show" className="ml-auto flex gap-1 text-xs">
-              {(['all', 'dark', 'light'] as Tone[]).map((t) => <button key={t} aria-pressed={tone === t} onClick={() => setTone(t)} className={cn('rounded-full border px-2.5 py-0.5 capitalize', tone === t ? 'border-accent text-accent' : 'border-line text-muted hover:text-fg')}>{t}</button>)}
-            </div>)}
-        </div>
-
-        <div className="max-h-[21rem] overflow-y-auto rounded-theme border border-line p-2" role="tabpanel">
-          {tab === 'colours' && (
-            <div className="space-y-3">
-              <div role="radiogroup" aria-label="Curator themes" className={grid} onMouseLeave={() => setHoverTheme(null)}>{own.map(themeButton)}</div>
-              <div role="radiogroup" aria-label="More colour themes" className={grid} onMouseLeave={() => setHoverTheme(null)}>{colours.map(themeButton)}</div>
-            </div>)}
-          {tab === 'platform' && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted">Palettes copied from a desktop or OS, made to pair with the matching UI style.</p>
-              <div role="radiogroup" aria-label="Platform colour theme" className={grid} onMouseLeave={() => setHoverTheme(null)}>{platform.map(themeButton)}</div>
-            </div>)}
-          {tab === 'style' && (
-            <div className="space-y-2">
-              {matching && matching !== theme && (
-                <button type="button" className="btn text-xs" onClick={() => updateSettings({ theme: matching })} onMouseEnter={() => setHoverTheme(matching)} onMouseLeave={() => setHoverTheme(null)}>
-                  <Wand2 size={14} />Use matching colours ({label(matching)})</button>)}
-              <div role="radiogroup" aria-label="UI style" className="grid grid-cols-1 gap-1.5 sm:grid-cols-2" onMouseLeave={() => setHoverUi(null)}>
-                {UI_STYLES.map((s) => {
-                  const selected = ui === s.id;
-                  return (
-                    <button key={s.id} type="button" role="radio" aria-checked={selected} title={s.description} onClick={() => updateSettings({ ui: s.id })}
-                      onMouseEnter={() => setHoverUi(s.id)} onFocus={() => setHoverUi(s.id)} onBlur={() => setHoverUi(null)}
-                      className={cn('rounded-theme border bg-raised px-3 py-2 text-left transition-colors hover:bg-hover', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
-                      <span className="flex items-center justify-between gap-2"><span className="text-sm font-medium">{s.label}</span>{selected && <Check size={14} className="text-accent" />}</span>
-                      <span className="mt-0.5 line-clamp-2 block text-[11px] leading-snug text-muted">{s.description}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>)}
-        </div>
-
-        {ui === 'liquid' && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span className="font-medium">Glass</span>
-            <div role="radiogroup" aria-label="Glass variant" className="flex rounded-theme bg-raised p-0.5">
-              {(['regular', 'clear'] as const).map((g) => (
-                <button key={g} role="radio" aria-checked={settings.glass === g} onClick={() => updateSettings({ glass: g })}
-                  className={cn('rounded-[calc(var(--radius)-3px)] px-3 py-1 text-xs font-medium capitalize', settings.glass === g ? 'bg-surface text-fg shadow-sm' : 'text-muted hover:text-fg')}>{g}</button>))}
-            </div>
-            <span className="text-xs text-muted">{settings.glass === 'clear' ? 'Clear: more see-through, with a dimming layer for legibility. Best over bold artwork.' : 'Regular: adapts to what is behind it. The default.'}</span>
-          </div>)}
-        <p className="text-xs text-muted">Now: <span className="font-medium text-fg">{label(theme)}</span> + <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === ui)?.label}</span>. The accent colour comes from the colour theme.</p>
-      </div>
-
-      {/* the preview sits in its own framed column so it cannot be mistaken for the real page */}
-      <div className="lg:sticky lg:top-20 lg:order-2">
-        <div className="rounded-theme border-2 border-dashed border-accent bg-accent/10 p-2">
-          <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 font-bold uppercase tracking-wider text-accent-fg"><Eye size={12} />Preview</span>
-            <span className="truncate font-medium">{label(shownTheme)} + {UI_STYLES.find((s) => s.id === shownUi)?.label}</span>
-          </div>
-          <PreviewApp theme={shownTheme} ui={shownUi} />
-          <p className="mt-1.5 text-center text-[11px] text-muted">Not your real page. Hover an option to try it, click to apply.</p>
-        </div>
-      </div>
+      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /></div>
+      <AppearancePreview />
     </div>
   );
 }

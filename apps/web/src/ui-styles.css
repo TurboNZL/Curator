@@ -377,7 +377,6 @@ html[data-ui="win98"] { font-size: 14px; }
  * the same recipe renders as frosted glass with the rim highlight.
  * Accessibility: reduced motion removes the animation (global rule); reduced transparency makes it opaque (end).
  */
-@property --lg-glow { syntax: '<number>'; inherits: false; initial-value: 0; }
 
 @keyframes lg-open {
   0% { opacity: 0; transform: scale(0.72); }
@@ -398,7 +397,7 @@ html[data-ui="win98"] { font-size: 14px; }
 [data-ui="liquid"] {
   --radius: 22px; --ctl-r: 9999px; --card-r: 24px; --win-r: 34px; --menu-r: 24px; --nav-r: 18px; --in-r: 14px; --in-px: 0.9rem;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
-  --dur: 240ms; --ease: cubic-bezier(0.32, 0.72, 0, 1); --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur: 180ms; --ease: cubic-bezier(0.32, 0.72, 0, 1); --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* the material (dark) */
   --lg-fill: hsl(var(--surface) / 0.34); --lg-fill-strong: hsl(var(--surface) / 0.6);
@@ -413,7 +412,7 @@ html[data-ui="win98"] { font-size: 14px; }
   --in-hover-border: rgb(255 255 255 / 0.28); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: 0 0 0 4px hsl(var(--accent) / 0.32);
   --card-bg: hsl(var(--surface) / 0.46); --card-border: 0.5px solid rgb(255 255 255 / 0.1); --card-shadow: 0 6px 24px rgb(0 0 0 / 0.16);
   --backdrop: rgb(0 0 0 / 0.34);
-  --dialog-anim: lg-open 560ms cubic-bezier(0.22, 1, 0.36, 1) both; --menu-anim: lg-menu 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --dialog-anim: lg-open 380ms cubic-bezier(0.22, 1, 0.36, 1) both; --menu-anim: lg-menu 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
   --tb-bg: transparent; --tb-border: 0 solid transparent; --tb-pad: 1.2rem 1.5rem 0.4rem; --tb-size: 1.2rem; --tb-weight: 700;
   --close-size: 2rem; --close-pad: 0; --close-bg: rgb(255 255 255 / 0.13); --close-r: 9999px; --close-hover-bg: rgb(255 255 255 / 0.24);
   --bar-border: 0.5px solid rgb(255 255 255 / 0.1);
@@ -484,12 +483,24 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 :is(html, div)[data-ui="liquid"] .bt-footer { border-top: var(--bar-border); }
 
 /* the navigation layer floats above the content, inset from the edges, with corners concentric to each other */
-:is(html, div)[data-ui="liquid"] .bt-side.bt-shell { margin: 12px 0 12px 12px; border-radius: 30px; padding: 12px; animation: lg-bar-in 600ms var(--ease) both; }
+:is(html, div)[data-ui="liquid"] .bt-side.bt-shell { margin: 12px 0 12px 12px; border-radius: 30px; padding: 12px; animation: lg-bar-in 420ms var(--ease) both; }
 :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; overflow: hidden; }
 :is(html, div)[data-ui="liquid"] .bt-player.bt-shell > div:last-child { padding-block: 0.4rem; }
 :is(html, div)[data-ui="liquid"] .bt-tabbar.bt-shell { position: fixed; z-index: 31; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; padding: 4px 6px; }
-:is(html, div)[data-ui="liquid"] .bt-tab { border-radius: 9999px; transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease); }
-:is(html, div)[data-ui="liquid"] .bt-tab[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.12); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.22); animation: lg-pill 460ms var(--spring); }
+:is(html, div)[data-ui="liquid"] .bt-tab { position: relative; z-index: 1; border-radius: 9999px; transition: color var(--dur) var(--ease); }
+:is(html, div)[data-ui="liquid"] .bt-tab[aria-current="page"] { background: none; }
+/* the lit pill is one element that glides to the chosen link (its position comes from Layout's useIndicator) */
+:is(html, div)[data-ui="liquid"] .bt-ind {
+  display: block; position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
+  width: var(--ind-w, 0); height: var(--ind-h, 0); opacity: var(--ind-o, 0);
+  transform: translate3d(var(--ind-x, 0), var(--ind-y, 0), 0);
+  border-radius: var(--nav-r); background: var(--lg-sheen), rgb(255 255 255 / 0.13);
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.24), 0 2px 10px rgb(0 0 0 / 0.14);
+  will-change: transform;
+}
+:is(html, div)[data-ui="liquid"] [data-ind-ready] > .bt-ind { transition: transform 460ms var(--spring), width 460ms var(--spring), height 460ms var(--spring), opacity 160ms ease; }
+:is(html, div)[data-ui="liquid"] .bt-tabbar .bt-ind { border-radius: 9999px; }
+[data-ui="liquid"][data-mode="light"] .bt-ind { background: var(--lg-sheen), rgb(255 255 255 / 0.75); box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06), 0 2px 10px rgb(40 52 90 / 0.14); }
 @media (min-width: 768px) { :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { left: calc(14rem + 24px); } }
 @media (max-width: 767.98px) { :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { bottom: calc(12px + 3.9rem); } }
 :is(html, div)[data-ui="liquid"] main { padding-bottom: 1.5rem; }
@@ -498,12 +509,15 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 
 /* top bar: no band, the controls float; content fades out under it with a soft blur (the scroll edge effect) */
 :is(html, div)[data-ui="liquid"] .bt-top.bt-shell { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; isolation: isolate; }
-:is(html, div)[data-ui="liquid"] .bt-top.bt-shell::before {
-  content: ''; position: absolute; inset: 0 0 -22px 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(hsl(var(--bg) / 0.78), hsl(var(--bg) / 0));
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  -webkit-mask-image: linear-gradient(#000 58%, transparent); mask-image: linear-gradient(#000 58%, transparent);
+/* the band under the floating controls spans the whole window (a sibling element in Layout), so it has no edge at the sidebar */
+.bt-scrim { display: none; }
+:is(html, div)[data-ui="liquid"] .bt-scrim {
+  display: block; position: fixed; z-index: 5; left: 0; right: 0; top: 0; height: 5.25rem; pointer-events: none;
+  background: linear-gradient(hsl(var(--bg) / 0.7), hsl(var(--bg) / 0));
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent);
 }
+:is(html, div)[data-ui="liquid"] .bt-side.bt-shell { position: relative; z-index: 6; }
 :is(html, div)[data-ui="liquid"] .bt-top .input {
   border-radius: 9999px; border: 0; padding-block: 0.55rem;
   background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill);
@@ -516,17 +530,23 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 /* ---- controls: tinted glass when primary, glass on hover when plain ---- */
 :is(html, div)[data-ui="liquid"] .btn, :is(html, div)[data-ui="liquid"] .btn:hover, :is(html, div)[data-ui="liquid"] .btn:active {
   --lg-btn-fill: var(--lg-fill);
-  --lg-btn-bg: var(--lg-spec, none) center / 100% 100% no-repeat,
-    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / calc(var(--lg-glow) * 0.42)), transparent calc(16% + var(--lg-glow) * 94%)),
-    var(--lg-sheen), var(--lg-btn-fill);
-  background: var(--lg-btn-bg); border: 0; color: inherit; text-shadow: none;
+  background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-btn-fill);
+  border: 0; color: inherit; text-shadow: none;
   -webkit-backdrop-filter: blur(var(--lg-blur-sm)) saturate(var(--lg-sat));
   backdrop-filter: blur(var(--lg-blur-sm)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat));
   box-shadow: 0 3px 12px rgb(0 0 0 / 0.16), var(--lg-rim);
-  transition: --lg-glow 560ms var(--ease), transform 560ms var(--spring), box-shadow 300ms var(--ease), filter 300ms var(--ease);
+  transition: transform 360ms var(--spring), box-shadow 240ms var(--ease);
 }
-:is(html, div)[data-ui="liquid"] .btn:hover { --lg-glow: 0.5; }
-:is(html, div)[data-ui="liquid"] .btn:active { --lg-glow: 1; transform: scale(0.93); transition: --lg-glow 160ms ease-out, transform 110ms ease-out, box-shadow 160ms; box-shadow: 0 1px 4px rgb(0 0 0 / 0.2), var(--lg-rim); }
+/* the light under the pointer: an overlay that only changes opacity (the compositor does that, no repainting per frame) */
+:is(html, div)[data-ui="liquid"] .btn:not(.absolute):not(.fixed) { position: relative; isolation: isolate; }
+:is(html, div)[data-ui="liquid"] .btn::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.12) 55%, transparent 80%);
+  transition: opacity 260ms var(--ease);
+}
+:is(html, div)[data-ui="liquid"] .btn:hover::before { opacity: 0.55; }
+:is(html, div)[data-ui="liquid"] .btn:active::before { opacity: 1; transition-duration: 90ms; }
+:is(html, div)[data-ui="liquid"] .btn:active { transform: scale(0.93); transition: transform 100ms ease-out, box-shadow 140ms; box-shadow: 0 1px 4px rgb(0 0 0 / 0.2), var(--lg-rim); }
 :is(html, div)[data-ui="liquid"] .btn:focus-visible { outline: none; box-shadow: 0 0 0 4px hsl(var(--accent) / 0.4), var(--lg-rim); }
 :is(html, div)[data-ui="liquid"] .btn.btn-accent, :is(html, div)[data-ui="liquid"] .btn.btn-accent:hover, :is(html, div)[data-ui="liquid"] .btn.btn-accent:active {
   --lg-btn-fill: linear-gradient(160deg, hsl(var(--accent) / 0.92), hsl(var(--accent) / 0.66));
@@ -537,11 +557,16 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 :is(html, div)[data-ui="liquid"] .btn:disabled { opacity: 0.4; }
 :is(html, div)[data-ui="liquid"] .bt-nav, :is(html, div)[data-ui="liquid"] .bt-nav:hover { transition: background-color var(--dur) var(--ease), transform 420ms var(--spring); }
 :is(html, div)[data-ui="liquid"] .bt-nav:active { transform: scale(0.96); }
-:is(html, div)[data-ui="liquid"] .bt-nav[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.12); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2), 0 2px 10px rgb(0 0 0 / 0.14); animation: lg-pill 460ms var(--spring); }
-:is(html, div)[data-ui="liquid"] [data-mode="light"] .bt-nav[aria-current="page"], [data-ui="liquid"][data-mode="light"] .bt-nav[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.7); box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06), 0 2px 10px rgb(40 52 90 / 0.14); }
+:is(html, div)[data-ui="liquid"] .bt-nav { position: relative; z-index: 1; }
+:is(html, div)[data-ui="liquid"] .bt-nav[aria-current="page"] { background: none; box-shadow: none; }
 :is(html, div)[data-ui="liquid"] .bt-range::-webkit-slider-thumb { transition: transform 360ms var(--spring); }
 :is(html, div)[data-ui="liquid"] .bt-range:active::-webkit-slider-thumb { transform: scale(1.14); }
-:is(html, div)[data-ui="liquid"] .card { -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+:is(html, div)[data-ui="liquid"] .card {
+  background: var(--lg-sheen), var(--card-bg); border: 0;
+  box-shadow: var(--card-shadow), var(--lg-rim), inset 0 0.5px 0 rgb(255 255 255 / 0.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+}
+:is(html, div)[data-ui="liquid"] .card .card { background: var(--lg-sheen), hsl(var(--surface) / 0.3); -webkit-backdrop-filter: none; backdrop-filter: none; }
 :is(html, div)[data-ui="liquid"] textarea.input { border-radius: 18px; }
 :is(html, div)[data-ui="liquid"] .chip { background: rgb(255 255 255 / 0.1); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.12); }
 [data-ui="liquid"][data-mode="light"] .chip { background: rgb(0 0 0 / 0.05); box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06); }
@@ -554,6 +579,7 @@ html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
 
 
 /* ================== Player bar and pop-up motion per style ================== */
+.bt-ind { display: none; }
 .bt-thumb-pulse { animation: bt-thumb 420ms var(--ease); }
 .bt-cover-btn { transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
 .bt-cover-btn:hover { transform: scale(1.05); }
@@ -565,6 +591,6 @@ html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
 [data-ui="win7"] { --player-in: bt-fade 300ms ease-out both; --player-out: bt-fade-out 240ms ease-in both; --player-ms: 240ms; --pop-out: bt-fade-out 200ms ease-in both; --pop-ms: 200ms; }
 [data-ui="winxp"], [data-ui="win98"] { --vote-ms: 0ms; --player-in: none; --player-out: none; --player-ms: 0ms; --pop-out: none; --pop-ms: 0ms; }
 [data-ui="macos"] { --player-in: bt-slide-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1) both; --player-out: bt-slide-out 240ms ease-in both; --player-ms: 240ms; --pop-out: bt-fade-out 160ms ease-in both; --pop-ms: 160ms; }
-[data-ui="liquid"] { --player-in: lg-bar-in 600ms var(--ease) both; --player-out: lg-bar-out 340ms cubic-bezier(0.5, 0, 0.75, 0) both; --player-ms: 340ms; --pop-out: lg-menu-out 260ms cubic-bezier(0.5, 0, 0.75, 0) both; --pop-ms: 260ms; }
+[data-ui="liquid"] { --player-in: lg-bar-in 420ms var(--ease) both; --player-out: lg-bar-out 260ms cubic-bezier(0.5, 0, 0.75, 0) both; --player-ms: 260ms; --pop-out: lg-menu-out 200ms cubic-bezier(0.5, 0, 0.75, 0) both; --pop-ms: 200ms; }
 [data-ui="material"] { --player-in: bt-slide-in 420ms cubic-bezier(0.05, 0.7, 0.1, 1) both; --player-out: bt-slide-out 200ms cubic-bezier(0.3, 0, 0.8, 0.15) both; --player-ms: 200ms; --pop-out: bt-fade-out 150ms cubic-bezier(0.3, 0, 0.8, 0.15) both; --pop-ms: 150ms; }
 @keyframes lg-menu-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.7, 0.55); } }

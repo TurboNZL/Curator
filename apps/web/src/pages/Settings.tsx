@@ -6,12 +6,10 @@ import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
 import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
-import { AppearanceCard, WallpaperCard } from '../components/AppearanceCard.tsx';
+import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
+import { Section } from '../components/Section.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="card bt-panel space-y-4 p-5"><h2 className="bt-panel-title font-semibold">{title}</h2>{children}</section>;
-}
 
 export function SettingsPage() {
   const { settings, updateSettings, sync, syncNow } = useStore();
@@ -54,7 +52,7 @@ export function SettingsPage() {
     <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
 
-      <Section title="Appearance"><p className="text-sm text-muted">Pick a colour theme and a UI style; any combination works. Saved on this device.</p><AppearanceCard /></Section>
+      <AppearanceLayout />
 
       <Section title="Wallpaper"><WallpaperCard /></Section>
 
