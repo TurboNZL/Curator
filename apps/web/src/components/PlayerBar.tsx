@@ -46,15 +46,15 @@ export function PlayerBar() {
   return (
     <div className="bt-player bt-shell" data-leaving={leaving || undefined}>
       {p.error && <div className="bg-bad/15 px-4 py-1 text-center text-xs text-bad">{p.error}</div>}
-      <div className="flex items-center gap-3 px-3 py-2 md:gap-6 md:px-4">
+      <div className="bt-pbar flex items-center gap-3 px-3 py-2 md:gap-6 md:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-3 md:w-1/3 md:flex-none">
           {track && <>
             <button ref={setCoverBtn} type="button" data-popover-trigger aria-expanded={coverOpen} aria-label="Show a larger cover" title="Larger cover" className="bt-cover-btn shrink-0 rounded-theme" onClick={toggleCover}>
               <Cover hash={track.cover} seed={track.albumTitle ?? track.title} className="h-12 w-12" />
             </button>
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium">{track.title}</div>
-              <div className="truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
+              <div className="bt-ptitle truncate text-sm font-medium">{track.title}</div>
+              <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
               {v.remote && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {v.remote.name}</div>}
             </div>
             <button type="button" className="btn btn-ghost !p-1.5 shrink-0" title="Track info" aria-label="Track info" onClick={() => edit({ kind: 'track-details', id: track.id })}><Info size={16} /></button>
@@ -71,7 +71,7 @@ export function PlayerBar() {
             <button type="button" data-popover-trigger className={cn('btn-ghost btn !p-2 md:hidden', (devicesOpen || v.remote) && 'text-accent')} title="Play on a device" aria-label="Play on a device" onClick={usePopups.getState().toggleDevices}><Cast size={16} /></button>
             <button type="button" data-popover-trigger className={cn('btn-ghost btn !p-2 md:hidden', queueOpen && 'text-accent')} title="Queue" aria-label="Queue" aria-expanded={queueOpen} onClick={toggleQueue}><ListMusic size={16} /></button>
           </div>
-          <div className="hidden w-full max-w-xl items-center gap-2 text-xs tabular-nums text-muted sm:flex">
+          <div className="bt-times hidden w-full max-w-xl items-center gap-2 text-xs tabular-nums text-muted sm:flex">
             <span className="w-9 text-right">{fmtTime(v.time)}</span>
             <input type="range" aria-label="Seek" className="bt-range h-1 flex-1" style={pct(v.time, v.duration)} min={0} max={v.duration || 1} step={0.1} value={v.time} onChange={(e) => v.seek(Number(e.target.value))} />
             <span className="w-9">{fmtTime(v.duration)}</span>

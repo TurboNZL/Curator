@@ -47,12 +47,12 @@ export function AlbumsPage() {
       <div className="mb-5"><FilterBar scope="albums" chips={chips} onChips={setChips} text={q} onText={setQ} /></div>
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
         {albums.map((a) => (
-          <div key={a.id} className="group" onContextMenu={menu.onContextMenu(itemsFor(a), `Actions for ${a.title}`, a.id)}>
+          <div key={a.id} className="bt-tile group" onContextMenu={menu.onContextMenu(itemsFor(a), `Actions for ${a.title}`, a.id)}>
             <Link to={`/albums/${a.id}`} className="block">
               <Cover hash={a.cover} seed={a.title} className="transition-transform group-hover:scale-[1.02]" />
-              <div className="mt-2 truncate text-sm font-medium">{a.title}</div>
+              <div className="bt-cap-t mt-2 truncate text-sm font-medium">{a.title}</div>
             </Link>
-            <div className="flex justify-between text-xs text-muted"><span className="truncate"><ArtistLinks leads={a.leads} /></span>{a.rating != null && <span className="tabular-nums">{a.rating.toFixed(1)}</span>}</div>
+            <div className="bt-cap flex justify-between text-xs text-muted"><span className="truncate"><ArtistLinks leads={a.leads} /></span>{a.rating != null && <span className="tabular-nums">{a.rating.toFixed(1)}</span>}</div>
           </div>
         ))}
       </div>

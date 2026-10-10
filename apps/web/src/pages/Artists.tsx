@@ -29,10 +29,10 @@ export function ArtistsPage() {
       </div>
       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
         {rows.map((a) => (
-          <Link key={a.id} to={`/artists/${a.id}`} className="group block text-center" onContextMenu={menu.onContextMenu(itemsFor(a.id), `Actions for ${a.name}`, a.id)}>
+          <Link key={a.id} to={`/artists/${a.id}`} className="bt-tile group block text-center" onContextMenu={menu.onContextMenu(itemsFor(a.id), `Actions for ${a.name}`, a.id)}>
             <Cover kind="artist" hash={a.image} seed={a.name} className="mx-auto w-full transition-transform group-hover:scale-[1.03]" />
-            <div className="mt-2 truncate text-sm font-medium">{a.name}</div>
-            <div className="text-xs text-muted">{plural(a.count, 'track')}</div>
+            <div className="bt-cap-t mt-2 truncate text-sm font-medium">{a.name}</div>
+            <div className="bt-cap text-xs text-muted">{plural(a.count, 'track')}</div>
           </Link>
         ))}
       </div>

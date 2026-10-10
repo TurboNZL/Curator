@@ -10,7 +10,7 @@ Everything about how Curator looks lives in two independent choices, set per dev
 
 Any colour theme works with any UI style. "Use matching colours" in Settings applies the palette a style was designed with.
 The full lists are in [THEMES.md](THEMES.md); the rules for keeping new work consistent are in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md);
-the glass material has its own write-up, [LIQUID_GLASS.md](LIQUID_GLASS.md).
+the glass material has its own write-up, [LIQUID_GLASS.md](LIQUID_GLASS.md), and the original app's look is in [DYAD.md](DYAD.md).
 
 ## How a choice reaches the page
 

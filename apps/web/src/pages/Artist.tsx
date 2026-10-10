@@ -67,9 +67,9 @@ export function ArtistPage() {
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
           {albums.map((a) => (
-            <div key={a.id} onContextMenu={menu.onContextMenu(albumItems(a), `Actions for ${a.title}`, a.id)}>
-              <Link to={`/albums/${a.id}`} className="block"><Cover hash={a.cover} seed={a.title} /><div className="mt-2 truncate text-sm font-medium">{a.title}</div></Link>
-              <div className="truncate text-xs text-muted"><ArtistLinks leads={a.leads} /></div>
+            <div key={a.id} className="bt-tile" onContextMenu={menu.onContextMenu(albumItems(a), `Actions for ${a.title}`, a.id)}>
+              <Link to={`/albums/${a.id}`} className="block"><Cover hash={a.cover} seed={a.title} /><div className="bt-cap-t mt-2 truncate text-sm font-medium">{a.title}</div></Link>
+              <div className="bt-cap truncate text-xs text-muted"><ArtistLinks leads={a.leads} /></div>
             </div>))}
         </div></section>}
       {singles.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Singles</h2><SingleGrid tracks={singles} /></section>}

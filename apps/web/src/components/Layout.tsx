@@ -8,6 +8,7 @@ import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
 import { DevicesMenu } from './Devices.tsx';
+import { navLayout } from '../lib/uiStyle.ts';
 
 const NAV = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -57,6 +58,10 @@ function SyncDot() {
   return <div className="flex items-center gap-2 px-3 text-xs text-muted md:px-3" title={error ?? ""}><span className={cn('h-2 w-2 rounded-full', color)} />{text}</div>;
 }
 
+/** Layout "toolbar" (the Dyad UI style): these pages stay in the side bar, in this order; every other page becomes a text link in the top bar. */
+const LIBRARY = ['/artists', '/albums', '/singles', '/eras', '/tracks', '/playlists'];
+const TOOLBAR_LABEL: Record<string, string> = { '/': 'Journal' };
+
 const MOBILE_HIDDEN = ['/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
 
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
@@ -80,7 +85,7 @@ function AddMenu() {
   }, [open]);
   return (
     <div className="relative">
-      <button type="button" className="btn btn-accent" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}><Plus size={16} /><span className="hidden sm:inline">Add</span></button>
+      <button type="button" className="btn btn-accent bt-add" aria-label="Add" title="Add" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}><Plus size={16} /><span className="hidden sm:inline">Add</span></button>
       {open && <>
         <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
         <div role="menu" className="bt-menu absolute right-0 z-30 mt-2 w-64 origin-top-right overflow-hidden py-1">
@@ -116,6 +121,9 @@ export function Layout() {
   const matches = [useMatch('/albums/:id'), useMatch('/artists/:id'), useMatch('/eras/:id')];
   const wide = matches.some(Boolean);
   const [q, setQ] = useState('');
+  const toolbar = navLayout(useStore((s) => s.settings.ui)) === 'toolbar';
+  const sideNav = toolbar ? LIBRARY.map((to) => NAV.find((n) => n.to === to)!) : NAV;
+  const topNav = toolbar ? NAV.filter((n) => !LIBRARY.includes(n.to) && n.to !== '/settings') : [];
   const toggle = usePlayer((s) => s.toggle);
   const hasPlayer = usePlayer((s) => !!s.queue.currentId);
   // space = play/pause, unless typing in a field or pressing a button
@@ -134,8 +142,8 @@ export function Layout() {
       <div className="flex min-h-0 flex-1">
         <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
           <span className="bt-ind" aria-hidden />
-          <div className="mb-3 flex items-center gap-2.5 px-3 pt-1 text-lg font-bold tracking-tight"><img src="/icon.svg" alt="" width={26} height={26} className="h-[26px] w-[26px] shrink-0" draggable={false} />Curator</div>
-          {NAV.map(({ to, label, icon: Icon, ...rest }) => (
+          <div className="bt-brand mb-3 flex items-center gap-2.5 px-3 pt-1 text-lg font-bold tracking-tight"><img src="/icon.svg" alt="" width={26} height={26} className="h-[26px] w-[26px] shrink-0" draggable={false} />Curator</div>
+          {sideNav.map(({ to, label, icon: Icon, ...rest }) => (
             <NavLink key={to} to={to} end={'end' in rest} className="bt-nav flex items-center gap-3 px-3 py-2 text-sm font-medium">
               <Icon size={18} />{label}
             </NavLink>
@@ -144,18 +152,22 @@ export function Layout() {
         </aside>
         <main className={cn('min-w-0 flex-1 overflow-y-auto', hasPlayer && 'has-player')}>
           <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
-            <div className="relative mx-auto flex max-w-3xl items-center gap-3">
+            <div className="bt-topin relative mx-auto flex max-w-3xl items-center gap-3">
               <img src="/icon.svg" alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0 md:hidden" draggable={false} />
               <div className="md:hidden"><SyncDot /></div>
-              <div className="relative flex-1">
+              {toolbar && <nav className="bt-toplinks hidden min-w-0 items-center gap-6 overflow-x-auto md:flex" aria-label="Pages">
+                {topNav.map(({ to, label, ...rest }) => <NavLink key={to} to={to} end={'end' in rest} className="bt-toplink whitespace-nowrap">{TOOLBAR_LABEL[to] ?? label}</NavLink>)}
+              </nav>}
+              <div className="bt-search relative flex-1">
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
               <input className="input pl-9" placeholder="Search tracks, albums, artists" value={q} onChange={(e) => setQ(e.target.value)} />
               </div>
               <DevicesMenu />
               <AddMenu />
+              {toolbar && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}
             </div>
           </form>
-          <div className={cn('mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className="bt-page"><Outlet /></div></div>
+          <div className={cn('bt-content mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className="bt-page"><Outlet /></div></div>
         </main>
       </div>
       <PlayerBar />
