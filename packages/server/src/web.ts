@@ -38,7 +38,11 @@ export function serveWeb(app: Hono, webDir: string) {
     if (path.startsWith('/api/')) return next();
     const candidate = normalize(join(root, path));
     const inside = candidate === root || candidate.startsWith(root + sep);
-    const file = inside && existsSync(candidate) && statSync(candidate).isFile() ? candidate : join(root, 'index.html');
+    const exists = inside && existsSync(candidate) && statSync(candidate).isFile();
+    // a path that names a file (has an extension) but does not exist is a 404, not the app: asking an older server for
+    // /web-manifest.json used to answer 200 with index.html, which clients then failed to read as JSON
+    if (!exists && /\.[A-Za-z0-9]{1,8}$/.test(path)) return c.notFound();
+    const file = exists ? candidate : join(root, 'index.html');
     if (!existsSync(file)) return next();
     const immutable = file !== join(root, 'index.html') && path.startsWith('/assets/'); // vite fingerprints these
     return new Response(await readFile(file), {

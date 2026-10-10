@@ -22,10 +22,10 @@ export function ArtistsPage() {
   }, [lib, q]);
   return (
     <div>
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Artists <span className="text-base font-normal text-muted">{rows.length}</span></h1>
         <button className="btn" onClick={() => edit({ kind: 'new-artist', id: '' })}><Plus size={15} />New artist</button>
-        <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="input !w-48 max-w-full" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
         {rows.map((a) => (

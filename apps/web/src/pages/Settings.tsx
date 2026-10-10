@@ -1,3 +1,5 @@
+import { haptic } from '../lib/haptics.ts';
+import { EqualizerCard } from '../components/EqualizerCard.tsx';
 import { guessDeviceName } from '../lib/connect.ts';
 import { desktop } from '../lib/settings.ts';
 import { useEffect, useState } from 'react';
@@ -84,13 +86,9 @@ export function SettingsPage() {
       <Section title="This device (Play on a device)">
         <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
         <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>
+        <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 shrink-0" checked={settings.haptics} onChange={(e) => { updateSettings({ haptics: e.target.checked }); if (e.target.checked) haptic('confirm'); }} /><span>Haptic feedback <span className="text-muted">(a small vibration on presses, sliders and votes; phones only, and the Android app follows the system touch-feedback setting)</span></span></label>
       </Section>
-      <Section title="Sound">
-        <p className="text-sm text-muted">A bass boost for this device. It lifts the low end (below about 110 Hz) and trims the level a little first so loud songs do not clip, with a soft limiter as a backstop. Off by default; the Electron and Android apps will get a fuller equaliser.</p>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.eqOn} onChange={(e) => updateSettings({ eqOn: e.target.checked })} />Bass boost</label>
-        <label className={cn('block text-sm', !settings.eqOn && 'opacity-50')}><span className="mb-1 flex justify-between"><span className="font-medium">Amount</span><span className="tabular-nums text-muted">+{settings.eqBass} dB</span></span>
-          <input type="range" min={0} max={12} step={1} className="bt-range h-1 w-full" style={{ '--p': `${(settings.eqBass / 12) * 100}%` } as React.CSSProperties} disabled={!settings.eqOn} value={settings.eqBass} onChange={(e) => updateSettings({ eqBass: Number(e.target.value) })} aria-label="Bass boost in decibels" /></label>
-      </Section>
+      <Section title="Sound (equalizer)"><EqualizerCard /></Section>
 
       <Section title="Backup: export and import"><BackupCard /></Section>
 
@@ -118,7 +116,7 @@ export function SettingsPage() {
         <div className="h-2 overflow-hidden rounded-full bg-raised"><div className="h-full bg-accent" style={{ width: `${Math.min(100, (audioBytes / limitBytes) * 100)}%` }} /></div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
           <span>{fmtBytes(audioBytes)} of offline audio ({Object.keys(audioCache).length} files) · limit {settings.storageLimitMb} MB{usage ? ` · browser allows ${fmtBytes(usage.quota)}` : ''}</span>
-          <span className="flex items-center gap-3">
+          <span className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2">Limit MB<input className="input !w-24" type="number" min={100} step={100} value={settings.storageLimitMb} onChange={(e) => updateSettings({ storageLimitMb: Number(e.target.value) || 2048 })} /></label>
             <label className="flex items-center gap-1.5" title="When full, remove the offline tracks you played longest ago to make room"><input type="checkbox" checked={settings.evictOldest} onChange={(e) => updateSettings({ evictOldest: e.target.checked })} />Make room automatically</label>
             <button className="btn" disabled={!audioBytes} onClick={() => void removeAudio(Object.keys(audioCache))}>Clear offline audio</button></span></div>
