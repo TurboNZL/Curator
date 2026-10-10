@@ -211,15 +211,19 @@ export const THEME_DEFS: ThemeDef[] = [
     ov: { card: "#ffffff", secondary: "#e6e6e6", muted: "#ececec", accent: "#d3e6ef", border: "#dcdcdc", input: "#9e9e9e" } }),
   dark({ id: "lg-marshmallow-dark", label: "LG Dark", bg: hex("#1a1a1a"), primary: hex("#2aa6d1"), onPrimary: "0 0% 0%", fg: hx("#f2f2f2"), mutedFg: hx("#a8a8a8"), motif: "dots",
     ov: { card: "#2a2a2a", secondary: "#353535", muted: "#303030", accent: "#1f4456", border: "#3a3a3a", input: "#6a6a6a" } }),
-  // Fortnite: Epic's own colours are not published; these follow the lobby screenshots (blue ground, yellow Play, purple for the Rift UI)
-  dark({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#0b3a8c"), primary: hex("#ffe400"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#b9cdf2"), motif: "waves",
-    ov: { card: "#1456c4", secondary: "#2468d6", muted: "#1a5cc8", accent: "#ffe400", border: "#4f8ae8", input: "#6fa0f0" } }),
-  dark({ id: "fortnite-2", label: "Fortnite Ch 2-3", bg: hex("#07123a"), primary: hex("#ffd60a"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#9fb2e0"), motif: "grid",
-    ov: { card: "#0f2260", secondary: "#18307f", muted: "#122968", accent: "#ffd60a", border: "#2c4aa8", input: "#4a68c4" } }),
-  dark({ id: "fortnite-4", label: "Fortnite Ch 4", bg: hex("#1d0b3f"), primary: hex("#ffdd2d"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#c4b0ec"), motif: "stars",
-    ov: { card: "#2d1360", secondary: "#3d1c82", muted: "#331770", accent: "#ffdd2d", border: "#4b2a96", input: "#6c47c0" } }),
-  dark({ id: "fortnite-5", label: "Fortnite Ch 5-6", bg: hex("#081a45"), primary: hex("#fff04d"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#a9bdea"), motif: "stars",
-    ov: { card: "#10296a", secondary: "#1a3a8c", muted: "#143275", accent: "#fff04d", border: "#2a4fb0", input: "#4a70d0" } }),
+  // Fortnite: Epic does not publish its UI colours; these are read off screenshots of each era's settings and lobby screens.
+  // Ch 1: muted slate blue with dark navy text, a dark navy top bar, pale cream "selected" buttons with a soft yellow edge
+  light({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#8296b9"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#1b2342"), mutedFg: hx("#3b4a72"), motif: "waves",
+    ov: { card: "#9fb2d0", secondary: "#aabdd8", muted: "#7a8fb4", accent: "#fbf6c8", border: "#6a80a8", input: "#587aa5" } }),
+  // Ch 2-3: saturated royal blue, cyan outlines and selection, lime-yellow Start button, pale blue type
+  dark({ id: "fortnite-2", label: "Fortnite Ch 2-3", bg: hex("#0a5db6"), primary: hex("#e8f03b"), onPrimary: "60 100% 6%", fg: hx("#d9eeff"), mutedFg: hx("#9ccbf3"), motif: "grid",
+    ov: { card: "#0a4a9a", secondary: "#0d6bcb", muted: "#0a55a8", accent: "#19b0f2", border: "#22b6ff", input: "#0b4a9a" } }),
+  // Ch 4: blue again (not purple) with charcoal buttons, white outlines and a white selected row
+  dark({ id: "fortnite-4", label: "Fortnite Ch 4", bg: hex("#0b3bb0"), primary: hex("#ffe500"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#b6c7f2"), motif: "stars",
+    ov: { card: "#0a2f94", secondary: "#3a4254", muted: "#2a3350", accent: "#ffffff", border: "#5a78d8", input: "#161d3e" } }),
+  // Ch 5-6: neutral dark glass, light grey "regular" buttons, a yellow "loud" button; no chapter colour any more
+  dark({ id: "fortnite-5", label: "Fortnite Ch 5-6", bg: hex("#12151d"), primary: hex("#ffee00"), onPrimary: "0 0% 0%", fg: "0 0% 100%", mutedFg: hx("#a8aebb"), motif: "stars",
+    ov: { card: "#1b1f2b", secondary: "#2a2f3d", muted: "#262b38", accent: "#e6e9ef", border: "#363c4b", input: "#222733" } }),
   light({ id: "material", label: "Material You", bg: hex("#fef7ff"), primary: hex("#6750a4"), fg: hx("#1d1b20"), mutedFg: hx("#49454f"), motif: "dots",
     ov: { card: "#f7f2fa", secondary: "#e8def8", muted: "#ece6f0", accent: "#e8def8", border: "#cac4d0", input: "#79747e" } }),
   dark({ id: "material-dark", label: "Material You Dark", bg: hex("#141218"), primary: hex("#d0bcff"), onPrimary: hx("#381e72"), fg: hx("#e6e0e9"), mutedFg: hx("#cac4d0"), motif: "dots",

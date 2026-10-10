@@ -3,7 +3,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
 import { startServer, type Running } from '../../../packages/server/src/start.ts';
-import { findWebDir, loadDesktopConfig, saveDesktopConfig } from './desktopConfig.ts';
+import { findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
+import { DiscordPresence, type Presence } from './discord.ts';
+import { Updates } from './updater.ts';
 
 /**
  * The desktop app runs the same server as the Raspberry Pi, inside the app, on 127.0.0.1, with the library in a folder of the
@@ -13,6 +15,8 @@ import { findWebDir, loadDesktopConfig, saveDesktopConfig } from './desktopConfi
 const here = dirname(fileURLToPath(import.meta.url));
 let server: Running | null = null;
 let win: BrowserWindow | null = null;
+const discord = new DiscordPresence();
+const updates = new Updates(app.isPackaged, (state) => win?.webContents.send('curator:update', state));
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
@@ -69,6 +73,23 @@ ipcMain.on('curator:info', (e) => {
   e.returnValue = { token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, port: server?.port ?? 0 };
 });
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
+const discordInfo = () => ({ ...loadDiscordConfig(userData()), status: discord.status });
+ipcMain.on('curator:presence', (_e, p: Presence | null) => {
+  if (p && (typeof p.title !== 'string' || typeof p.artist !== 'string')) return;
+  discord.update(p ? { title: p.title, artist: p.artist, album: String(p.album ?? ''), duration: Number(p.duration) || 0, position: Number(p.position) || 0, playing: !!p.playing } : null);
+});
+ipcMain.handle('curator:discord-get', () => discordInfo());
+ipcMain.handle('curator:discord-set', (_e, patch: { discordEnabled?: boolean; discordClientId?: string }) => {
+  saveDiscordConfig(userData(), { ...(typeof patch.discordEnabled === 'boolean' ? { discordEnabled: patch.discordEnabled } : {}), ...(typeof patch.discordClientId === 'string' ? { discordClientId: patch.discordClientId.trim() } : {}) });
+  const c = loadDiscordConfig(userData());
+  discord.configure(c.discordClientId, c.discordEnabled);
+  return discordInfo();
+});
+ipcMain.handle('curator:update-has-token', () => !!loadUpdateToken(userData()));
+ipcMain.handle('curator:update-set-token', (_e, t: unknown) => { const v = typeof t === 'string' ? t.trim() : ''; saveUpdateToken(userData(), v); updates.setToken(v); });
+ipcMain.handle('curator:update-state', () => updates.state);
+ipcMain.handle('curator:update-check', () => updates.check());
+ipcMain.on('curator:update-install', () => updates.install());
 ipcMain.handle('curator:show-folder', () => { if (server) void shell.openPath(server.config.dataDir); });
 
 function menu() {
@@ -91,7 +112,7 @@ let closing = false;
 app.on('before-quit', (e) => {
   if (closing || !server) return;
   e.preventDefault(); closing = true;
-  void server.close().finally(() => app.exit(0));
+  void Promise.allSettled([discord.stop(), server.close()]).finally(() => app.exit(0));
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (!win && server) openWindow(); });
@@ -100,4 +121,8 @@ void app.whenReady().then(async () => {
   try { await boot(); } catch (e) { dialog.showErrorBox('Music Curator cannot start', (e as Error).message); app.exit(1); return; }
   menu();
   openWindow();
+  const dc = loadDiscordConfig(userData());
+  discord.configure(dc.discordClientId, dc.discordEnabled);
+  updates.setToken(loadUpdateToken(userData()));
+  updates.start();
 });

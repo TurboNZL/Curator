@@ -1,0 +1,86 @@
+import { useEffect, useState } from 'react';
+import { desktop, type DiscordInfo } from '../lib/settings.ts';
+import { appVersion, nativeUpdates, type UpdateState } from '../lib/native.ts';
+import { Section } from './Section.tsx';
+
+const describe = (s: UpdateState): string => {
+  switch (s.status) {
+    case 'checking': return 'Checking for updates…';
+    case 'none': return 'You are on the latest version.';
+    case 'downloading': return `Downloading ${s.version ?? 'the update'}${s.percent != null ? ` (${s.percent}%)` : ''}…`;
+    case 'ready': return `${s.version ?? 'The update'} is ready.`;
+    case 'disabled': return s.message ?? 'Updates are not available here.';
+    case 'error': return `Could not check: ${s.message ?? 'unknown error'}`;
+    default: return '';
+  }
+};
+
+/** Self-update of an installed app (desktop or Android): no command line. Hidden in a browser. */
+export function AppUpdatesCard() {
+  const up = nativeUpdates();
+  const [state, setState] = useState<UpdateState>({ status: 'idle' });
+  const [hasToken, setHasToken] = useState(false);
+  const [token, setToken] = useState('');
+  useEffect(() => {
+    if (!up) return;
+    let live = true;
+    void up.state().then((s) => { if (live) setState(s); });
+    void up.hasToken().then((h) => { if (live) setHasToken(h); });
+    const off = up.onState((s) => { if (live) setState(s); });
+    return () => { live = false; off(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!up) return null;
+  const busy = state.status === 'checking' || state.status === 'downloading';
+  return (
+    <Section title="App updates">
+      <p className="text-sm text-muted">The app checks GitHub for a new version when it starts and every few hours, and downloads it in the background. Version {appVersion() ?? '?'}.</p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <button className="btn" disabled={busy} onClick={() => void up.check().then(setState)}>Check for updates</button>
+        {state.status === 'ready' && <button className="btn btn-accent" onClick={() => up.install()}>{desktop() ? 'Restart to update' : 'Install update'}</button>}
+        <span className={state.status === 'error' ? 'text-warn' : 'text-muted'}>{describe(state)}</span>
+      </div>
+      <details className="text-sm">
+        <summary className="cursor-pointer text-muted">Private repository? Add a GitHub token{hasToken && ' (one is saved)'}</summary>
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-muted">While the project's repository is private, the app needs a fine-grained personal access token that can read its contents (GitHub › Settings › Developer settings › Fine-grained tokens, repository access: only this one, permission Contents: read-only). It stays on this device. Not needed once the repository is public.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="input w-80 font-mono" type="password" placeholder={hasToken ? 'saved (type a new one to replace it)' : 'github_pat_…'} value={token} onChange={(e) => setToken(e.target.value)} />
+            <button className="btn" disabled={!token.trim()} onClick={() => void up.setToken(token).then(() => { setHasToken(true); setToken(''); return up.check(); }).then(setState)}>Save &amp; check</button>
+            {hasToken && <button className="btn btn-ghost" onClick={() => void up.setToken('').then(() => setHasToken(false))}>Remove</button>}
+          </div>
+        </div>
+      </details>
+    </Section>
+  );
+}
+
+const DISCORD_LABEL: Record<DiscordInfo['status'], string> = {
+  off: 'Off', 'no-id': 'Needs an application ID', connecting: 'Waiting for Discord to be running…', connected: 'Connected: your song shows on your profile',
+};
+
+/** Discord Rich Presence for the desktop app. */
+export function DiscordCard() {
+  const d = desktop();
+  const [info, setInfo] = useState<DiscordInfo | null>(null);
+  const [id, setId] = useState('');
+  useEffect(() => {
+    if (!d?.getDiscord) return;
+    void d.getDiscord().then((i) => { setInfo(i); setId(i.discordClientId); });
+    const t = setInterval(() => void d.getDiscord().then(setInfo), 4000); // the connection state changes by itself
+    return () => clearInterval(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!d?.getDiscord || !info) return null;
+  const save = (patch: { discordEnabled?: boolean; discordClientId?: string }) => void d.setDiscord(patch).then((i) => { setInfo(i); setId(i.discordClientId); });
+  const valid = /^\d{15,25}$/.test(id.trim());
+  return (
+    <Section title="Discord">
+      <p className="text-sm text-muted">Show the song you are playing on your Discord profile ("Listening to …", with a progress bar). Create an application at <code>discord.com/developers/applications</code>: its name is what appears after "Listening to", and an image named <code>logo</code> under Rich Presence › Art Assets is the picture. Paste its Application ID below. Discord's desktop app has to be running.</p>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={info.discordEnabled} onChange={(e) => save({ discordEnabled: e.target.checked })} />Show what I'm playing on Discord</label>
+      <div className="flex flex-wrap items-center gap-2">
+        <input className="input w-72 font-mono" inputMode="numeric" placeholder="Application ID (18 digits)" value={id} onChange={(e) => setId(e.target.value)} />
+        <button className="btn" disabled={!valid || id.trim() === info.discordClientId} onClick={() => save({ discordClientId: id.trim() })}>Save</button>
+      </div>
+      <div className="text-xs text-muted">Status: {DISCORD_LABEL[info.status]}{id && !valid && ' · the ID is only digits'}</div>
+    </Section>
+  );
+}

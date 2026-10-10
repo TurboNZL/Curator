@@ -11,6 +11,7 @@
     "start": "node scripts/build.mjs && electron .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "dist:publish": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --publish always",
     "dist": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder",
     "dist:dir": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --dir"
   },
@@ -25,12 +26,49 @@
   "build": {
     "appId": "app.musiccurator.desktop",
     "productName": "Music Curator",
-    "directories": { "output": "release", "buildResources": "build" },
-    "files": ["dist/**", "package.json"],
-    "extraResources": [{ "from": "../web/dist", "to": "web" }],
-    "linux": { "target": ["AppImage", "deb"], "category": "Audio", "icon": "build/icon.png" },
-    "win": { "target": ["nsis"], "icon": "build/icon.png" },
-    "mac": { "target": ["dmg"], "category": "public.app-category.music", "icon": "build/icon.png" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web"
+      }
+    ],
+    "publish": [{ "provider": "github", "owner": "TurboNZL", "repo": "music-curator", "releaseType": "release" }],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Audio",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.music",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "@xhayper/discord-rpc": "^1.5.1",
+    "electron-updater": "^6.8.9"
   }
 }

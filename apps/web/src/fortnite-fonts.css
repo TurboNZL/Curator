@@ -1,0 +1,13 @@
+/* Open fonts that stand in for Fortnite's own (Burbank Big Condensed: Ch 1-3; Heading Now: Ch 4+). Only downloaded when a Fortnite style is used. */
+@import '@fontsource/barlow-condensed/400.css';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+@import '@fontsource/barlow-condensed/700-italic.css';
+@import '@fontsource/barlow-condensed/800-italic.css';
+@import '@fontsource/archivo/400.css';
+@import '@fontsource/archivo/600.css';
+@import '@fontsource/archivo/700.css';
+@import '@fontsource/archivo/800.css';
+@import '@fontsource/archivo/700-italic.css';
+@import '@fontsource/archivo/800-italic.css';
