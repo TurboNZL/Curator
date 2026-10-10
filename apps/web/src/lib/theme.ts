@@ -263,8 +263,8 @@ export function readableOn(hexColour: string): string {
   return lum > 0.4 ? "240 10% 8%" : "0 0% 100%";
 }
 
-/** Applies the colour theme and the optional accent colour override to the page. */
-export function applyTheme(theme: ThemeId, accent: string | null) {
+/** Applies the colour theme to the page. The accent colour is part of the theme (there is no separate accent setting). */
+export function applyTheme(theme: ThemeId) {
   const root = document.documentElement;
   const def = resolveTheme(theme);
   root.dataset.theme = def.id;
@@ -275,12 +275,5 @@ export function applyTheme(theme: ThemeId, accent: string | null) {
     if (vars[name]) root.style.setProperty(`--${name}`, vars[name]);
     else root.style.removeProperty(`--${name}`);
   }
-  if (accent) {
-    const [h, s, l] = hex(accent);
-    root.style.setProperty("--accent", t(h, s, l));
-    root.style.setProperty("--accent-fg", readableOn(accent));
-  }
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", `hsl(${def.bg[0]} ${def.bg[1]}% ${def.bg[2]}%)`);
 }
-
-export const ACCENTS = ["#8b5cf6", "#3b82f6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];

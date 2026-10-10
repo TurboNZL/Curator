@@ -27,7 +27,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const itemsFor = useTrackMenuItems();
 
   return (
-    <div className="divide-y divide-line/60">
+    <div className="divide-y divide-line/60 [container-type:inline-size]">
       {tracks.map((t, i) => (
         <div key={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
           onContextMenu={menu.onContextMenu(itemsFor(t, () => play(t.id, ids, { type: source, id: sourceId })), `Actions for ${t.title}`, t.id)}>
@@ -43,10 +43,10 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
               {showAlbum && t.albumTitle && <> · <Link to={`/albums/${t.albumId}`} className="hover:text-fg hover:underline">{t.albumTitle}</Link></>}
             </div>
           </div>
-          <div className="hidden w-40 justify-end gap-1 overflow-hidden sm:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
+          <div className="hidden w-40 justify-end gap-1 overflow-hidden [@container(min-width:36rem)]:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <span className="w-4 text-muted" title={t.file && cache[t.file] ? 'Saved on this device' : ''}>{t.file && cache[t.file] && <ArrowDownToLine size={13} />}</span>
-          <div className="hidden w-14 text-right text-xs tabular-nums text-muted md:block">{t.bitrate ?? ''}</div>
-          <div className="hidden w-28 justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 md:flex">
+          <div className="hidden w-14 text-right text-xs tabular-nums text-muted [@container(min-width:46rem)]:block">{t.bitrate ?? ''}</div>
+          <div className="hidden w-28 justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@container(min-width:42rem)]:flex">
             <button className="p-1 text-muted hover:text-fg" title="Details" onClick={() => edit({ kind: 'track-details', id: t.id })}><Info size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Edit" onClick={() => edit({ kind: 'track', id: t.id })}><Pencil size={15} /></button>
             <button className="p-1 text-muted hover:text-fg" title="Play next" disabled={!t.file} onClick={() => enqueue(t.id, 'next')}><ListStart size={15} /></button>

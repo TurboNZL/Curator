@@ -57,7 +57,7 @@ function AddMenu() {
       <button type="button" className="btn btn-accent" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}><Plus size={16} /><span className="hidden sm:inline">Add</span></button>
       {open && <>
         <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-        <div role="menu" className="bt-menu absolute right-0 z-30 mt-2 w-64 overflow-hidden py-1">
+        <div role="menu" className="bt-menu absolute right-0 z-30 mt-2 w-64 origin-top-right overflow-hidden py-1">
           {ADD.map(({ label, icon: Icon, target }) => (
             <button key={label} role="menuitem" className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm" onClick={() => { setOpen(false); edit(target); }}><Icon size={16} />{label}</button>))}
         </div></>}
@@ -73,7 +73,7 @@ function MoreMenu() {
       <button type="button" className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] text-muted" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}><MoreHorizontal size={20} />More</button>
       {open && <>
         <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-        <div role="menu" className="bt-menu absolute bottom-full right-0 z-30 mb-2 w-48 overflow-hidden py-1">
+        <div role="menu" className="bt-menu absolute bottom-full right-0 z-30 mb-2 w-48 origin-bottom-right overflow-hidden py-1">
           {NAV.filter((n) => MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm"><Icon size={16} />{label}</NavLink>))}
         </div></>}
@@ -101,7 +101,7 @@ export function Layout() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1">
-        <aside className="bt-side hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
+        <aside className="bt-side bt-shell hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
           <div className="mb-3 px-3 pt-1 text-lg font-bold tracking-tight">Curator</div>
           {NAV.map(({ to, label, icon: Icon, ...rest }) => (
             <NavLink key={to} to={to} end={'end' in rest} className="bt-nav flex items-center gap-3 px-3 py-2 text-sm font-medium">
@@ -111,7 +111,7 @@ export function Layout() {
           <div className="mt-auto"><SyncDot /></div>
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto">
-          <form className="bt-top sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
+          <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
             <div className="relative mx-auto flex max-w-3xl items-center gap-3">
               <div className="md:hidden"><SyncDot /></div>
               <div className="relative flex-1">
@@ -126,7 +126,7 @@ export function Layout() {
       </div>
       <PlayerBar />
       <EditorHost />
-      <nav className="bt-tabbar flex md:hidden">
+      <nav className="bt-tabbar bt-shell flex md:hidden">
         {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
           <NavLink key={to} to={to} end={'end' in rest} className="bt-tab flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]">
             <Icon size={20} />{label}

@@ -15,7 +15,7 @@ export function PlayerBar() {
   const p = usePlayer();
   const track = p.queue.currentId ? lib.trackById.get(p.queue.currentId) : undefined;
   return (
-    <div className="bt-player">
+    <div className="bt-player bt-shell">
       {p.error && <div className="bg-bad/15 px-4 py-1 text-center text-xs text-bad">{p.error}</div>}
       <div className="flex items-center gap-3 px-3 py-2 md:gap-6 md:px-4">
         <div className="flex w-1/3 min-w-0 items-center gap-3">

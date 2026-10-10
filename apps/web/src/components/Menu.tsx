@@ -37,7 +37,7 @@ export function ContextMenu({ at, onClose }: { at: MenuAt; onClose: () => void }
 
   return createPortal(
     <div ref={ref} role="menu" aria-label={at.label} className="bt-menu fixed z-[60] w-56 overflow-hidden py-1"
-      style={{ ...pos, transformOrigin: pos.top < at.y ? 'bottom left' : 'top left' }}
+      style={{ ...pos, transformOrigin: `${Math.max(0, at.x - pos.left)}px ${Math.max(0, at.y - pos.top)}px` }}
       onContextMenu={(e) => e.preventDefault()}>
       {at.items.map((it, i) => 'separator' in it
         ? <div key={i} role="separator" className="my-1 border-t border-line/60" />

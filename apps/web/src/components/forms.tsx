@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
 import type { ArtistData, Credit } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
@@ -13,9 +14,12 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
+  // the dialog grows out of the control that opened it
+  const win = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { if (win.current) win.current.style.transformOrigin = originFor(win.current.getBoundingClientRect()); }, []);
   return (
     <div className="bt-backdrop fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label={title} className="bt-window flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden">
+      <div ref={win} role="dialog" aria-label={title} className="bt-window flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden">
         <div className="bt-titlebar flex items-center"><h2 className="font-semibold">{title}</h2>
           <button className="bt-close" aria-label="Close" onClick={onClose}><X size={18} /></button></div>
         <div className="bt-body space-y-4 overflow-y-auto p-5">{children}</div>

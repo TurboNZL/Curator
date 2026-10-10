@@ -10,7 +10,8 @@ export interface DeviceSettings {
   theme: string;
   /** UI style: shape, type and motion (see lib/uiStyle.ts) */
   ui: string;
-  accent: string | null;
+  /** Liquid Glass variant: Regular adapts to what is behind it, Clear is see-through with a dimming layer */
+  glass: 'regular' | 'clear';
   /** picture behind the page; the picture itself is kept apart (lib/wallpaper.ts) */
   wallpaper: boolean;
   wallpaperDarkness: number;
@@ -27,7 +28,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), serverUrl: '', token: '', theme: 'default', ui: 'default', accent: null, wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, ...saved,
+    deviceId: newId(), serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, ...saved,
   };
   saveSettings(s);
   return s;
