@@ -8,7 +8,7 @@ import { saveAudio, saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from './Cover.tsx';
 
-export function Modal({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', h);
@@ -19,7 +19,7 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
   useLayoutEffect(() => { if (win.current) win.current.style.transformOrigin = originFor(win.current.getBoundingClientRect()); }, []);
   return (
     <div className="bt-backdrop fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={win} role="dialog" aria-label={title} className="bt-window flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden">
+      <div ref={win} role="dialog" aria-label={title} className={`bt-window flex max-h-[92vh] w-full flex-col overflow-hidden ${wide ? 'max-w-3xl' : 'max-w-xl'}`}>
         <div className="bt-titlebar flex items-center"><h2 className="font-semibold">{title}</h2>
           <button className="bt-close" aria-label="Close" onClick={onClose}><X size={18} /></button></div>
         <div className="bt-body space-y-4 overflow-y-auto p-5">{children}</div>

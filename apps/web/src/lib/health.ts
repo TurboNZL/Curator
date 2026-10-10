@@ -9,6 +9,8 @@ export interface HealthCheck {
   fix?: { label: string; table: 'artists' | 'genres' | 'roleCategories' };
   /** one-click: write a "Lead artist" credit from the stored artistId onto each item */
   addLead?: { label: string };
+  /** paste many links at once, album by album */
+  bulk?: 'youtubeMusicUrl' | 'spotifyUrl' | 'geniusUrl';
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -47,11 +49,11 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.file).map((x) => t(x, x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
     { id: 'no-source', title: 'Tracks with no audio and no YouTube link', why: 'Nothing to download from. Add a link in the track editor.',
       items: lib.tracks.filter((x) => !x.file && !x.youtubeMusicUrl).map((x) => t(x)) },
-    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio.',
+    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio.', bulk: 'youtubeMusicUrl',
       items: lib.tracks.filter((x) => !x.youtubeMusicUrl).map((x) => t(x, x.file ? 'has audio' : 'no audio')) },
-    { id: 'no-spotify', title: 'Tracks without a Spotify link', why: 'Optional, but handy for opening the track elsewhere.',
+    { id: 'no-spotify', title: 'Tracks without a Spotify link', why: 'Optional, but handy for opening the track elsewhere.', bulk: 'spotifyUrl',
       items: lib.tracks.filter((x) => !x.spotifyUrl).map((x) => t(x)) },
-    { id: 'no-genius', title: 'Tracks without a Genius link', why: 'Optional: lyrics and annotations.',
+    { id: 'no-genius', title: 'Tracks without a Genius link', why: 'Optional: lyrics and annotations.', bulk: 'geniusUrl',
       items: lib.tracks.filter((x) => !x.geniusUrl).map((x) => t(x)) },
     { id: 'release-no-date', title: 'Releases without a date', why: 'Open the release and set its date.',
       items: lib.releases.filter((r) => !r.releaseDate).map((r) => ({ kind: 'release' as const, id: r.id, label: `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? 'unknown album'}` })) },
@@ -59,8 +61,6 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.albums.filter((a) => !a.genres.length).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },
     { id: 'no-genre', title: 'Tracks without a genre', why: 'They will not show up in genre filters or the genre stats.',
       items: lib.tracks.filter((x) => !x.allGenres.length).map((x) => t(x)) },
-    { id: 'no-album', title: 'Tracks that are not on any album', why: 'Singles are fine, but these have no cover or album page.',
-      items: lib.tracks.filter((x) => !x.albumId).map((x) => t(x)) },
     { id: 'low-quality', title: 'Low bitrate tracks (under 192 kbps)', why: 'Worth replacing when a better source exists.',
       items: lowQuality.map((x) => t(x, x.bitrate ?? undefined)) },
     { id: 'duplicates', title: 'Possible duplicate tracks', why: 'Same title and artist more than once. Delete the extra, keep the one with the votes.',

@@ -6,6 +6,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { sha256Sync } from '../src/lib/sha256.ts';
 import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { computeHealth } from '../src/lib/health.ts';
+import { assignLinks, linkGroups, looksRight, parseLinks } from '../src/lib/bulkLinks.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
 import { computeStats } from '../src/lib/stats.ts';
 import { leadCredit, appendTrack, hasLead, leadArtistId, withLeadFallback, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
@@ -139,7 +140,7 @@ describe('computeHealth', () => {
   it('finds each kind of problem', () => {
     expect(by('no-audio')).toEqual(['t1']);
     expect(by('no-source')).toEqual(['t1']);
-    expect(by('no-album')).toEqual(['t2']);
+    expect(computeHealth(lib).some((c) => c.id === 'no-album')).toBe(false); // singles are meant to exist
     expect(by('no-genre')).toEqual(['t2']);
     expect(by('low-quality')).toEqual(['t1']);
     expect(by('album-no-cover')).toEqual(['al']);
@@ -150,6 +151,33 @@ describe('computeHealth', () => {
     expect(by('artist-unused')).toEqual(['z']);       // 'c' is only a credit but is still used
     expect(by('genre-unused')).toEqual(['g3']);
     expect(by('role-unused')).toEqual(['r2']);        // 'Producer' is used by a credit
+  });
+});
+
+describe('bulk links', () => {
+  const lib = buildLibrary(rows(
+    rec('artists', 'a', { name: 'A', image: null }),
+    rec('albums', 'al', { title: 'Album', credits: [{ artistId: 'a', role: ['Lead artist'] }], genres: [], cover: null, trackOrder: ['t2', 't1', 't3'] }),
+    rec('tracks', 't1', track('One', { albums: [{ albumId: 'al', order: 0 }], youtubeMusicUrl: 'https://youtu.be/x' })),
+    rec('tracks', 't2', track('Two', { albums: [{ albumId: 'al', order: 0 }] })),
+    rec('tracks', 't3', track('Three', { albums: [{ albumId: 'al', order: 0 }] })),
+    rec('tracks', 't4', track('Loose', { albums: [] })),
+  ));
+  it('groups by album in tracklist order, singles last', () => {
+    const g = linkGroups(lib, 'youtubeMusicUrl');
+    expect(g.map((x) => [x.title, x.tracks.map((t) => t.id)])).toEqual([['Album', ['t2', 't1', 't3']], ['Singles', ['t4']]]);
+    expect(linkGroups(lib, 'spotifyUrl')).toHaveLength(2);
+  });
+  it('maps lines to rows in order and keeps gaps', () => {
+    const lines = parseLinks('see https://youtu.be/a ok\n\nhttps://music.youtube.com/watch?v=b\nnot a link');
+    expect(lines).toEqual(['https://youtu.be/a', '', 'https://music.youtube.com/watch?v=b', '']);
+    const m = assignLinks([{ id: 't2' }, { id: 't3' }, { id: 't4' }], lines);
+    expect([...m]).toEqual([['t2', 'https://youtu.be/a'], ['t3', null], ['t4', 'https://music.youtube.com/watch?v=b']]);
+  });
+  it('flags links for the wrong site', () => {
+    expect(looksRight('spotifyUrl', 'https://open.spotify.com/track/1')).toBe(true);
+    expect(looksRight('spotifyUrl', 'https://youtu.be/x')).toBe(false);
+    expect(looksRight('geniusUrl', 'https://genius.com/Artist-song-lyrics')).toBe(true);
   });
 });
 
