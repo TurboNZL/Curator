@@ -153,7 +153,7 @@ export function Layout() {
               <AddMenu />
             </div>
           </form>
-          <div className={cn('mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><Outlet /></div>
+          <div className={cn('mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className="bt-page"><Outlet /></div></div>
         </main>
       </div>
       <PlayerBar />

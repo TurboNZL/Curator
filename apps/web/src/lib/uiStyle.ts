@@ -4,7 +4,7 @@
  */
 import type { ThemeId } from "./theme.ts";
 
-export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material";
+export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "winamp";
 
 export type UiStyleDef = {
   id: UiStyleId;
@@ -25,8 +25,11 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "win7", label: "Windows 7", description: "Aero: glass window frames, grey gel buttons with a blue glow and a red close button in Segoe UI.", font: "Segoe UI", matching: { light: "win7", dark: "win7-dark" } },
   { id: "winxp", label: "Windows XP", description: "Luna: bevelled buttons, blue title bars, orange hover rings, instant menus and Tahoma.", font: "Tahoma", matching: { light: "winxp" } },
   { id: "win98", label: "Windows 98", description: "Classic: grey bevelled 3D controls, navy title bars, no animation and MS Sans Serif style type.", font: "Tahoma", matching: { light: "win98" } },
-  { id: "macos", label: "macOS", description: "Soft rounded controls, traffic-light dialogs, blurred top bar and focus rings in the system sans.", font: "system-ui", matching: { light: "macos", dark: "macos-dark" } },
+  { id: "macos", label: "macOS (Big Sur to Sequoia)", description: "Apple's flat 2020s look: 10 px windows, flat blue default buttons, a see-through sidebar and toolbar, sheet-style dialogs, in SF.", font: "system-ui", matching: { light: "macos", dark: "macos-dark" } },
+  { id: "aqua", label: "Mac OS X Aqua (2001-09)", description: "Cheetah to Snow Leopard: pinstriped windows, glossy gel capsule buttons with a pulsing default, jewel traffic lights and a blue source list in Lucida Grande.", font: "Lucida Grande", matching: { light: "aqua" } },
   { id: "liquid", label: "macOS Liquid Glass", description: "Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus.", font: "SF Pro", matching: { light: "macos", dark: "macos-dark" } },
+  { id: "holo", label: "Android Holo (4.x, 2011-13)", description: "Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto.", font: "Roboto", matching: { light: "holo-light", dark: "holo-dark" } },
+  { id: "winamp", label: "Winamp 2 (classic skin)", description: "The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial.", font: "Arial", matching: { light: "winamp" } },
   { id: "material", label: "Material 3", description: "Pill buttons, tonal surfaces, filled fields with an underline and rounded dialogs in Roboto.", font: "Roboto", matching: { light: "material", dark: "material-dark" } },
 ];
 

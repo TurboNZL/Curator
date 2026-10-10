@@ -195,6 +195,17 @@ export const THEME_DEFS: ThemeDef[] = [
     ov: { card: "#ffffff", secondary: "#ececf0", muted: "#ececf0", accent: "#e1e1e6", border: "#d6d6db", input: "#c7c7cc" } }),
   dark({ id: "macos-dark", label: "macOS Dark", bg: hex("#1e1e1e"), primary: hex("#0a84ff"), onPrimary: "0 0% 100%", fg: hx("#f5f5f7"), mutedFg: hx("#98989d"), motif: "hills",
     ov: { card: "#2a2a2c", secondary: "#3a3a3c", muted: "#323234", accent: "#48484a", border: "#3d3d40", input: "#545458" } }),
+  // Aqua: #ececec chrome, white content, #3875d7 selection (the classic Mac OS X list highlight)
+  light({ id: "aqua", label: "Mac OS X Aqua", bg: hex("#ececec"), primary: hex("#3875d7"), onPrimary: "0 0% 100%", fg: hx("#000000"), mutedFg: hx("#5a5a5a"), motif: "waves",
+    ov: { card: "#ffffff", secondary: "#dcdcdc", muted: "#e2e2e2", accent: "#c7d7ee", border: "#a5a5a5", input: "#7f7f7f" } }),
+  // Holo: the Android 4 palette. Blue #33b5e5 / #0099cc, black "background_dark", greys #1a1a1a / #333
+  dark({ id: "holo-dark", label: "Android Holo Dark", bg: hex("#000000"), primary: hex("#33b5e5"), onPrimary: "0 0% 0%", fg: hx("#ffffff"), mutedFg: hx("#a6a6a6"), motif: "grid",
+    ov: { card: "#121212", secondary: "#2a2a2a", muted: "#222222", accent: "#1f3b47", border: "#2e2e2e", input: "#4d4d4d" } }),
+  light({ id: "holo-light", label: "Android Holo Light", bg: hex("#ffffff"), primary: hex("#0099cc"), onPrimary: "0 0% 100%", fg: hx("#333333"), mutedFg: hx("#737373"), motif: "grid",
+    ov: { card: "#f3f3f3", secondary: "#e5e5e5", muted: "#ececec", accent: "#cfeaf5", border: "#d0d0d0", input: "#a8a8a8" } }),
+  // Winamp 2.x: bluish metal chrome, a black playlist with #00ff00 text and #000080 selection (the skin's pledit.txt defaults)
+  dark({ id: "winamp", label: "Winamp Classic", bg: hex("#1c1c2a"), primary: hex("#00e800"), onPrimary: "0 0% 0%", fg: hx("#d8dbe6"), mutedFg: hx("#8e96a8"), motif: "grid",
+    ov: { card: "#000000", secondary: "#34344a", muted: "#2a2a3c", accent: "#000080", border: "#46465e", input: "#5a5a72" } }),
   light({ id: "material", label: "Material You", bg: hex("#fef7ff"), primary: hex("#6750a4"), fg: hx("#1d1b20"), mutedFg: hx("#49454f"), motif: "dots",
     ov: { card: "#f7f2fa", secondary: "#e8def8", muted: "#ece6f0", accent: "#e8def8", border: "#cac4d0", input: "#79747e" } }),
   dark({ id: "material-dark", label: "Material You Dark", bg: hex("#141218"), primary: hex("#d0bcff"), onPrimary: hx("#381e72"), fg: hx("#e6e0e9"), mutedFg: hx("#cac4d0"), motif: "dots",
@@ -210,7 +221,7 @@ export const THEMES: { id: ThemeId; label: string; dark: boolean | null; note?: 
 /** Themes that copy a platform's palette, shown in their own group in Settings. */
 export const PLATFORM_THEME_IDS: ThemeId[] = [
   "adwaita", "adwaita-dark", "breeze", "breeze-dark", "win11", "win11-dark", "win10", "win10-dark",
-  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "material", "material-dark",
+  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "material", "material-dark",
 ];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 
