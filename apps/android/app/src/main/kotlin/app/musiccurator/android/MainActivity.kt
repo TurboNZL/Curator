@@ -60,16 +60,10 @@ class MainActivity : AppCompatActivity() {
         web.setBackgroundColor(0xFF0B0B10.toInt())
         web.addJavascriptInterface(CuratorBridge(this), "CuratorAndroid")
 
-        val loader = WebViewAssetLoader.Builder().setDomain(HOST).addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this)).build()
+        val loader = WebViewAssetLoader.Builder().setDomain(HOST).addPathHandler("/", SpaAssets(this)).build()
         web.webViewClient = object : WebViewClient() {
-            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-                val uri = request.url
-                var resp = loader.shouldInterceptRequest(uri)
-                // a route of the web app (/albums/…): every such path is index.html
-                if ((resp == null || resp.statusCode == 404) && uri.host == HOST && !(uri.lastPathSegment ?: "").contains('.'))
-                    resp = loader.shouldInterceptRequest(Uri.parse("https://$HOST/index.html"))
-                return resp
-            }
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                loader.shouldInterceptRequest(request.url)
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == HOST) return false
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
@@ -110,6 +104,40 @@ class MainActivity : AppCompatActivity() {
         AppUpdater.listener = null
         web.destroy()
         super.onDestroy()
+    }
+
+    /**
+     * Serves the bundled web client. The stock AssetsPathHandler answers a missing file (and the bare "/") with an empty
+     * response, which the WebView reports as ERR_INVALID_RESPONSE, so "/" and every route of the app (/albums/…) get index.html.
+     */
+    private class SpaAssets(private val context: android.content.Context) : WebViewAssetLoader.PathHandler {
+        override fun handle(path: String): WebResourceResponse? {
+            val name = path.trimStart('/').ifEmpty { "index.html" }
+            val stream = try { context.assets.open(name) } catch (e: java.io.IOException) { null }
+            if (stream != null) return WebResourceResponse(mime(name), null, stream)
+            if (name.substringAfterLast('/').contains('.'))
+                return WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
+            return WebResourceResponse("text/html", "utf-8", context.assets.open("index.html"))
+        }
+
+        private fun mime(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {
+            "html" -> "text/html"
+            "js", "mjs" -> "text/javascript"
+            "css" -> "text/css"
+            "json" -> "application/json"
+            "webmanifest" -> "application/manifest+json"
+            "svg" -> "image/svg+xml"
+            "png" -> "image/png"
+            "jpg", "jpeg" -> "image/jpeg"
+            "webp" -> "image/webp"
+            "ico" -> "image/x-icon"
+            "woff2" -> "font/woff2"
+            "woff" -> "font/woff"
+            "ttf" -> "font/ttf"
+            "wasm" -> "application/wasm"
+            "mp3" -> "audio/mpeg"
+            else -> "application/octet-stream"
+        }
     }
 
     private companion object { const val HOST = "appassets.androidplatform.net" }
