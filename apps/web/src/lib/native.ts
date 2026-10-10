@@ -18,7 +18,9 @@ export interface NativeUpdates {
 }
 
 /** What the Android app puts on `window` (a Java interface: strings only, so results come back as JSON and updates as events). */
-interface AndroidBridge { setServer(url: string, token: string): void; version(): string; updateState(): string; checkForUpdate(): void; installUpdate(): void; hasUpdateToken(): boolean; setUpdateToken(t: string): void }
+interface AndroidBridge { setServer(url: string, token: string): void; version(): string; updateState(): string; checkForUpdate(): void; installUpdate(): void; hasUpdateToken(): boolean; setUpdateToken(t: string): void;
+  // newer app versions only
+  webClientState?(): string; webClientVersion?(): string; updateWebClient?(): void; reloadWebClient?(): void; useBundledWebClient?(): void }
 const android = (): AndroidBridge | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { CuratorAndroid?: AndroidBridge }).CuratorAndroid);
 
 export const isAndroidApp = () => !!android();
@@ -47,4 +49,31 @@ export function nativeUpdates(): NativeUpdates | null {
 /** Tells the Android app which server this device uses, so Android Auto browses the same library. No effect elsewhere. */
 export function syncNativeServer(serverUrl: string, token: string): void {
   try { android()?.setServer(serverUrl, token); } catch { /* not in the app */ }
+}
+
+/** Updating the web client of the Android app from the user's server, without installing a new APK. Null outside the app (or in an app too old to do it). */
+export interface WebClientUpdates {
+  state(): UpdateState;
+  /** the build the app currently shows from the server ('' = the one bundled in the APK) */
+  version(): string;
+  update(): void;
+  reload(): void;
+  useBundled(): void;
+  onState(cb: (s: UpdateState) => void): () => void;
+}
+export function webClientUpdates(): WebClientUpdates | null {
+  const a = android();
+  if (!a?.updateWebClient || !a.webClientState) return null;
+  return {
+    state: () => { try { return JSON.parse(a.webClientState!()) as UpdateState; } catch { return { status: 'idle' }; } },
+    version: () => a.webClientVersion?.() ?? '',
+    update: () => a.updateWebClient!(),
+    reload: () => a.reloadWebClient?.(),
+    useBundled: () => a.useBundledWebClient?.(),
+    onState: (cb) => {
+      const h = (e: Event) => cb((e as CustomEvent<UpdateState>).detail);
+      window.addEventListener('curator-webclient', h);
+      return () => window.removeEventListener('curator-webclient', h);
+    },
+  };
 }

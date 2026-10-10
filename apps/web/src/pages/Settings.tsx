@@ -11,7 +11,7 @@ import { DefaultImages, PlaybackRules, Vocabulary } from '../components/Settings
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
-import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
+import { AppUpdatesCard, WebClientCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
 
 
 export function SettingsPage() {
@@ -80,6 +80,7 @@ export function SettingsPage() {
       </Section>}
       <DiscordCard />
       <AppUpdatesCard />
+      <WebClientCard />
       <Section title="This device (Play on a device)">
         <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
         <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>

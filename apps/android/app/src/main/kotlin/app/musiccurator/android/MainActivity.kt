@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import java.io.File
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -96,6 +97,10 @@ class MainActivity : AppCompatActivity() {
         AppUpdater.listener = { s ->
             web.post { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('curator-update',{detail:${s.json()}}))", null) }
         }
+        WebClientUpdater.listener = { s ->
+            web.post { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('curator-webclient',{detail:${s.json()}}))", null) }
+        }
+        WebClientUpdater.reloader = { web.post { web.clearCache(true); web.loadUrl("https://$HOST/") } }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
 
@@ -112,6 +117,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         AppUpdater.listener = null
+        WebClientUpdater.listener = null
+        WebClientUpdater.reloader = null
         web.destroy()
         super.onDestroy()
     }
@@ -123,11 +130,16 @@ class MainActivity : AppCompatActivity() {
     private class SpaAssets(private val context: android.content.Context) : WebViewAssetLoader.PathHandler {
         override fun handle(path: String): WebResourceResponse? {
             val name = path.trimStart('/').ifEmpty { "index.html" }
+            // a client downloaded from the user's server (WebClientUpdater) wins over the bundled one
+            val updated = WebClientUpdater.root(context)?.let { File(it, name).takeIf { f -> f.isFile && f.canonicalPath.startsWith(it.canonicalPath + File.separator) } }
+            if (updated != null) return WebResourceResponse(mime(name), null, updated.inputStream())
+            if (name.endsWith(".meta")) return WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
             val stream = try { context.assets.open(name) } catch (e: java.io.IOException) { null }
             if (stream != null) return WebResourceResponse(mime(name), null, stream)
             if (name.substringAfterLast('/').contains('.'))
                 return WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
-            return WebResourceResponse("text/html", "utf-8", context.assets.open("index.html"))
+            val index = WebClientUpdater.root(context)?.let { File(it, "index.html") }
+            return WebResourceResponse("text/html", "utf-8", index?.inputStream() ?: context.assets.open("index.html"))
         }
 
         private fun mime(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {

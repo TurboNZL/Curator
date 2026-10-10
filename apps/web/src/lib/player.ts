@@ -70,7 +70,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
     audio.addEventListener('ended', () => { logPlay(false); get().next(); });
     audio.addEventListener('error', () => {
       if (!audio!.getAttribute('src')) return;
-      set({ error: 'Could not load this track', playing: false });
+      const code = audio!.error?.code;
+      set({ error: `Could not load this track${code ? ` (media error ${code})` : ''}`, playing: false });
     });
     audio.volume = get().volume;
     const eq = useStore.getState().settings;
@@ -106,7 +107,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
         a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(at, Number.isFinite(a.duration) ? a.duration : at); set({ time: a.currentTime }); }, { once: true });
       }
       if (autoStart) void a.play().catch((e: Error) => set(e?.name === 'NotAllowedError' ? { playing: false, error: 'Press play: this browser blocked starting by itself.' } : { playing: false }));
-    });
+    }, (e: Error) => { if (seq === loadSeq) set({ error: `Could not load this track (${e.message})`, playing: false }); });
     updateMediaSession(trackId);
     return true;
   }
