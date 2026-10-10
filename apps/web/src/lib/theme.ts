@@ -213,8 +213,8 @@ export const THEME_DEFS: ThemeDef[] = [
     ov: { card: "#2a2a2a", secondary: "#353535", muted: "#303030", accent: "#1f4456", border: "#3a3a3a", input: "#6a6a6a" } }),
   // Fortnite: Epic does not publish its UI colours; these are read off screenshots of each era's settings and lobby screens.
   // Ch 1: muted slate blue with dark navy text, a dark navy top bar, pale cream "selected" buttons with a soft yellow edge
-  light({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#8296b9"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#1b2342"), mutedFg: hx("#3b4a72"), motif: "waves",
-    ov: { card: "#9fb2d0", secondary: "#aabdd8", muted: "#7a8fb4", accent: "#fbf6c8", border: "#6a80a8", input: "#587aa5" } }),
+  light({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#a6b8dc"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#121830"), mutedFg: hx("#2f3d68"), motif: "waves",
+    ov: { card: "#b6c5e2", secondary: "#c6d2ea", muted: "#8fa2cc", accent: "#fbf6c8", border: "#7d92bd", input: "#5f7bab" } }),
   // Ch 2-3: saturated royal blue, cyan outlines and selection, lime-yellow Start button, pale blue type
   dark({ id: "fortnite-2", label: "Fortnite Ch 2-3", bg: hex("#0a5db6"), primary: hex("#e8f03b"), onPrimary: "60 100% 6%", fg: hx("#d9eeff"), mutedFg: hx("#9ccbf3"), motif: "grid",
     ov: { card: "#0a4a9a", secondary: "#0d6bcb", muted: "#0a55a8", accent: "#19b0f2", border: "#22b6ff", input: "#0b4a9a" } }),
