@@ -42,7 +42,7 @@ export function PlayerBar() {
     <div className="bt-player bt-shell" data-leaving={leaving || undefined}>
       {p.error && <div className="bg-bad/15 px-4 py-1 text-center text-xs text-bad">{p.error}</div>}
       <div className="flex items-center gap-3 px-3 py-2 md:gap-6 md:px-4">
-        <div className="flex w-1/3 min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3 md:w-1/3 md:flex-none">
           {track && <>
             <button ref={setCoverBtn} type="button" data-popover-trigger aria-expanded={coverOpen} aria-label="Show a larger cover" title="Larger cover" className="bt-cover-btn shrink-0 rounded-theme" onClick={toggleCover}>
               <Cover hash={track.cover} seed={track.albumTitle ?? track.title} className="h-12 w-12" />
@@ -56,9 +56,9 @@ export function PlayerBar() {
             <RateBlock track={track} className="hidden md:grid" />
           </>}
         </div>
-        <div className="flex flex-1 flex-col items-center gap-1">
+        <div className="flex shrink-0 flex-col items-center gap-1 md:flex-1">
           <div className="flex items-center gap-2">
-            <button className={cn('btn-ghost btn !p-2', p.shuffle && 'text-accent')} title="Shuffle" onClick={p.toggleShuffle}><Shuffle size={16} /></button>
+            <button className={cn('btn-ghost btn !p-2 max-sm:hidden', p.shuffle && 'text-accent')} title="Shuffle" onClick={p.toggleShuffle}><Shuffle size={16} /></button>
             <button className="btn-ghost btn !p-2" title="Previous" onClick={p.prev}><SkipBack size={18} /></button>
             <button className="btn btn-accent !rounded-full !p-2.5" title={p.playing ? 'Pause' : 'Play'} onClick={p.toggle}>{p.playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button>
             <button className="btn-ghost btn !p-2" title="Next" onClick={p.next}><SkipForward size={18} /></button>
