@@ -67,6 +67,13 @@ export function SettingsPage() {
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
 
+      <Section title="Sound">
+        <p className="text-sm text-muted">A bass boost for this device. It lifts the low end (below about 110 Hz) and trims the level a little first so loud songs do not clip, with a soft limiter as a backstop. Off by default; the Electron and Android apps will get a fuller equaliser.</p>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.eqOn} onChange={(e) => updateSettings({ eqOn: e.target.checked })} />Bass boost</label>
+        <label className={cn('block text-sm', !settings.eqOn && 'opacity-50')}><span className="mb-1 flex justify-between"><span className="font-medium">Amount</span><span className="tabular-nums text-muted">+{settings.eqBass} dB</span></span>
+          <input type="range" min={0} max={12} step={1} className="bt-range h-1 w-full" style={{ '--p': `${(settings.eqBass / 12) * 100}%` } as React.CSSProperties} disabled={!settings.eqOn} value={settings.eqBass} onChange={(e) => updateSettings({ eqBass: Number(e.target.value) })} aria-label="Bass boost in decibels" /></label>
+      </Section>
+
       <Section title="Backup: export and import"><BackupCard /></Section>
 
       <Section title="Audio">

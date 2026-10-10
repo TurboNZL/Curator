@@ -4,6 +4,7 @@ import { moveTrack } from './defaults.ts';
 import { audioSource } from './files.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
+import { resumeEq, setBass } from './eq.ts';
 
 interface Source { type: SourceType; id: string | null }
 
@@ -39,6 +40,8 @@ interface PlayerState {
   /** the rest of the album or list becomes part of the user queue / is dropped */
   keepRest(): void;
   clearRest(): void;
+  /** push the device's bass setting into the sound (creates the audio element if needed) */
+  applyEq(): void;
 }
 
 let audio: HTMLAudioElement | null = null;
@@ -52,6 +55,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
     if (audio) return audio;
     audio = new Audio();
     audio.preload = 'auto';
+    audio.crossOrigin = 'anonymous'; // the equaliser reads the sound; the server answers with CORS headers
+    audio.addEventListener('play', resumeEq);
     audio.addEventListener('timeupdate', () => set({ time: audio!.currentTime }));
     audio.addEventListener('durationchange', () => set({ duration: Number.isFinite(audio!.duration) ? audio!.duration : 0 }));
     audio.addEventListener('play', () => set({ playing: true }));
@@ -62,6 +67,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
       set({ error: 'Could not load this track', playing: false });
     });
     audio.volume = get().volume;
+    const eq = useStore.getState().settings;
+    setBass(audio, eq.eqOn, eq.eqBass);
     return audio;
   };
 
@@ -174,5 +181,15 @@ export const usePlayer = create<PlayerState>((set, get) => {
     shuffleRest() { const q = get().queue; set({ queue: { ...q, active: shuffleWithRules(q.active, rules()) } }); },
     keepRest() { const q = get().queue; set({ queue: { ...q, user: [...q.user, ...q.active], active: [] } }); },
     clearRest() { set({ queue: { ...get().queue, active: [] } }); },
+    applyEq() { const e = useStore.getState().settings; setBass(el(), e.eqOn, e.eqBass); },
   };
+});
+
+// the bass setting is device-wide: apply it as soon as it changes
+let lastEq = '';
+useStore.subscribe((s) => {
+  const key = `${s.settings.eqOn}|${s.settings.eqBass}`;
+  if (key === lastEq) return;
+  lastEq = key;
+  if (audio || (s.settings.eqOn && s.settings.eqBass > 0)) usePlayer.getState().applyEq();
 });
