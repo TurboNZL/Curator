@@ -36,16 +36,21 @@ export function SettingsPage() {
     try { const r = await api().acquire(); setAcq(`Queued ${r.queued} tracks.`); }
     catch { setAcq('Could not reach the server.'); }
   }
+  const [failures, setFailures] = useState<{ title: string; error: string }[]>([]);
   async function acquireStatus() {
-    try { const r = await api().acquireStatus(); setAcq(`${r.queued} queued · ${r.running} running · ${r.done} done · ${r.failed} failed${r.failures[0] ? ` (last error: ${r.failures[0].error})` : ''}`); }
-    catch { setAcq('Could not reach the server.'); }
+    try {
+      const r = await api().acquireStatus();
+      setAcq(`${r.queued} queued · ${r.running} running · ${r.done} done · ${r.failed} failed`);
+      setFailures(r.failures.map((f) => ({ title: lib.trackById.get(f.trackId)?.title ?? f.trackId, error: f.error })));
+    } catch { setAcq('Could not reach the server.'); setFailures([]); }
   }
+  const needsCookies = failures.some((f) => /cookies|not a bot/i.test(f.error));
   const limitBytes = settings.storageLimitMb * 1024 * 1024;
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
 
       <Section title="Appearance"><p className="text-sm text-muted">Pick a colour theme and a UI style; any combination works. Saved on this device.</p><AppearanceCard /></Section>
@@ -59,7 +64,7 @@ export function SettingsPage() {
         <div className="flex flex-wrap items-center gap-2"><button className="btn" onClick={test}>Test connection</button><button className="btn btn-accent" onClick={save}>Save &amp; sync</button>
           <button className="btn btn-ghost" onClick={() => void syncNow()} disabled={sync.state === 'syncing'}><RefreshCw size={15} className={cn(sync.state === 'syncing' && 'animate-spin')} />Sync now</button></div>
         {status && <div className="rounded-theme bg-raised p-3 text-sm">{typeof status === 'string' ? status : <>Connected · {status.files.count} files ({fmtBytes(status.files.bytes)}) · cursor {status.cursor}
-          {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
+          {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'} · cookies: {status.tools.cookies ? 'set' : 'not set'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
 
@@ -67,6 +72,12 @@ export function SettingsPage() {
         <p className="text-sm text-muted">{lib.tracks.filter((t) => t.file).length} of {lib.tracks.length} tracks have audio on the server. {missing} have a YouTube source and no file.</p>
         <div className="flex flex-wrap items-center gap-2"><button className="btn btn-accent" onClick={acquire} disabled={!settings.token}><Download size={15} />Download missing audio</button><button className="btn" onClick={acquireStatus} disabled={!settings.token}>Progress</button></div>
         {acq && <div className="text-sm text-muted">{acq}</div>}
+        {failures.length > 0 && (
+          <div className="space-y-1 rounded-theme bg-bad/10 p-3 text-xs" role="status">
+            <div className="font-medium text-bad">Failed downloads (press “Download missing audio” to try them again)</div>
+            <ul className="space-y-0.5">{failures.map((f, i) => <li key={i}><span className="font-medium">{f.title}</span><span className="text-muted"> — {f.error}</span></li>)}</ul>
+            {needsCookies && <div className="pt-1 text-warn">YouTube is asking this server to prove it is not a bot. Give yt-dlp a cookies file: see docs/YTDLP_COOKIES.md.</div>}
+          </div>)}
         <p className="text-xs text-muted">Downloads run on the server and need yt-dlp and ffmpeg installed there.</p>
       </Section>
 

@@ -8,6 +8,7 @@ import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from '../components/Cover.tsx';
 import { KeepOffline } from '../components/KeepOffline.tsx';
+import { plural } from '../lib/cn.ts';
 import { TrackTable } from '../components/TrackTable.tsx';
 
 export function PlaylistsPage() {
@@ -33,7 +34,7 @@ export function PlaylistsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <Cover hash={open.cover} seed={open.name} className="w-32 shrink-0 sm:w-40" />
             <div className="min-w-0 space-y-2">
-              <div className="text-xs uppercase tracking-wider text-muted">Playlist · {tracks.length} tracks</div>
+              <div className="text-xs uppercase tracking-wider text-muted">Playlist · {plural(tracks.length, 'track')}</div>
               <h2 className="text-2xl font-bold leading-tight">{open.name}</h2>
               {open.description && <p className="max-w-xl whitespace-pre-wrap text-sm text-muted">{open.description}</p>}
               <div className="flex flex-wrap gap-2 pt-1">

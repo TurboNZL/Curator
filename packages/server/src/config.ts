@@ -11,6 +11,8 @@ export interface Config {
   token: string;
   maxUploadBytes: number;
   ytdlp?: string;
+  /** extra yt-dlp arguments from CURATOR_YTDLP_COOKIES / CURATOR_YTDLP_ARGS, put before every call */
+  ytdlpArgs?: string[];
   ffmpegDir?: string;
   /** built web client to serve at `/`; unset/missing = API only */
   webDir?: string;
@@ -34,6 +36,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     token: env.CURATOR_TOKEN ?? loadOrCreateToken(dataDir),
     maxUploadBytes: Number(env.CURATOR_MAX_UPLOAD_MB ?? 1024) * 1024 * 1024,
     ytdlp: env.CURATOR_YTDLP,
+    ytdlpArgs: ytdlpArgs(env),
     ffmpegDir: env.CURATOR_FFMPEG_DIR,
     webDir: env.CURATOR_WEB_DIR ? resolve(env.CURATOR_WEB_DIR) : defaultWebDir(),
   };
@@ -52,4 +55,16 @@ function loadOrCreateToken(dataDir: string): string {
 function defaultWebDir(): string | undefined {
   const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../../../apps/web/dist');
   return existsSync(join(dir, 'index.html')) ? dir : undefined;
+}
+
+/**
+ * `CURATOR_YTDLP_COOKIES=/path/cookies.txt` becomes `--cookies <path>` (YouTube asks some servers to prove they are
+ * not a bot; a cookies file from a signed-in browser answers that). `CURATOR_YTDLP_ARGS` adds anything else, split on spaces.
+ */
+export function ytdlpArgs(env: NodeJS.ProcessEnv): string[] | undefined {
+  const args = [
+    ...(env.CURATOR_YTDLP_COOKIES ? ['--cookies', resolve(env.CURATOR_YTDLP_COOKIES)] : []),
+    ...(env.CURATOR_YTDLP_ARGS ? env.CURATOR_YTDLP_ARGS.split(/\s+/).filter(Boolean) : []),
+  ];
+  return args.length ? args : undefined;
 }

@@ -8,7 +8,7 @@ import { thumbnailUrls, youtubeId } from '../src/lib/youtube.ts';
 import { computeHealth } from '../src/lib/health.ts';
 import { trackInfo } from '../src/lib/trackinfo.ts';
 import { computeStats } from '../src/lib/stats.ts';
-import { appendTrack, hasLead, leadArtistId, withLeadFallback, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
+import { leadCredit, appendTrack, hasLead, leadArtistId, withLeadFallback, moveTrack, newAlbumData, newTrackData, removeTrack } from '../src/lib/defaults.ts';
 import { pickEvictions } from '../src/lib/cachePolicy.ts';
 import { defaultDir, sortTracks } from '../src/lib/trackSort.ts';
 import { pickPair } from '../src/lib/pairing.ts';
@@ -115,13 +115,13 @@ describe('album editing helpers', () => {
   it('an explicit trackOrder wins over the release order; unlisted tracks follow', () => {
     const base = [rec('artists', 'a', { name: 'A', image: null }), rec('tracks', 't1', track('One')), rec('tracks', 't2', track('Two')), rec('tracks', 't3', track('Three')),
       rec('releases', 'r', { albumId: 'al', title: 'R', cover: null, releaseDate: null, trackIds: ['t1', 't2', 't3'] })];
-    const lib = buildLibrary(rows(...base, rec('albums', 'al', { ...newAlbumData({ title: 'Al', artistId: 'a' }), trackOrder: ['t3', 't1'] })));
+    const lib = buildLibrary(rows(...base, rec('albums', 'al', { ...newAlbumData({ title: 'Al', credits: leadCredit('a') }), trackOrder: ['t3', 't1'] })));
     expect(lib.albumById.get('al')!.trackIds).toEqual(['t3', 't1', 't2']);
   });
   it('new tracks/albums are complete records', () => {
-    const t = newTrackData({ title: 'x', artistId: 'a' });
+    const t = newTrackData({ title: 'x', credits: leadCredit('a') });
     expect(t).toMatchObject({ file: null, albums: [], syncWithAlbumCredits: true, credits: [{ artistId: 'a', role: ['Lead artist'] }] });
-    expect(newAlbumData({ title: 'y', artistId: 'a' }).genres).toEqual([]);
+    expect(newAlbumData({ title: 'y', credits: leadCredit('a') }).genres).toEqual([]);
   });
 });
 
@@ -160,7 +160,7 @@ describe('youtubeId', () => {
     expect(youtubeId('https://youtu.be/pAEInY3xPc4?t=3')).toBe('pAEInY3xPc4');
     expect(youtubeId('https://www.youtube.com/shorts/pAEInY3xPc4')).toBe('pAEInY3xPc4');
     for (const bad of [null, undefined, '', 'nope', 'https://example.com/watch?v=pAEInY3xPc4', 'https://www.youtube.com/watch?v=short']) expect(youtubeId(bad)).toBeNull();
-    expect(thumbnailUrls('abcdefghijk')[1]).toBe('https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg');
+    expect(thumbnailUrls('abcdefghijk')[2]).toBe('https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg');
   });
 });
 

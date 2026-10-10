@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync, readdirSync }
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Store } from '../src/db.ts';
-import { Acquirer, safeUrl } from '../src/acquire.ts';
+import { Acquirer, BOT_HELP, isBotCheck, safeUrl } from '../src/acquire.ts';
+import { ytdlpArgs } from '../src/config.ts';
 
 let dir: string, store: Store;
 const track = (id: string, youtubeMusicUrl: string | null, file: string | null = null) => ({
@@ -94,4 +95,53 @@ describe('Acquirer', () => {
     expect((r.data as any).title).toBe('Renamed');
     expect((r.data as any).file).toMatch(/^[0-9a-f]{64}$/);
   });
+});
+
+/** like fakeYtdlp, but YouTube's bot check stops every call; with `allowFallback` the player_client retry gets through */
+function botYtdlp(allowFallback: boolean) {
+  const path = join(dir, 'bot-yt-dlp');
+  writeFileSync(path, `#!/bin/sh
+echo "$@" >> "${dir}/argv.log"
+${allowFallback ? 'case "$*" in *player_client*) ok=1;; esac' : ''}
+if [ -z "$ok" ]; then echo "ERROR: [youtube] abc: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies" >&2; exit 1; fi
+while [ "$1" != "-o" ]; do shift; done
+printf "audio" > "$(dirname "$2")/vid.mp3"
+`);
+  chmodSync(path, 0o755);
+  return path;
+}
+
+describe('YouTube bot check', () => {
+  it('is recognised', () => {
+    expect(isBotCheck('ERROR: [youtube] b5bR2NqDpqI: Sign in to confirm you’re not a bot.')).toBe(true);
+    expect(isBotCheck("Sign in to confirm you're not a bot")).toBe(true);
+    expect(isBotCheck('Video unavailable')).toBe(false);
+  });
+  it('retries once with clients that need no PO token, and that rescues the track', async () => {
+    store.push([track('t', 'https://youtu.be/x')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: botYtdlp(true) });
+    a.enqueueMissing(); await a.drained();
+    expect([...a.jobs.values()][0].state).toBe('done');
+    const calls = (await import('node:fs')).readFileSync(join(dir, 'argv.log'), 'utf8').trim().split('\n');
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).not.toContain('player_client');
+    expect(calls[1]).toContain('youtube:player_client=android_vr,web_embedded');
+  });
+  it('when the retry is stopped too, the failure says to supply cookies', async () => {
+    store.push([track('t', 'https://youtu.be/x')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: botYtdlp(false) });
+    a.enqueueMissing(); await a.drained();
+    const job = [...a.jobs.values()][0];
+    expect(job.state).toBe('failed');
+    expect(job.error).toContain(BOT_HELP.slice(0, 40));
+    expect(job.error).toContain('CURATOR_YTDLP_COOKIES');
+  });
+  it('puts the configured cookies file on every call', async () => {
+    store.push([track('t', 'https://youtu.be/x')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(), ytdlpArgs: ytdlpArgs({ CURATOR_YTDLP_COOKIES: '/srv/cookies.txt', CURATOR_YTDLP_ARGS: '--js-runtimes node' }) });
+    a.enqueueMissing(); await a.drained();
+    const argv = (await import('node:fs')).readFileSync(join(dir, 'argv.log'), 'utf8');
+    expect(argv).toMatch(/^--cookies \/srv\/cookies\.txt --js-runtimes node /);
+  });
+  it('builds no arguments when nothing is configured', () => { expect(ytdlpArgs({})).toBeUndefined(); });
 });

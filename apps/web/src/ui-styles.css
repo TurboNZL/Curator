@@ -50,6 +50,11 @@
   --row-hover: hsl(var(--raised) / 0.6); --row-hover-fg: inherit; --row-current: hsl(var(--accent) / 0.1);
   --panel-tb-bg: transparent; --panel-tb-fg: inherit; --panel-tb-margin: 0; --panel-tb-pad: 0;
 
+  --chk-size: 1.05rem; --chk-r: 5px; --chk-border: 1.5px solid hsl(var(--muted) / 0.75); --chk-bg: hsl(var(--raised)); --chk-shadow: none;
+  --chk-hover-border: hsl(var(--accent)); --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg));
+  --chk-radio-on-bg: var(--chk-on-bg); --chk-dot: var(--chk-on-fg); --chk-mark: 78%; --chk-focus: 0 0 0 3px hsl(var(--accent) / 0.35);
+  --chk-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.6 8.6 6.7 11.6 12.4 4.6'/%3E%3C/svg%3E");
+
   --rng-appearance: auto; --rng-h: 0.25rem; --rng-r: 9999px; --rng-border: 0 solid transparent; --rng-shadow: none;
   --rng-track: hsl(var(--raised)); --rng-fill: hsl(var(--accent));
   --rng-tw: 1rem; --rng-th: 1rem; --rng-tr: 9999px; --rng-tb: 0 solid transparent; --rng-thumb: hsl(var(--accent)); --rng-ts: none;
@@ -70,6 +75,7 @@
 
 /* ================== GTK 4 / Adwaita ================== */
 [data-ui="gtk4"] {
+  --chk-size: 1.1rem; --chk-r: 5px; --chk-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 22%, transparent); --chk-bg: color-mix(in srgb, hsl(var(--fg)) 9%, transparent); --chk-hover-border: color-mix(in srgb, hsl(var(--fg)) 40%, transparent);
   --radius: 12px; --ctl-r: 8px; --card-r: 12px; --win-r: 16px; --menu-r: 12px; --nav-r: 8px;
   --font: "Adwaita Sans", "Cantarell", "Inter", system-ui, sans-serif;
   --dur: 200ms; --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94); --tb-justify: center;
@@ -98,6 +104,7 @@ html[data-ui="gtk4"] ::selection { background: color-mix(in srgb, hsl(var(--acce
 
 /* ================== KDE Breeze ================== */
 [data-ui="breeze"] {
+  --chk-size: 1rem; --chk-r: 3px; --chk-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 38%, transparent); --chk-bg: linear-gradient(to bottom, color-mix(in srgb, hsl(var(--surface)) 92%, white), color-mix(in srgb, hsl(var(--surface)) 94%, black)); --chk-on-border: color-mix(in srgb, hsl(var(--accent)) 70%, black); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 35%, transparent);
   --radius: 3px; --ctl-r: 3px; --card-r: 3px; --win-r: 3px; --menu-r: 3px; --nav-r: 3px; --chip-r: 3px;
   --font: "Noto Sans", "Open Sans", "Oxygen", system-ui, sans-serif;
   --dur: 140ms; --ease: ease-in-out;
@@ -126,6 +133,7 @@ html[data-ui="breeze"] { font-size: 15px; }
 
 /* ================== Windows 11 (Fluent) ================== */
 [data-ui="win11"] {
+  --chk-size: 1.1rem; --chk-r: 4px; --chk-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 55%, transparent); --chk-bg: color-mix(in srgb, hsl(var(--fg)) 4%, transparent);
   --radius: 8px; --ctl-r: 4px; --card-r: 8px; --win-r: 8px; --menu-r: 8px; --nav-r: 4px;
   --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "Open Sans", system-ui, sans-serif;
   --dur: 167ms; --ease: cubic-bezier(0.1, 0.9, 0.2, 1);
@@ -153,6 +161,7 @@ html[data-ui="breeze"] { font-size: 15px; }
 
 /* ================== Windows 10 ================== */
 [data-ui="win10"] {
+  --chk-size: 1.05rem; --chk-r: 0; --chk-border: 2px solid hsl(var(--fg)); --chk-bg: transparent; --chk-hover-border: hsl(var(--accent));
   --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0;
   --font: "Segoe UI", "Open Sans", system-ui, sans-serif;
   --dur: 100ms; --ease: linear;
@@ -175,6 +184,7 @@ html[data-ui="breeze"] { font-size: 15px; }
 
 /* ================== Windows 7 (Aero) ================== */
 [data-ui="win7"] {
+  --chk-size: 0.95rem; --chk-r: 3px; --chk-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 45%, #707070); --chk-bg: linear-gradient(135deg, #e9e9ea, #fff 60%); --chk-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9); --chk-hover-border: #3c7fb1; --chk-on-bg: linear-gradient(135deg, #e9e9ea, #fff 60%); --chk-on-border: color-mix(in srgb, hsl(var(--fg)) 45%, #707070); --chk-on-fg: #2a6a2f; --chk-radio-on-bg: linear-gradient(135deg, #e9e9ea, #fff 60%); --chk-dot: #2b78c2; --chk-focus: 0 0 0 2px #7cb7e6;
   --radius: 5px; --ctl-r: 3px; --card-r: 5px; --win-r: 8px 8px 4px 4px; --menu-r: 3px; --nav-r: 3px;
   --font: "Segoe UI", "Open Sans", system-ui, sans-serif;
   --dur: 250ms; --ease: ease-out;
@@ -216,6 +226,7 @@ html[data-ui="breeze"] { font-size: 15px; }
 
 /* ================== Windows XP (Luna) ================== */
 [data-ui="winxp"] {
+  --chk-size: 0.95rem; --chk-r: 0; --chk-border: 1px solid #1c5180; --chk-bg: linear-gradient(135deg, #dcdcd7, #fff 60%); --chk-hover-border: #f5a623; --chk-on-bg: linear-gradient(135deg, #dcdcd7, #fff 60%); --chk-on-border: #1c5180; --chk-on-fg: #21a121; --chk-radio-on-bg: linear-gradient(135deg, #dcdcd7, #fff 60%); --chk-dot: #21a121; --chk-focus: 0 0 0 1px #f5a623;
   --radius: 4px; --ctl-r: 3px; --card-r: 4px; --win-r: 8px 8px 0 0; --menu-r: 0; --nav-r: 0; --chip-r: 3px;
   --xp-frame: color-mix(in srgb, hsl(var(--accent)) 75%, black);
   --font: Tahoma, "DejaVu Sans", Verdana, system-ui, sans-serif; --title-font: "Trebuchet MS", Tahoma, "DejaVu Sans", sans-serif;
@@ -253,6 +264,7 @@ html[data-ui="winxp"] { font-size: 14.5px; }
 
 /* ================== Windows 98 (classic) ================== */
 [data-ui="win98"] {
+  --chk-size: 0.95rem; --chk-r: 0; --chk-border: 0 solid transparent; --chk-bg: #fff; --chk-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #000; --chk-hover-border: transparent; --chk-on-bg: #fff; --chk-on-border: transparent; --chk-on-fg: #000; --chk-radio-on-bg: #fff; --chk-dot: #000; --chk-focus: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #000, 0 0 0 1px #000;
   --radius: 0px; --ctl-r: 0; --card-r: 0; --win-r: 0; --menu-r: 0; --nav-r: 0; --chip-r: 0;
   --font: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, "DejaVu Sans", Verdana, sans-serif; --title-font: var(--font);
   --b98-raised: inset -1px -1px #0a0a0a, inset 1px 1px #ffffff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
@@ -289,6 +301,7 @@ html[data-ui="win98"] { font-size: 14px; }
 
 /* ================== macOS ================== */
 [data-ui="macos"] {
+  --chk-size: 1rem; --chk-r: 4px; --chk-border: 0.5px solid color-mix(in srgb, hsl(var(--fg)) 32%, transparent); --chk-bg: hsl(var(--surface)); --chk-shadow: 0 0.5px 1px rgb(0 0 0 / 0.2); --chk-on-bg: linear-gradient(to bottom, color-mix(in srgb, hsl(var(--accent)) 82%, white), hsl(var(--accent))); --chk-on-border: color-mix(in srgb, hsl(var(--accent)) 70%, black); --chk-focus: 0 0 0 3.5px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
   --radius: 10px; --ctl-r: 6px; --card-r: 12px; --win-r: 12px; --menu-r: 10px; --nav-r: 6px;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Inter", system-ui, sans-serif;
   --dur: 180ms; --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -327,6 +340,9 @@ html[data-ui="win98"] { font-size: 14px; }
   --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
   --in-bg: color-mix(in srgb, hsl(var(--accent)) 7%, hsl(var(--surface))); --in-border: 0 solid transparent; --in-shadow: inset 0 -1px 0 hsl(var(--line));
   --in-hover-border: transparent; --in-focus-border: transparent; --in-focus-shadow: inset 0 -2px 0 hsl(var(--accent));
+  /* M3 filled text field: 4 px top corners only, 16 px side padding and 56 px-ish height, so the text never touches the edge */
+  --in-r: 4px 4px 0 0; --in-px: 1rem; --in-py: 0.8rem;
+  --chk-size: 1.15rem; --chk-r: 2px; --chk-border: 2px solid hsl(var(--muted)); --chk-bg: transparent; --chk-hover-border: hsl(var(--fg));
   --card-bg: color-mix(in srgb, hsl(var(--accent)) 5%, hsl(var(--surface))); --card-border: 0 solid transparent; --card-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
   --win-bg: color-mix(in srgb, hsl(var(--accent)) 7%, hsl(var(--surface))); --win-border: 0 solid transparent; --win-shadow: 0 6px 18px 4px rgb(0 0 0 / 0.25); --dialog-anim: bt-pop 300ms cubic-bezier(0.05, 0.7, 0.1, 1);
   --tb-border: 0 solid transparent; --tb-pad: 1.5rem 1.5rem 0.5rem; --tb-size: 1.5rem; --tb-weight: 400;
@@ -342,3 +358,187 @@ html[data-ui="win98"] { font-size: 14px; }
   --rng-tw: 1.25rem; --rng-th: 1.25rem; --rng-thumb: hsl(var(--accent)); --rng-ts: 0 1px 3px rgb(0 0 0 / 0.3);
 }
 [data-ui="material"] .btn.btn-accent { padding-inline: 1.25rem; }
+
+/* ================== macOS Liquid Glass ==================
+ * Follows Apple's description of the material (WWDC25 "Meet Liquid Glass"): LENSING (light is bent, not just
+ * scattered: lib/liquidGlass.ts builds an SVG displacement map per shape and sets --lg-filter / --lg-spec),
+ * MATERIALIZATION (menus and dialogs ease their lens in instead of fading), FLUIDITY (springy press, menus and
+ * dialogs grow out of the control that opened them), ADAPTIVITY (separate dark/light recipes, a dimming layer for
+ * Clear, glass recedes when the window loses focus) and TOUCH response (a glow that starts under the pointer and
+ * spreads). Glass is only for the navigation layer that floats above the content (sidebar, bars, menus, dialogs,
+ * the controls inside them); content stays quiet. In browsers that cannot refract (everything but Chromium)
+ * the same recipe renders as frosted glass with the rim highlight.
+ * Accessibility: reduced motion removes the animation (global rule); reduced transparency makes it opaque (end).
+ */
+@property --lg-glow { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@keyframes lg-open {
+  0% { opacity: 0; transform: scale(0.72); }
+  38% { opacity: 1; }
+  68% { transform: scale(1.018); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes lg-menu {
+  0% { opacity: 0; transform: scale(0.6, 0.5); border-radius: 9999px; }
+  30% { opacity: 1; }
+  70% { transform: scale(1.012); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes lg-pill { 0% { transform: scale(0.82); opacity: 0.2; } 60% { transform: scale(1.04); opacity: 1; } 100% { transform: none; } }
+@keyframes lg-bar-in { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+[data-ui="liquid"] {
+  --radius: 22px; --ctl-r: 9999px; --card-r: 24px; --win-r: 34px; --menu-r: 24px; --nav-r: 18px; --in-r: 14px; --in-px: 0.9rem;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, sans-serif;
+  --dur: 240ms; --ease: cubic-bezier(0.32, 0.72, 0, 1); --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* the material (dark) */
+  --lg-fill: hsl(var(--surface) / 0.34); --lg-fill-strong: hsl(var(--surface) / 0.6);
+  --lg-sheen: linear-gradient(140deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.015) 44%, rgb(255 255 255 / 0.06));
+  --lg-shadow: 0 12px 38px rgb(0 0 0 / 0.36), 0 2px 8px rgb(0 0 0 / 0.24);
+  --lg-rim: inset 0 0 0 0.5px rgb(255 255 255 / 0.14);
+  --lg-blur: 14px; --lg-blur-sm: 8px; --lg-sat: 1.7; --lg-bright: 1.05; --lg-dim: transparent;
+  --lg-hover: rgb(255 255 255 / 0.12); --lg-press: rgb(255 255 255 / 0.2);
+
+  --btn-fg: inherit; --btn-weight: 600;
+  --in-bg: hsl(var(--raised) / 0.5); --in-border: 0.5px solid rgb(255 255 255 / 0.14); --in-shadow: inset 0 1px 2px rgb(0 0 0 / 0.18);
+  --in-hover-border: rgb(255 255 255 / 0.28); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: 0 0 0 4px hsl(var(--accent) / 0.32);
+  --card-bg: hsl(var(--surface) / 0.46); --card-border: 0.5px solid rgb(255 255 255 / 0.1); --card-shadow: 0 6px 24px rgb(0 0 0 / 0.16);
+  --backdrop: rgb(0 0 0 / 0.34);
+  --dialog-anim: lg-open 560ms cubic-bezier(0.22, 1, 0.36, 1) both; --menu-anim: lg-menu 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --tb-bg: transparent; --tb-border: 0 solid transparent; --tb-pad: 1.2rem 1.5rem 0.4rem; --tb-size: 1.2rem; --tb-weight: 700;
+  --close-size: 2rem; --close-pad: 0; --close-bg: rgb(255 255 255 / 0.13); --close-r: 9999px; --close-hover-bg: rgb(255 255 255 / 0.24);
+  --bar-border: 0.5px solid rgb(255 255 255 / 0.1);
+  --row-hover: rgb(255 255 255 / 0.07); --row-current: hsl(var(--accent) / 0.16);
+  --nav-hover-bg: rgb(255 255 255 / 0.08); --nav-active-fg: hsl(var(--fg));
+  --rng-appearance: none; --rng-h: 6px; --rng-track: rgb(255 255 255 / 0.2); --rng-fill: hsl(var(--accent));
+  --rng-tw: 1.75rem; --rng-th: 1.1rem; --rng-tr: 9999px; --rng-thumb: linear-gradient(#fff, #eceef4); --rng-ts: 0 2px 8px rgb(0 0 0 / 0.4), inset 0 0 0 0.5px rgb(0 0 0 / 0.1);
+  --chk-size: 1.2rem; --chk-r: 7px; --chk-border: 0.5px solid rgb(255 255 255 / 0.3); --chk-bg: linear-gradient(140deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.06));
+  --chk-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.4), 0 1px 3px rgb(0 0 0 / 0.25); --chk-on-bg: linear-gradient(140deg, hsl(var(--accent) / 0.95), hsl(var(--accent) / 0.7));
+  --chk-on-border: hsl(var(--accent) / 0.6); --chk-focus: 0 0 0 4px hsl(var(--accent) / 0.32);
+}
+/* the material (light): brighter, whiter glass and softer, bluer shadows */
+[data-ui="liquid"][data-mode="light"] {
+  --lg-fill: hsl(var(--surface) / 0.46); --lg-fill-strong: hsl(var(--surface) / 0.74);
+  --lg-sheen: linear-gradient(140deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.1) 46%, rgb(255 255 255 / 0.32));
+  --lg-shadow: 0 12px 34px rgb(40 52 90 / 0.2), 0 1px 5px rgb(40 52 90 / 0.14);
+  --lg-rim: inset 0 0 0 0.5px rgb(0 0 0 / 0.07);
+  --lg-bright: 1.02; --lg-hover: rgb(255 255 255 / 0.5); --lg-press: rgb(255 255 255 / 0.75);
+  --in-bg: hsl(var(--surface) / 0.55); --in-border: 0.5px solid rgb(0 0 0 / 0.1); --in-shadow: inset 0 1px 2px rgb(40 52 90 / 0.1); --in-hover-border: rgb(0 0 0 / 0.22);
+  --card-bg: hsl(var(--surface) / 0.62); --card-border: 0.5px solid rgb(255 255 255 / 0.7); --card-shadow: 0 6px 22px rgb(40 52 90 / 0.12);
+  --backdrop: rgb(20 28 50 / 0.28);
+  --close-bg: rgb(0 0 0 / 0.07); --close-hover-bg: rgb(0 0 0 / 0.14); --bar-border: 0.5px solid rgb(0 0 0 / 0.08);
+  --row-hover: rgb(0 0 0 / 0.05); --nav-hover-bg: rgb(0 0 0 / 0.05);
+  --rng-track: rgb(0 0 0 / 0.14); --rng-thumb: linear-gradient(#fff, #f4f5f9);
+  --chk-border: 0.5px solid rgb(0 0 0 / 0.25); --chk-bg: linear-gradient(140deg, #fff, rgb(255 255 255 / 0.5));
+}
+/* Clear: far more see-through, no adaptive tint, and a dimming layer under the content so it stays legible */
+html[data-glass="clear"][data-ui="liquid"] {
+  --lg-fill: hsl(var(--surface) / 0.05); --lg-fill-strong: hsl(var(--surface) / 0.2); --lg-blur: 2px; --lg-blur-sm: 1px; --lg-sat: 1.25; --lg-bright: 1; --lg-dim: rgb(0 0 0 / 0.22);
+}
+html[data-glass="clear"][data-ui="liquid"][data-mode="light"] { --lg-dim: rgb(0 0 0 / 0.12); }
+/* the window lost focus: glass recedes (flatter, quieter) to guide attention back */
+html.lg-inactive[data-ui="liquid"] { --lg-sat: 1.05; --lg-blur: 12px; --lg-shadow: 0 6px 18px rgb(0 0 0 / 0.18); }
+html.lg-inactive[data-ui="liquid"] .bt-shell { opacity: 0.86; }
+
+/* an ambient backdrop, so there is something for the glass to bend (the user's wallpaper replaces it) */
+html[data-ui="liquid"]:not([data-wallpaper="on"]) body {
+  background-color: hsl(var(--bg)); background-attachment: fixed;
+  background-image:
+    radial-gradient(60rem 40rem at 6% -8%, hsl(var(--accent) / 0.40), transparent 62%),
+    radial-gradient(52rem 38rem at 98% 6%, hsl(var(--top) / 0.30), transparent 60%),
+    radial-gradient(56rem 40rem at 62% 112%, hsl(var(--bad) / 0.18), transparent 62%),
+    radial-gradient(40rem 30rem at 30% 60%, hsl(var(--good) / 0.10), transparent 60%);
+}
+html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
+  background-image:
+    radial-gradient(60rem 40rem at 6% -8%, hsl(var(--accent) / 0.30), transparent 62%),
+    radial-gradient(52rem 38rem at 98% 6%, hsl(var(--top) / 0.24), transparent 60%),
+    radial-gradient(56rem 40rem at 62% 112%, hsl(var(--bad) / 0.12), transparent 62%);
+}
+
+/* ---- glass surfaces: sidebar, player, tab bar, menus, dialogs ---- */
+:is(html, div)[data-ui="liquid"] .bt-side, :is(html, div)[data-ui="liquid"] .bt-player, :is(html, div)[data-ui="liquid"] .bt-tabbar, :is(html, div)[data-ui="liquid"] .bt-menu, :is(html, div)[data-ui="liquid"] .bt-window {
+  background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter: blur(var(--lg-blur)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat)) brightness(var(--lg-bright));
+  border: 0; box-shadow: var(--lg-shadow), var(--lg-rim), inset 0 0 0 999px var(--lg-dim);
+}
+:is(html, div)[data-ui="liquid"] .bt-window { background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill-strong); box-shadow: 0 30px 80px rgb(0 0 0 / 0.45), 0 4px 14px rgb(0 0 0 / 0.25), var(--lg-rim), inset 0 0 0 999px var(--lg-dim); }
+:is(html, div)[data-ui="liquid"] .bt-backdrop { -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: bt-fade 300ms ease-out both; }
+:is(html, div)[data-ui="liquid"] .bt-menu { padding: 6px; background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill-strong); }
+:is(html, div)[data-ui="liquid"] .bt-menu [role="menuitem"] { width: 100%; border-radius: calc(var(--menu-r) - 8px); padding-inline: 0.8rem; }
+:is(html, div)[data-ui="liquid"] .bt-menu [role="menuitem"]:hover:not(:disabled), :is(html, div)[data-ui="liquid"] .bt-menu [role="menuitem"]:focus-visible {
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--lg-press), var(--lg-hover) 70%); color: inherit;
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.18);
+}
+:is(html, div)[data-ui="liquid"] .bt-window .bt-body { background: none; }
+:is(html, div)[data-ui="liquid"] .bt-footer { border-top: var(--bar-border); }
+
+/* the navigation layer floats above the content, inset from the edges, with corners concentric to each other */
+:is(html, div)[data-ui="liquid"] .bt-side.bt-shell { margin: 12px 0 12px 12px; border-radius: 30px; padding: 12px; animation: lg-bar-in 600ms var(--ease) both; }
+:is(html, div)[data-ui="liquid"] .bt-player.bt-shell { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; overflow: hidden; animation: lg-bar-in 600ms var(--ease) 80ms both; }
+:is(html, div)[data-ui="liquid"] .bt-player.bt-shell > div:last-child { padding-block: 0.4rem; }
+:is(html, div)[data-ui="liquid"] .bt-tabbar.bt-shell { position: fixed; z-index: 31; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; padding: 4px 6px; }
+:is(html, div)[data-ui="liquid"] .bt-tab { border-radius: 9999px; transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease); }
+:is(html, div)[data-ui="liquid"] .bt-tab[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.12); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.22); animation: lg-pill 460ms var(--spring); }
+@media (min-width: 768px) { :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { left: calc(14rem + 24px); } }
+@media (max-width: 767.98px) { :is(html, div)[data-ui="liquid"] .bt-player.bt-shell { bottom: calc(12px + 3.9rem); } }
+:is(html, div)[data-ui="liquid"] main { padding-bottom: 7.25rem; }
+@media (max-width: 767.98px) { :is(html, div)[data-ui="liquid"] main { padding-bottom: 11.75rem; } }
+
+/* top bar: no band, the controls float; content fades out under it with a soft blur (the scroll edge effect) */
+:is(html, div)[data-ui="liquid"] .bt-top.bt-shell { background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; isolation: isolate; }
+:is(html, div)[data-ui="liquid"] .bt-top.bt-shell::before {
+  content: ''; position: absolute; inset: 0 0 -22px 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(hsl(var(--bg) / 0.78), hsl(var(--bg) / 0));
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(#000 58%, transparent); mask-image: linear-gradient(#000 58%, transparent);
+}
+:is(html, div)[data-ui="liquid"] .bt-top .input {
+  border-radius: 9999px; border: 0; padding-block: 0.55rem;
+  background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill);
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter: blur(var(--lg-blur)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat));
+  box-shadow: var(--lg-shadow), var(--lg-rim);
+}
+:is(html, div)[data-ui="liquid"] .bt-top .input:focus { box-shadow: var(--lg-shadow), 0 0 0 4px hsl(var(--accent) / 0.32); }
+
+/* ---- controls: tinted glass when primary, glass on hover when plain ---- */
+:is(html, div)[data-ui="liquid"] .btn, :is(html, div)[data-ui="liquid"] .btn:hover, :is(html, div)[data-ui="liquid"] .btn:active {
+  --lg-btn-fill: var(--lg-fill);
+  --lg-btn-bg: var(--lg-spec, none) center / 100% 100% no-repeat,
+    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / calc(var(--lg-glow) * 0.42)), transparent calc(16% + var(--lg-glow) * 94%)),
+    var(--lg-sheen), var(--lg-btn-fill);
+  background: var(--lg-btn-bg); border: 0; color: inherit; text-shadow: none;
+  -webkit-backdrop-filter: blur(var(--lg-blur-sm)) saturate(var(--lg-sat));
+  backdrop-filter: blur(var(--lg-blur-sm)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat));
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.16), var(--lg-rim);
+  transition: --lg-glow 560ms var(--ease), transform 560ms var(--spring), box-shadow 300ms var(--ease), filter 300ms var(--ease);
+}
+:is(html, div)[data-ui="liquid"] .btn:hover { --lg-glow: 0.5; }
+:is(html, div)[data-ui="liquid"] .btn:active { --lg-glow: 1; transform: scale(0.93); transition: --lg-glow 160ms ease-out, transform 110ms ease-out, box-shadow 160ms; box-shadow: 0 1px 4px rgb(0 0 0 / 0.2), var(--lg-rim); }
+:is(html, div)[data-ui="liquid"] .btn:focus-visible { outline: none; box-shadow: 0 0 0 4px hsl(var(--accent) / 0.4), var(--lg-rim); }
+:is(html, div)[data-ui="liquid"] .btn.btn-accent, :is(html, div)[data-ui="liquid"] .btn.btn-accent:hover, :is(html, div)[data-ui="liquid"] .btn.btn-accent:active {
+  --lg-btn-fill: linear-gradient(160deg, hsl(var(--accent) / 0.92), hsl(var(--accent) / 0.66));
+  color: hsl(var(--accent-fg)); box-shadow: 0 4px 16px hsl(var(--accent) / 0.35), 0 1px 3px rgb(0 0 0 / 0.2), var(--lg-rim);
+}
+/* plain buttons are flat until you point at them, then they become glass */
+:is(html, div)[data-ui="liquid"] .btn.btn-ghost:not(:hover):not(:focus-visible):not(:active) { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+:is(html, div)[data-ui="liquid"] .btn:disabled { opacity: 0.4; }
+:is(html, div)[data-ui="liquid"] .bt-nav, :is(html, div)[data-ui="liquid"] .bt-nav:hover { transition: background-color var(--dur) var(--ease), transform 420ms var(--spring); }
+:is(html, div)[data-ui="liquid"] .bt-nav:active { transform: scale(0.96); }
+:is(html, div)[data-ui="liquid"] .bt-nav[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.12); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2), 0 2px 10px rgb(0 0 0 / 0.14); animation: lg-pill 460ms var(--spring); }
+:is(html, div)[data-ui="liquid"] [data-mode="light"] .bt-nav[aria-current="page"], [data-ui="liquid"][data-mode="light"] .bt-nav[aria-current="page"] { background: var(--lg-sheen), rgb(255 255 255 / 0.7); box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06), 0 2px 10px rgb(40 52 90 / 0.14); }
+:is(html, div)[data-ui="liquid"] .bt-range::-webkit-slider-thumb { transition: transform 360ms var(--spring); }
+:is(html, div)[data-ui="liquid"] .bt-range:active::-webkit-slider-thumb { transform: scale(1.14); }
+:is(html, div)[data-ui="liquid"] .card { -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+:is(html, div)[data-ui="liquid"] textarea.input { border-radius: 18px; }
+:is(html, div)[data-ui="liquid"] .chip { background: rgb(255 255 255 / 0.1); box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.12); }
+[data-ui="liquid"][data-mode="light"] .chip { background: rgb(0 0 0 / 0.05); box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06); }
+html[data-ui="liquid"] ::selection { background: hsl(var(--accent) / 0.4); }
+
+@media (prefers-reduced-transparency: reduce) {
+  [data-ui="liquid"] { --lg-fill: hsl(var(--surface) / 0.96); --lg-fill-strong: hsl(var(--surface)); --lg-sheen: none; --card-bg: hsl(var(--surface)); }
+  :is(html, div)[data-ui="liquid"] .bt-side, :is(html, div)[data-ui="liquid"] .bt-player, :is(html, div)[data-ui="liquid"] .bt-tabbar, :is(html, div)[data-ui="liquid"] .bt-menu, :is(html, div)[data-ui="liquid"] .bt-window, :is(html, div)[data-ui="liquid"] .btn, :is(html, div)[data-ui="liquid"] .card, :is(html, div)[data-ui="liquid"] .bt-top .input, :is(html, div)[data-ui="liquid"] .bt-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

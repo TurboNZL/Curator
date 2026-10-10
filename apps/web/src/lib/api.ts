@@ -10,11 +10,13 @@ export interface ServerStatus {
   files: { count: number; bytes: number };
   disk: { free: number; total: number } | Record<string, number>;
   /** versions of the programs YouTube import needs, null when the server cannot run them */
-  tools?: { ytdlp: string | null; ffmpeg: string | null };
+  tools?: { ytdlp: string | null; ffmpeg: string | null; /** a cookies file is configured for yt-dlp */ cookies?: boolean };
 }
 
 export interface ImportPreview {
   title: string; artist: string; thumbnail: string | null;
+  /** every cover candidate, best first */
+  thumbnails?: string[];
   entries: { id: string; title: string; rawTitle: string; url: string; duration: number | null }[];
 }
 
@@ -48,7 +50,8 @@ export class Api {
   importPreview(url: string) {
     return this.req<ImportPreview>('/api/import/preview', { method: 'POST', body: JSON.stringify({ url }) });
   }
-  importCover(url: string) { return this.req<{ hash: string }>('/api/import/cover', { method: 'POST', body: JSON.stringify({ url }) }); }
+  /** the server tries the links in order and keeps the first image that downloads */
+  importCover(urls: string | string[]) { return this.req<{ hash: string; url: string }>('/api/import/cover', { method: 'POST', body: JSON.stringify(Array.isArray(urls) ? { urls } : { url: urls }) }); }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
     return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');

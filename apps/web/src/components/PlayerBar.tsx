@@ -5,6 +5,7 @@ import { usePlayer } from '../lib/player.ts';
 import { cn, fmtTime } from '../lib/cn.ts';
 import { Cover } from './Cover.tsx';
 import { Rating } from './Rating.tsx';
+import { ArtistLinks } from './ArtistLinks.tsx';
 
 /** The filled part of a range, for the styles that draw their own track. */
 const pct = (v: number, max: number) => ({ '--p': `${max > 0 ? Math.min(100, (v / max) * 100) : 0}%` }) as React.CSSProperties;
@@ -14,7 +15,7 @@ export function PlayerBar() {
   const p = usePlayer();
   const track = p.queue.currentId ? lib.trackById.get(p.queue.currentId) : undefined;
   return (
-    <div className="bt-player">
+    <div className="bt-player bt-shell">
       {p.error && <div className="bg-bad/15 px-4 py-1 text-center text-xs text-bad">{p.error}</div>}
       <div className="flex items-center gap-3 px-3 py-2 md:gap-6 md:px-4">
         <div className="flex w-1/3 min-w-0 items-center gap-3">
@@ -22,7 +23,7 @@ export function PlayerBar() {
             <Cover hash={track.cover} seed={track.albumTitle ?? track.title} className="h-12 w-12 shrink-0" />
             <div className="min-w-0">
               <div className="truncate text-sm font-medium">{track.title}</div>
-              <Link to={`/artists/${track.artistId}`} className="block truncate text-xs text-muted hover:underline">{track.artistName}</Link>
+              <div className="truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
             </div>
             <div className="hidden lg:block"><Rating track={track} size="sm" /></div>
           </>) : <div className="text-sm text-muted">Nothing playing</div>}

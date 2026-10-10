@@ -52,16 +52,30 @@ export function inheritFromAlbum(album: { credits: Credit[]; artistId: string; g
 }
 
 /** A complete TrackData for a hand-made track (every field present, so nothing downstream sees undefined). */
-export function newTrackData(init: Pick<TrackData, 'title' | 'artistId'> & Partial<TrackData>): TrackData {
+export function newTrackData(init: Pick<TrackData, 'title' | 'credits'> & Partial<TrackData>): TrackData {
   return {
-    credits: [{ artistId: init.artistId, role: [LEAD_ROLE] }], genres: [], albums: [], file: null, initialRating: null,
+    genres: [], albums: [], file: null, cover: null, eraId: null, initialRating: null,
     spotifyUrl: null, geniusUrl: null, youtubeMusicUrl: null, bitrate: null, bpm: null, key: null, memories: 0,
     syncWithAlbumCredits: true, queueRules: {}, ...init,
   };
 }
 
-export function newAlbumData(init: Pick<AlbumData, 'title' | 'artistId'> & Partial<AlbumData>): AlbumData {
-  return { credits: [{ artistId: init.artistId, role: [LEAD_ROLE] }], genres: [], cover: null, eraId: null, defaultReleaseId: null, ...init };
+export function newAlbumData(init: Pick<AlbumData, 'title' | 'credits'> & Partial<AlbumData>): AlbumData {
+  return { genres: [], cover: null, eraId: null, defaultReleaseId: null, ...init };
+}
+
+/** A lead-artist-only credit list. */
+export const leadCredit = (artistId: string): Credit[] => [{ artistId, role: [LEAD_ROLE] }];
+
+/**
+ * The old single-artist field is gone: a record that still has `artistId` gets it as a Lead artist credit
+ * (promoting an existing credit for that artist rather than duplicating it) and loses the field.
+ * Returns null when there is nothing to migrate.
+ */
+export function withoutLegacyArtist<T extends { artistId?: string; credits?: Credit[] }>(data: T): Omit<T, 'artistId'> | null {
+  if (!('artistId' in data)) return null;
+  const { artistId, ...rest } = data;
+  return { ...rest, credits: withLeadFallback(data.credits ?? [], artistId) };
 }
 
 /**

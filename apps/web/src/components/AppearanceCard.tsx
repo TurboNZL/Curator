@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, Eye, ImageIcon, ImageOff, Search, Upload, Wand2 } from 'lucide-react';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
-import { ACCENTS, OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
+import { OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
 import { UI_STYLES, isUiStyle, type UiStyleId } from '../lib/uiStyle.ts';
 import { clearCustomWallpaper, getCustomImage, saveCustomWallpaper, themeWallpaper } from '../lib/wallpaper.ts';
 
@@ -55,11 +55,20 @@ export function PreviewApp({ theme, ui }: { theme: ThemeId; ui: UiStyleId }) {
   );
 }
 
+type Tab = 'colours' | 'platform' | 'style';
+type Tone = 'all' | 'dark' | 'light';
+
+/**
+ * Colour theme + UI style. The choices sit in one bounded, scrolling panel with tabs (they used to be one long
+ * list that pushed the rest of Settings far down), next to a preview that stays in view.
+ */
 export function AppearanceCard() {
   const { settings, updateSettings } = useStore();
   const theme = settings.theme;
   const ui: UiStyleId = isUiStyle(settings.ui) ? settings.ui : 'default';
   const def = resolveTheme(theme);
+  const [tab, setTab] = useState<Tab>('colours');
+  const [tone, setTone] = useState<Tone>('all');
   // hovering or focusing an option previews it, combined with the other current choice
   const [hoverTheme, setHoverTheme] = useState<ThemeId | null>(null);
   const [hoverUi, setHoverUi] = useState<UiStyleId | null>(null);
@@ -75,75 +84,95 @@ export function AppearanceCard() {
     const selected = theme === t.id;
     const d = resolveTheme(t.id);
     return (
-      <button key={t.id} type="button" role="radio" aria-checked={selected} title={t.note}
+      <button key={t.id} type="button" role="radio" aria-checked={selected} title={t.note ? `${t.label}: ${t.note}` : t.label}
         onClick={() => updateSettings({ theme: t.id })}
         onMouseEnter={() => setHoverTheme(t.id)} onFocus={() => setHoverTheme(t.id)} onBlur={() => setHoverTheme(null)}
-        className={cn('rounded-theme border p-2 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
-        <span data-theme={d.id} style={themeStyle(t.id)} className="relative block h-10 overflow-hidden rounded-md border border-line/60 bg-bg" aria-hidden>
-          <span className="absolute left-1.5 top-1.5 h-2 w-8 rounded-sm bg-accent" />
-          <span className="absolute bottom-1.5 left-1.5 right-1.5 h-3 rounded-sm border border-line bg-surface" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-top" />
+        className={cn('rounded-theme border p-1.5 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+        <span data-theme={d.id} style={themeStyle(t.id)} className="relative flex h-7 overflow-hidden rounded-md border border-line/60 bg-bg" aria-hidden>
+          <span className="h-full flex-1 bg-bg" /><span className="h-full flex-1 bg-surface" /><span className="h-full flex-1 bg-accent" /><span className="h-full flex-1 bg-top" />
         </span>
-        <span className="mt-1.5 flex items-center justify-between gap-1 text-xs font-medium"><span className="truncate">{t.label}</span>{selected && <Check size={13} className="shrink-0 text-accent" />}</span>
+        <span className="mt-1 flex items-center justify-between gap-1 text-[11px] font-medium leading-tight"><span className="truncate">{t.label}</span>{selected && <Check size={12} className="shrink-0 text-accent" />}</span>
       </button>
     );
   };
-  const grid = 'grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2';
-  const own = THEMES.filter((t) => t.id === 'system' || OWN_THEME_IDS.includes(t.id));
-  const colours = THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id));
-  const platform = THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id));
+  const grid = 'grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-1.5';
+  const tonal = (t: (typeof THEMES)[number]) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
+  const own = THEMES.filter((t) => (t.id === 'system' || OWN_THEME_IDS.includes(t.id)) && tonal(t));
+  const colours = THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && tonal(t));
+  const platform = THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id) && tonal(t));
+
+  const tabs: { id: Tab; text: string }[] = [{ id: 'colours', text: 'Colour themes' }, { id: 'platform', text: 'Platform colours' }, { id: 'style', text: 'UI style' }];
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
+      <div className="min-w-0 space-y-3 lg:order-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div role="tablist" aria-label="Appearance options" className="flex rounded-theme bg-raised p-0.5">
+            {tabs.map((x) => (
+              <button key={x.id} role="tab" aria-selected={tab === x.id} onClick={() => setTab(x.id)}
+                className={cn('rounded-[calc(var(--radius)-3px)] px-3 py-1 text-sm font-medium transition-colors', tab === x.id ? 'bg-surface text-fg shadow-sm' : 'text-muted hover:text-fg')}>{x.text}</button>))}
+          </div>
+          {tab !== 'style' && (
+            <div role="group" aria-label="Show" className="ml-auto flex gap-1 text-xs">
+              {(['all', 'dark', 'light'] as Tone[]).map((t) => <button key={t} aria-pressed={tone === t} onClick={() => setTone(t)} className={cn('rounded-full border px-2.5 py-0.5 capitalize', tone === t ? 'border-accent text-accent' : 'border-line text-muted hover:text-fg')}>{t}</button>)}
+            </div>)}
+        </div>
+
+        <div className="max-h-[21rem] overflow-y-auto rounded-theme border border-line p-2" role="tabpanel">
+          {tab === 'colours' && (
+            <div className="space-y-3">
+              <div role="radiogroup" aria-label="Curator themes" className={grid} onMouseLeave={() => setHoverTheme(null)}>{own.map(themeButton)}</div>
+              <div role="radiogroup" aria-label="More colour themes" className={grid} onMouseLeave={() => setHoverTheme(null)}>{colours.map(themeButton)}</div>
+            </div>)}
+          {tab === 'platform' && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted">Palettes copied from a desktop or OS, made to pair with the matching UI style.</p>
+              <div role="radiogroup" aria-label="Platform colour theme" className={grid} onMouseLeave={() => setHoverTheme(null)}>{platform.map(themeButton)}</div>
+            </div>)}
+          {tab === 'style' && (
+            <div className="space-y-2">
+              {matching && matching !== theme && (
+                <button type="button" className="btn text-xs" onClick={() => updateSettings({ theme: matching })} onMouseEnter={() => setHoverTheme(matching)} onMouseLeave={() => setHoverTheme(null)}>
+                  <Wand2 size={14} />Use matching colours ({label(matching)})</button>)}
+              <div role="radiogroup" aria-label="UI style" className="grid grid-cols-1 gap-1.5 sm:grid-cols-2" onMouseLeave={() => setHoverUi(null)}>
+                {UI_STYLES.map((s) => {
+                  const selected = ui === s.id;
+                  return (
+                    <button key={s.id} type="button" role="radio" aria-checked={selected} title={s.description} onClick={() => updateSettings({ ui: s.id })}
+                      onMouseEnter={() => setHoverUi(s.id)} onFocus={() => setHoverUi(s.id)} onBlur={() => setHoverUi(null)}
+                      className={cn('rounded-theme border bg-raised px-3 py-2 text-left transition-colors hover:bg-hover', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+                      <span className="flex items-center justify-between gap-2"><span className="text-sm font-medium">{s.label}</span>{selected && <Check size={14} className="text-accent" />}</span>
+                      <span className="mt-0.5 line-clamp-2 block text-[11px] leading-snug text-muted">{s.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>)}
+        </div>
+
+        {ui === 'liquid' && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span className="font-medium">Glass</span>
+            <div role="radiogroup" aria-label="Glass variant" className="flex rounded-theme bg-raised p-0.5">
+              {(['regular', 'clear'] as const).map((g) => (
+                <button key={g} role="radio" aria-checked={settings.glass === g} onClick={() => updateSettings({ glass: g })}
+                  className={cn('rounded-[calc(var(--radius)-3px)] px-3 py-1 text-xs font-medium capitalize', settings.glass === g ? 'bg-surface text-fg shadow-sm' : 'text-muted hover:text-fg')}>{g}</button>))}
+            </div>
+            <span className="text-xs text-muted">{settings.glass === 'clear' ? 'Clear: more see-through, with a dimming layer for legibility. Best over bold artwork.' : 'Regular: adapts to what is behind it. The default.'}</span>
+          </div>)}
+        <p className="text-xs text-muted">Now: <span className="font-medium text-fg">{label(theme)}</span> + <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === ui)?.label}</span>. The accent colour comes from the colour theme.</p>
+      </div>
+
       {/* the preview sits in its own framed column so it cannot be mistaken for the real page */}
       <div className="lg:sticky lg:top-20 lg:order-2">
-        <div className="rounded-theme border-2 border-dashed border-accent bg-accent/10 p-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2 text-xs">
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 font-bold uppercase tracking-wider text-accent-fg"><Eye size={13} />Preview</span>
+        <div className="rounded-theme border-2 border-dashed border-accent bg-accent/10 p-2">
+          <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 font-bold uppercase tracking-wider text-accent-fg"><Eye size={12} />Preview</span>
             <span className="truncate font-medium">{label(shownTheme)} + {UI_STYLES.find((s) => s.id === shownUi)?.label}</span>
           </div>
           <PreviewApp theme={shownTheme} ui={shownUi} />
-          <p className="mt-2 text-center text-[11px] text-muted">Not your real page. Hover or focus an option to try it, click to apply.</p>
+          <p className="mt-1.5 text-center text-[11px] text-muted">Not your real page. Hover an option to try it, click to apply.</p>
         </div>
-      </div>
-
-      <div className="min-w-0 space-y-5 lg:order-1">
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Colour theme</h3>
-          <div role="radiogroup" aria-label="Colour theme" className={grid} onMouseLeave={() => setHoverTheme(null)}>{own.map(themeButton)}</div>
-          <div role="radiogroup" aria-label="More colour themes" className={grid} onMouseLeave={() => setHoverTheme(null)}>{colours.map(themeButton)}</div>
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Platform colours</h3>
-          <p className="text-xs text-muted">Palettes copied from a desktop or OS, made to pair with the matching UI style.</p>
-          <div role="radiogroup" aria-label="Platform colour theme" className={grid} onMouseLeave={() => setHoverTheme(null)}>{platform.map(themeButton)}</div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-medium">UI style</h3>
-            {matching && matching !== theme && (
-              <button type="button" className="btn text-xs" onClick={() => updateSettings({ theme: matching })} onMouseEnter={() => setHoverTheme(matching)} onMouseLeave={() => setHoverTheme(null)}>
-                <Wand2 size={14} />Use matching colours ({label(matching)})</button>)}
-          </div>
-          <div role="radiogroup" aria-label="UI style" className="grid grid-cols-1 gap-2 sm:grid-cols-2" onMouseLeave={() => setHoverUi(null)}>
-            {UI_STYLES.map((s) => {
-              const selected = ui === s.id;
-              return (
-                <button key={s.id} type="button" role="radio" aria-checked={selected} onClick={() => updateSettings({ ui: s.id })}
-                  onMouseEnter={() => setHoverUi(s.id)} onFocus={() => setHoverUi(s.id)} onBlur={() => setHoverUi(null)}
-                  className={cn('rounded-theme border bg-raised p-3 text-left transition-colors hover:bg-hover', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
-                  <span className="flex items-center justify-between gap-2"><span className="font-medium">{s.label}</span>{selected && <Check size={15} className="text-accent" />}</span>
-                  <span className="mt-1 block text-xs text-muted">{s.description}</span>
-                  <span className="mt-1.5 block text-xs opacity-80">Aa Bb 0123 · {s.font}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2"><span className="mr-2 text-sm text-muted">Accent</span>
-          <button className={cn('h-6 w-6 rounded-full border border-line bg-raised text-[10px]', !settings.accent && 'ring-2 ring-fg')} title="Theme default" onClick={() => updateSettings({ accent: null })}>·</button>
-          {ACCENTS.map((c) => <button key={c} aria-label={c} onClick={() => updateSettings({ accent: c })} className={cn('h-6 w-6 rounded-full', settings.accent === c && 'ring-2 ring-fg ring-offset-2 ring-offset-bg')} style={{ background: c }} />)}
-          <label className="ml-1 flex items-center gap-1.5 text-xs text-muted">Custom<input type="color" aria-label="Custom accent colour" className="h-6 w-8 cursor-pointer rounded border border-line bg-transparent p-0" value={settings.accent ?? '#8b5cf6'} onChange={(e) => updateSettings({ accent: e.target.value })} /></label></div>
       </div>
     </div>
   );

@@ -7,6 +7,8 @@ import { HomePage } from './pages/Home.tsx';
 import { BiosPage } from './pages/BiosPage.tsx';
 import { AlbumsPage } from './pages/Albums.tsx';
 import { AlbumPage } from './pages/Album.tsx';
+import { SinglesPage } from './pages/Singles.tsx';
+import { ErasPage, EraPage } from './pages/Eras.tsx';
 import { ArtistsPage } from './pages/Artists.tsx';
 import { ArtistPage } from './pages/Artist.tsx';
 import { TracksPage } from './pages/Tracks.tsx';
@@ -30,6 +32,9 @@ export function App() {
         <Route path="bios" element={<BiosPage />} />
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:id" element={<AlbumPage />} />
+        <Route path="singles" element={<SinglesPage />} />
+        <Route path="eras" element={<ErasPage />} />
+        <Route path="eras/:id" element={<EraPage />} />
         <Route path="artists" element={<ArtistsPage />} />
         <Route path="artists/:id" element={<ArtistPage />} />
         <Route path="tracks" element={<TracksPage />} />

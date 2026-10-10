@@ -12,4 +12,4 @@ export function youtubeId(url: string | null | undefined): string | null {
 }
 
 /** Largest first. `maxresdefault` (16:9) is missing for some videos; `hqdefault` (4:3, letterboxed) exists for all. */
-export const thumbnailUrls = (id: string) => [`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, `https://i.ytimg.com/vi/${id}/hqdefault.jpg`];
+export const thumbnailUrls = (id: string) => [`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, `https://i.ytimg.com/vi/${id}/hq720.jpg`, `https://i.ytimg.com/vi/${id}/hqdefault.jpg`];
