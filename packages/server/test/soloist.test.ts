@@ -89,6 +89,11 @@ describe('Soloist module', () => {
     expect((await s.status()).message).toMatch(/setup-pi-audio\.sh/);
     await s.stop();
   });
+  it('inside the desktop app the missing-sound hint talks about the computer, not the Pi', async () => {
+    const s = new Soloist(dir, { platform: 'linux', arch: 'x64', uid: 1000, env: {}, exists: () => false, desktop: true });
+    const a = (await s.status()).audio;
+    expect(a.ok).toBe(false); expect(a.hint).toMatch(/this computer/); expect(a.hint).not.toMatch(/setup-pi-audio/);
+  });
   it('an expired build (exit 10) is replaced and started again', async () => {
     const { s, children, downloads } = rig();
     await s.install(); s.configure({ deviceName: 'Curator', apiKey: 'k' }); s.start();
