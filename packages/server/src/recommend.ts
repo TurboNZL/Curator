@@ -12,7 +12,8 @@ export interface SimilarArtist { name: string; mbid: string; score: number }
 export function parseMusicBrainzSearch(j: unknown, name: string): string | null {
   const list = (j as { artists?: { id?: string; name?: string; score?: number }[] } | null)?.artists ?? [];
   const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-  const hit = list.find((a) => a.id && norm(a.name ?? '') === norm(name) && (a.score ?? 0) >= 90) ?? null;
+  const same = list.filter((a) => a.id && norm(a.name ?? '') === norm(name));
+  const hit = same.find((a) => (a.score ?? 0) >= 80) ?? (same.length === 1 ? same[0] : null);
   return hit?.id ?? null;
 }
 
@@ -33,12 +34,22 @@ export async function artistMbid(name: string, f: Fetch = fetch): Promise<string
   } catch { return null; }
 }
 
+/** Tried in order; the first that answers with artists wins. The first is the one checked against the live service in October 2026. */
+export const ALGORITHMS = [
+  'session_based_days_7500_session_300_contribution_5_threshold_10_limit_100_filter_True_skip_30',
+  'session_based_days_9000_session_300_contribution_5_threshold_15_limit_50_skip_30',
+];
+
 export async function similarArtists(name: string, f: Fetch = fetch, limit = 20): Promise<SimilarArtist[]> {
   const mbid = await artistMbid(name, f);
   if (!mbid) return [];
-  try {
-    const algorithm = 'session_based_days_9000_session_300_contribution_5_threshold_15_limit_50_skip_30';
-    const res = await f(`https://labs.api.listenbrainz.org/similar-artists/json?artist_mbids=${mbid}&algorithm=${algorithm}`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15_000) });
-    return res.ok ? parseSimilar(await res.json()).slice(0, limit) : [];
-  } catch { return []; }
+  for (const algorithm of ALGORITHMS) {
+    try {
+      const res = await f(`https://labs.api.listenbrainz.org/similar-artists/json?artist_mbids=${mbid}&algorithm=${algorithm}`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15_000) });
+      if (!res.ok) continue;
+      const found = parseSimilar(await res.json()).slice(0, limit);
+      if (found.length) return found;
+    } catch { /* try the next one */ }
+  }
+  return [];
 }

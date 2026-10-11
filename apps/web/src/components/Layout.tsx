@@ -69,6 +69,7 @@ const MOBILE_HIDDEN = ['/discover', '/singles', '/eras', '/playlists', '/stats',
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
   { label: 'Import from Spotify', icon: ListMusic, target: { kind: 'import-spotify', id: '' } },
+  { label: 'Find YouTube links for tracks', icon: Search, target: { kind: 'match-links', id: '' } },
   { label: 'Add audio files', icon: FileAudio, target: { kind: 'upload', id: '' } },
   { label: 'New album', icon: Disc3, target: { kind: 'new-album', id: '' } },
   { label: 'New track', icon: Music2, target: { kind: 'new-track', id: '' } },

@@ -2,6 +2,9 @@ import type { Library } from './library.ts';
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
+/** Discover wants at least this many seed artists when the library has them */
+export const MIN_SEEDS = 5;
+
 export interface Seed { name: string; weight: number }
 
 /**
@@ -16,7 +19,11 @@ export function tasteSeeds(lib: Library, n = 8): Seed[] {
     const e = by.get(lead.id) ?? { name: lead.name, sum: 0, count: 0 };
     e.sum += t.effectiveRating; e.count++; by.set(lead.id, e);
   }
-  return [...by.values()].filter((e) => e.sum / e.count >= 6).map((e) => ({ name: e.name, weight: (e.sum / e.count / 10) * Math.log2(1 + e.count) })).sort((a, b) => b.weight - a.weight).slice(0, n);
+  const all = [...by.values()].map((e) => ({ name: e.name, avg: e.sum / e.count, weight: (e.sum / e.count / 10) * Math.log2(1 + e.count) })).sort((a, b) => b.weight - a.weight);
+  // artists you rate well come first; when fewer than MIN qualify (a small or young library) the best of the rest fill up, so Discover is never one artist
+  const liked = all.filter((e) => e.avg >= 5.5);
+  const picked = liked.length >= MIN_SEEDS ? liked : [...liked, ...all.filter((e) => e.avg < 5.5 && e.avg >= 4)].slice(0, MIN_SEEDS);
+  return picked.slice(0, n).map(({ name, weight }) => ({ name, weight }));
 }
 
 export interface Suggestion { name: string; mbid: string; score: number; because: string[] }

@@ -106,7 +106,7 @@ describe('sign-in', () => {
   });
 });
 
-import { parseMusicBrainzSearch, parseSimilar } from '../src/recommend.ts';
+import { ALGORITHMS, parseMusicBrainzSearch, parseSimilar, similarArtists } from '../src/recommend.ts';
 describe('player', () => {
   const CLIENT = 'b'.repeat(32);
   async function signedIn(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
@@ -165,5 +165,21 @@ describe('recommendation sources', () => {
     expect(parseSimilar([{ name: 'B', artist_mbid: 'm2', score: 3 }, { name: 'A', artist_mbid: 'm1', score: 9 }, { name: 'no id' }]).map((a) => a.name)).toEqual(['A', 'B']);
     expect(parseSimilar({ data: [{ name: 'C', artist_mbid: 'm3', score: 1 }] })).toHaveLength(1);
     expect(parseSimilar(null)).toEqual([]);
+  });
+});
+
+describe('similar artists lookup', () => {
+  it('falls back to the older algorithm when the first returns nothing', async () => {
+    const urls: string[] = [];
+    const f = (async (u: string) => {
+      urls.push(u);
+      if (u.includes('musicbrainz')) return new Response(JSON.stringify({ artists: [{ id: 'm1', name: 'Drake', score: 100 }] }));
+      return new Response(u.includes(ALGORITHMS[0]) ? '[]' : JSON.stringify([{ artist_mbid: 'x', name: 'Future', score: 5 }]));
+    }) as unknown as typeof fetch;
+    expect((await similarArtists('Drake', f)).map((a) => a.name)).toEqual(['Future']);
+    expect(urls.filter((u) => u.includes('labs.api'))).toHaveLength(2);
+  });
+  it('accepts a single exact-name match even when MusicBrainz scores it below 90', () => {
+    expect(parseMusicBrainzSearch({ artists: [{ id: 'z', name: 'Tyler, The Creator', score: 85 }] }, 'Tyler, the Creator')).toBe('z');
   });
 });

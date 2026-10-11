@@ -1,3 +1,4 @@
+import { PlayLog } from './playLog.ts';
 import { create } from 'zustand';
 import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
 import { moveTrack } from './defaults.ts';
@@ -64,6 +65,7 @@ const nativeBad = new Set<string>();
 const NATIVE_AHEAD = 12;
 let refreshNative: () => void = () => {};
 const lib = getLibrary;
+const playLog = new PlayLog();
 const rules = () => lib().rules;
 
 export const usePlayer = create<PlayerState>((set, get) => {
@@ -73,6 +75,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     audio.preload = 'auto';
     audio.crossOrigin = 'anonymous'; // the equaliser reads the sound; the server answers with CORS headers
     audio.addEventListener('play', resumeEq);
+    audio.addEventListener('playing', () => playLog.started());
     audio.addEventListener('timeupdate', () => { if (!native) set({ time: audio!.currentTime }); });
     audio.addEventListener('durationchange', () => !native && set({ duration: Number.isFinite(audio!.duration) ? audio!.duration : 0 }));
     audio.addEventListener('play', () => { if (!native) set({ playing: true }); });
@@ -96,7 +99,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     const id = get().queue.currentId;
     if (!id || (!audio && !native && !spotifyEngine.active())) return;
     const dur = position();
-    if (dur < 1) return;
+    if (!playLog.claim(id, dur)) return; // once per play, and only for what was heard (lib/playLog.ts)
     const s = get().source;
     const data: PlaybackLogData = { trackId: id, timestamp: Date.now(), duration: dur, sourceType: s.type, sourceId: s.id, isSkip };
     useStore.getState().put('playbackLogs', data);
@@ -159,6 +162,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
   function load(trackId: string | null, autoStart = true) {
     const seq = ++loadSeq; // a newer load supersedes one still resolving its source
     if (!trackId) {
+      playLog.clear();
       void spotifyEngine.release(true);
       if (native) nativeAudio.stop();
       native = false;
@@ -167,6 +171,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       return true;
     }
     const track = lib().trackById.get(trackId);
+    if (track && (track.file || spotifyCan(track))) playLog.begin(trackId);
     if (track && !track.file && spotifyCan(track)) {
       // no audio file, but Spotify can play it: tell the chosen Spotify device what to play (lib/spotifyPlayer.ts)
       if (native) { nativeAudio.stop(); native = false; }
@@ -218,6 +223,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       go(advance(q, rules(), get().source.type));
       return;
     }
+    if (r.playing && r.timeMs > 0) playLog.started(get().queue.currentId ?? undefined);
     set({ playing: r.playing, time: r.timeMs / 1000, ...(r.durationMs ? { duration: r.durationMs / 1000 } : {}) });
   }
 
@@ -237,15 +243,18 @@ export const usePlayer = create<PlayerState>((set, get) => {
     if (sim.currentId === trackId) {
       logPlay(reason !== 'auto');
       set({ queue: sim, history, time: 0, error: null });
+      playLog.begin(trackId); playLog.started(trackId); // the app's player is already playing it
     } else if (get().history[get().history.length - 1] === trackId) {
       logPlay(true);
       set({ history: get().history.slice(0, -1), time: 0, error: null, queue: { ...q, currentId: trackId, user: q.currentId ? [q.currentId, ...q.user] : q.user } });
+      playLog.begin(trackId); playLog.started(trackId);
     } else {
       // chosen somewhere else (Android Auto): carry on with what the app's player has queued
       const rest = ids.map((x) => (x.startsWith('t/') ? x.split('/')[1] : x));
       const at = rest.indexOf(trackId);
       if (get().queue.currentId) logPlay(true);
       set({ queue: { currentId: trackId, user: [], active: at >= 0 ? rest.slice(at + 1) : [] }, history: pushHistory(get().history, q.currentId), time: 0, error: null });
+      playLog.begin(trackId); playLog.started(trackId);
     }
     updateMediaSession(trackId);
   }
@@ -256,6 +265,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
         // a page that was recreated while the app kept playing: show what is playing
         if (e.id && !get().queue.currentId && e.playing) { native = true; followNative(e.id, [e.id], 'adopt'); } else return;
       }
+      if (e.playing && e.pos > 0) playLog.started(e.id);
       set({ playing: e.playing, time: e.pos / 1000, duration: e.dur / 1000 });
     } else if (e.t === 'index') {
       if (native || !get().queue.currentId) { native = true; followNative(e.id, e.ids, e.reason); }
