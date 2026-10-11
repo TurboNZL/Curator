@@ -92,7 +92,6 @@ export class Api {
   serverHealth() { return this.req<ServerHealth>('/api/admin/health'); }
   storageInfo() { return this.req<StorageInfo>('/api/admin/storage'); }
   moveStorage(kind: StorageEntry['kind'], target: string) { return this.req<{ ok: true }>('/api/admin/storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, target }) }); }
-  tunnelToken() { return this.req<{ found: boolean; token?: string; source?: string }>('/api/admin/tunnel-token'); }
   updateInfo() { return this.req<ServerUpdate>('/api/admin/update'); }
   startUpdate() { return this.req<{ ok: true }>('/api/admin/update', { method: 'POST' }); }
   pull(since: number, limit = 1000) { return this.req<PullResponse>(`/api/sync/pull?since=${since}&limit=${limit}`); }

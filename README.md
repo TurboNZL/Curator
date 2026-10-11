@@ -35,7 +35,7 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 - Backup and restore of the database and files from Settings, and a one-time migration from a legacy database.
 
 **Running the server**
-- **Server health** in Settings (free space on every disk, CPU temperature and load, memory, power, disk speed), **storage locations** (move the library files, temp folder and yt-dlp cache off the SD card while it runs), and buttons to copy the access token and the Cloudflare tunnel token.
+- **Server health** in Settings (free space on every disk, CPU temperature and load, memory, power, disk speed), **storage locations** (move the library files, temp folder and yt-dlp cache off the SD card while it runs), a button to copy the access token, and **Pair a device** (a code or link that sets up another device with the server address, access token and Cloudflare Access service token).
 
 ## The apps
 
@@ -90,7 +90,6 @@ The server prints its address and a token (also in `<data dir>/token`). Open the
 | `CURATOR_YTDLP`, `CURATOR_FFMPEG_DIR` | found on `PATH` | Tools for YouTube import and downloads. |
 | `CURATOR_YTDLP_COOKIES`, `CURATOR_YTDLP_ARGS` | none | A cookies file and extra arguments for yt-dlp ([docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md)). |
 | `CURATOR_WEB_DIR` | `apps/web/dist` | The client build to serve. |
-| `CURATOR_TUNNEL_TOKEN` | none | A Cloudflare tunnel token to offer under Settings → Copy tunnel token (else `<data>/tunnel-token` or the cloudflared service is read). |
 | `CURATOR_UPDATE` | auto | `0` hides the Update server button, `1` shows it outside systemd. |
 
 Desktop app only: `CURATOR_DESKTOP_PORT` (default 47814) and `CURATOR_SOFTWARE_RENDERING=1` (turn the GPU off, for diagnosing a driver).

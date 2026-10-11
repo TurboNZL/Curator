@@ -9,8 +9,6 @@ export interface DeviceSettings {
   /** '' = same origin (dev proxy, or the server serving this app) */
   serverUrl: string;
   token: string;
-  /** a Cloudflare tunnel token received in a pairing code (kept so it can be copied again; empty when none) */
-  tunnelToken: string;
   /** a Cloudflare Access service token (CF-Access-Client-Id / -Secret) for a server behind Cloudflare Access; blank when none */
   cfAccessId: string;
   cfAccessSecret: string;
@@ -75,7 +73,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', tunnelToken: '', cfAccessId: '', cfAccessSecret: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));
