@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
 import { moveTrack } from './defaults.ts';
-import { audioSource, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
+import { audioSource, imageSource, localAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
@@ -189,8 +189,6 @@ export const usePlayer = create<PlayerState>((set, get) => {
         const at = pendingSeek; pendingSeek = null;
         a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(at, Number.isFinite(a.duration) ? a.duration : at); set({ time: a.currentTime }); }, { once: true });
       }
-      const upcoming = get().queue.user[0] ?? get().queue.active[0];
-      if (upcoming) prefetchAudio(lib().trackById.get(upcoming)?.file);
       if (autoStart) void a.play().catch((e: Error) => set(e?.name === 'NotAllowedError' ? { playing: false, error: 'Press play: this browser blocked starting by itself.' } : { playing: false }));
     })().catch((e: Error) => { if (seq === loadSeq) set({ error: `Could not load this track (${e.message})`, playing: false }); });
     updateMediaSession(trackId);

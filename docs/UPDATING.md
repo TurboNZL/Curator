@@ -19,6 +19,10 @@ What it does, in order (it prints each step and stops at the first one that fail
 
 The server serves the freshly built web client from `apps/web/dist`, so this one command updates both. Open devices pick up the new client the next time they load the page.
 
+## From the app: Settings > Update server
+
+Once the server runs as the systemd service from [DEPLOY_PI.md](DEPLOY_PI.md), Settings has an **Update server** button (it only appears when the server can do it). It runs `scripts/update.sh --live` (git pull, install, build the web client; no `sudo` needed because the service is not stopped), shows the output, then the server exits and systemd starts the new code (`Restart=on-failure` in the unit). The page waits for the server to come back. It needs the checkout to be a git clone owned by the service user and Node at `NODE_BIN` in the script, like the terminal command. Turn it off with `CURATOR_UPDATE=0`; outside systemd it is only offered with `CURATOR_UPDATE=1` (the update then happens but you restart the server yourself). The desktop and Android apps update separately (Settings > App updates).
+
 ## Things to know
 
 - **First time only:** the code must already be on the Pi (`git clone https://github.com/TurboNZL/Curator/ ~/music-curator` as the `curator` user), and the `curator` systemd service must exist. See [DEPLOY_PI.md](DEPLOY_PI.md) sections 2 and 3.

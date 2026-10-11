@@ -88,7 +88,7 @@ To bring an old library across: `CURATOR_DATA_DIR=… node --experimental-strip-
 ## Updating and releases
 
 - **Server on a Pi:** one command, [docs/UPDATING.md](docs/UPDATING.md) (`scripts/update.sh`).
-- **Desktop and Android apps** update themselves from GitHub releases. Merging a pull request into `main` is the whole release process: a pushed branch gets a PR automatically (`auto-pr.yml`), CI tests it (`ci.yml`), and the merge makes `release.yml` pick the next version (`v2026.10.2`, ...), build the Windows and Linux installers and the signed APK and attach them. Docs-only changes do not release. The apps use the newest published release, **including ones marked pre-release**. Settings → App updates shows the state; a token is only needed if the repository is private.
+- **Desktop and Android apps** update themselves from GitHub releases. Merging a pull request into `main` is the whole release process: a pushed branch gets a PR automatically (`auto-pr.yml`), CI checks it (`check.yml`), and the merge makes `release.yml` pick the next version (`v2026.10.2`, ...), build the Windows and Linux installers and the signed APK and attach them. Docs-only changes do not release. The apps use the newest published release, **including ones marked pre-release**. Settings → App updates shows the state; a token is only needed if the repository is private.
 
 ## Guides
 

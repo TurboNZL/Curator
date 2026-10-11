@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Update the Pi deployment: stop service, pull, install, build web client, restart.
 # Run as the user that owns the checkout (e.g. curator). Needs sudo for systemctl unless root.
+#   --live  leave the service alone (no sudo): used by the app's "Update server" button, which restarts the server itself afterwards.
 set -euo pipefail
 
+LIVE=0; [ "${1:-}" = "--live" ] && LIVE=1
 SERVICE="${CURATOR_SERVICE:-curator}"
 NODE_BIN="/home/curator/.nvm/versions/node/v22.23.3/bin"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,8 +26,10 @@ cd "$REPO_DIR"
 
 step "Using node $("$NODE_BIN/node" -v) in $REPO_DIR"
 
-step "Stopping $SERVICE service"
-$SUDO systemctl stop "$SERVICE"
+if [ "$LIVE" -eq 0 ]; then
+  step "Stopping $SERVICE service"
+  $SUDO systemctl stop "$SERVICE"
+fi
 
 step "Pulling latest code (git pull --ff-only)"
 git pull --ff-only
@@ -36,12 +40,17 @@ pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --
 step "Building web client"
 pnpm --filter @curator/web build
 
-step "Starting $SERVICE service"
-$SUDO systemctl start "$SERVICE"
+if [ "$LIVE" -eq 0 ]; then
+  step "Starting $SERVICE service"
+  $SUDO systemctl start "$SERVICE"
 
-step "Checking $SERVICE is running"
-sleep 2
-$SUDO systemctl is-active --quiet "$SERVICE"
+  step "Checking $SERVICE is running"
+  sleep 2
+  $SUDO systemctl is-active --quiet "$SERVICE"
 
-echo
-echo "Update complete. $SERVICE is running."
+  echo
+  echo "Update complete. $SERVICE is running."
+else
+  echo
+  echo "Update complete. The server restarts to load it."
+fi
