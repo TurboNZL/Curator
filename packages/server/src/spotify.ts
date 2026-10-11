@@ -36,7 +36,8 @@ export interface SpotifyTrack {
 }
 export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyTrack[]; source: 'embed' | 'api' | 'oembed'; note?: string }
 
-export interface SpotifyDevice { id: string; name: string; type: string; active: boolean; volume: number | null }
+/** `restricted`: Spotify says this device accepts no commands from other apps (Echo and other smart speakers are sometimes reported so); it is listed so it is not mistaken for a missing one */
+export interface SpotifyDevice { id: string; name: string; type: string; active: boolean; volume: number | null; restricted: boolean }
 export interface SpotifyPlayerState {
   playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null };
   track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null;
@@ -207,8 +208,8 @@ export class SpotifyAccount {
 
   /** Spotify Connect devices of the account: the phone, the PC app, Soloist on the Pi, a speaker. */
   async devices(): Promise<SpotifyDevice[]> {
-    const j = await this.get<{ devices?: { id: string; name: string; type: string; is_active: boolean; volume_percent?: number | null; is_restricted?: boolean }[] }>('/me/player/devices');
-    return (j.devices ?? []).filter((d) => d.id && !d.is_restricted).map((d) => ({ id: d.id, name: d.name, type: d.type, active: d.is_active, volume: d.volume_percent ?? null }));
+    const j = await this.get<{ devices?: { id: string | null; name: string; type: string; is_active: boolean; volume_percent?: number | null; is_restricted?: boolean }[] }>('/me/player/devices');
+    return (j.devices ?? []).filter((d) => d.name).map((d) => ({ id: d.id ?? '', name: d.name, type: d.type, active: d.is_active, volume: d.volume_percent ?? null, restricted: !!d.is_restricted || !d.id }));
   }
 
   /** What Spotify is playing now (null when nothing is, which Spotify reports as 204). */

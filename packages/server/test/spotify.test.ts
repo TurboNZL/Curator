@@ -151,10 +151,15 @@ describe('player', () => {
     const calls: string[] = [];
     const a = await signedIn((u, init) => {
       calls.push(`${init?.method ?? 'GET'} ${u.replace('https://api.spotify.com/v1', '')} ${init?.body ?? ''}`);
-      if (u.endsWith('/me/player/devices')) return json({ devices: [{ id: 'd1', name: 'Soloist (pi)', type: 'Speaker', is_active: false, volume_percent: 50 }, { id: 'd2', name: 'Locked', type: 'x', is_active: false, is_restricted: true }] });
+      if (u.endsWith('/me/player/devices')) return json({ devices: [{ id: 'd1', name: 'Soloist (pi)', type: 'Speaker', is_active: false, volume_percent: 50 }, { id: 'd2', name: 'Locked', type: 'x', is_active: false, is_restricted: true }, { id: null, name: 'Echo Dot', type: 'CastAudio', is_active: false }] });
       return new Response(null, { status: 204 });
     });
-    expect(await a.devices()).toEqual([{ id: 'd1', name: 'Soloist (pi)', type: 'Speaker', active: false, volume: 50 }]);
+    // restricted devices (Spotify accepts no commands for them) and ones without an id stay in the list, marked, so they are not mistaken for missing ones
+    expect(await a.devices()).toEqual([
+      { id: 'd1', name: 'Soloist (pi)', type: 'Speaker', active: false, volume: 50, restricted: false },
+      { id: 'd2', name: 'Locked', type: 'x', active: false, volume: null, restricted: true },
+      { id: '', name: 'Echo Dot', type: 'CastAudio', active: false, volume: null, restricted: true },
+    ]);
     await a.play({ uris: ['spotify:track:aaaaaaaaaaaaaaaaaaaaaa'], deviceId: 'd1', positionMs: 1500.4 });
     await a.command({ type: 'seek', value: 30000, deviceId: 'd1' });
     await a.command({ type: 'volume', value: 150 });

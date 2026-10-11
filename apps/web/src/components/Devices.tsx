@@ -90,14 +90,14 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
       {spotify.length > 0 && <>
         <div className="mt-1 border-t border-line/60 px-3 pb-0.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Spotify devices</div>
         {spotify.map((d) => {
-          const selected = chosen === d.id;
+          const selected = !!d.id && chosen === d.id;
           const playing = selected && engine === 'spotify' && !remoteId;
           return (
-            <button key={d.id} type="button" data-selected={selected || undefined} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised/60" aria-label={`Spotify device ${d.name}`}
-              title={selected ? 'Spotify tracks play here' : 'Play Spotify tracks on this device'} onClick={() => run(() => chooseSpotifyDevice(d), false)}>
+            <button key={d.id || d.name} type="button" disabled={d.restricted} data-selected={selected || undefined} className={cn('flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised/60', d.restricted && 'cursor-not-allowed opacity-60 hover:bg-transparent')} aria-label={`Spotify device ${d.name}`}
+              title={d.restricted ? 'Spotify does not let other apps control this device (it reports it as restricted)' : selected ? 'Spotify tracks play here' : 'Play Spotify tracks on this device'} onClick={() => run(() => chooseSpotifyDevice(d), false)}>
               {d.type.toLowerCase() === 'speaker' ? <Speaker size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} /> : <Music size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} />}
               <span className="min-w-0 flex-1"><span className={cn('flex items-center gap-1.5 font-medium', selected && 'text-accent')}><span className="truncate">{d.name}</span>{playing && <Radio size={12} className="shrink-0 animate-pulse" aria-label="Playing" />}</span>
-                <span className="block truncate text-xs text-muted">Spotify · {d.type}{d.active ? ' · active' : ''}{playing ? ' · playing from Curator' : selected ? ' · where Spotify tracks play' : ''}</span></span>
+                <span className="block truncate text-xs text-muted">Spotify · {d.type}{d.restricted ? ' · restricted by Spotify' : ''}{d.active ? ' · active' : ''}{playing ? ' · playing from Curator' : selected ? ' · where Spotify tracks play' : ''}</span></span>
               {selected && <Check size={16} className="shrink-0 text-accent" />}
             </button>);
         })}
