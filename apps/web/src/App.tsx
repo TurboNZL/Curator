@@ -17,6 +17,7 @@ import { QueuePage } from './pages/Queue.tsx';
 import { PlaylistsPage } from './pages/Playlists.tsx';
 import { SearchPage } from './pages/Search.tsx';
 import { DiscoverPage } from './pages/Discover.tsx';
+import { EntityStatsPage } from './pages/EntityStats.tsx';
 import { StatsPage } from './pages/Stats.tsx';
 import { SettingsPage } from './pages/Settings.tsx';
 
@@ -46,6 +47,7 @@ export function App() {
         <Route path="search" element={<SearchPage />} />
         <Route path="discover" element={<DiscoverPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="stats/:kind/:id" element={<EntityStatsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<div className="p-8 text-muted">Nothing here.</div>} />
       </Route>

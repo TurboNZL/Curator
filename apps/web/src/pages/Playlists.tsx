@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
-import { ArrowDown, ArrowUp, Link2, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
+import { BarChart3, ArrowDown, ArrowUp, Link2, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { moveTrack, removeTrack } from '../lib/defaults.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -55,6 +56,7 @@ export function PlaylistsPage() {
               <div className="flex flex-wrap gap-2 pt-1">
                 <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'playlist', id: open.id })}><Play size={16} fill="currentColor" />Play</button>
                 <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'playlist', id: open.id }); }}><Shuffle size={16} />Shuffle</button>
+                <Link className="btn btn-ghost" to={statsPath('playlist', open.id)}><BarChart3 size={15} />Stats</Link>
                 <button className="btn btn-ghost" onClick={() => edit({ kind: 'playlist', id: open.id })}><Pencil size={15} />Edit</button>
                 <KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
               </div>

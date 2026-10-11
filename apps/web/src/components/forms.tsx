@@ -1,5 +1,5 @@
 import { Select } from './Select.tsx';
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
 import type { ArtistData, Credit, EraData } from '@curator/core';
@@ -9,15 +9,30 @@ import { saveAudio, saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from './Cover.tsx';
 
+/** Inside this provider a Modal draws itself in the page (a card with its title bar and footer) instead of floating over it. Used by the stats pages' pencil. */
+export const InlineModals = createContext(false);
+
 export function Modal({ title, onClose, children, footer, wide }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
+  const inline = useContext(InlineModals);
   useEffect(() => {
+    if (inline) return;
     const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
+  }, [onClose, inline]);
   // the dialog grows out of the control that opened it
   const win = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => { if (win.current) win.current.style.transformOrigin = originFor(win.current.getBoundingClientRect()); }, []);
+  useLayoutEffect(() => { if (win.current && !inline) win.current.style.transformOrigin = originFor(win.current.getBoundingClientRect()); }, []);
+  if (inline) {
+    return (
+      <section role="region" aria-label={title} className="card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3"><h2 className="font-semibold">{title}</h2>
+          <button className="btn btn-ghost !p-1.5" aria-label="Close editor" onClick={onClose}><X size={18} /></button></div>
+        <div className="space-y-4 p-5">{children}</div>
+        {footer && <div className="flex items-center gap-2 border-t border-line px-5 py-3">{footer}</div>}
+      </section>
+    );
+  }
   return (
     <div className="bt-backdrop fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={win} role="dialog" aria-label={title} className={`bt-window flex max-h-[92vh] w-full flex-col overflow-hidden ${wide ? 'max-w-3xl' : 'max-w-xl'}`}>

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Disc, Download, FileAudio, Layers, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
+import { BarChart3, Disc, Download, FileAudio, Layers, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -89,6 +90,7 @@ export function AlbumPage() {
           <div className="flex flex-wrap gap-2 pt-2">
             <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'album', id: album.id })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'album', id: album.id }); }}><Shuffle size={16} />Shuffle</button>
+            <Link className="btn btn-ghost" to={statsPath('album', album.id)}><BarChart3 size={15} />Stats</Link>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'album', id: album.id })}><Pencil size={15} />Edit</button>
             {view.kind === 'all'
               ? <button className={`btn ${arranging ? 'btn-accent' : 'btn-ghost'}`} onClick={() => setArranging(!arranging)}><ListOrdered size={15} />{arranging ? 'Done' : 'Edit tracks'}</button>

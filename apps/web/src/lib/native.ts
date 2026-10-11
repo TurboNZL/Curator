@@ -4,6 +4,10 @@ import { desktop } from './settings.ts';
 export type UpdateState = {
   status: 'idle' | 'disabled' | 'checking' | 'none' | 'downloading' | 'ready' | 'error';
   version?: string; percent?: number; message?: string;
+  /** desktop: an install is running (a password prompt is open) */
+  installing?: boolean;
+  /** desktop: what to run in a terminal when the app could not install the update itself */
+  command?: string;
 };
 
 export interface NativeUpdates {

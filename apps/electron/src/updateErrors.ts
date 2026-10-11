@@ -2,6 +2,10 @@ export type UpdateState = {
   status: 'idle' | 'disabled' | 'checking' | 'none' | 'downloading' | 'ready' | 'error';
   /** the new version, once one is found */
   version?: string; percent?: number; message?: string;
+  /** an install is running (a password prompt is open) */
+  installing?: boolean;
+  /** what to run in a terminal when the app could not install the update itself */
+  command?: string;
 };
 
 /**
