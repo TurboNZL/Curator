@@ -49,15 +49,29 @@ export interface ImportPreview {
   entries: { id: string; title: string; rawTitle: string; url: string; duration: number | null }[];
 }
 
+/** The headers a server behind Cloudflare Access wants on every request (blank when no service token is set). */
+export const accessHeaders = (s: Partial<Pick<DeviceSettings, 'cfAccessId' | 'cfAccessSecret'>>): Record<string, string> =>
+  s.cfAccessId?.trim() && s.cfAccessSecret?.trim() ? { 'CF-Access-Client-Id': s.cfAccessId.trim(), 'CF-Access-Client-Secret': s.cfAccessSecret.trim() } : {};
+
 export class Api {
-  constructor(private s: Pick<DeviceSettings, 'serverUrl' | 'token'>) {}
+  constructor(private s: Pick<DeviceSettings, 'serverUrl' | 'token'> & Partial<Pick<DeviceSettings, 'cfAccessId' | 'cfAccessSecret'>>) {}
+
+  /** the service-token headers, for the few callers that fetch a server link themselves */
+  get access() { return accessHeaders(this.s); }
+  /** true when the server is another origin than this page, so a service token cannot ride on a cookie and `<img>`/`<audio>` links would be refused */
+  get needsHeaderFetch() {
+    if (!Object.keys(this.access).length) return false;
+    try { return !!this.s.serverUrl && new URL(this.s.serverUrl, location.href).origin !== location.origin; } catch { return true; }
+  }
+  /** fetch a server link with the service token (and, same-origin, keep the cookie Access answers with) */
+  fetchLink(url: string, init: RequestInit = {}) { return fetch(url, { ...init, headers: { ...this.access, ...(init.headers as Record<string, string> | undefined) } }); }
 
   private url(path: string) { return `${this.s.serverUrl.replace(/\/+$/, '')}${path}`; }
 
   private async req<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(this.url(path), {
       ...init,
-      headers: { Authorization: `Bearer ${this.s.token}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
+      headers: { ...this.access, Authorization: `Bearer ${this.s.token}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...init.headers },
     });
     if (!res.ok) {
       const detail = res.status === 401 ? 'Wrong token' : ((await res.json().catch(() => null)) as { error?: string } | null)?.error;
@@ -66,7 +80,7 @@ export class Api {
     return res.json() as Promise<T>;
   }
 
-  health() { return fetch(this.url('/api/health')).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
+  health() { return fetch(this.url('/api/health'), { headers: this.access }).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
   status() { return this.req<ServerStatus>('/api/status'); }
   releaseDates(albums: { id: string; album: string; artist: string }[]) { return this.req<{ results: { id: string; answer: DateAnswerRes | null }[] }>('/api/dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albums }) }); }
   soloist() { return this.req<SoloistInfo>('/api/soloist'); }
@@ -86,7 +100,7 @@ export class Api {
     return this.req<{ applied: number; cursor: number }>('/api/sync/push', { method: 'POST', body: JSON.stringify({ records }) });
   }
   async putFile(hash: string, blob: Blob) {
-    const res = await fetch(this.url(`/api/files/${hash}`), { method: 'PUT', headers: { Authorization: `Bearer ${this.s.token}`, 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+    const res = await fetch(this.url(`/api/files/${hash}`), { method: 'PUT', headers: { ...this.access, Authorization: `Bearer ${this.s.token}`, 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
     if (!res.ok) throw new ApiError(res.status, `Upload failed (${res.status})`);
   }
   importPreview(url: string) {

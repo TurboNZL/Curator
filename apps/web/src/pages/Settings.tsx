@@ -25,6 +25,8 @@ export function SettingsPage() {
   const { settings, updateSettings, sync, syncNow } = useStore();
   const [url, setUrl] = useState(settings.serverUrl);
   const [token, setToken] = useState(settings.token);
+  const [cfId, setCfId] = useState(settings.cfAccessId);
+  const [cfSecret, setCfSecret] = useState(settings.cfAccessSecret);
   const [status, setStatus] = useState<ServerStatus | string | null>(null);
   const [usage, setUsage] = useState<{ usage: number; quota: number } | null>(null);
   const [acq, setAcq] = useState<string | null>(null);
@@ -33,11 +35,16 @@ export function SettingsPage() {
 
   async function test() {
     setStatus('Checking…');
-    const a = new Api({ serverUrl: url, token });
+    const a = new Api({ serverUrl: url, token, cfAccessId: cfId, cfAccessSecret: cfSecret });
     try { await a.health(); setStatus(await a.status()); }
-    catch (e) { setStatus((e as Error).message === 'Wrong token' ? 'Server found, but the token is wrong.' : 'Cannot reach the server.'); }
+    catch (e) {
+      const m = (e as Error).message;
+      setStatus(m === 'Wrong token' ? 'Server found, but the token is wrong.'
+        : /^(401|403)$|Server said 40[13]/.test(m) ? 'Cloudflare Access turned the request away: check the service token (and that the Access policy action is Service Auth).'
+        : `Cannot reach the server.${cfId ? ' With Cloudflare Access in front, also check the service token and the CORS setting described below.' : ''}`);
+    }
   }
-  const save = () => { updateSettings({ serverUrl: url.trim(), token: token.trim() }); };
+  const save = () => { updateSettings({ serverUrl: url.trim(), token: token.trim(), cfAccessId: cfId.trim(), cfAccessSecret: cfSecret.trim() }); };
 
   const limitBytes = settings.storageLimitMb * 1024 * 1024;
   const audioCache = useStore((s) => s.audioCache);
@@ -66,6 +73,15 @@ export function SettingsPage() {
         <p className="text-sm text-muted">Optional. Everything works offline; with a server this device syncs your library, votes and audio. Leave the URL empty if this app is served by the server itself.</p>
         <label className="block space-y-1 text-sm">URL<input className="input" placeholder="http://raspberrypi.local:47813" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
         <label className="block space-y-1 text-sm">Token<input className="input font-mono" type="password" placeholder="contents of <data dir>/token" value={token} onChange={(e) => setToken(e.target.value)} /></label>
+        <details className="rounded-theme border border-line p-3 text-sm" open={!!(cfId || cfSecret)}>
+          <summary className="cursor-pointer">Cloudflare Access service token{cfId && cfSecret ? ' (set)' : ''}</summary>
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-muted">Only if the server is behind Cloudflare Access with a Service Auth policy. Create a service token in Zero Trust (Access › Service credentials), add it to the policy, and paste the two halves here. They are sent as <code>CF-Access-Client-Id</code> and <code>CF-Access-Client-Secret</code> on every request. This is separate from the access token above, which Curator itself checks.</p>
+            <label className="block space-y-1">Client ID<input className="input font-mono" autoComplete="off" placeholder="xxxxxxxx.access" value={cfId} onChange={(e) => setCfId(e.target.value)} /></label>
+            <label className="block space-y-1">Client secret<input className="input font-mono" type="password" autoComplete="off" value={cfSecret} onChange={(e) => setCfSecret(e.target.value)} /></label>
+            <p className="text-xs text-muted">From the web client on the server&apos;s own address nothing else is needed. From another origin (the Android or desktop app) the browser first sends a preflight request that Access must let through: in the Access application&apos;s CORS settings turn on <em>Bypass options requests to origin</em>, and turn the <em>binding cookie</em> off. Live audio from Soloist (beaming) and file downloads cannot carry the headers.</p>
+          </div>
+        </details>
         <div className="flex flex-wrap items-center gap-2"><button className="btn" onClick={test}>Test connection</button><button className="btn btn-accent" onClick={save}>Save &amp; sync</button>
           <button className="btn btn-ghost" onClick={() => void syncNow()} disabled={sync.state === 'syncing'}><RefreshCw size={15} className={cn(sync.state === 'syncing' && 'animate-spin')} />Sync now</button></div>
         <ConnectionTokens />

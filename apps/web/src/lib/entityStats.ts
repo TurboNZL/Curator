@@ -75,17 +75,17 @@ export interface EntityStats {
 }
 
 /** Everything a stats page shows about a set of tracks. Pure. */
-export function entityStats(lib: Library, trackIds: string[]): EntityStats {
+export function entityStats(lib: Library, trackIds: string[], minMs = 0): EntityStats {
   const set = new Set(trackIds);
   const tracks = trackIds.flatMap((id) => lib.trackById.get(id) ?? []);
-  const listens = buildListens(lib).filter((l) => l.trackId && set.has(l.trackId));
+  const listens = buildListens(lib).filter((l) => l.trackId && set.has(l.trackId) && l.ms >= minMs);
   const playsByTrack = new Map<string, { plays: number; ms: number }>();
   for (const l of listens) {
     const r = playsByTrack.get(l.trackId!) ?? { plays: 0, ms: 0 };
     r.plays++; r.ms += l.ms; playsByTrack.set(l.trackId!, r);
   }
   return {
-    tracks, listens, listen: computeListenStats(listens, {}, { topN: 25 }), rating: summarizeRatings(tracks),
+    tracks, listens, listen: computeListenStats(listens, {}, { topN: 25, minMs }), rating: summarizeRatings(tracks),
     votes: tallyVotes(lib, set), withAudio: tracks.filter((t) => !!t.file).length, playsByTrack,
   };
 }

@@ -48,7 +48,7 @@ export function createApp(
   const app = new Hono();
 
   // Native apps ignore CORS; browsers need it because the web client may be served from another origin.
-  app.use('*', cors({ origin: '*', allowHeaders: ['Authorization', 'Content-Type', 'Range'], exposeHeaders: ['Content-Range', 'Accept-Ranges'] }));
+  app.use('*', cors({ origin: '*', allowHeaders: ['Authorization', 'Content-Type', 'Range', 'CF-Access-Client-Id', 'CF-Access-Client-Secret'], exposeHeaders: ['Content-Range', 'Accept-Ranges'] }));
 
   // Unauthenticated, reveals nothing but liveness, so clients can probe "is the server reachable?".
   app.get('/api/health', (c) => c.json({ ok: true, apiVersion: API_VERSION }));

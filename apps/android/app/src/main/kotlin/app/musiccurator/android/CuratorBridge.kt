@@ -21,6 +21,9 @@ class CuratorBridge(private val context: Context, private val view: View) {
     /** the web client tells the native side which server it uses, so Android Auto can browse the same library */
     @JavascriptInterface fun setServer(url: String, token: String) { prefs.serverUrl = url; prefs.token = token }
 
+    /** the Cloudflare Access service token the server needs, if it sits behind Cloudflare Access */
+    @JavascriptInterface fun setAccess(id: String, secret: String) { prefs.cfId = id; prefs.cfSecret = secret }
+
     // ---- the app's own player (notification, lock screen, Bluetooth and car controls): see NativeAudio
     @JavascriptInterface fun audioSync(json: String) = NativeAudio.sync(json)
     @JavascriptInterface fun audioPlay() = NativeAudio.play()

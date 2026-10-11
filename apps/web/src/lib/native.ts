@@ -49,6 +49,8 @@ export function nativeUpdates(): NativeUpdates | null {
 }
 
 /** Tells the Android app which server this device uses, so Android Auto browses the same library. No effect elsewhere. */
-export function syncNativeServer(serverUrl: string, token: string): void {
+export function syncNativeServer(serverUrl: string, token: string, access?: { id: string; secret: string }): void {
   try { android()?.setServer(serverUrl, token); } catch { /* not in the app */ }
+  // an app built before the service token existed has no such method: that is fine
+  try { (android() as { setAccess?: (id: string, secret: string) => void } | null)?.setAccess?.(access?.id.trim() ?? '', access?.secret.trim() ?? ''); } catch { /* old app */ }
 }

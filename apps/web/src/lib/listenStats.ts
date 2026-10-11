@@ -1,6 +1,7 @@
 import type { Listen } from './listens.ts';
 
-export interface TopRow { key: string; label: string; sub: string; plays: number; ms: number; trackId: string | null }
+/** `id` is the library artist / album / track the row stands for (null when it is not in the library), for links and pictures. */
+export interface TopRow { key: string; label: string; sub: string; plays: number; ms: number; trackId: string | null; id: string | null }
 export interface ListenStats {
   plays: number; ms: number; skips: number; skipRate: number;
   distinctTracks: number; distinctArtists: number; distinctAlbums: number;
@@ -50,17 +51,18 @@ export function computeListenStats(all: Listen[], range: Range = {}, o: { minMs?
   const byDay = new Map<string, number>(), months = new Map<string, { ms: number; plays: number; newArtists: number }>(), platforms = new Map<string, number>();
   const seenArtist = new Set<string>(all.filter((l) => range.from !== undefined && l.ts < range.from && l.ms >= minMs).map((l) => l.artist.toLowerCase()));
   let ms = 0, skips = 0, shuffleOn = 0, shuffleKnown = 0;
-  const bump = (m: Map<string, TopRow>, key: string, label: string, sub: string, l: Listen) => {
-    const r = m.get(key) ?? { key, label, sub, plays: 0, ms: 0, trackId: l.trackId };
-    r.plays++; r.ms += l.ms; if (!r.trackId && l.trackId) r.trackId = l.trackId; m.set(key, r);
+  const bump = (m: Map<string, TopRow>, key: string, label: string, sub: string, l: Listen, id: string | null) => {
+    const r = m.get(key) ?? { key, label, sub, plays: 0, ms: 0, trackId: l.trackId, id };
+    r.plays++; r.ms += l.ms; if (!r.trackId && l.trackId) r.trackId = l.trackId; if (!r.id && id) r.id = id; m.set(key, r);
   };
   for (const l of rows) {
     ms += l.ms; if (l.skipped) skips++;
     const tk = l.uri ?? `${l.title}|${l.artist}`.toLowerCase();
-    bump(tracks, tk, l.title, l.artist, l);
-    bump(artists, l.artist.toLowerCase(), l.artist, '', l);
-    if (l.album) bump(albums, `${l.album}|${l.artist}`.toLowerCase(), l.album, l.artist, l);
-    if (!l.trackId) bump(missing, tk, l.title, `${l.artist}${l.album ? ` · ${l.album}` : ''}`, l);
+    // a library track is one row however many Spotify links or titles its plays carry; others group by name
+    bump(tracks, l.trackId ? `t:${l.trackId}` : tk, l.title, l.artist, l, l.trackId);
+    bump(artists, l.artistId ? `a:${l.artistId}` : l.artist.toLowerCase(), l.artist, '', l, l.artistId);
+    if (l.album) bump(albums, l.albumId ? `b:${l.albumId}` : `${l.album}|${l.artist}`.toLowerCase(), l.album, l.artist, l, l.albumId);
+    if (!l.trackId) bump(missing, tk, l.title, `${l.artist}${l.album ? ` · ${l.album}` : ''}`, l, null);
     const d = new Date(l.ts), h = d.getHours(), wd = mondayFirst(d);
     byHour[h] += l.ms; byWeekday[wd]++; clock[wd][h]++;
     const dk = dayKey(l.ts);

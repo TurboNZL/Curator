@@ -42,6 +42,7 @@ class ServerLibrary(private val prefs: ServerPrefs) {
         val c = URL(prefs.serverUrl + path).openConnection() as HttpURLConnection
         try {
             c.connectTimeout = 10_000; c.readTimeout = 30_000
+            prefs.accessHeaders().forEach { (k, v) -> c.setRequestProperty(k, v) }
             if (prefs.token.isNotEmpty()) c.setRequestProperty("Authorization", "Bearer ${prefs.token}")
             if (c.responseCode != 200) throw IllegalStateException("Server answered ${c.responseCode}")
             return c.inputStream.bufferedReader().use { it.readText() }

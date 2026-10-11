@@ -8,7 +8,7 @@ import { saveImage } from './files.ts';
  */
 export async function fetchCoverFromLinks(urls: string[]): Promise<string> {
   const { hash, url } = await api().importCover(urls);
-  const res = await fetch(api().fileUrl(hash));
+  const res = await api().fetchLink(api().fileUrl(hash));
   if (!res.ok) throw new Error(`Could not read the downloaded cover (${res.status})`);
   const blob = await res.blob();
   let video = false;

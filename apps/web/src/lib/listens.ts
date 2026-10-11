@@ -11,6 +11,9 @@ export interface Listen {
   ms: number;
   /** the library track, if there is one */
   trackId: string | null;
+  /** the library's main artist and album of that track (for links to their stats pages), when matched */
+  artistId: string | null;
+  albumId: string | null;
   title: string;
   /** the main artist (first lead for library tracks, Spotify's album artist otherwise) */
   artist: string;
@@ -50,12 +53,12 @@ export function buildListens(lib: Library): Listen[] {
     if (l.imported === 'spotify') {
       const trackId = l.trackId || match(l.uri, l.name ?? '', l.artist ?? '');
       const t = trackId ? lib.trackById.get(trackId) : undefined;
-      out.push({ id: l.id, ts: l.timestamp, ms: Math.round((l.duration ?? 0) * 1000), trackId: t?.id ?? null, title: t?.title ?? l.name ?? '', artist: t ? (t.leads[0]?.name ?? t.artistName) : l.artist ?? '',
+      out.push({ id: l.id, ts: l.timestamp, ms: Math.round((l.duration ?? 0) * 1000), trackId: t?.id ?? null, artistId: t?.leads[0]?.id ?? null, albumId: t?.albumId ?? null, title: t?.title ?? l.name ?? '', artist: t ? (t.leads[0]?.name ?? t.artistName) : l.artist ?? '',
         album: t?.albumTitle ?? l.album ?? '', uri: l.uri ?? null, skipped: !!l.isSkip, shuffle: l.shuffle ?? null, platform: l.platform ?? null, reasonEnd: l.reasonEnd ?? null, source: 'spotify' });
     } else {
       const t = lib.trackById.get(l.trackId);
       if (!t) continue;
-      out.push({ id: l.id, ts: l.timestamp, ms: Math.round((l.duration ?? 0) * 1000), trackId: t.id, title: t.title, artist: t.leads[0]?.name ?? t.artistName, album: t.albumTitle ?? '',
+      out.push({ id: l.id, ts: l.timestamp, ms: Math.round((l.duration ?? 0) * 1000), trackId: t.id, artistId: t.leads[0]?.id ?? null, albumId: t.albumId ?? null, title: t.title, artist: t.leads[0]?.name ?? t.artistName, album: t.albumTitle ?? '',
         uri: spotifyTrackId(t.spotifyUrl) ? `spotify:track:${spotifyTrackId(t.spotifyUrl)}` : null, skipped: !!l.isSkip, shuffle: null, platform: 'Curator', reasonEnd: null, source: 'curator' });
     }
   }

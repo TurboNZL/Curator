@@ -160,7 +160,7 @@ export function PairDevice() {
       try { const r = await api().tunnelToken(); tunnel = (r.found && r.token) || settings.tunnelToken || undefined; } catch { tunnel = settings.tunnelToken || undefined; }
       if (!tunnel) say('No tunnel token was found on the server, so the code has none.');
     }
-    setCode(encodePairCode({ url: addr.trim(), token: settings.token, tunnel }));
+    setCode(encodePairCode({ url: addr.trim(), token: settings.token, tunnel, access: settings.cfAccessId && settings.cfAccessSecret ? { id: settings.cfAccessId, secret: settings.cfAccessSecret } : undefined }));
   };
   const copy = async (text: string, what: string) => {
     try { await navigator.clipboard.writeText(text); say(`${what} copied.`); } catch { say('Your browser blocked copying here (it needs https or localhost). Select it by hand instead.'); }
@@ -169,7 +169,7 @@ export function PairDevice() {
     const p = decodePairCode(entered);
     if (!p) { say('That is not a pairing code. It starts with CUR1-.'); return; }
     if (!confirm(`Connect this device to ${p.url || 'this address'}?`)) return;
-    updateSettings({ serverUrl: p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}) });
+    updateSettings({ serverUrl: p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}), ...(p.access ? { cfAccessId: p.access.id, cfAccessSecret: p.access.secret } : {}) });
     setEntered(''); say('Connected. Syncing…');
   };
 
