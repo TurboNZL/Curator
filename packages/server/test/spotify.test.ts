@@ -121,6 +121,27 @@ describe('player', () => {
     const a = new SpotifyAccount(mkdtempSync(join(tmpdir(), 'sp-'))); a.configure(CLIENT);
     expect(new URL(a.authUrl()).searchParams.get('scope')).toContain('user-modify-playback-state');
   });
+  it('asks for the permissions Spotify\'s in-app player needs', () => {
+    const a = new SpotifyAccount(mkdtempSync(join(tmpdir(), 'sp-'))); a.configure(CLIENT);
+    const scope = new URL(a.authUrl()).searchParams.get('scope')!;
+    for (const p of ['streaming', 'user-read-email', 'user-read-private']) expect(scope.split(' ')).toContain(p);
+  });
+  it('hands the page a short-lived token for the in-app player, only with the streaming permission', async () => {
+    async function withScope(scope: string) {
+      const d = mkdtempSync(join(tmpdir(), 'sp-'));
+      const f = (async () => json({ access_token: 'AT', refresh_token: 'RT', expires_in: 3600, scope })) as unknown as typeof fetch;
+      const a = new SpotifyAccount(d, { fetchImpl: f, now: () => 1000 });
+      a.configure(CLIENT); a.authUrl();
+      await a.exchange(`http://x/?code=C&state=${JSON.parse(readFileSync(join(d, 'spotify.json'), 'utf8')).pending.state}`);
+      return a;
+    }
+    const ok = await withScope('user-modify-playback-state streaming');
+    expect(ok.status().streaming).toBe(true);
+    expect(await ok.sdkToken()).toEqual({ token: 'AT', expiresInMs: 3600 * 1000 - 60_000 });
+    const old = await withScope('user-modify-playback-state');
+    expect(old.status().streaming).toBe(false);
+    await expect(old.sdkToken()).rejects.toThrow(/sign in again/);
+  });
   it('lists devices, plays tracks on one and sends commands', async () => {
     const calls: string[] = [];
     const a = await signedIn((u, init) => {

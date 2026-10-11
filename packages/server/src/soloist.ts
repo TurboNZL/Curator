@@ -46,7 +46,7 @@ export interface SoloistDeps {
   /** run `soloist --version` */
   version?: (bin: string) => Promise<string | null>;
   /** test seams for the audio check */
-  uid?: number; env?: NodeJS.ProcessEnv; exists?: (path: string) => boolean;
+  uid?: number; env?: NodeJS.ProcessEnv; exists?: (path: string) => boolean; desktop?: boolean;
 }
 
 const run = (cmd: string, args: string[], spawnImpl: Spawn = spawn): Promise<string> => new Promise((resolve, reject) => {
@@ -110,6 +110,8 @@ export class Soloist {
   audio(): AudioCheck {
     const found = this.audioSockets();
     if (found) return { ok: true, server: found.server, runtimeDir: found.dir, hint: null };
+    // inside the desktop app the sound server is the desktop's own (PipeWire or PulseAudio, standard on Linux desktops)
+    if (this.d.desktop ?? !!process.versions.electron) return { ok: false, server: null, runtimeDir: null, hint: 'No PipeWire or PulseAudio sound server was found on this computer, and Soloist can only play through one of them. Most Linux desktops have one already: check that sound works in other programs, install pipewire-pulse (or pulseaudio) if it does not, then press Start again.' };
     return { ok: false, server: null, runtimeDir: null, hint: 'No sound server is running for the account that runs this server, so Soloist connects to Spotify but cannot play anything. On the Pi run: sudo /home/curator/music-curator/scripts/setup-pi-audio.sh (it installs PipeWire and keeps it running for the curator account), then press Start again.' };
   }
   /** The environment Soloist is started with: the normal one plus the audio session this account can reach. */

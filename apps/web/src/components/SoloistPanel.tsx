@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Download, Loader2, Play, Square, Trash2 } from 'lucide-react';
 import type { SoloistInfo } from '../lib/api.ts';
 import { api, useStore } from '../lib/store.ts';
+import { desktop } from '../lib/settings.ts';
 import { Field } from './forms.tsx';
 
 const STATE: Record<SoloistInfo['state'], string> = { stopped: 'Stopped', starting: 'Starting…', running: 'Running', expired: 'Updating (the build expired)…', installing: 'Installing…', error: 'Problem' };
@@ -43,14 +44,14 @@ export function SoloistPanel() {
   if (!configured) return null;
   if (!info) return error ? <div className="rounded-theme bg-bad/15 p-3 text-sm text-bad">{error}</div> : null;
   if (!info.supported) return (
-    <div className="space-y-1 border-t border-line pt-4 text-sm"><div className="font-medium">Soloist</div><p className="text-muted">{info.reason} On other machines, use the Spotify app on a phone or computer: it appears in the device list (cast button) too.</p></div>);
+    <div className="space-y-1 border-t border-line pt-4 text-sm"><div className="font-medium">Soloist</div><p className="text-muted">{info.reason} Spotify only makes Soloist for Linux. On other systems use the Spotify app on this computer or a phone: it appears in the device list (cast button) too, and Curator controls it.</p></div>);
 
   const working = !!busy || ['installing', 'expired'].includes(info.state);
   return (
     <div className="space-y-3 border-t border-line pt-4 text-sm">
       <div className="flex flex-wrap items-center gap-2"><div className="font-medium">Soloist: play Spotify inside Curator</div>
         <span className={info.state === 'running' ? 'chip !text-good' : info.state === 'error' ? 'chip !text-bad' : 'chip'}>{STATE[info.state]}</span>{info.version && <span className="text-xs text-muted">{info.version}</span>}</div>
-      <p className="text-muted">Installs Spotify’s own headless Spotify Connect player on the machine that runs your server (a Raspberry Pi works well). It then shows up in the device list as “{info.deviceName}”, and Curator plays Spotify tracks on it: no other Spotify app has to be open. It needs Spotify Premium and PipeWire or PulseAudio audio on that machine. Soloist is Spotify’s software, downloaded from Spotify’s server, under Spotify’s terms; builds expire after 90 days and Curator replaces them by itself.</p>
+      <p className="text-muted">{desktop() ? 'Installs Spotify’s own player (Soloist) inside this app. It runs while Curator runs, and Spotify tracks play through this computer’s speakers like any other track: no Spotify app has to be open.' : 'Installs Spotify’s own headless Spotify Connect player on the machine that runs your server; it plays through that machine’s speakers.'} It shows up in the device list as “{info.deviceName}”. It needs Spotify Premium and PipeWire or PulseAudio audio. Soloist is Spotify’s software, downloaded from Spotify’s server, under Spotify’s terms; builds expire after 90 days and Curator replaces them by itself.</p>
 
       <ol className="space-y-3">
         <li className="space-y-1.5"><div className="font-medium">1. Install</div>
