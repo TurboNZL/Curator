@@ -96,7 +96,9 @@ export function AddAlbumToPlaylistDialog({ albumId, onClose }: { albumId: string
   const lib = useLibrary();
   const { put, patch } = useStore();
   const [name, setName] = useState('');
-  const album = lib.albumById.get(albumId);
+  // `albumId` is an album id, or a release id to put just that edition on the list
+  const release = lib.releases.find((r) => r.id === albumId);
+  const album = lib.albumById.get(albumId) ?? (release && lib.albumById.get(release.albumId));
   if (!album) return null;
   const lists = lib.playlists.filter((p) => p.kind === 'albums');
   const toggle = (id: string, ids: string[]) => patch('playlists', id, { albumIds: ids.includes(albumId) ? ids.filter((x) => x !== albumId) : [...ids, albumId] });
@@ -107,7 +109,7 @@ export function AddAlbumToPlaylistDialog({ albumId, onClose }: { albumId: string
   };
   return (
     <Modal title="Add to album playlist" onClose={onClose} footer={<button className="btn btn-accent ml-auto" onClick={onClose}>Done</button>}>
-      <div className="text-sm text-muted">{album.title} · {album.artistName}</div>
+      <div className="text-sm text-muted">{release ? `${album.title} · ${release.title} (release)` : album.title} · {album.artistName}</div>
       <div className="max-h-64 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">
         {lists.map((p) => { const on = (p.albumIds ?? []).includes(albumId); return (
           <button key={p.id} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => toggle(p.id, p.albumIds ?? [])}>

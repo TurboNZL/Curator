@@ -51,6 +51,19 @@ export function inheritFromAlbum(album: { credits: Credit[]; artistId: string; g
   return { syncWithAlbumCredits: follows, genres: follows ? [] : [...(album.genres ?? [])] };
 }
 
+/**
+ * The credits a track starts with when it stops following its album. While it follows, what is shown is the album's credits (every lead of a
+ * duo, the producers...), but what the record itself stores is often only one lead, so starting from the stored credits dropped the other
+ * leads. This starts from the album's credits and keeps whatever else the track had stored (a feature, a producer), without repeating one.
+ */
+export function ownCreditsFromAlbum(albumCredits: Credit[], stored: Credit[]): Credit[] {
+  const key = (c: Credit) => `${c.artistId}|${[...c.role].map((r) => r.toLowerCase()).sort().join(',')}`;
+  const out = albumCredits.map((c) => ({ ...c, role: [...c.role] }));
+  const seen = new Set(out.map(key));
+  for (const c of stored) if (c.artistId && !seen.has(key(c))) { out.push({ ...c, role: [...c.role] }); seen.add(key(c)); }
+  return out;
+}
+
 /** A complete TrackData for a hand-made track (every field present, so nothing downstream sees undefined). */
 export function newTrackData(init: Pick<TrackData, 'title' | 'credits'> & Partial<TrackData>): TrackData {
   return {

@@ -17,7 +17,7 @@ import { MatchLinksDialog } from './MatchLinksDialog.tsx';
 import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
-import { newAlbumData, newTrackData, inheritFromAlbum, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadCredit, LEAD_ROLE, withLeadFallback } from '../lib/defaults.ts';
+import { newAlbumData, newTrackData, inheritFromAlbum, appendTrack, moveTrack, removeTrack, cleanCredits, hasLead, leadCredit, LEAD_ROLE, withLeadFallback, ownCreditsFromAlbum } from '../lib/defaults.ts';
 import { defaultChoice, defaultRelease, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
 import { albumCover, coverPicked, coverPool } from '../lib/covers.ts';
 import { CoverPool } from './CoverPool.tsx';
@@ -125,11 +125,18 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       {!albumSel && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
       <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
         <ImagePicker hash={t.cover ?? null} onChange={(h) => set('cover', h)} seed={t.title || 'track'} /></Field>
+      {!albumSel && <Field label="Release date" hint="When the single came out. A track on an album uses its album's release date."><input type="date" className="input" value={t.releaseDate ?? ''} onChange={(e) => set('releaseDate', e.target.value || null)} /></Field>}
       <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
       {albumSel && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
         const on = e.target.checked;
-        // switching to track-specific credits starts from the album's, unless the track already has its own lead
-        setT((p) => ({ ...p!, syncWithAlbumCredits: on, credits: !on && !hasLead(p!.credits ?? []) ? albumCredits.map((c) => ({ ...c, role: [...c.role] })) : p!.credits }));
+        // Switching to track-specific credits starts from what the track showed: while it followed its album that was the album's credits
+        // (all of a duo's leads), plus anything of its own it stored. A track that already had its own credits keeps them.
+        setT((p) => {
+          const wasFollowing = !!track.syncWithAlbumCredits && hasLead(albumCredits); // as the record was when opened, not as the box was a moment ago
+          return { ...p!, syncWithAlbumCredits: on,
+            credits: !on && (wasFollowing || !hasLead(p!.credits ?? [])) ? ownCreditsFromAlbum(albumCredits, p!.credits ?? []) : p!.credits,
+            genres: !on && wasFollowing && !(p!.genres ?? []).length ? [...(selAlbum?.genres ?? [])] : p!.genres };
+        });
       }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>}
       {(!albumSel || !t.syncWithAlbumCredits) && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
@@ -468,7 +475,7 @@ export function EditorHost() {
   if (target.kind === 'import') return <ImportDialog key="import" onClose={close} />;
   if (target.kind === 'import-into-album') return <ImportIntoAlbumDialog key={key} albumId={target.id} initialUrl={target.url} onClose={close} />;
   if (target.kind === 'import-spotify') return <SpotifyImportDialog key="import-spotify" onClose={close} />;
-  if (target.kind === 'match-links') return <MatchLinksDialog key="match-links" onClose={close} />;
+  if (target.kind === 'match-links') return <MatchLinksDialog key={`match-links-${target.id}`} albumId={target.id} onClose={close} />;
   if (target.kind === 'note') return <NoteDialog key={key} noteId={target.id} onClose={close} />;
   if (target.kind === 'new-note') return <NoteDialog key={key} initial={target.id} onClose={close} />;
   if (target.kind === 'new-album') return <NewAlbumDialog key="new-album" onClose={close} />;

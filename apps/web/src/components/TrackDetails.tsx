@@ -26,7 +26,7 @@ export function TrackDetails({ id, onClose }: { id: string; onClose: () => void 
         {stat('Elo', Math.round(t.elo).toString())}{stat('Vote rating', t.rating.toFixed(2))}{stat('Manual rating', t.initialRating != null ? String(t.initialRating) : '—')}
         {stat('Won', String(info.wins))}{stat('Lost', String(info.losses))}{stat('Equal', String(info.draws))}
         {stat('Plays', String(info.plays))}{stat('Skips', String(info.skips))}{stat('Listened', fmt(info.secondsListened))}
-        {stat('Memories', String(t.memories ?? 0))}
+        {stat('Memories', String(t.memories ?? 0))}{stat(t.albumId ? 'Album released' : 'Released', t.releaseDate ?? '—')}
       </div>
       <div className="text-xs text-muted">{info.lastPlayed ? `Last played ${new Date(info.lastPlayed).toLocaleString()}` : 'Never played here'} · {t.file ? `audio on server${t.file in cache ? ', saved on this device' : ''} (${t.file.slice(0, 8)}…${cache[t.file] ? `, ${fmtBytes(cache[t.file].size)}` : ''})` : 'no audio file'}{t.bitrate && ` · ${t.bitrate}`}</div>
       <div>

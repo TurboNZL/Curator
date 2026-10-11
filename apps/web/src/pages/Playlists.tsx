@@ -69,7 +69,7 @@ export function PlaylistsPage() {
             ? <div className="card divide-y divide-line/50 overflow-hidden">
                 {albums.map((a, i) => (
                   <div key={a.id} className="flex items-center gap-3 px-3 py-2">
-                    <Link to={`/albums/${a.id}`} className="flex min-w-0 flex-1 items-center gap-3"><Cover hash={a.cover} seed={a.title} className="h-12 w-12 shrink-0" />
+                    <Link to={a.to} className="flex min-w-0 flex-1 items-center gap-3"><Cover hash={a.cover} seed={a.title} className="h-12 w-12 shrink-0" />
                       <span className="min-w-0"><span className="block truncate text-sm font-medium">{a.title}</span><span className="block truncate text-xs text-muted"><ArtistLinks leads={a.leads} /> · {plural(a.trackIds.length, 'track')}</span></span></Link>
                     <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${a.title} up`} disabled={i === 0} onClick={() => patch('playlists', open.id, { albumIds: moveTrack(albums.map((x) => x.id), i, i - 1) })}><ArrowUp size={15} /></button>
                     <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${a.title} down`} disabled={i === albums.length - 1} onClick={() => patch('playlists', open.id, { albumIds: moveTrack(albums.map((x) => x.id), i, i + 1) })}><ArrowDown size={15} /></button>

@@ -4,7 +4,10 @@ import { albumSubject, matchesAll, splitTyped, type Chip } from '../lib/filters.
 import { ALBUM_SORTS, sortAlbums } from '../lib/listSort.ts';
 import { usePageState } from '../lib/pageState.ts';
 import { useMemo, useState } from 'react';
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, Shuffle } from 'lucide-react';
+import { shuffleWithRules } from '@curator/core';
+import { usePlayer } from '../lib/player.ts';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link } from 'react-router-dom';
 import { useEditor } from '../lib/editor.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -19,6 +22,7 @@ export function AlbumsPage() {
   const edit = useEditor((s) => s.open);
   const menu = useMenu();
   const itemsFor = useAlbumMenuItems();
+  const play = usePlayer((s) => s.play);
   const [q, setQ] = useState('');
   const [chips, setChips] = useState<Chip[]>([]);
   const page = usePageState('albums', ALBUM_SORTS, { sort: 'title' });
@@ -28,10 +32,14 @@ export function AlbumsPage() {
     return sortAlbums(lib, f, page.sort, page.dir);
   }, [lib, q, chips, page.sort, page.dir]);
 
+  /** every playable track of the albums shown (filters apply), shuffled by the playback rules */
+  const playable = useMemo(() => [...new Set(albums.flatMap((a) => a.trackIds))].filter((id) => { const t = lib.trackById.get(id); return !!t && canPlay(t); }), [albums, lib]);
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Albums <span className="text-base font-normal text-muted">{albums.length}</span></h1>
+        <button className="btn" disabled={!playable.length} title="Shuffle every track of the albums shown" onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
         <button className="btn" onClick={() => edit({ kind: 'import', id: '' })}><Download size={15} />Import</button>
         <button className="btn" onClick={() => edit({ kind: 'new-album', id: '' })}><Plus size={15} />New album</button>
       </div>

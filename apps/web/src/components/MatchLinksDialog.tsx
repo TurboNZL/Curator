@@ -9,7 +9,7 @@ interface Row { trackId: string; candidates: MatchCandidate[]; pick: number; on:
 const BATCH = 9;
 
 /** Find YouTube Music links for tracks that have none: song.link (exact, from the Spotify link) and a YouTube search (scored). You review before anything is saved. */
-export function MatchLinksDialog({ onClose }: { onClose: () => void }) {
+export function MatchLinksDialog({ albumId = '', onClose }: { albumId?: string; onClose: () => void }) {
   const lib = useLibrary();
   const patch = useStore((s) => s.patch);
   const syncNow = useStore((s) => s.syncNow);
@@ -24,7 +24,8 @@ export function MatchLinksDialog({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState<number | null>(null);
   const stop = useRef(false);
 
-  const todo = lib.tracks.filter((t) => !t.youtubeMusicUrl && (only === 'all' || t.spotifyUrl));
+  const forAlbum = albumId ? lib.albumById.get(albumId) : undefined;
+  const todo = lib.tracks.filter((t) => !t.youtubeMusicUrl && (!forAlbum || forAlbum.trackIds.includes(t.id)) && (only === 'all' || t.spotifyUrl));
   const methods = [...(odesli ? ['odesli' as const] : []), ...(search ? ['search' as const] : [])];
 
   async function run() {
@@ -54,7 +55,7 @@ export function MatchLinksDialog({ onClose }: { onClose: () => void }) {
   const badge = (s: number) => (s >= 0.85 ? 'text-good' : s >= 0.6 ? 'text-warn' : 'text-bad');
 
   return (
-    <Modal title="Find YouTube links" onClose={onClose} wide
+    <Modal title={forAlbum ? `Find YouTube links: ${forAlbum.title}` : 'Find YouTube links'} onClose={onClose} wide
       footer={saved !== null ? <button className="btn btn-accent ml-auto" onClick={onClose}>Done</button> : <><button className="btn" onClick={onClose}>Close</button>
         <button className="btn btn-accent ml-auto" disabled={!on || running} onClick={() => void apply()}>Save {on} links</button></>}>
       {!configured && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">This runs on your server (it needs yt-dlp to search). Connect one in Settings first.</div>}
