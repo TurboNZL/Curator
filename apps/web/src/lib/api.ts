@@ -150,5 +150,5 @@ export interface SoloistInfo {
   beam: { enabled: boolean; sink: 'ready' | 'missing' | 'error' | 'unchecked'; sinkMessage: string | null; streamPath: string; listeners: number; running: boolean; error: string | null; bytes: number };
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;
 }
-export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }
+export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null; /** Spotify accepts no commands from other apps for this device */ restricted?: boolean }
 export interface SpotifyPlayerInfo { playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null }; track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null }

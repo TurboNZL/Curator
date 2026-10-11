@@ -12,17 +12,22 @@ import { cn } from '../lib/cn.ts';
 import { Popover } from './Popover.tsx';
 
 /** Spotify Connect devices of the signed-in account (Soloist, the phone's Spotify app, a speaker), refreshed while the list is open. */
-function useSpotifyDevices(): SpotifyDeviceInfo[] {
+function useSpotifyDevices(): { list: SpotifyDeviceInfo[]; note: string | null } {
   const signedIn = useSpotifyLink((s) => s.signedIn);
   const [list, setList] = useState<SpotifyDeviceInfo[]>([]);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (!signedIn) { setList([]); return; }
+    if (!signedIn) { setList([]); setError(null); return; }
     let alive = true, t: number | undefined;
-    const tick = () => { api().spotifyDevices().then((r) => alive && setList(r.devices), () => alive && setList([])).finally(() => { if (alive) t = window.setTimeout(tick, 8000); }); };
+    const tick = () => { api().spotifyDevices().then((r) => { if (alive) { setList(r.devices); setError(null); } }, (e: Error) => { if (alive) { setList([]); setError(e.message === 'Failed to fetch' ? 'Cannot reach the server.' : e.message); } }).finally(() => { if (alive) t = window.setTimeout(tick, 8000); }); };
     tick();
     return () => { alive = false; if (t) clearTimeout(t); };
   }, [signedIn]);
-  return list;
+  // say why the list is empty instead of showing nothing
+  const note = !signedIn ? null // people who never set Spotify up are not told about it
+    : error ? `Spotify devices could not be loaded: ${error}`
+    : list.length === 0 ? 'Spotify lists no devices right now. A device only shows while it is running: start Soloist in Settings > Spotify, or open the Spotify app on a phone or computer and play something once.' : null;
+  return { list, note };
 }
 
 const iconFor = (d: DeviceInfo) => (d.kind === 'android' ? Smartphone : d.kind === 'electron' ? Monitor : Cast);
@@ -36,7 +41,7 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
   const hereTrack = usePlayer((s) => s.queue.currentId);
   const me = myId();
   const [err, setErr] = useState<string | null>(null);
-  const spotify = useSpotifyDevices();
+  const { list: spotify, note: spotifyNote } = useSpotifyDevices();
   const engine = usePlayer((s) => s.engine);
   const chosen = useStore((s) => s.settings.spotifyDeviceId);
   if (!configured) return <p className="p-3 text-sm text-muted">Connect needs your server. Add its address and token in Settings.</p>;
@@ -85,18 +90,19 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
       {spotify.length > 0 && <>
         <div className="mt-1 border-t border-line/60 px-3 pb-0.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Spotify devices</div>
         {spotify.map((d) => {
-          const selected = chosen === d.id;
+          const selected = !!d.id && chosen === d.id;
           const playing = selected && engine === 'spotify' && !remoteId;
           return (
-            <button key={d.id} type="button" data-selected={selected || undefined} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised/60" aria-label={`Spotify device ${d.name}`}
-              title={selected ? 'Spotify tracks play here' : 'Play Spotify tracks on this device'} onClick={() => run(() => chooseSpotifyDevice(d), false)}>
+            <button key={d.id || d.name} type="button" disabled={d.restricted} data-selected={selected || undefined} className={cn('flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised/60', d.restricted && 'cursor-not-allowed opacity-60 hover:bg-transparent')} aria-label={`Spotify device ${d.name}`}
+              title={d.restricted ? 'Spotify does not let other apps control this device (it reports it as restricted)' : selected ? 'Spotify tracks play here' : 'Play Spotify tracks on this device'} onClick={() => run(() => chooseSpotifyDevice(d), false)}>
               {d.type.toLowerCase() === 'speaker' ? <Speaker size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} /> : <Music size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} />}
               <span className="min-w-0 flex-1"><span className={cn('flex items-center gap-1.5 font-medium', selected && 'text-accent')}><span className="truncate">{d.name}</span>{playing && <Radio size={12} className="shrink-0 animate-pulse" aria-label="Playing" />}</span>
-                <span className="block truncate text-xs text-muted">Spotify · {d.type}{d.active ? ' · active' : ''}{playing ? ' · playing from Curator' : selected ? ' · where Spotify tracks play' : ''}</span></span>
+                <span className="block truncate text-xs text-muted">Spotify · {d.type}{d.restricted ? ' · restricted by Spotify' : ''}{d.active ? ' · active' : ''}{playing ? ' · playing from Curator' : selected ? ' · where Spotify tracks play' : ''}</span></span>
               {selected && <Check size={16} className="shrink-0 text-accent" />}
             </button>);
         })}
       </>}
+      {!spotify.length && spotifyNote && <p className="border-t border-line/60 px-3 py-2 text-xs text-muted" role="status">{spotifyNote}</p>}
       {devices.length < 2 && !spotify.length && <p className="px-3 py-2 text-xs text-muted">Open Curator on another device that uses this server and it appears here. Then you can play on it from here, or move what is playing between them.</p>}
       {err && <p className="px-3 pb-2 text-xs text-bad">{err}</p>}
     </div>
