@@ -99,7 +99,7 @@ export class Api {
   spotifyStatus() { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; streaming?: boolean; configured: boolean }>('/api/spotify/status'); }
   spotifySdkToken() { return this.req<{ token: string; expiresInMs: number }>('/api/spotify/sdk-token'); }
   spotifyConfig(clientId: string, redirectUri?: string) { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean }>('/api/spotify/config', { method: 'POST', body: JSON.stringify({ clientId, redirectUri }) }); }
-  spotifyAuthUrl() { return this.req<{ url: string }>('/api/spotify/auth-url'); }
+  spotifyAuthUrl(streaming = false) { return this.req<{ url: string }>(`/api/spotify/auth-url${streaming ? '?streaming=1' : ''}`); }
   spotifyExchange(url: string) { return this.req<{ signedIn: boolean }>('/api/spotify/exchange', { method: 'POST', body: JSON.stringify({ url }) }); }
   spotifySignOut() { return this.req<{ signedIn: boolean }>('/api/spotify/signout', { method: 'POST' }); }
   spotifyPlaylists() { return this.req<{ playlists: { id: string; name: string; tracks: number | null; owner: string; cover: string | null; mine: boolean }[] }>('/api/spotify/playlists'); }

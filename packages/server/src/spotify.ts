@@ -104,7 +104,9 @@ export interface SpotifyAuthState {
   token?: { access: string; refresh: string; expiresAt: number; scope: string };
 }
 
-const SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read user-read-playback-state user-modify-playback-state user-read-currently-playing streaming user-read-email user-read-private';
+const SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read user-read-playback-state user-modify-playback-state user-read-currently-playing';
+/** only asked for when the in-app player is wanted (Web Playback SDK): a plain sign-in keeps the permissions it always had */
+const STREAMING_SCOPES = 'streaming user-read-email user-read-private';
 export const DEFAULT_REDIRECT = 'http://127.0.0.1:47813/api/spotify/callback';
 const b64url = (b: Buffer) => b.toString('base64url');
 
@@ -128,12 +130,12 @@ export class SpotifyAccount {
   signOut() { const s = this.load(); delete s.token; delete s.pending; this.save(s); }
 
   /** Step 1: the page the user opens to allow Curator to read their playlists. */
-  authUrl(): string {
+  authUrl(opts: { streaming?: boolean } = {}): string {
     const s = this.load(); const clientId = this.envClient || s.clientId;
     if (!clientId) throw new SpotifyError(400, 'Enter your Spotify client id first');
     const verifier = b64url(randomBytes(48)), state = b64url(randomBytes(12));
     s.pending = { verifier, state }; this.save(s);
-    const q = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: s.redirectUri || DEFAULT_REDIRECT, scope: SCOPES, state, code_challenge_method: 'S256', code_challenge: b64url(createHash('sha256').update(verifier).digest()) });
+    const q = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: s.redirectUri || DEFAULT_REDIRECT, scope: opts.streaming ? `${SCOPES} ${STREAMING_SCOPES}` : SCOPES, state, code_challenge_method: 'S256', code_challenge: b64url(createHash('sha256').update(verifier).digest()) });
     return `https://accounts.spotify.com/authorize?${q}`;
   }
   /** Step 2: Spotify sent the browser to `redirectUri?code=…&state=…`; give that address (or just the code) here. Works even if the page itself did not load. */
@@ -181,10 +183,12 @@ export class SpotifyAccount {
       catch (e) { if (e instanceof SpotifyError) throw e; throw new SpotifyError(502, `Could not reach Spotify (${(e as Error).message})`); }
       if (res.status === 429) { await new Promise((r) => setTimeout(r, Math.min(5000, (Number(res.headers.get('retry-after')) || 1) * 1000))); continue; }
       if (res.status === 401) throw new SpotifyError(401, 'The Spotify sign-in is no longer valid; sign in again');
-      if (res.status === 403) throw new SpotifyError(403, 'Spotify does not allow this app to read that (in Development Mode only your own playlists can be read)');
-      if (res.status === 404) throw new SpotifyError(404, 'Spotify cannot find that');
-      if (!res.ok) throw new SpotifyError(502, `Spotify answered ${res.status}`);
-      return (await res.json()) as T;
+      if (res.ok) return (await res.json()) as T;
+      const said = ((await res.json().catch(() => null)) as { error?: { message?: string } | string } | null)?.error;
+      const why = typeof said === 'string' ? said : said?.message;
+      if (res.status === 403) throw new SpotifyError(403, `Spotify refused (403${why ? `: ${why}` : ''}). In Development Mode an app can only read the account of its owner and the people added under User Management in the Spotify dashboard, and an older sign-in may lack a permission: signing out and in again fixes that.`);
+      if (res.status === 404) throw new SpotifyError(404, `Spotify cannot find that${why ? ` (${why})` : ''}`);
+      throw new SpotifyError(502, `Spotify answered ${res.status}${why ? `: ${why}` : ''}`);
     }
     throw new SpotifyError(429, 'Spotify is rate limiting this app; try again in a minute');
   }

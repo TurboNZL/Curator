@@ -121,10 +121,13 @@ describe('player', () => {
     const a = new SpotifyAccount(mkdtempSync(join(tmpdir(), 'sp-'))); a.configure(CLIENT);
     expect(new URL(a.authUrl()).searchParams.get('scope')).toContain('user-modify-playback-state');
   });
-  it('asks for the permissions Spotify\'s in-app player needs', () => {
+  it('keeps the old permissions by default and asks for the in-app player\'s only on request', () => {
     const a = new SpotifyAccount(mkdtempSync(join(tmpdir(), 'sp-'))); a.configure(CLIENT);
-    const scope = new URL(a.authUrl()).searchParams.get('scope')!;
-    for (const p of ['streaming', 'user-read-email', 'user-read-private']) expect(scope.split(' ')).toContain(p);
+    const plain = new URL(a.authUrl()).searchParams.get('scope')!.split(' ');
+    for (const p of ['streaming', 'user-read-email', 'user-read-private']) expect(plain).not.toContain(p);
+    expect(plain).toContain('user-read-playback-state');
+    const sdk = new URL(a.authUrl({ streaming: true })).searchParams.get('scope')!.split(' ');
+    for (const p of ['streaming', 'user-read-email', 'user-read-private', 'user-read-playback-state']) expect(sdk).toContain(p);
   });
   it('hands the page a short-lived token for the in-app player, only with the streaming permission', async () => {
     async function withScope(scope: string) {
@@ -146,6 +149,10 @@ describe('player', () => {
     const d = mkdtempSync(join(tmpdir(), 'sp-'));
     writeFileSync(join(d, 'spotify.json'), JSON.stringify({ clientId: CLIENT, token: { access: 'A', refresh: 'R', expiresAt: 1 } }));
     expect(new SpotifyAccount(d).status()).toMatchObject({ signedIn: true, streaming: false });
+  });
+  it('says what Spotify said when it refuses a read, not a generic message', async () => {
+    const a = await signedIn(() => json({ error: { status: 403, message: 'Insufficient client scope' } }, 403));
+    await expect(a.devices()).rejects.toThrow(/Spotify refused \(403: Insufficient client scope\)/);
   });
   it('lists devices, plays tracks on one and sends commands', async () => {
     const calls: string[] = [];

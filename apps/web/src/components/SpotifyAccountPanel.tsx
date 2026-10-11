@@ -16,6 +16,7 @@ export function SpotifyAccountPanel({ children, onStatus }: { children?: (s: Sta
   const [clientId, setClientId] = useState('');
   const [redirect, setRedirect] = useState('');
   const [pasted, setPasted] = useState('');
+  const [inApp, setInApp] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +40,8 @@ export function SpotifyAccountPanel({ children, onStatus }: { children?: (s: Sta
         <div className="grid gap-2 sm:grid-cols-2"><Field label="Client ID"><input className="input font-mono" value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="32 letters and digits" /></Field>
           <Field label="Redirect URI"><input className="input font-mono" value={redirect} onChange={(e) => setRedirect(e.target.value)} /></Field></div>
         <div className="flex flex-wrap gap-2"><button className="btn" disabled={!clientId.trim() || !!busy} onClick={() => void guard('Saving…', async () => setAcct(await api().spotifyConfig(clientId.trim(), redirect.trim() || undefined)))}>Save</button>
-          <button className="btn btn-accent" disabled={!acct.configured || !!busy} onClick={() => void guard('Opening Spotify…', async () => { window.open((await api().spotifyAuthUrl()).url, '_blank', 'noopener'); })}><LogIn size={15} />Sign in with Spotify</button></div>
+          <button className="btn btn-accent" disabled={!acct.configured || !!busy} onClick={() => void guard('Opening Spotify…', async () => { window.open((await api().spotifyAuthUrl(inApp)).url, '_blank', 'noopener'); })}><LogIn size={15} />Sign in with Spotify</button></div>
+        <label className="flex items-start gap-2 text-xs text-muted"><input type="checkbox" className="mt-0.5" checked={inApp} onChange={(e) => setInApp(e.target.checked)} />Also allow playing Spotify inside the app (browser player). Leave this off unless you want that: it asks Spotify for three more permissions.</label>
         <Field label="Address Spotify sent you to"><input className="input font-mono" value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder="http://127.0.0.1:47813/api/spotify/callback?code=…" /></Field>
         <button className="btn" disabled={!pasted.trim() || !!busy} onClick={() => void guard('Connecting…', async () => { await api().spotifyExchange(pasted.trim()); setPasted(''); await load(); })}>Connect</button>
       </>)}
