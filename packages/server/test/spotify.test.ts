@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -141,6 +141,11 @@ describe('player', () => {
     const old = await withScope('user-modify-playback-state');
     expect(old.status().streaming).toBe(false);
     await expect(old.sdkToken()).rejects.toThrow(/sign in again/);
+  });
+  it('does not crash on an old saved sign-in without a scope field', () => {
+    const d = mkdtempSync(join(tmpdir(), 'sp-'));
+    writeFileSync(join(d, 'spotify.json'), JSON.stringify({ clientId: CLIENT, token: { access: 'A', refresh: 'R', expiresAt: 1 } }));
+    expect(new SpotifyAccount(d).status()).toMatchObject({ signedIn: true, streaming: false });
   });
   it('lists devices, plays tracks on one and sends commands', async () => {
     const calls: string[] = [];

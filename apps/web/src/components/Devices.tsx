@@ -12,17 +12,22 @@ import { cn } from '../lib/cn.ts';
 import { Popover } from './Popover.tsx';
 
 /** Spotify Connect devices of the signed-in account (Soloist, the phone's Spotify app, a speaker), refreshed while the list is open. */
-function useSpotifyDevices(): SpotifyDeviceInfo[] {
+function useSpotifyDevices(): { list: SpotifyDeviceInfo[]; note: string | null } {
   const signedIn = useSpotifyLink((s) => s.signedIn);
   const [list, setList] = useState<SpotifyDeviceInfo[]>([]);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (!signedIn) { setList([]); return; }
+    if (!signedIn) { setList([]); setError(null); return; }
     let alive = true, t: number | undefined;
-    const tick = () => { api().spotifyDevices().then((r) => alive && setList(r.devices), () => alive && setList([])).finally(() => { if (alive) t = window.setTimeout(tick, 8000); }); };
+    const tick = () => { api().spotifyDevices().then((r) => { if (alive) { setList(r.devices); setError(null); } }, (e: Error) => { if (alive) { setList([]); setError(e.message === 'Failed to fetch' ? 'Cannot reach the server.' : e.message); } }).finally(() => { if (alive) t = window.setTimeout(tick, 8000); }); };
     tick();
     return () => { alive = false; if (t) clearTimeout(t); };
   }, [signedIn]);
-  return list;
+  // say why the list is empty instead of showing nothing
+  const note = !signedIn ? null // people who never set Spotify up are not told about it
+    : error ? `Spotify devices could not be loaded: ${error}`
+    : list.length === 0 ? 'Spotify lists no devices right now. A device only shows while it is running: start Soloist in Settings > Spotify, or open the Spotify app on a phone or computer and play something once.' : null;
+  return { list, note };
 }
 
 const iconFor = (d: DeviceInfo) => (d.kind === 'android' ? Smartphone : d.kind === 'electron' ? Monitor : Cast);
@@ -36,7 +41,7 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
   const hereTrack = usePlayer((s) => s.queue.currentId);
   const me = myId();
   const [err, setErr] = useState<string | null>(null);
-  const spotify = useSpotifyDevices();
+  const { list: spotify, note: spotifyNote } = useSpotifyDevices();
   const engine = usePlayer((s) => s.engine);
   const chosen = useStore((s) => s.settings.spotifyDeviceId);
   if (!configured) return <p className="p-3 text-sm text-muted">Connect needs your server. Add its address and token in Settings.</p>;
@@ -97,6 +102,7 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
             </button>);
         })}
       </>}
+      {!spotify.length && spotifyNote && <p className="border-t border-line/60 px-3 py-2 text-xs text-muted" role="status">{spotifyNote}</p>}
       {devices.length < 2 && !spotify.length && <p className="px-3 py-2 text-xs text-muted">Open Curator on another device that uses this server and it appears here. Then you can play on it from here, or move what is playing between them.</p>}
       {err && <p className="px-3 pb-2 text-xs text-bad">{err}</p>}
     </div>

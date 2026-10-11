@@ -119,7 +119,7 @@ export class SpotifyAccount {
   private load(): SpotifyAuthState { try { return JSON.parse(readFileSync(this.file, 'utf8')) as SpotifyAuthState; } catch { return {}; } }
   private save(s: SpotifyAuthState) { mkdirSync(dirname(this.file), { recursive: true }); writeFileSync(this.file, JSON.stringify(s, null, 2), { mode: 0o600 }); }
 
-  status() { const s = this.load(); return { clientId: this.envClient || s.clientId || '', redirectUri: s.redirectUri || DEFAULT_REDIRECT, signedIn: !!s.token, streaming: !!s.token?.scope.split(' ').includes('streaming'), configured: !!(this.envClient || s.clientId) }; }
+  status() { const s = this.load(); return { clientId: this.envClient || s.clientId || '', redirectUri: s.redirectUri || DEFAULT_REDIRECT, signedIn: !!s.token, streaming: !!(s.token?.scope ?? '').split(' ').includes('streaming'), configured: !!(this.envClient || s.clientId) }; }
   configure(clientId: string, redirectUri?: string) {
     if (!/^[0-9a-f]{32}$/i.test(clientId.trim())) throw new SpotifyError(400, 'A Spotify client id is 32 letters and digits (from your app on developer.spotify.com/dashboard)');
     const s = this.load(); s.clientId = clientId.trim(); if (redirectUri) s.redirectUri = redirectUri.trim(); this.save(s);
@@ -169,7 +169,7 @@ export class SpotifyAccount {
   async sdkToken(): Promise<{ token: string; expiresInMs: number }> {
     const access = await this.access();
     const t = this.load().token!;
-    if (!t.scope.split(' ').includes('streaming')) throw new SpotifyError(403, 'Playing inside the app needs one more Spotify permission: sign out of Spotify in Settings and sign in again');
+    if (!(t.scope ?? '').split(' ').includes('streaming')) throw new SpotifyError(403, 'Playing inside the app needs one more Spotify permission: sign out of Spotify in Settings and sign in again');
     return { token: access, expiresInMs: Math.max(0, t.expiresAt - this.now()) };
   }
   private async get<T>(path: string): Promise<T> {
