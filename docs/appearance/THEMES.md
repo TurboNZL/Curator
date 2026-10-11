@@ -58,8 +58,8 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Android Holo Dark | `holo-dark` | dark | `#000000` `#121212` `#33b5e5` `#ffffff` |
 | Android Holo Light | `holo-light` | light | `#ffffff` `#f3f3f3` `#0099cc` `#333333` |
 | Winamp Classic | `winamp` | dark | `#1c1c2a` `#000000` `#00e800` `#d8dbe6` |
-| LG Light | `lg-marshmallow` | light | `#f2f2f2` `#ffffff` `#0e7fa8` `#212121` |
-| LG Dark | `lg-marshmallow-dark` | dark | `#1a1a1a` `#2a2a2a` `#29a7d2` `#f2f2f2` |
+| Marshmallow | `lg-marshmallow` | light | `#fff0f6` `#ffffff` `#e8338a` `#4a1a35` |
+| Marshmallow Night | `lg-marshmallow-dark` | dark | `#2b1224` `#3b1b31` `#ff6fb0` `#ffe9f3` |
 | Fortnite Ch 1 | `fortnite-1` | light | `#a6b8dc` `#b6c5e2` `#f1e53c` `#121830` |
 | Fortnite Ch 2-3 | `fortnite-2` | dark | `#0a5db6` `#0a4b9a` `#e7f03b` `#d9eeff` |
 | Fortnite Ch 4 | `fortnite-4` | dark | `#0b3ab0` `#0a2f94` `#ffe600` `#ffffff` |
@@ -86,7 +86,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | macOS Liquid Glass | `liquid` | `macos`, `macos-dark` | Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus. |
 | Android Holo (4.x, 2011-13) | `holo` | `holo-light`, `holo-dark` | Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto. |
 | Winamp 2 (classic skin) | `winamp` | `winamp` | The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial. |
-| LG UX 5.0 (Marshmallow) | `lgux` | `lg-marshmallow`, `lg-marshmallow-dark` | LG's Optimus-lineage skin on Android 6: flat text buttons, filled buttons with a hairline shadow, an accent-colour app bar, underlined fields and 2 px corners in Roboto. |
+| LG Optimus: Marshmallow theme | `lgux` | `lg-marshmallow`, `lg-marshmallow-dark` | The pink, candy-like Marshmallow home-screen theme of LG's Optimus UI 3.0 (2012-13): glossy pill buttons, puffy rounded cards with chunky candy shadows, a bubblegum app bar and round type. An interpretation: no screenshots or specs are public. |
 | Fortnite Chapter 1 (2017-19) | `fortnite1` | `fortnite-1`, `fortnite-1` | Slanted buttons and panels, hard drop shadows, a yellow Play button and condensed capitals on bright blue. |
 | Fortnite Chapter 2-3 (2019-23) | `fortnite2` | `fortnite-2`, `fortnite-2` | The same slant on deep navy with see-through blue panels and a glowing Play button. |
 | Fortnite Chapter 4 Rift UI (2023) | `fortnite4` | `fortnite-4`, `fortnite-4` | The lobby redesign: rounded shapes on purple, options down the left side, in Heading Now. |

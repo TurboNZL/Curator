@@ -18,6 +18,8 @@ class CuratorBridge(private val context: Context, private val view: View) {
     @JavascriptInterface fun installUpdate() = AppUpdater.install(context)
     @JavascriptInterface fun hasUpdateToken(): Boolean = prefs.updateToken.isNotEmpty()
     @JavascriptInterface fun setUpdateToken(token: String) { prefs.updateToken = token }
+    /** the page may load library files from `/__server/…` on its own origin (see ServerFiles) */
+    @JavascriptInterface fun fileProxy(): Boolean = true
     @JavascriptInterface fun webClientState(): String = WebClientUpdater.state.json()
     @JavascriptInterface fun webClientVersion(): String = WebClientUpdater.installedVersion(context) ?: ""
     @JavascriptInterface fun updateWebClient() = WebClientUpdater.update(context)

@@ -1,0 +1,27 @@
+# Tests and builds on every push, so a pull request shows red or green before it is merged.
+name: CI
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --ignore-scripts --filter @curator/web --filter @curator/core --filter @curator/server
+      - run: pnpm --filter @curator/core test
+      - run: pnpm --filter @curator/server test
+      - run: pnpm --filter @curator/server exec tsc --noEmit
+      - run: pnpm --filter @curator/web exec tsc --noEmit
+      - run: pnpm --filter @curator/web test
+      - run: pnpm --filter @curator/web build

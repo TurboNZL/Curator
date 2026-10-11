@@ -23,4 +23,22 @@ object ServerFileRoute {
         val authority = if (base.port == -1) base.host else "${base.host}:${base.port}"
         return "http://$authority$encodedPath" + (if (encodedQuery.isNullOrEmpty()) "" else "?$encodedQuery")
     }
+
+    const val PROXY_PREFIX = "/__server"
+
+    /**
+     * The page asks for `https://appassets…/__server/api/files/<hash>?token=…` (same origin as the page, so no mixed content, no CORS and
+     * no upgrade of the address); this is the real http address of that file, or null for anything else.
+     */
+    fun proxyTarget(serverUrl: String, method: String, host: String?, pageHost: String, encodedPath: String?, encodedQuery: String?): String? {
+        if (!method.equals("GET", ignoreCase = true) || host == null || !host.equals(pageHost, ignoreCase = true) || encodedPath == null) return null
+        if (!encodedPath.startsWith("$PROXY_PREFIX/api/files/")) return null
+        val base = try { URL(serverUrl) } catch (e: Exception) { return null }
+        if (base.protocol != "http") return null
+        val rest = encodedPath.removePrefix(PROXY_PREFIX)
+        if (rest.contains("..")) return null
+        val authority = if (base.port == -1) base.host else "${base.host}:${base.port}"
+        val prefix = base.path.trimEnd('/')
+        return "http://$authority$prefix$rest" + (if (encodedQuery.isNullOrEmpty()) "" else "?$encodedQuery")
+    }
 }

@@ -897,44 +897,72 @@ html[data-ui="winamp"] { font-size: 13px; }
 [data-ui="winamp"] .bt-player [role="slider"], [data-ui="winamp"] .bt-player .tabular-nums { color: hsl(var(--accent)); font-family: ui-monospace, "DejaVu Sans Mono", monospace; }
 html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 
-/* ================== LG UX 5.0 (Android 6 Marshmallow, 2016) ==================
- * LG's Optimus UI turned into UX in 2013 and by UX 5.0 (G5, V20) borrowed Material Design: flat text buttons and filled buttons
- * with a hairline shadow, floating action buttons, underlined fields, near-square 2 px corners, white sheets and a left slide-in
- * drawer (AnandTech: "stock flat and floating action buttons consistently"). Sources: gsmarena.com/lg_introduces_marshmallowbased_ux_50_user_interface-news-17465.php,
- * the AnandTech LG G5 review. The exact colours are an approximation (no LG spec is public); pair it with the "LG Marshmallow" colours. */
+/* ================== LG Optimus "Marshmallow" theme ==================
+ * Optimus UI 3.0 (Android 4.x, 2012-13) shipped four home-screen themes: Optimus, Biz, Cozywall and Marshmallow. The reviews describe
+ * Marshmallow as a pink, cartoonish, candy-like theme that changes the icon set, wallpaper and the colour of the app drawer and
+ * notification area (GSMArena's Optimus L9 review; LG's user guide lists the four themes). No screenshots or colour specs are
+ * available, so this is an interpretation: bubblegum pink, glossy pill buttons, puffy rounded cards, soft candy shadows, round type
+ * (Nunito/Fredoka stand in for the era's rounded system fonts). Pair it with the "Marshmallow" colours. The id stays `lgux` so saved
+ * settings keep working. */
 [data-ui="lgux"] {
-  --radius: 2px; --ctl-r: 2px; --card-r: 2px; --win-r: 2px; --menu-r: 2px; --nav-r: 2px; --chip-r: 2px; --in-r: 0;
-  --font: Roboto, "Noto Sans", "Droid Sans", "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
-  --dur: 160ms; --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --btn-bg: transparent; --btn-fg: hsl(var(--accent)); --btn-weight: 500; --btn-border: 0 solid transparent;
-  --btn-hover-bg: color-mix(in srgb, hsl(var(--accent)) 10%, transparent); --btn-active-transform: none;
-  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-shadow: 0 1px 3px rgb(0 0 0 / 0.3), 0 1px 2px rgb(0 0 0 / 0.2);
-  --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 90%, black); --btn-accent-hover-shadow: 0 3px 6px rgb(0 0 0 / 0.28);
-  --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
-  --in-bg: transparent; --in-border: 0 solid transparent; --in-shadow: inset 0 -1px 0 color-mix(in srgb, hsl(var(--fg)) 40%, transparent);
-  --in-hover-border: transparent; --in-focus-border: transparent; --in-focus-shadow: inset 0 -2px 0 hsl(var(--accent)); --in-px: 0.25rem;
-  --card-bg: hsl(var(--surface)); --card-border: 0 solid transparent; --card-shadow: 0 1px 2px rgb(0 0 0 / 0.22), 0 0 0 1px rgb(0 0 0 / 0.04);
-  --win-bg: hsl(var(--surface)); --win-border: 0 solid transparent; --win-shadow: 0 12px 32px rgb(0 0 0 / 0.38); --dialog-anim: bt-pop 180ms cubic-bezier(0.4, 0, 0.2, 1);
-  --tb-border: 0 solid transparent; --tb-pad: 1.1rem 1.4rem 0.4rem; --tb-size: 1.25rem; --tb-weight: 500; --tb-justify: space-between;
-  --close-r: 9999px; --close-hover-bg: color-mix(in srgb, hsl(var(--fg)) 10%, transparent);
-  --bar-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
-  --menu-bg: hsl(var(--surface)); --menu-border: 0 solid transparent; --pop-shadow: 0 5px 14px rgb(0 0 0 / 0.3), 0 1px 3px rgb(0 0 0 / 0.2); --menu-anim: bt-reveal 160ms cubic-bezier(0.4, 0, 0.2, 1);
-  --menu-hi-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent);
-  --side-bg: hsl(var(--surface)); --side-shadow: 1px 0 3px rgb(0 0 0 / 0.14); --top-bg: hsl(var(--accent)); --top-shadow: 0 2px 4px rgb(0 0 0 / 0.28); --player-bg: hsl(var(--surface)); --player-shadow: 0 -1px 4px rgb(0 0 0 / 0.18);
-  --nav-hover-bg: color-mix(in srgb, hsl(var(--fg)) 6%, transparent); --nav-active-bg: color-mix(in srgb, hsl(var(--accent)) 12%, transparent); --nav-active-fg: hsl(var(--accent));
-  --row-hover: color-mix(in srgb, hsl(var(--fg)) 6%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
+  --radius: 18px; --ctl-r: 9999px; --card-r: 22px; --win-r: 30px; --menu-r: 20px; --nav-r: 9999px; --chip-r: 9999px; --in-r: 9999px;
+  --font: Nunito, "Varela Round", "Segoe UI", system-ui, sans-serif; --title-font: Fredoka, Nunito, "Varela Round", system-ui, sans-serif;
+  --dur: 240ms; --ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --mm-gloss: linear-gradient(to bottom, rgb(255 255 255 / 0.6) 0%, rgb(255 255 255 / 0.12) 48%, rgb(255 255 255 / 0) 52%, rgb(255 255 255 / 0.12) 100%);
+  --mm-pop: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black), 0 8px 14px color-mix(in srgb, hsl(var(--accent)) 35%, transparent);
+  --btn-bg: var(--mm-gloss), hsl(var(--raised)); --btn-fg: hsl(var(--fg)); --btn-weight: 800;
+  --btn-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 35%, hsl(var(--bg)));
+  --btn-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 28%, hsl(var(--bg)));
+  --btn-hover-bg: var(--mm-gloss), color-mix(in srgb, hsl(var(--accent)) 14%, hsl(var(--raised))); --btn-hover-border: hsl(var(--accent));
+  --btn-hover-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
+  --btn-active-shadow: 0 0 0 color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg))); --btn-active-transform: translateY(3px) scale(0.98);
+  --btn-accent-bg: var(--mm-gloss), hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
+  --btn-accent-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 70%, white); --btn-accent-border-color: color-mix(in srgb, hsl(var(--accent)) 70%, white);
+  --btn-accent-shadow: var(--mm-pop);
+  --btn-accent-hover-bg: var(--mm-gloss), color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: var(--mm-pop);
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
+  --in-bg: hsl(var(--surface)); --in-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))); --in-shadow: inset 0 2px 4px color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
+  --in-hover-border: color-mix(in srgb, hsl(var(--accent)) 60%, hsl(var(--bg))); --in-focus-border: hsl(var(--accent));
+  --in-focus-shadow: 0 0 0 4px color-mix(in srgb, hsl(var(--accent)) 25%, transparent); --in-px: 1rem;
+  --card-bg: hsl(var(--surface)); --card-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg)));
+  --card-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 16%, hsl(var(--bg))), 0 10px 22px color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
+  --backdrop: color-mix(in srgb, hsl(var(--accent)) 28%, rgb(40 10 30 / 0.45));
+  --win-bg: hsl(var(--surface)); --win-border: 3px solid color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
+  --win-shadow: 0 8px 0 color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))), 0 24px 44px color-mix(in srgb, hsl(var(--accent)) 30%, transparent);
+  --dialog-anim: bt-pop 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --tb-bg: var(--mm-gloss), hsl(var(--accent)); --tb-border: 0 solid transparent; --tb-pad: 0.8rem 1.3rem; --tb-size: 1.2rem; --tb-weight: 600; --tb-justify: space-between;
+  --tb-fg: hsl(var(--accent-fg)); --tb-text-shadow: 0 1px 0 rgb(0 0 0 / 0.16);
+  --close-r: 9999px; --close-fg: hsl(var(--accent-fg)); --close-hover-bg: rgb(255 255 255 / 0.28);
+  --bar-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 24%, hsl(var(--bg)));
+  --menu-bg: hsl(var(--surface)); --menu-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 40%, hsl(var(--bg)));
+  --pop-shadow: 0 6px 0 color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg))), 0 14px 26px color-mix(in srgb, hsl(var(--accent)) 24%, transparent);
+  --menu-anim: bt-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --menu-hi-bg: var(--mm-gloss), hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
+  --side-bg: color-mix(in srgb, hsl(var(--accent)) 9%, hsl(var(--bg))); --side-shadow: none;
+  --top-bg: var(--mm-gloss), hsl(var(--accent)); --top-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black);
+  --player-bg: hsl(var(--surface)); --player-shadow: 0 -4px 0 color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg)));
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
+  --nav-active-bg: var(--mm-gloss), hsl(var(--accent)); --nav-active-fg: hsl(var(--accent-fg)); --nav-active-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black);
+  --row-hover: color-mix(in srgb, hsl(var(--accent)) 12%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 22%, transparent);
   --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
-  --chk-size: 1.15rem; --chk-r: 2px; --chk-border: 2px solid hsl(var(--muted)); --chk-bg: transparent; --chk-hover-border: hsl(var(--fg));
-  --rng-appearance: none; --rng-h: 2px; --rng-r: 0; --rng-track: color-mix(in srgb, hsl(var(--fg)) 28%, transparent);
-  --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-thumb: hsl(var(--accent)); --rng-ts: 0 1px 3px rgb(0 0 0 / 0.4);
+  --chk-size: 1.3rem; --chk-r: 9px; --chk-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 55%, hsl(var(--bg))); --chk-bg: hsl(var(--surface));
+  --chk-on-bg: var(--mm-gloss), hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: var(--mm-gloss), hsl(var(--accent));
+  --chk-dot: hsl(var(--accent-fg)); --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 4px color-mix(in srgb, hsl(var(--accent)) 28%, transparent);
+  --rng-appearance: none; --rng-h: 12px; --rng-r: 9999px; --rng-track: color-mix(in srgb, hsl(var(--accent)) 20%, hsl(var(--bg)));
+  --rng-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg)));
+  --rng-tw: 1.5rem; --rng-th: 1.5rem; --rng-tr: 9999px; --rng-thumb: radial-gradient(circle at 35% 30%, #fff 0 22%, hsl(var(--accent)) 24%); --rng-tb: 2px solid #fff;
+  --rng-ts: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black), 0 5px 8px rgb(0 0 0 / 0.2);
 }
-/* the app bar is the accent colour with white text, like UX 5.0's own apps; the add button becomes a floating action button */
+/* headings and the logo get the round display face; the app bar, active tab and window title bars are glossy candy */
+[data-ui="lgux"] h1, [data-ui="lgux"] h2, [data-ui="lgux"] h3, [data-ui="lgux"] .bt-brand { font-family: var(--title-font); font-weight: 600; letter-spacing: 0.01em; }
 [data-ui="lgux"] .bt-top { color: hsl(var(--accent-fg)); }
-[data-ui="lgux"] .bt-top .input { color: hsl(var(--accent-fg)); box-shadow: inset 0 -1px 0 hsl(var(--accent-fg) / 0.55); }
-[data-ui="lgux"] .bt-top .input::placeholder, [data-ui="lgux"] .bt-top svg { color: hsl(var(--accent-fg) / 0.75); }
-[data-ui="lgux"] .bt-top .btn-accent { background: hsl(var(--accent-fg)); color: hsl(var(--accent)); border-radius: 9999px; }
+[data-ui="lgux"] .bt-top .input { color: hsl(var(--fg)); border-color: rgb(255 255 255 / 0.7); }
+[data-ui="lgux"] .bt-top .btn:not(.btn-accent) { color: hsl(var(--accent-fg)); background: rgb(255 255 255 / 0.2); border-color: rgb(255 255 255 / 0.55); box-shadow: none; }
+[data-ui="lgux"] .bt-top .btn-accent { background: #fff; color: hsl(var(--accent)); border-color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black); }
+[data-ui="lgux"] .bt-top .btn:not(.btn-accent) svg { color: hsl(var(--accent-fg)); }
 [data-ui="lgux"] .bt-top .btn-accent svg { color: hsl(var(--accent)); }
-[data-ui="lgux"] .btn:not(.btn-accent):not(.btn-ghost) { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.8125rem; }
+[data-ui="lgux"] .bt-titlebar { color: hsl(var(--accent-fg)); border-radius: calc(var(--win-r) - 4px) calc(var(--win-r) - 4px) 0 0; text-shadow: var(--tb-text-shadow); }
+[data-ui="lgux"] .bt-menu, [data-ui="lgux"] .bt-menu svg { color: hsl(var(--fg)); }
 [data-ui="lgux"] .bt-titlebar svg { display: none; }
 [data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -2px 0 hsl(var(--accent)); }
 /* Material ink ripple (lib/ripple.ts) and the squircle of UX 5.0's app icons for the candy logo */

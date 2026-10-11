@@ -5,7 +5,7 @@ import { audioMime } from './defaults.ts';
 import { coverCrop } from './image.ts';
 import { pickEvictions, type CacheEntry } from './cachePolicy.ts';
 import { sha256Sync } from './sha256.ts';
-import { isAndroidApp } from './native.ts';
+import { appFileProxy, isAndroidApp } from './native.ts';
 import { api, useStore } from './store.ts';
 
 export async function sha256Hex(data: ArrayBuffer): Promise<string> {
@@ -112,10 +112,11 @@ export async function flushUploads(a: Api): Promise<void> {
 
 /**
  * The Android app shows the web client from a private https address, and its WebView refuses (or upgrades to a https the server does not
- * speak) images and audio that such a page loads over plain http. `fetch` is allowed, so in the app the file is downloaded and handed
- * over as a blob. Elsewhere the server's link is used directly (streaming, seeking).
+ * speak) images and audio that such a page loads over plain http. Current apps answer `/__server/…` themselves (appFileProxy), which is
+ * the fast path. Only an older app falls back to this: `fetch` is allowed, so the file is downloaded and handed over as a blob (slower:
+ * nothing plays before the whole file is here).
  */
-const needsFetch = () => isAndroidApp() && /^http:/i.test(useStore.getState().settings.serverUrl.trim());
+const needsFetch = () => isAndroidApp() && !appFileProxy() && /^http:/i.test(useStore.getState().settings.serverUrl.trim());
 
 /**
  * Downloads for `needsFetch` are remembered: the same cover is asked for by a grid, a page header and the lock screen, and without a

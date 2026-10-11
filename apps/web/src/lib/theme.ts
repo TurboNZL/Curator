@@ -216,11 +216,11 @@ export const THEME_DEFS: ThemeDef[] = [
   // Winamp 2.x: bluish metal chrome, a black playlist with #00ff00 text and #000080 selection (the skin's pledit.txt defaults)
   dark({ id: "winamp", label: "Winamp Classic", bg: hex("#1c1c2a"), primary: hex("#00e800"), onPrimary: "0 0% 0%", fg: hx("#d8dbe6"), mutedFg: hx("#8e96a8"), motif: "grid",
     ov: { card: "#000000", secondary: "#34344a", muted: "#2a2a3c", accent: "#000080", border: "#46465e", input: "#5a5a72" } }),
-  // LG UX 5.0: white sheets on a light grey ground with a teal-blue app bar (approximation; LG published no palette)
-  light({ id: "lg-marshmallow", label: "LG Light", bg: hex("#f2f2f2"), primary: hex("#0e7fa8"), onPrimary: "0 0% 100%", fg: hx("#212121"), mutedFg: hx("#757575"), motif: "dots",
-    ov: { card: "#ffffff", secondary: "#e6e6e6", muted: "#ececec", accent: "#d3e6ef", border: "#dcdcdc", input: "#9e9e9e" } }),
-  dark({ id: "lg-marshmallow-dark", label: "LG Dark", bg: hex("#1a1a1a"), primary: hex("#2aa6d1"), onPrimary: "0 0% 0%", fg: hx("#f2f2f2"), mutedFg: hx("#a8a8a8"), motif: "dots",
-    ov: { card: "#2a2a2a", secondary: "#353535", muted: "#303030", accent: "#1f4456", border: "#3a3a3a", input: "#6a6a6a" } }),
+  // LG Optimus "Marshmallow" theme: bubblegum pink and white, berry text (an interpretation: LG published no palette)
+  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#fff0f6"), primary: hex("#e8338a"), onPrimary: "0 0% 100%", fg: hx("#4a1a35"), mutedFg: hx("#a05a7c"), motif: "dots",
+    ov: { card: "#ffffff", secondary: "#ffdceb", muted: "#ffe6f1", accent: "#ffc9e0", border: "#ffc2da", input: "#f08fbc" } }),
+  dark({ id: "lg-marshmallow-dark", label: "Marshmallow Night", bg: hex("#2b1224"), primary: hex("#ff6fb0"), onPrimary: "0 0% 100%", fg: hx("#ffe9f3"), mutedFg: hx("#d79ab8"), motif: "dots",
+    ov: { card: "#3b1b31", secondary: "#4a2540", muted: "#40213a", accent: "#6b2d56", border: "#5a2a49", input: "#b45c8c" } }),
   // Fortnite: Epic does not publish its UI colours; these are read off screenshots of each era's settings and lobby screens.
   // Ch 1: muted slate blue with dark navy text, a dark navy top bar, pale cream "selected" buttons with a soft yellow edge
   light({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#a6b8dc"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#121830"), mutedFg: hx("#2f3d68"), motif: "waves",

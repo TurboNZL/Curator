@@ -76,9 +76,9 @@ class MainActivity : AppCompatActivity() {
 
         val loader = WebViewAssetLoader.Builder().setDomain(HOST).addPathHandler("/", SpaAssets(this)).build()
         web.webViewClient = object : WebViewClient() {
-            // the app's own pages first, then the library's images and audio from a plain-http server (see ServerFiles)
+            // the library's images and audio from a plain-http server first (their path never names an app file), then the app's own pages
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                loader.shouldInterceptRequest(request.url) ?: ServerFiles.answer(request, ServerPrefs(this@MainActivity).serverUrl)
+                ServerFiles.answer(request, ServerPrefs(this@MainActivity).serverUrl, HOST) ?: loader.shouldInterceptRequest(request.url)
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == HOST) return false
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
