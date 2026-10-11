@@ -136,7 +136,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
       ...t, credits, artistId, leads, elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
       artistName: namesOf(leads),
       albumId: album?.id ?? null, albumTitle: album?.title ?? null, cover: t.cover || album?.cover || null,
-      releaseDate: album ? albumDate.get(album.id) ?? null : null,
+      releaseDate: album ? albumDate.get(album.id) ?? null : t.releaseDate || null, // a single keeps its own
       eraIds: [...new Set([...(album ? erasOfAlbum.get(album.id) ?? [] : []), ...(erasOfTrack.get(t.id) ?? [])])],
       allGenres: genres ?? [],
     };

@@ -25,7 +25,7 @@
 const NS = 'http://www.w3.org/2000/svg';
 
 /** Floating chrome that is glass in Apple's design: the navigation layer, menus, dialogs and the controls in the bars. */
-const TARGETS = '.bt-side, .bt-top, .bt-player, .bt-tabbar, .bt-menu, .bt-window, .bt-top .btn, .bt-top .input';
+const TARGETS = '.bt-side, .bt-player, .bt-tabbar, .bt-menu, .bt-window';
 /** Elements that animate their lens when they appear (they get a filter of their own). */
 const MATERIALIZE = '.bt-menu, .bt-window';
 
@@ -176,6 +176,9 @@ export function supportsLens(): boolean {
   if (typeof CSS === 'undefined' || typeof navigator === 'undefined') return false;
   const brands = (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData?.brands.map((b) => b.brand) ?? [];
   const chromium = brands.includes('Chromium') || (/Chrome\//.test(navigator.userAgent) && !/Edg\/.*Firefox/.test(navigator.userAgent));
+  // Phones (touch screens, the Android app) get frosted glass without the refraction: re-running an SVG filter behind scrolling content
+  // is what made it lag there. Pointer-driven Chromium (browser, Electron) keeps the lens.
+  if (window.matchMedia?.('(pointer: coarse)').matches || !!(window as unknown as { CuratorAndroid?: unknown }).CuratorAndroid) return false;
   return chromium && CSS.supports('backdrop-filter', 'url(#x) blur(1px)');
 }
 

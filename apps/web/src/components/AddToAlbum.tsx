@@ -1,5 +1,8 @@
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import { newAlbumData } from '../lib/defaults.ts';
 import type { TrackData } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { defaultChoice, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
@@ -62,7 +65,22 @@ export function AddToAlbumDialog({ trackId, onClose }: { trackId: string; onClos
   const track = lib.trackById.get(trackId);
   const [albumId, setAlbumId] = useState('');
   const [choice, setChoice] = useState<ReleaseChoice>({ releaseIds: [], newRelease: false });
+  const { put, patch } = useStore();
+  const nav = useNavigate();
+  const [fresh, setFresh] = useState<string | null>(null); // title of the album to create, null = pick an existing one
   if (!track) return null;
+  /** A new album built from this single: same credits and genres, one release (the single's own edition, with its cover and date). */
+  const createAlbum = () => {
+    const raw = useStore.getState().rows.tracks.get(trackId)?.data as TrackData | undefined;
+    const title = (fresh ?? '').trim();
+    if (!raw || !title) return;
+    const albumId = put('albums', newAlbumData({ title, credits: raw.credits ?? [], genres: raw.genres ?? [], cover: raw.cover ?? null, trackOrder: [trackId] }));
+    const releaseId = put('releases', { albumId, title, cover: raw.cover ?? null, releaseDate: raw.releaseDate ?? null, trackIds: [trackId] });
+    patch('albums', albumId, { defaultReleaseId: releaseId });
+    patch('tracks', trackId, { albums: [{ albumId, order: 0 }, ...(raw.albums ?? [])], syncWithAlbumCredits: true });
+    onClose();
+    nav(`/albums/${albumId}`);
+  };
   const hasOwnCover = !!track.cover;
   const pick = (id: string) => {
     setAlbumId(id);
@@ -72,9 +90,18 @@ export function AddToAlbumDialog({ trackId, onClose }: { trackId: string; onClos
   return (
     <Modal title={`Add “${track.title}” to an album`} onClose={onClose} footer={<div className="ml-auto flex gap-2">
       <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-      <button className="btn btn-accent" disabled={!albumId} onClick={() => { add(trackId, albumId, choice); onClose(); }}>Add to album</button></div>}>
-      <Field label="Album"><Select value={albumId} options={albumOptions(lib, 'Choose an album…')} onChange={pick} /></Field>
-      {albumId && <ReleaseChoicePicker albumId={albumId} trackTitle={track.title} hasOwnCover={hasOwnCover} cover={track.cover} value={choice} onChange={setChoice} />}
+      {fresh !== null
+        ? <button className="btn btn-accent" disabled={!fresh.trim()} onClick={createAlbum}>Create album</button>
+        : <button className="btn btn-accent" disabled={!albumId} onClick={() => { add(trackId, albumId, choice); onClose(); }}>Add to album</button>}</div>}>
+      {fresh !== null
+        ? <>
+            <Field label="New album title"><input className="input" autoFocus value={fresh} onChange={(e) => setFresh(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createAlbum()} /></Field>
+            <p className="text-xs text-muted">The album gets this track’s credits, genres, cover and release date, with the track as its first release. Add the other tracks afterwards.</p>
+            <button className="btn btn-ghost" onClick={() => setFresh(null)}>Pick an existing album instead</button></>
+        : <>
+            <Field label="Album"><Select value={albumId} options={albumOptions(lib, 'Choose an album…')} onChange={pick} /></Field>
+            <button className="btn" onClick={() => setFresh(track.title)}><Plus size={15} />New album from this track</button></>}
+      {fresh === null && albumId && <ReleaseChoicePicker albumId={albumId} trackTitle={track.title} hasOwnCover={hasOwnCover} cover={track.cover} value={choice} onChange={setChoice} />}
     </Modal>
   );
 }

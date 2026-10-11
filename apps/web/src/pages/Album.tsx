@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Disc, Download, FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
+import { Disc, Download, FileAudio, Layers, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -67,6 +67,7 @@ export function AlbumPage() {
                     {(r.tags?.length ?? 0) > 0 && <span className="mt-0.5 flex flex-wrap gap-1">{r.tags!.map((t) => <span key={t} className="chip !px-1.5 !py-0 text-[10px]">{t}</span>)}</span>}</span>
                 </button>
                 <button className="-my-2 flex shrink-0 items-center self-stretch px-2.5 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={14} /></button>
+                <button className="-my-2 flex shrink-0 items-center self-stretch px-2.5 text-muted hover:text-fg" aria-label={`Add ${r.title} to an album playlist`} title="Add this release to an album playlist" onClick={() => edit({ kind: 'add-album-to-playlist', id: r.id })}><ListPlus size={14} /></button>
               </div>);
           })}
         </div>

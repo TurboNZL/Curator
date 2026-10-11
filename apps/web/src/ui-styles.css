@@ -617,8 +617,7 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 :is(html, div)[data-ui="liquid"] .bt-top .input {
   border-radius: 9999px; border: 0; padding-block: 0.55rem;
   background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-fill);
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
-  backdrop-filter: blur(var(--lg-blur)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat));
+  -webkit-backdrop-filter: none; backdrop-filter: none; /* the top bar floats over the scrolling page: no per-frame blur here */
   box-shadow: var(--lg-shadow), var(--lg-rim);
 }
 :is(html, div)[data-ui="liquid"] .bt-top .input:focus { box-shadow: var(--lg-shadow), 0 0 0 4px hsl(var(--accent) / 0.32); }
@@ -628,8 +627,7 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
   --lg-btn-fill: var(--lg-fill);
   background: var(--lg-spec, none) center / 100% 100% no-repeat, var(--lg-sheen), var(--lg-btn-fill);
   border: 0; color: inherit; text-shadow: none;
-  -webkit-backdrop-filter: blur(var(--lg-blur-sm)) saturate(var(--lg-sat));
-  backdrop-filter: blur(var(--lg-blur-sm)) var(--lg-filter, saturate(1)) saturate(var(--lg-sat));
+  -webkit-backdrop-filter: none; backdrop-filter: none; /* every button used to blur what is behind it: too slow with many on a page */
   box-shadow: 0 3px 12px rgb(0 0 0 / 0.16), var(--lg-rim);
   transition: transform 360ms var(--spring), box-shadow 240ms var(--ease);
 }
@@ -660,7 +658,8 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 :is(html, div)[data-ui="liquid"] .card {
   background: var(--lg-sheen), var(--card-bg); border: 0;
   box-shadow: var(--card-shadow), var(--lg-rim), inset 0 0.5px 0 rgb(255 255 255 / 0.3);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+  /* no backdrop blur on cards: hundreds of them behind a scrolling list made every frame cost 60+ ms (measured), the sheen and rim carry the glass look */
+  -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 :is(html, div)[data-ui="liquid"] .card .card { background: var(--lg-sheen), hsl(var(--surface) / 0.3); -webkit-backdrop-filter: none; backdrop-filter: none; }
 :is(html, div)[data-ui="liquid"] textarea.input { border-radius: 18px; }

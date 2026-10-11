@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SyncRecord } from '@curator/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { makeChip, matchesAll, trackSubject } from '../src/lib/filters.ts';
-import { hasLead, leadArtistIds } from '../src/lib/defaults.ts';
+import { hasLead, leadArtistIds, ownCreditsFromAlbum } from '../src/lib/defaults.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
 const rows = (...rs: SyncRecord[]) => {
@@ -32,5 +32,25 @@ describe('more than two lead artists', () => {
   it('matches an artist: filter for the third and fourth lead too', () => {
     for (const name of ['Ann', 'Cy', 'Dee']) expect(matchesAll([makeChip(lib, 'artist', name)!], trackSubject(lib, t))).toBe(true);
     expect(matchesAll([makeChip(lib, 'artist', 'Nobody')!], trackSubject(lib, t))).toBe(false);
+  });
+});
+
+describe('a track stops following its album (duo album, third artist added)', () => {
+  const duo = [lead('a'), lead('b')];
+  it('starts from the whole album duo, not just the one lead the record stored', () => {
+    // an imported track stores only the first lead; it showed the album's duo while following
+    const own = ownCreditsFromAlbum(duo, [lead('a')]);
+    expect(own.map((c) => c.artistId)).toEqual(['a', 'b']);
+    own.push(lead('c')); // the user adds the third
+    expect(leadArtistIds(own)).toEqual(['a', 'b', 'c']);
+  });
+  it('keeps what the track had of its own, once, and copies the roles so the album is not changed', () => {
+    const own = ownCreditsFromAlbum([{ artistId: 'a', role: ['Lead artist'] }, { artistId: 'p', role: ['Producer'] }], [{ artistId: 'a', role: ['lead ARTIST'] }, { artistId: 'p', role: ['Producer'] }, { artistId: 'f', role: ['Featured artist'] }]);
+    expect(own.map((c) => `${c.artistId}:${c.role.join('+')}`)).toEqual(['a:Lead artist', 'p:Producer', 'f:Featured artist']);
+    own[0].role.push('Writer'); expect(duo[0].role).toEqual(['Lead artist']);
+  });
+  it('handles an album with no credits or a track with none', () => {
+    expect(ownCreditsFromAlbum([], [lead('x')]).map((c) => c.artistId)).toEqual(['x']);
+    expect(ownCreditsFromAlbum(duo, [])).toHaveLength(2);
   });
 });
