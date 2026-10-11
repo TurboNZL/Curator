@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api, useStore } from './store.ts';
 import { desktop } from './settings.ts';
+import { isAndroidApp } from './native.ts';
 import { guessDeviceName } from './connectPure.ts';
 import { refreshSpotifyStatus } from './spotifyPlayer.ts';
 
@@ -11,7 +12,8 @@ import { refreshSpotifyStatus } from './spotifyPlayer.ts';
  * audio: no equaliser, no offline copies.
  *
  * Needs Premium, a secure page (https or localhost) and a browser with Widevine, Spotify's DRM (Chrome, Edge, Firefox, Safari and Android
- * Chrome have it; Electron does not out of the box, and the Android app's WebView is untested).
+ * Chrome have it; Electron does not out of the box). The Android app has no Widevine at all, so it never offers or starts this: there
+ * Spotify plays through Soloist on the server (or the Spotify app) instead.
  */
 export type SdkStatus = 'off' | 'checking' | 'loading' | 'ready' | 'unsupported' | 'error';
 interface SdkState { status: SdkStatus; error: string | null; deviceId: string | null }
@@ -30,6 +32,7 @@ declare global { interface Window { Spotify?: SpotifyGlobal; onSpotifyWebPlaybac
 /** Can this page play Spotify's protected audio? The reason is written for the person using it. */
 export async function drmSupport(): Promise<{ ok: boolean; reason: string | null }> {
   if (typeof window === 'undefined') return { ok: false, reason: 'Not in a browser.' };
+  if (isAndroidApp()) return { ok: false, reason: 'The Android app has no Widevine, so it cannot play Spotify itself. Use Soloist on your server (below), or pick the Spotify app on your phone in the device list.' };
   if (!window.isSecureContext) return { ok: false, reason: 'Spotify’s player only runs on a secure page. Open Curator over https (for example through Tailscale) or on localhost; this address is plain http.' };
   if (typeof navigator.requestMediaKeySystemAccess !== 'function') return { ok: false, reason: 'This browser cannot play protected audio.' };
   try {
@@ -107,4 +110,4 @@ export function stopSpotifySdk(): void {
 }
 
 /** Called once at start-up: bring the in-app player back when it was switched on. */
-export function startSpotifySdkIfWanted(): void { const s = useStore.getState().settings; if (s.spotifySdk && s.token) void startSpotifySdk(); }
+export function startSpotifySdkIfWanted(): void { const s = useStore.getState().settings; if (s.spotifySdk && s.token && !isAndroidApp()) void startSpotifySdk(); }
