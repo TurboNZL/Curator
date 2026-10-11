@@ -61,6 +61,17 @@ export class Api {
   /** the server tries the links in order and keeps the first image that downloads */
   importCover(urls: string | string[]) { return this.req<{ hash: string; url: string }>('/api/import/cover', { method: 'POST', body: JSON.stringify(Array.isArray(urls) ? { urls } : { url: urls }) }); }
   analyzeAudio(hash: string) { return this.req<{ codec: string; kbps: number; sampleRate: number; durationSec: number; cutoffHz: number; looksLike: number; verdict: 'ok' | 'transcode' | 'unknown' }>('/api/audio/analyze', { method: 'POST', body: JSON.stringify({ hash }) }); }
+  // ---- Spotify (server/src/spotify.ts) and YouTube matching (match.ts) ----
+  spotifyStatus() { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean }>('/api/spotify/status'); }
+  spotifyConfig(clientId: string, redirectUri?: string) { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean }>('/api/spotify/config', { method: 'POST', body: JSON.stringify({ clientId, redirectUri }) }); }
+  spotifyAuthUrl() { return this.req<{ url: string }>('/api/spotify/auth-url'); }
+  spotifyExchange(url: string) { return this.req<{ signedIn: boolean }>('/api/spotify/exchange', { method: 'POST', body: JSON.stringify({ url }) }); }
+  spotifySignOut() { return this.req<{ signedIn: boolean }>('/api/spotify/signout', { method: 'POST' }); }
+  spotifyPlaylists() { return this.req<{ playlists: { id: string; name: string; tracks: number | null; owner: string; cover: string | null; mine: boolean }[] }>('/api/spotify/playlists'); }
+  spotifyPlaylist(id: string) { return this.req<SpotifyList>(`/api/spotify/playlist/${id}`); }
+  spotifyResolve(url: string) { return this.req<SpotifyList>('/api/spotify/resolve', { method: 'POST', body: JSON.stringify({ url }) }); }
+  spotifyCover(uri: string) { return this.req<{ hash: string; url: string }>('/api/spotify/cover', { method: 'POST', body: JSON.stringify({ uri }) }); }
+  match(tracks: MatchTrackReq[], methods: ('odesli' | 'search')[]) { return this.req<{ results: MatchResultRes[] }>('/api/match', { method: 'POST', body: JSON.stringify({ tracks, methods }) }); }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
     return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');
@@ -82,3 +93,9 @@ export class Api {
   /** `<audio src>` / `<img src>` cannot send headers, hence ?token= */
   fileUrl(hash: string) { return this.url(`/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`); }
 }
+
+export interface SpotifyImportTrack { uri: string; id: string; title: string; artists: string[]; album: string; albumUri: string | null; albumArtist: string | null; durationMs: number | null; cover: string | null; releaseDate: string | null; trackNumber: number | null; isrc: string | null }
+export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyImportTrack[]; source: 'embed' | 'api' | 'oembed' | 'file'; note?: string }
+export interface MatchTrackReq { id: string; title: string; artist: string; album?: string; durationMs?: number | null; spotifyUrl?: string | null }
+export interface MatchCandidate { url: string; title: string; channel: string; seconds: number | null; score: number; method: 'odesli' | 'search' }
+export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }

@@ -2,7 +2,7 @@ import { hasLead } from './defaults.ts';
 import type { Library } from './library.ts';
 import { qualityOf } from './audioCheck.ts';
 
-export type HealthKind = 'track' | 'album' | 'artist' | 'genre' | 'role' | 'release' | 'noteCategory';
+export type HealthKind = 'album-source' | 'track' | 'album' | 'artist' | 'genre' | 'role' | 'release' | 'noteCategory';
 export interface HealthItem { kind: HealthKind; id: string; label: string; detail?: string }
 export interface HealthCheck {
   id: string; title: string; why: string; items: HealthItem[];
@@ -12,6 +12,10 @@ export interface HealthCheck {
   addLead?: { label: string };
   /** paste many links at once, album by album */
   bulk?: 'youtubeMusicUrl' | 'spotifyUrl' | 'geniusUrl';
+  /** open the tool that looks for YouTube links of the tracks */
+  matchLinks?: boolean;
+  /** a paste box per album: the YouTube album link that completes it */
+  albumLinks?: boolean;
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -39,7 +43,10 @@ export function computeHealth(lib: Library): HealthCheck[] {
   const lowQuality = lib.tracks.filter((x) => x.bitrate && parseInt(x.bitrate) > 0 && parseInt(x.bitrate) < 192);
 
   const fakes = lib.tracks.filter((x) => { const q = qualityOf(x); return q === 'transcode' || q === 'mismatch'; });
+  const waiting = lib.albums.filter((a) => (a as { needsSource?: boolean }).needsSource);
   return [
+    { id: 'needs-source', title: 'Albums waiting for a YouTube album link', why: 'These came from a Spotify import and only hold the songs you picked. Paste a YouTube Music link of the whole album: it fills in the real tracklist, the cover and the audio, and keeps the songs you already have.', albumLinks: true,
+      items: waiting.map((a) => ({ kind: 'album-source' as const, id: a.id, label: `${a.title} · ${a.artistName}`, detail: `${a.trackIds.length} track${a.trackIds.length === 1 ? '' : 's'}` })) },
     { id: 'fake-quality', title: 'Audio that is not what it claims', why: 'The file claims a high bit rate but its sound stops where a lower one would (re-encoded from a worse source), or its stored bit rate is not what the file measures. Run “Check audio quality” above first.',
       items: fakes.map((x) => t(x, qualityOf(x) === 'transcode' ? `claims ${x.audioCheck?.kbps} kbps, content like ${x.audioCheck?.looksLike} (cuts off at ${((x.audioCheck?.cutoffHz ?? 0) / 1000).toFixed(1)} kHz)` : `stored ${x.bitrate}, measures ${x.audioCheck?.kbps} kbps`)) },
     { id: 'no-lead', title: 'No lead artist credit', why: 'The artist comes from the credits: the first credit with the role “Lead artist”. Old records only have it stored separately.',
@@ -52,7 +59,7 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.file).map((x) => t(x, x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
     { id: 'no-source', title: 'Tracks with no audio and no YouTube link', why: 'Nothing to download from. Add a link in the track editor.',
       items: lib.tracks.filter((x) => !x.file && !x.youtubeMusicUrl).map((x) => t(x)) },
-    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio.', bulk: 'youtubeMusicUrl',
+    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio. Let the server look for them, paste links by album, or add one in the track editor.', bulk: 'youtubeMusicUrl', matchLinks: true,
       items: lib.tracks.filter((x) => !x.youtubeMusicUrl).map((x) => t(x, x.file ? 'has audio' : 'no audio')) },
     { id: 'no-spotify', title: 'Tracks without a Spotify link', why: 'Optional, but handy for opening the track elsewhere.', bulk: 'spotifyUrl',
       items: lib.tracks.filter((x) => !x.spotifyUrl).map((x) => t(x)) },

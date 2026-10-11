@@ -34,6 +34,8 @@ export interface AlbumData {
   /** @deprecated old single-era field; membership now lives in EraData.albumIds. Still read, dropped when the album is saved. */
   eraId?: string | null;
   defaultReleaseId?: string | null;
+  /** made by a Spotify import from a few tracks and no source for the whole album: Health asks for a YouTube album link to complete it */
+  needsSource?: boolean;
   /** explicit track order (ids); wins over the release tracklist. Set when the user reorders or adds tracks by hand. */
   trackOrder?: string[];
 }
