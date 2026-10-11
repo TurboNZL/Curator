@@ -245,6 +245,7 @@ export function createApp(
     catch (e) { return c.html(`<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Could not connect</h2><p>${String((e as Error).message).replace(/[<&]/g, ' ')}</p>`, 400); }
   });
   // playback: Spotify plays, Curator sends commands (the web API; Soloist on the Pi is just one more device in this list)
+  app.get('/api/spotify/diagnose', async (c) => { try { return c.json(await spotify.diagnose()); } catch (e) { return spotifyFail(e); } });
   app.get('/api/spotify/sdk-token', async (c) => { try { return c.json(await spotify.sdkToken()); } catch (e) { return spotifyFail(e); } });
   app.get('/api/spotify/player/devices', async (c) => { try { return c.json({ devices: await spotify.devices() }); } catch (e) { return spotifyFail(e); } });
   app.get('/api/spotify/player/state', async (c) => { try { return c.json({ state: await spotify.playerState() }); } catch (e) { return spotifyFail(e); } });

@@ -154,6 +154,17 @@ describe('player', () => {
     const a = await signedIn(() => json({ error: { status: 403, message: 'Insufficient client scope' } }, 403));
     await expect(a.devices()).rejects.toThrow(/Spotify refused \(403: Insufficient client scope\)/);
   });
+  it('shows the raw body of a refusal that is not JSON', async () => {
+    const a = await signedIn(() => new Response('Forbidden', { status: 403 }));
+    await expect(a.devices()).rejects.toThrow(/Spotify refused \(403: Forbidden\)/);
+  });
+  it('diagnoses a connection: permissions held, and what /me and the device list answer, without the token', async () => {
+    const a = await signedIn((u) => (u.endsWith('/me') ? json({ product: 'premium', country: 'NZ', id: 'secret-id' }) : json({ error: { status: 403, message: 'Forbidden' } }, 403)));
+    const d = await a.diagnose();
+    expect(d).toMatchObject({ signedIn: true, me: { status: 200, product: 'premium', country: 'NZ' }, devices: { status: 403 } });
+    expect((d.devices as { body: string }).body).toContain('Forbidden');
+    expect(JSON.stringify(d)).not.toMatch(/AT|RT|secret-id/); // no token, no account id
+  });
   it('lists devices, plays tracks on one and sends commands', async () => {
     const calls: string[] = [];
     const a = await signedIn((u, init) => {
