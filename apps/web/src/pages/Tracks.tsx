@@ -51,7 +51,7 @@ export function TracksPage() {
       </div>
       <div className="mb-4"><FilterBar scope="tracks" chips={chips} onChips={(c) => { setChips(c); setShown(PAGE); }} text={q} onText={(t) => { setQ(t); setShown(PAGE); }} /></div>
       <div className="card overflow-hidden">
-        <div className="flex items-center gap-1 border-b border-line/60 px-3 py-1.5 text-xs text-muted" role="toolbar" aria-label="Sort by">
+        <div className="flex flex-wrap items-center gap-1 border-b border-line/60 px-3 py-1.5 text-xs text-muted" role="toolbar" aria-label="Sort by">
           <span className="mr-1">Sort</span>
           {([['title', 'Title'], ['artist', 'Artist'], ['album', 'Album'], ['released', 'Released'], ['memories', 'Memories'], ['comparisons', 'Compared']] as const).map(([k, label]) => <SortButton key={k} k={k} label={label} sort={sort} dir={dir} onPick={pick} />)}
           <span className="ml-auto"><SortButton k="rating" label="Rating" sort={sort} dir={dir} onPick={pick} /></span>

@@ -34,7 +34,7 @@ cd "/path/to/music-curator-main"
 pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web
 pnpm --filter @curator/web build
 ```
-(`--ignore-scripts` matters: the legacy app's `youtube-dl-exec` postinstall fails otherwise.) The build ends with `✓ built in …s`.
+(`--ignore-scripts` skips dependency install scripts; it used to matter because the removed legacy app's `youtube-dl-exec` postinstall failed.) The build ends with `✓ built in …s`.
 
 ## 2. Import your library into a fresh data folder
 Pick a folder for the new server's data (any path; later this is the external drive on the Pi).

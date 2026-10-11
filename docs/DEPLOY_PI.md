@@ -27,7 +27,7 @@ git clone <your repo url> ~/music-curator && cd ~/music-curator
 pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web
 pnpm --filter @curator/web build      # the server serves apps/web/dist at /
 ```
-Install pnpm with `npm install -g pnpm` (needs Node first). `--ignore-scripts` is required: the legacy root app's postinstall fails otherwise.
+Install pnpm with `npm install -g pnpm` (needs Node first). `--ignore-scripts` keeps the install from running dependency scripts, none of which the server or web client need (it used to be required because the removed legacy app's postinstall failed).
 
 Import your old library once (optional, idempotent), exactly as in `docs/TESTING.md` step 2, with `CURATOR_DATA_DIR=/mnt/curator/data`.
 

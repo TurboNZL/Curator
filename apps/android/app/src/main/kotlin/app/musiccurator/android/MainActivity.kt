@@ -32,6 +32,7 @@ import app.musiccurator.android.update.AppUpdater
  */
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
+    private var audioEmit: ((String) -> Unit)? = null
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private val chooser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data))
@@ -68,7 +69,10 @@ class MainActivity : AppCompatActivity() {
             allowContentAccess = false
         }
         web.setBackgroundColor(0xFF0B0B10.toInt())
-        web.addJavascriptInterface(CuratorBridge(this), "CuratorAndroid")
+        NativeAudio.init(this)
+        audioEmit = { json -> web.post { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('curator-audio',{detail:$json}))", null) } }
+        NativeAudio.emit = audioEmit
+        web.addJavascriptInterface(CuratorBridge(this, web), "CuratorAndroid")
 
         val loader = WebViewAssetLoader.Builder().setDomain(HOST).addPathHandler("/", SpaAssets(this)).build()
         web.webViewClient = object : WebViewClient() {
@@ -116,6 +120,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); web.saveState(outState) }
 
     override fun onDestroy() {
+        if (NativeAudio.emit === audioEmit) NativeAudio.emit = null // a newer activity may already have taken over
         AppUpdater.listener = null
         WebClientUpdater.listener = null
         WebClientUpdater.reloader = null

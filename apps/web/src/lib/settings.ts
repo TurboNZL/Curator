@@ -1,4 +1,5 @@
 import { newId } from '@curator/core';
+import { cleanBands } from './eqPresets.ts';
 
 /** Per-device settings (never synced): where the server is, who we are, how it looks. */
 export interface DeviceSettings {
@@ -22,9 +23,13 @@ export interface DeviceSettings {
   storageLimitMb: number;
   /** when the limit is reached, drop the least recently played offline tracks instead of stopping */
   evictOldest: boolean;
-  /** bass boost in the player (lib/eq.ts) */
+  /** equaliser in the player (lib/eq.ts): on/off, bass shelf in dB, ten band gains in dB (lib/eqPresets.ts), overall level in dB */
   eqOn: boolean;
   eqBass: number;
+  eqBands: number[];
+  eqPreamp: number;
+  /** vibration feedback on presses (the Android app and phones that support it) */
+  haptics: boolean;
 }
 
 const KEY = 'curator.settings';
@@ -49,8 +54,10 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, ...saved,
   };
+  s.eqBands = cleanBands(s.eqBands);
+  s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));
   // the first version's look was called "dyad" for a few builds
   if (s.ui === 'dyad') s.ui = 'toolbar';
   if (s.theme === 'dyad') s.theme = 'zinc';

@@ -50,7 +50,11 @@ object WebClientUpdater {
         Thread {
             val next = File(c.filesDir, "web-next")
             try {
-                val manifest = JSONObject(get("$server/web-manifest.json").readBytes().toString(Charsets.UTF_8))
+                val text = get("$server/web-manifest.json").readBytes().toString(Charsets.UTF_8)
+                // a server from before this feature answers every unknown address with the app's index.html
+                val manifest = try { JSONObject(text) } catch (e: org.json.JSONException) {
+                    throw IllegalStateException("Your server did not answer with a web client list (it sent a web page). Update the server first: docs/UPDATING.md.")
+                }
                 val version = manifest.getString("version")
                 if (version == installedVersion(c)) { set(State("none", "Already the version your server has.", version)); return@Thread }
                 val files = manifest.getJSONArray("files")

@@ -9,11 +9,15 @@ import { applyAppearance } from './lib/appearance.ts';
 import { startConnect } from './lib/connect.ts';
 import { startPresence } from './lib/discordPresence.ts';
 import { useStore } from './lib/store.ts';
+import { startRipple } from './lib/ripple.ts';
+import { startHaptics } from './lib/haptics.ts';
 import { syncNativeServer } from './lib/native.ts';
 
 // before the first paint, so a saved theme does not flash the default one
 applyAppearance(useStore.getState().settings);
 startConnect();
+startHaptics();
+startRipple();
 startPresence();
 // the Android app's car interface needs the server address too; the app's own page is served from a private address, so a blank URL means "this origin"
 {
