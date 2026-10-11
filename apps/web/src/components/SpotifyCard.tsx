@@ -20,7 +20,7 @@ function InAppPlayer({ streaming }: { streaming: boolean }) {
       <label className="flex flex-wrap items-center gap-2"><input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} /><span className="font-medium">Play Spotify inside this app</span>
         {on && <span className={sdk.status === 'ready' ? 'chip !text-good' : sdk.status === 'off' || sdk.status === 'loading' || sdk.status === 'checking' ? 'chip' : 'chip !text-bad'}>{SDK_STATE[sdk.status]}</span>}</label>
       <p className="text-xs text-muted">Uses Spotify’s own web player: this browser becomes a Spotify device named “… (Curator)” and plays the audio itself, so no other Spotify app has to be open. It needs Spotify Premium, a secure page (https or localhost) and a browser with Widevine (Chrome, Edge, Firefox, Safari). The desktop app’s engine has no Widevine: use Soloist there on Linux.</p>
-      {!streaming && <p className="text-xs text-warn">Your Spotify sign-in is from before this feature: sign out of Spotify above and sign in again once to give Curator the extra permission.</p>}
+      {!streaming && <p className="text-xs text-warn">This needs one more permission from Spotify: sign out of Spotify above, tick “Also allow playing Spotify inside the app”, and sign in again.</p>}
       {on && sdk.error && <p className="text-xs text-bad" role="alert">{sdk.error}</p>}
       {on && sdk.status === 'ready' && <p className="text-xs text-good">Ready: Spotify tracks without a file play here.</p>}
     </div>

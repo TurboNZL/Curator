@@ -235,7 +235,7 @@ export function createApp(
     const b = (await c.req.json().catch(() => ({}))) as { clientId?: unknown; redirectUri?: unknown };
     try { spotify.configure(String(b.clientId ?? ''), typeof b.redirectUri === 'string' && b.redirectUri ? b.redirectUri : undefined); return c.json(spotify.status()); } catch (e) { return spotifyFail(e); }
   });
-  app.get('/api/spotify/auth-url', (c) => { try { return c.json({ url: spotify.authUrl() }); } catch (e) { return spotifyFail(e); } });
+  app.get('/api/spotify/auth-url', (c) => { try { return c.json({ url: spotify.authUrl({ streaming: c.req.query('streaming') === '1' }) }); } catch (e) { return spotifyFail(e); } });
   app.post('/api/spotify/exchange', async (c) => {
     const b = (await c.req.json().catch(() => ({}))) as { url?: unknown };
     try { await spotify.exchange(String(b.url ?? '')); return c.json(spotify.status()); } catch (e) { return spotifyFail(e); }
