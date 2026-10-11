@@ -22,6 +22,8 @@ interface PlayerState {
   duration: number;
   volume: number;
   shuffle: boolean;
+  /** which engine plays the current track: the page's <audio>, the Android app's player, or a Spotify device */
+  engine: 'web' | 'native' | 'spotify';
   /** shown when the current track has no audio file or failed to load */
   error: string | null;
   play(trackId: string, list: string[], source?: Source): void;
@@ -157,6 +159,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
     } else if (native) nativeAudio.stop();
     native = which === 'native';
+    set({ engine: which });
   }
 
   function load(trackId: string | null, autoStart = true) {
@@ -178,6 +181,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (audio) { audio.pause(); audio.removeAttribute('src'); }
       const at = pendingSeek ?? 0; pendingSeek = null;
       set({ error: null, time: at, duration: 0, playing: autoStart });
+      set({ engine: 'spotify' });
       spotifyEngine.setListener(onSpotify);
       spotifyEngine.play(spotifyUriOf(track)!, Math.round(at * 1000), autoStart).catch((e: Error) => { if (seq === loadSeq) set({ error: `Spotify: ${e.message}`, playing: false }); });
       updateMediaSession(trackId);
@@ -326,7 +330,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   return {
     queue: { user: [], active: [], currentId: null }, history: [], source: { type: 'track', id: null },
-    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), shuffle: false, error: null,
+    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), shuffle: false, engine: 'web', error: null,
 
     play(trackId, list, source = { type: 'track', id: null }) {
       const track = lib().trackById.get(trackId);

@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { createApp } from './app.ts';
+import { Soloist } from './soloist.ts';
 
 export interface Running { config: Config; store: Store; port: number; close(): Promise<void> }
 
@@ -11,12 +12,14 @@ export interface Running { config: Config; store: Store; port: number; close(): 
  */
 export function startServer(config: Config): Promise<Running> {
   const store = new Store(config.dataDir);
-  const app = createApp(config, store);
+  const soloist = new Soloist(config.dataDir);
+  const app = createApp(config, store, undefined, undefined, undefined, undefined, undefined, undefined, undefined, soloist);
+  soloist.autoStart();
   return new Promise((resolve, reject) => {
     const server = serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
       resolve({
         config, store, port: info.port,
-        close: () => new Promise<void>((done) => { server.close(() => { store.close(); done(); }); (server as unknown as { closeAllConnections?: () => void }).closeAllConnections?.(); }),
+        close: () => new Promise<void>((done) => { void soloist.stop(); server.close(() => { store.close(); done(); }); (server as unknown as { closeAllConnections?: () => void }).closeAllConnections?.(); }),
       });
     });
     server.on('error', (e) => { store.close(); reject(e); });

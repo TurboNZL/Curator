@@ -69,6 +69,12 @@ export class Api {
   health() { return fetch(this.url('/api/health')).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
   status() { return this.req<ServerStatus>('/api/status'); }
   releaseDates(albums: { id: string; album: string; artist: string }[]) { return this.req<{ results: { id: string; answer: DateAnswerRes | null }[] }>('/api/dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albums }) }); }
+  soloist() { return this.req<SoloistInfo>('/api/soloist'); }
+  soloistConfig(c: { deviceName?: string; apiKey?: string; autoStart?: boolean }) { return this.req<SoloistInfo>('/api/soloist/config', { method: 'POST', body: JSON.stringify(c) }); }
+  soloistInstall() { return this.req<SoloistInfo>('/api/soloist/install', { method: 'POST' }); }
+  soloistStart() { return this.req<SoloistInfo>('/api/soloist/start', { method: 'POST' }); }
+  soloistStop() { return this.req<SoloistInfo>('/api/soloist/stop', { method: 'POST' }); }
+  soloistRemove() { return this.req<SoloistInfo>('/api/soloist', { method: 'DELETE' }); }
   serverHealth() { return this.req<ServerHealth>('/api/admin/health'); }
   storageInfo() { return this.req<StorageInfo>('/api/admin/storage'); }
   moveStorage(kind: StorageEntry['kind'], target: string) { return this.req<{ ok: true }>('/api/admin/storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, target }) }); }
@@ -135,5 +141,9 @@ export interface MatchCandidate { url: string; title: string; channel: string; s
 export interface DateAnswerRes { date: string; source: 'spotify' | 'itunes' | 'musicbrainz' }
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
 
+export interface SoloistInfo {
+  supported: boolean; reason?: string; installed: boolean; version: string | null; configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean;
+  running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;
+}
 export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }
 export interface SpotifyPlayerInfo { playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null }; track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null }

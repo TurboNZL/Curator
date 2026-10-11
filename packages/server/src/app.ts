@@ -10,6 +10,7 @@ import { analyzeAudio } from './audioinfo.ts';
 import { Matcher, type MatchTrack } from './match.ts';
 import { similarArtists } from './recommend.ts';
 import { lookupAlbumDate } from './dates.ts';
+import { Soloist } from './soloist.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
@@ -42,6 +43,7 @@ export function createApp(
   spotify = new SpotifyAccount(config.dataDir, { env: process.env }),
   matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   mover = new StorageMover(config.dataDir),
+  soloist = new Soloist(config.dataDir),
 ) {
   const app = new Hono();
 
@@ -191,6 +193,18 @@ export function createApp(
     for (const a of albums) results.push({ id: a.id, answer: await lookupAlbumDate(a, { spotify: useSpotify }) });
     return c.json({ results });
   });
+
+  // ---- Soloist (soloist.ts): Spotify's own headless Connect client, installed and run by this server so Curator plays Spotify tracks itself ----
+  app.get('/api/soloist', async (c) => c.json(await soloist.status()));
+  app.post('/api/soloist/config', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown };
+    try { soloist.configure({ deviceName: typeof b.deviceName === 'string' ? b.deviceName : undefined, apiKey: typeof b.apiKey === 'string' ? b.apiKey : undefined, autoStart: typeof b.autoStart === 'boolean' ? b.autoStart : undefined }); return c.json(await soloist.status()); }
+    catch (e) { return c.json({ error: (e as Error).message }, 400); }
+  });
+  app.post('/api/soloist/install', async (c) => { try { await soloist.install(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 502); } });
+  app.post('/api/soloist/start', async (c) => { try { soloist.start(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 400); } });
+  app.post('/api/soloist/stop', async (c) => { await soloist.stop(); return c.json(await soloist.status()); });
+  app.delete('/api/soloist', async (c) => { soloist.uninstall(); return c.json(await soloist.status()); });
 
   // ---- Spotify (spotify.ts): links, public playlists, and the user's own sign-in for their playlists ----
   const spotifyFail = (e: unknown) => { if (e instanceof SpotifyError) return c_json(e); throw e; };
