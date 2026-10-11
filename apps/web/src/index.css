@@ -166,3 +166,7 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
   input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outline: none; box-shadow: var(--chk-focus); }
   input[type='checkbox']:disabled, input[type='radio']:disabled { opacity: 0.45; cursor: not-allowed; }
 }
+
+/* a long button label wraps on a narrow screen instead of pushing the page sideways */
+.btn { max-width: 100%; }
+@media (max-width: 640px) { .btn { white-space: normal; text-align: center; } }

@@ -74,8 +74,8 @@ export function ImagePicker({ hash, onChange, seed, kind = 'album' }: { hash: st
   return (
     <div className="flex items-center gap-4">
       <Cover hash={hash} seed={seed} kind={kind} className="w-24 shrink-0" />
-      <div className="space-y-2">
-        <div className="flex gap-2">
+      <div className="min-w-0 space-y-2">
+        <div className="flex flex-wrap gap-2">
           <button type="button" className="btn" disabled={busy} onClick={() => input.current?.click()}><ImagePlus size={15} />{busy ? 'Saving…' : hash ? 'Replace' : 'Choose image'}</button>
           {hash && <button type="button" className="btn btn-ghost" onClick={() => onChange(null)}>Remove</button>}
         </div>
