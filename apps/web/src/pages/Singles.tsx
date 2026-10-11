@@ -25,7 +25,7 @@ export function SinglesPage() {
         <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New single</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
-        <input className="input !w-48" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="input !w-48 max-w-full" placeholder="Filter" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="flex" role="group" aria-label="View">
           <button className={cn('btn !rounded-r-none', view === 'grid' && 'btn-accent')} aria-pressed={view === 'grid'} onClick={() => setView('grid')} title="Covers"><LayoutGrid size={15} /></button>
           <button className={cn('btn !rounded-l-none', view === 'list' && 'btn-accent')} aria-pressed={view === 'list'} onClick={() => setView('list')} title="List"><List size={15} /></button></div>

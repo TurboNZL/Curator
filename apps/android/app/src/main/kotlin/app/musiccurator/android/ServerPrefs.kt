@@ -23,5 +23,10 @@ class ServerPrefs(context: Context) {
         get() = p.getLong("lastUpdateCheck", 0L)
         set(v) { p.edit().putLong("lastUpdateCheck", v).apply() }
 
+    /** the equaliser curve (JSON, see EqMap), kept so Android Auto playback has it too */
+    var eq: String
+        get() = p.getString("eq", "") ?: ""
+        set(v) { p.edit().putString("eq", v).apply() }
+
     val configured get() = serverUrl.isNotEmpty()
 }

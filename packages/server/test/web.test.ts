@@ -20,4 +20,16 @@ describe('web manifest', () => {
     expect((await webManifest(dir)).version).not.toBe(m1.version);
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it('answers a missing file with 404 but app routes with the app', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'curator-web-'));
+    writeFileSync(join(dir, 'index.html'), '<html>app</html>');
+    const app = new Hono();
+    serveWeb(app, dir);
+    expect((await app.request('/albums/0190-abc')).status).toBe(200);
+    expect(await (await app.request('/albums/0190-abc')).text()).toContain('app');
+    expect((await app.request('/nothing.json')).status).toBe(404);
+    expect((await app.request('/assets/gone.js')).status).toBe(404);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });

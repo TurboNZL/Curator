@@ -74,7 +74,7 @@ Music Curator is a **personal music library for one person** who owns their musi
 
 ## 6. What the legacy app does (feature inventory)
 
-The legacy app (still at the repo root until ported then deleted) is the *specification by example*. Navigation: sidebar "CURATOR": Artists, Albums, Tracks, Playlists; top toolbar: Journal, Cleanup, Stats, Queue, global search ("Search catalog..."), Settings; persistent bottom player.
+The legacy app (generated with Dyad; it was at the repo root until it was deleted after the port, and is in the git history) was the *specification by example*. Navigation: sidebar "CURATOR": Artists, Albums, Tracks, Playlists; top toolbar: Journal, Cleanup, Stats, Queue, global search ("Search catalog..."), Settings; persistent bottom player.
 
 - **Journal (home, `/`)**: "Curation Journal" timeline entries (create/delete), a **Rating Distribution** chart, **Edit History**, and **Catalog Health** summary.
 - **Artists / Artist detail**: grid of artists; detail has image, **Discography**, **Top Rated Tracks**, an "all tracks" modal, **Relational Bios**, edit/create modals.
@@ -166,7 +166,7 @@ Details and verification are in `CLAUDE.md`. Summary: 444 tracks / 33 albums / 3
 6. **Don't re-ask decided questions** (decisions table in `CLAUDE.md`). Do ask when a genuinely new fork appears that changes direction, and batch the questions.
 7. **Prefer deleting to accumulating.** The legacy app is a spec, not a base: port behaviour, not code. Once a feature is ported and verified against the legacy behaviour, delete the old file. End state: the legacy root app is gone.
 8. **Safety basics on the server:** no path built from client input, validate with schemas at the boundary, constant-time token compare, cap upload sizes, never pass user strings to a shell (yt-dlp is spawned with an argument array and `--` before the URL).
-9. **Dependencies:** pnpm workspace with `minimumReleaseAge: 1440`. The root install fails offline because of the legacy `youtube-dl-exec` postinstall; install with `--ignore-scripts --filter ...` until the legacy app is removed.
+9. **Dependencies:** pnpm workspace with `minimumReleaseAge: 1440`. The legacy app, whose `youtube-dl-exec` postinstall failed offline, is removed; `--ignore-scripts --filter ...` is still the documented install.
 
 ## 10. Roadmap with "done" criteria
 

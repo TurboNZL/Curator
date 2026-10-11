@@ -6,7 +6,7 @@ Your answers become an Elo score for every track, shown as a 0–10 rating. Play
 
 It runs as a **web app** (desktop and phone browsers, installable as a PWA), as a **desktop app** (Electron, with the server built in) and as an **Android app** (with Android Auto), all talking to one small **server** that can live on a Raspberry Pi with an external drive. Each client is local first: it holds the whole library itself and syncs when a server is reachable.
 
-> The app that still lives in the repo root (`src/`, `server/`) is the **legacy** version (generated with Dyad). It stays until the new one is confirmed to do everything; everything described here is the new code in `packages/` and `apps/`. The legacy look is kept as the *Toolbar* UI style and *Zinc* colours (see [Appearance](#appearance)).
+> The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Toolbar* UI style and *Zinc* colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
 
 ## What it does
 
@@ -56,7 +56,7 @@ How it works: a colour theme is a set of CSS variables written onto `<html>` by 
 You need **Node 22.13+** and **pnpm** ([docs/TESTING.md](docs/TESTING.md) has nvm instructions). From the repo root:
 
 ```bash
-# once, and after each update (--ignore-scripts: the legacy app's youtube-dl-exec postinstall fails otherwise)
+# once, and after each update (--ignore-scripts skips dependency install scripts; none are needed to run the server or build the web client)
 pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web
 pnpm --filter @curator/web build
 

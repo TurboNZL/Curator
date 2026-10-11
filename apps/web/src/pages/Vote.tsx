@@ -1,3 +1,4 @@
+import { haptic } from '../lib/haptics.ts';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, ExternalLink, Loader2, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
 import type { VoteData } from '@curator/core';
@@ -135,6 +136,7 @@ export function VotePage() {
     if (!pair || picked) return;
     const data: VoteData = { trackAId: pair[0], trackBId: pair[1], winnerId, isEqual, timestamp: Date.now() };
     put('votes', data);
+    haptic('confirm');
     setFlash(isEqual ? 'Marked equal' : `Voted for ${lib.trackById.get(winnerId!)?.title}`);
     setTimeout(() => setFlash(null), 1500);
     lastArrow.current = null;
