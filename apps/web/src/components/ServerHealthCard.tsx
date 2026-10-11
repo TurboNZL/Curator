@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, Copy, HardDrive, KeyRound } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Copy, HardDrive, KeyRound, Smartphone } from 'lucide-react';
+import { decodePairCode, encodePairCode, pairLink } from '../lib/pairCode.ts';
+import { isAndroidApp } from '../lib/native.ts';
+import { desktop } from '../lib/settings.ts';
 import { api, useStore } from '../lib/store.ts';
 import type { ServerHealth, StorageInfo } from '../lib/api.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
@@ -115,6 +118,7 @@ function StorageLocations() {
 /** Copy the tokens that connect things to this server: the one apps use, and the Cloudflare tunnel token when the server has one. */
 export function ConnectionTokens() {
   const token = useStore((s) => s.settings.token);
+  const saved = useStore((s) => s.settings.tunnelToken);
   const [msg, setMsg] = useState<string | null>(null);
   const copy = async (text: string, what: string) => {
     try { await navigator.clipboard.writeText(text); setMsg(`${what} copied.`); }
@@ -125,6 +129,7 @@ export function ConnectionTokens() {
     try {
       const r = await api().tunnelToken();
       if (r.found && r.token) await copy(r.token, 'Tunnel token');
+      else if (saved) await copy(saved, 'Tunnel token');
       else setMsg('No tunnel token found on the server. Put it in <data folder>/tunnel-token, or set CURATOR_TUNNEL_TOKEN (the cloudflared service file is read automatically when the server may read it).');
     } catch (e) { setMsg((e as Error).message); }
   };
@@ -133,6 +138,65 @@ export function ConnectionTokens() {
       <button className="btn" disabled={!token} onClick={() => void copy(token, 'Access token')}><KeyRound size={15} /><Copy size={13} className="-ml-1" />Copy access token</button>
       <button className="btn" disabled={!token} onClick={() => void tunnel()} title="The Cloudflare Tunnel token this server was set up with"><Activity size={15} />Copy tunnel token</button>
       {msg && <span className="text-muted" role="status">{msg}</span>}
+    </div>
+  );
+}
+
+/** Pair another device: make a code (or link) from this device's connection, or enter a code made on another device. */
+export function PairDevice() {
+  const settings = useStore((s) => s.settings);
+  const updateSettings = useStore((s) => s.updateSettings);
+  const [open, setOpen] = useState(false);
+  const [addr, setAddr] = useState(settings.serverUrl || (typeof location !== 'undefined' && /^https?:/.test(location.origin) && !isAndroidApp() && !desktop() ? location.origin : ''));
+  const [withTunnel, setWithTunnel] = useState(false);
+  const [code, setCode] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  const [entered, setEntered] = useState('');
+  const say = (m: string) => { setNote(m); setTimeout(() => setNote(null), 6000); };
+
+  const make = async () => {
+    let tunnel: string | undefined;
+    if (withTunnel) {
+      try { const r = await api().tunnelToken(); tunnel = (r.found && r.token) || settings.tunnelToken || undefined; } catch { tunnel = settings.tunnelToken || undefined; }
+      if (!tunnel) say('No tunnel token was found on the server, so the code has none.');
+    }
+    setCode(encodePairCode({ url: addr.trim(), token: settings.token, tunnel }));
+  };
+  const copy = async (text: string, what: string) => {
+    try { await navigator.clipboard.writeText(text); say(`${what} copied.`); } catch { say('Your browser blocked copying here (it needs https or localhost). Select it by hand instead.'); }
+  };
+  const use = () => {
+    const p = decodePairCode(entered);
+    if (!p) { say('That is not a pairing code. It starts with CUR1-.'); return; }
+    if (!confirm(`Connect this device to ${p.url || 'this address'}?`)) return;
+    updateSettings({ serverUrl: p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}) });
+    setEntered(''); say('Connected. Syncing…');
+  };
+
+  return (
+    <div className="space-y-2 text-sm">
+      <button className="btn" aria-expanded={open} onClick={() => setOpen((o) => !o)}><Smartphone size={15} />Pair a device</button>
+      {open && (
+        <div className="space-y-4 rounded-theme border border-line p-3">
+          <div className="space-y-2">
+            <div className="font-medium">Send this connection to another device</div>
+            <label className="block space-y-1">Address the other device should use<input className="input" placeholder="https://music.example.com" value={addr} onChange={(e) => { setAddr(e.target.value); setCode(''); }} /></label>
+            <p className="text-xs text-muted">Use the address that works from where that device will be (the tunnel address for a phone on mobile data, not a home-network one).</p>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={withTunnel} onChange={(e) => { setWithTunnel(e.target.checked); setCode(''); }} />Also include the Cloudflare tunnel token</label>
+            <button className="btn btn-accent" disabled={!settings.token} onClick={() => void make()}>Make a code</button>
+            {code && <div className="space-y-2">
+              <textarea readOnly className="input font-mono text-xs" rows={3} value={code} onFocus={(e) => e.currentTarget.select()} />
+              <div className="flex flex-wrap gap-2"><button className="btn" onClick={() => void copy(code, 'Code')}>Copy code</button>
+                {addr.trim() && <button className="btn" onClick={() => void copy(pairLink(addr.trim(), code), 'Link')}>Copy link</button>}</div>
+              <p className="text-xs text-warn">The code contains your access token: whoever has it can read and change your library. Send it only to yourself, and replace the token on the server if it leaks.</p>
+            </div>}
+          </div>
+          <div className="space-y-2 border-t border-line pt-3">
+            <div className="font-medium">Use a code from another device</div>
+            <div className="flex gap-2"><input className="input font-mono" placeholder="CUR1-…" value={entered} onChange={(e) => setEntered(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && use()} /><button className="btn shrink-0" disabled={!entered.trim()} onClick={use}>Connect</button></div>
+          </div>
+        </div>)}
+      {note && <div className="text-muted" role="status">{note}</div>}
     </div>
   );
 }

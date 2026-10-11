@@ -6,7 +6,8 @@ import { ERA_SORTS, eraRows, sortEras } from '../lib/listSort.ts';
 import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams } from 'react-router-dom';
-import { Layers, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
+import { BarChart3, Layers, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -84,6 +85,7 @@ export function EraPage() {
             <button className="btn btn-accent" disabled={!ids.length} onClick={() => play(ids[0], ids, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!ids.length} onClick={() => { const s = shuffleWithRules(ids, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
             <Link className="btn btn-ghost" to={`/tracks?era=${era.id}`}><Layers size={15} />Tracks in this era</Link>
+            <Link className="btn btn-ghost" to={statsPath('era', era.id)}><BarChart3 size={15} />Stats</Link>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'era', id: era.id })}><Pencil size={15} />Edit</button></div></div>
       </div>
       {albums.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Albums</h2>

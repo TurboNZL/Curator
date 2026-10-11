@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { canPlay } from '../lib/spotifyPlayer.ts';
-import { Disc, Download, FileAudio, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Shuffle, User, Layers, Search } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
+import { BarChart3, Disc, Download, FileAudio, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Shuffle, User, Layers, Search } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary, type Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -59,6 +60,7 @@ export function useAlbumMenuItems() {
   return (album: Album, ids: string[] = album.trackIds): MenuItem[] => [
     ...actions(ids, { type: 'album', id: album.id }),
     { separator: true },
+    { label: 'Stats page', icon: <BarChart3 size={15} />, to: statsPath('album', album.id) },
     { label: 'Edit album…', icon: <Pencil size={15} />, run: () => edit({ kind: 'album', id: album.id }) },
     { label: 'Add to an album playlist…', icon: <ListPlus size={15} />, run: () => edit({ kind: 'add-album-to-playlist', id: album.id }) },
     { label: 'Add audio files…', icon: <FileAudio size={15} />, run: () => edit({ kind: 'upload', id: album.id }) },
@@ -82,6 +84,7 @@ export function useArtistMenuItems() {
     return [
       ...actions(ids, { type: 'search', id: null }),
       { separator: true },
+      { label: 'Stats page', icon: <BarChart3 size={15} />, to: statsPath('artist', artistId) },
       { label: 'Edit artist…', icon: <Pencil size={15} />, run: () => edit({ kind: 'artist', id: artistId }) },
     ];
   };

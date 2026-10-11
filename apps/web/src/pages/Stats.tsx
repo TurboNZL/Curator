@@ -7,7 +7,7 @@ import { buildListens, type Listen } from '../lib/listens.ts';
 import { computeListenStats, dayKey, rangeFor, RANGES, type RangeId, type ListenStats, type TopRow } from '../lib/listenStats.ts';
 import { trackPath } from '../lib/trackPath.ts';
 import { cn } from '../lib/cn.ts';
-import { Area, Bars, Calendar, Donut, fmtHours, Heatgrid, Kpi, RankList } from '../components/charts.tsx';
+import { Area, Bars, Calendar, Donut, fmtHours, Heatgrid, Kpi, Panel, RankList } from '../components/charts.tsx';
 import { ExportHistoryDialog, ImportHistoryDialog } from '../components/HistoryTools.tsx';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -15,9 +15,6 @@ const HOURS = Array.from({ length: 24 }, (_, h) => `${h}`);
 const TABS = [{ id: 'overview', label: 'Overview' }, { id: 'top', label: 'Top' }, { id: 'activity', label: 'Activity' }, { id: 'history', label: 'History' }, { id: 'library', label: 'Library' }] as const;
 type Tab = (typeof TABS)[number]['id'];
 
-function Panel({ title, children, right, className }: { title: string; children: React.ReactNode; right?: React.ReactNode; className?: string }) {
-  return <section className={cn('card min-w-0 space-y-3 p-5', className)}><div className="flex items-center justify-between gap-2"><h2 className="font-semibold">{title}</h2>{right}</div>{children}</section>;
-}
 
 function Overview({ s, lib }: { s: ListenStats; lib: ReturnType<typeof useLibrary> }) {
   const months = s.byMonth.slice(-24);

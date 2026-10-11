@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
-import { MoreHorizontal, Pencil, Play, Shuffle } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
+import { BarChart3, MoreHorizontal, Pencil, Play, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { usePlayer } from '../lib/player.ts';
 import { Link, useParams } from 'react-router-dom';
@@ -53,6 +54,7 @@ export function ArtistPage() {
           <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={16} />Shuffle</button>
+            <Link className="btn btn-ghost" to={statsPath('artist', artist.id)}><BarChart3 size={15} />Stats</Link>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'artist', id: artist.id })}><Pencil size={15} />Edit</button>
             <button data-menu-trigger className="btn btn-ghost !p-2" aria-label="More actions" aria-haspopup="menu" onClick={(e) => menu.toggle(e.currentTarget, 'artist', artistItems(artist.id), `Actions for ${artist.name}`)}><MoreHorizontal size={16} /></button></div></div>
       </div>

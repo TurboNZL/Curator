@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AlbumData, ArtistData, Credit, EraData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
 import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
-import { useEditor } from '../lib/editor.ts';
+import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
 import { ImportIntoAlbumDialog } from './ImportIntoAlbumDialog.tsx';
 import { SpotifyImportDialog } from './SpotifyImportDialog.tsx';
@@ -465,9 +465,8 @@ function EraDialog({ eraId, onClose }: { eraId?: string; onClose: () => void }) 
   );
 }
 
-export function EditorHost() {
-  const { target, close } = useEditor();
-  if (!target) return null;
+/** The editor or dialog for a target. The stats pages draw the same editors in the page (see InlineModals). */
+export function EditorFor({ target, close }: { target: EditTarget; close: () => void }) {
   const key = `${target.kind}:${target.id}`;
   if (target.kind === 'track-details') return <TrackDetails key={key} id={target.id} onClose={close} />;
   if (target.kind === 'release') return <ReleaseDialog key={key} releaseId={target.id} onClose={close} />;
@@ -494,4 +493,9 @@ export function EditorHost() {
   if (target.kind === 'track') return <TrackEditor key={key} id={target.id} onClose={close} />;
   if (target.kind === 'album') return <AlbumEditor key={key} id={target.id} onClose={close} />;
   return <ArtistEditor key={key} id={target.id} onClose={close} />;
+}
+
+export function EditorHost() {
+  const { target, close } = useEditor();
+  return target ? <EditorFor target={target} close={close} /> : null;
 }

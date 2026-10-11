@@ -12,6 +12,7 @@ import { startPresence } from './lib/discordPresence.ts';
 import { useStore } from './lib/store.ts';
 import { startRipple } from './lib/ripple.ts';
 import { startHaptics } from './lib/haptics.ts';
+import { pairFromSearch } from './lib/pairCode.ts';
 import { syncNativeServer } from './lib/native.ts';
 
 // before the first paint, so a saved theme does not flash the default one
@@ -27,6 +28,15 @@ startPresence();
   const push = (s: { serverUrl: string; token: string }) => { const k = `${s.serverUrl}|${s.token}`; if (k !== last) { last = k; syncNativeServer(s.serverUrl, s.token); } };
   push(useStore.getState().settings);
   useStore.subscribe((st) => push(st.settings));
+}
+
+// a pairing link (/?pair=CUR1-...) connects this device to a server, after asking
+{
+  const p = pairFromSearch(location.search);
+  if (new URLSearchParams(location.search).has('pair')) {
+    if (p && confirm(`Connect this device to ${p.url || location.origin}?`)) useStore.getState().updateSettings({ serverUrl: p.url === location.origin ? '' : p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}) });
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

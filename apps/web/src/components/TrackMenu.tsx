@@ -1,4 +1,5 @@
-import { Info, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Minus, Disc3, StickyNote, User } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
+import { BarChart3, Info, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Minus, Disc3, StickyNote, User } from 'lucide-react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import type { Track } from '../lib/derive.ts';
 import type { EditTarget } from '../lib/editor.ts';
@@ -29,7 +30,8 @@ export function useTrackMenuItems() {
       ...t.leads.map((l) => ({ label: `Go to ${l.name}`, icon: <User size={15} />, to: `/artists/${l.id}` })),
       ...(t.albumId ? [{ label: 'Go to album', icon: <Disc3 size={15} />, to: trackPath(t) }] : []),
       { label: 'Write a note…', icon: <StickyNote size={15} />, run: open({ kind: 'new-note', id: `track:${t.id}` }) },
-      { label: 'Details', icon: <Info size={15} />, run: open({ kind: 'track-details', id: t.id }) },
+      { label: 'Info', icon: <Info size={15} />, run: open({ kind: 'track-details', id: t.id }) },
+      { label: 'Stats page', icon: <BarChart3 size={15} />, to: statsPath('track', t.id) },
       { label: 'Edit…', icon: <Pencil size={15} />, run: open({ kind: 'track', id: t.id }) },
     ];
   };

@@ -140,3 +140,8 @@ export function RankList({ rows, unit, onPick }: { rows: { key: string; label: s
 export function Kpi({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon?: React.ReactNode }) {
   return <div className="card p-4"><div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted">{icon}{label}</div><div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>{sub && <div className="text-xs text-muted">{sub}</div>}</div>;
 }
+
+/** A titled card for a chart or list. */
+export function Panel({ title, children, right, className }: { title: string; children: React.ReactNode; right?: React.ReactNode; className?: string }) {
+  return <section className={cn('card min-w-0 space-y-3 p-5', className)}><div className="flex items-center justify-between gap-2"><h2 className="font-semibold">{title}</h2>{right}</div>{children}</section>;
+}
