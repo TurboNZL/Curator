@@ -1,15 +1,16 @@
-import { FilterBar } from '../components/FilterBar.tsx';
+import { ListToolbar } from '../components/ListToolbar.tsx';
+import { SingleGrid } from '../components/SingleCard.tsx';
+import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { makeChip, matchesAll, splitTyped, trackSubject, type Chip, type FilterKey } from '../lib/filters.ts';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../lib/derive.ts';
-import { ArrowDown, ArrowUp, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
+import { FileAudio, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
-import { defaultDir, sortTracks, type SortDir, type SortKey } from '../lib/trackSort.ts';
-import { cn } from '../lib/cn.ts';
+import { TRACK_SORTS, sortTracks } from '../lib/trackSort.ts';
 import { TrackTable } from '../components/TrackTable.tsx';
 
 const PAGE = 100;
@@ -21,8 +22,7 @@ export function TracksPage() {
   const [params] = useSearchParams();
   // /tracks?track=<id> (Go to track, for a single) starts with its title typed in, so it is the one on screen
   const [q, setQ] = useState(() => { const t = params.get('track'); return (t && lib.trackById.get(t)?.title) || ''; });
-  const [sort, setSort] = useState<SortKey>('rating');
-  const [dir, setDir] = useState<SortDir>('desc');
+  const page = usePageState('tracks', TRACK_SORTS, { sort: 'rating', view: 'list' });
   // a link such as /tracks?era=<id> or ?artist=<id> starts with that filter already on
   const [chips, setChips] = useState<Chip[]>(() => (['artist', 'era', 'album', 'genre'] as FilterKey[]).flatMap((k) => {
     const v = params.get(k);
@@ -33,14 +33,13 @@ export function TracksPage() {
   const [shown, setShown] = useState(PAGE);
 
   const tracks = useMemo(() => {
-    const needle = splitTyped(q) ? '' : q.toLowerCase(); // while a `key:` is being typed it is not a search word
+    const needle = splitTyped(q, 'tracks') ? '' : q.toLowerCase(); // while a `key:` is being typed it is not a search word
     const f = lib.tracks.filter((t) =>
       (!needle || `${t.title} ${t.artistName} ${t.albumTitle ?? ''}`.toLowerCase().includes(needle)) && matchesAll(chips, trackSubject(lib, t)));
-    return sortTracks(f, sort, dir);
-  }, [lib, q, sort, dir, chips]);
+    return sortTracks(f, page.sort, page.dir);
+  }, [lib, q, page.sort, page.dir, chips]);
 
   const playable = tracks.filter(canPlay).map((t) => t.id);
-  const pick = (k: SortKey) => { if (k === sort) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(k); setDir(defaultDir(k)); } };
 
   return (
     <div>
@@ -51,25 +50,12 @@ export function TracksPage() {
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New track</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
       </div>
-      <div className="mb-4"><FilterBar scope="tracks" chips={chips} onChips={(c) => { setChips(c); setShown(PAGE); }} text={q} onText={(t) => { setQ(t); setShown(PAGE); }} /></div>
-      <div className="card overflow-hidden">
-        <div className="flex flex-wrap items-center gap-1 border-b border-line/60 px-3 py-1.5 text-xs text-muted" role="toolbar" aria-label="Sort by">
-          <span className="mr-1">Sort</span>
-          {([['title', 'Title'], ['artist', 'Artist'], ['album', 'Album'], ['released', 'Released'], ['memories', 'Memories'], ['comparisons', 'Compared']] as const).map(([k, label]) => <SortButton key={k} k={k} label={label} sort={sort} dir={dir} onPick={pick} />)}
-          <span className="ml-auto"><SortButton k="rating" label="Rating" sort={sort} dir={dir} onPick={pick} /></span>
-        </div>
-        <TrackTable tracks={tracks.slice(0, shown)} source="search" numbered />
-      </div>
+      <ListToolbar scope="tracks" chips={chips} onChips={(c) => { setChips(c); setShown(PAGE); }} text={q} onText={(t) => { setQ(t); setShown(PAGE); }}
+        sorts={TRACK_SORTS} sort={page.sort} dir={page.dir} onSort={(k) => { page.setSort(k); setShown(PAGE); }} onFlip={page.flip} view={page.view} onView={page.setView} />
+      {page.view === 'grid'
+        ? <SingleGrid tracks={tracks.slice(0, shown)} />
+        : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} source="search" numbered /></div>}
       {shown < tracks.length && <div className="mt-4 text-center"><button className="btn" onClick={() => setShown(shown + PAGE)}>Show more ({tracks.length - shown} left)</button></div>}
     </div>
-  );
-}
-
-function SortButton({ k, label, sort, dir, onPick }: { k: SortKey; label: string; sort: SortKey; dir: SortDir; onPick: (k: SortKey) => void }) {
-  const on = sort === k;
-  return (
-    <button className={cn('inline-flex items-center gap-1 rounded-theme px-2 py-1 hover:text-fg', on && 'bg-raised font-semibold text-fg')} aria-pressed={on} onClick={() => onPick(k)}>
-      {label}{on && (dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
-    </button>
   );
 }

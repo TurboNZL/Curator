@@ -20,7 +20,7 @@ import { CoverPool } from './CoverPool.tsx';
 import { saveRules } from '../lib/profile.ts';
 import { eraPatches } from '../lib/eraOps.ts';
 import { AudioPicker, CreditsEditor, EntityPicker, EraPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
-import { AddToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
+import { AddToPlaylistDialog, AddAlbumToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
 import { AddToAlbumDialog, ReleaseChoicePicker } from './AddToAlbum.tsx';
 
 /** Make sure every genre name used exists as a genre record, so it shows up in filters and suggestions. */
@@ -443,6 +443,7 @@ export function EditorHost() {
   if (target.kind === 'new-playlist') return <PlaylistDialog key="new-playlist" onClose={close} />;
   if (target.kind === 'playlist') return <PlaylistDialog key={key} playlistId={target.id} onClose={close} />;
   if (target.kind === 'add-to-playlist') return <AddToPlaylistDialog key={key} trackId={target.id} onClose={close} />;
+  if (target.kind === 'add-album-to-playlist') return <AddAlbumToPlaylistDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'new-track') return <NewTrackDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'add-to-album') return <AddToAlbumDialog key={key} trackId={target.id} onClose={close} />;
   if (target.kind === 'new-era') return <EraDialog key="new-era" onClose={close} />;

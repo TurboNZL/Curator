@@ -14,16 +14,21 @@ export interface Chip {
   label: string;
 }
 
-export const FILTER_DOCS: Record<FilterKey, { hint: string; example: string; tracksOnly?: boolean }> = {
-  has: { hint: 'Has audio, a cover, memories or a rating', example: 'has: audio' },
-  artist: { hint: 'Credited artist', example: 'artist: Kendrick Lamar' },
-  album: { hint: 'On an album', example: 'album: GNX', tracksOnly: true },
-  era: { hint: 'In an era', example: 'era: Summer 2024' },
-  genre: { hint: 'Has a genre', example: 'genre: Hip hop' },
-  before: { hint: 'Released before a year or date', example: 'before: 2019-06' },
-  after: { hint: 'Released after a year or date', example: 'after: 2020' },
-  rating: { hint: 'Rating, like >7 or <4 or 8', example: 'rating: >7', tracksOnly: true },
+/** The lists that have this search box. Singles are tracks, so they filter like tracks. */
+export type FilterScope = 'tracks' | 'albums' | 'artists' | 'eras' | 'singles';
+const ALL: FilterScope[] = ['tracks', 'albums', 'artists', 'eras', 'singles'];
+
+export const FILTER_DOCS: Record<FilterKey, { hint: string; example: string; scopes: FilterScope[] }> = {
+  has: { hint: 'Has audio, a cover, memories or a rating', example: 'has: audio', scopes: ALL },
+  artist: { hint: 'Credited artist', example: 'artist: Kendrick Lamar', scopes: ['tracks', 'albums', 'eras', 'singles'] },
+  album: { hint: 'On an album', example: 'album: GNX', scopes: ['tracks', 'artists', 'eras'] },
+  era: { hint: 'In an era', example: 'era: Summer 2024', scopes: ['tracks', 'albums', 'artists', 'singles'] },
+  genre: { hint: 'Has a genre', example: 'genre: Hip hop', scopes: ALL },
+  before: { hint: 'Released before a year or date', example: 'before: 2019-06', scopes: ALL },
+  after: { hint: 'Released after a year or date', example: 'after: 2020', scopes: ALL },
+  rating: { hint: 'Rating, like >7 or <4 or 8', example: 'rating: >7', scopes: ['tracks', 'albums', 'artists', 'singles'] },
 };
+export const filterKeys = (scope: FilterScope) => (Object.keys(FILTER_DOCS) as FilterKey[]).filter((k) => FILTER_DOCS[k].scopes.includes(scope));
 export const HAS_VALUES = ['audio', 'cover', 'memories', 'rating'] as const;
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -58,10 +63,13 @@ export function ratingTest(text: string): ((r: number) => boolean) | null {
 
 const norm = (s: string) => s.toLowerCase();
 
-/** What a chip is tested against: one track, or one album seen as its tracks. */
-interface Subject {
-  artistIds: string[]; artistNames: string; albumId: string | null; albumTitle: string; eraIds: string[]; eraNames: string; genres: string[];
-  date: string | null; hasAudio: boolean; hasCover: boolean; memories: number; rating: number | null;
+/**
+ * What a chip is tested against: one track, or an album, artist or era seen through the tracks it holds. An artist or era can
+ * span several albums and dates, so those are lists (`before:` / `after:` match when any of them does).
+ */
+export interface Subject {
+  artistIds: string[]; artistNames: string; albumIds: string[]; albumTitles: string; eraIds: string[]; eraNames: string; genres: string[];
+  dates: (string | null)[]; hasAudio: boolean; hasCover: boolean; memories: number; rating: number | null;
 }
 
 function chipMatches(c: Chip, s: Subject): boolean {
@@ -72,22 +80,27 @@ function chipMatches(c: Chip, s: Subject): boolean {
     case 'has':
       return c.value === 'audio' ? s.hasAudio : c.value === 'cover' ? s.hasCover : c.value === 'memories' ? s.memories > 0 : c.value === 'rating' ? s.rating !== null : true;
     case 'artist': return byId ? s.artistIds.includes(c.value) : norm(s.artistNames).includes(v);
-    case 'album': return byId ? s.albumId === c.value : norm(s.albumTitle).includes(v);
+    case 'album': return byId ? s.albumIds.includes(c.value) : norm(s.albumTitles).includes(v);
     case 'era': return byId ? s.eraIds.includes(c.value) : norm(s.eraNames).includes(v);
     case 'genre': return s.genres.some((g) => norm(g) === v || norm(g).includes(v));
-    case 'before': { const r = dateRange(c.value), d = released(s.date); return !!r && !!d && d.to < r.from; }
-    case 'after': { const r = dateRange(c.value), d = released(s.date); return !!r && !!d && d.from > r.to; }
+    case 'before': { const r = dateRange(c.value); return !!r && s.dates.some((x) => { const d = released(x); return !!d && d.to < r.from; }); }
+    case 'after': { const r = dateRange(c.value); return !!r && s.dates.some((x) => { const d = released(x); return !!d && d.from > r.to; }); }
     case 'rating': { const test = ratingTest(c.value); return !!test && s.rating !== null && test(s.rating); }
   }
 }
 
 const eraNames = (lib: Library, ids: string[]) => ids.map((e) => lib.eraById.get(e)?.name ?? '').join(' ');
 
+const namesOfArtists = (lib: Library, ids: string[]) => ids.map((id) => lib.artistById.get(id)?.name ?? '').join(' ');
+const sum = (xs: number[]) => xs.reduce((n, x) => n + x, 0);
+/** the mean of the ratings that exist, else null */
+const meanRating = (tracks: Track[]) => { const r = tracks.filter((t) => t.effectiveRating > 0.001).map((t) => t.effectiveRating); return r.length ? sum(r) / r.length : null; };
+
 export function trackSubject(lib: Library, t: Track): Subject {
   const artistIds = [...new Set([t.artistId, ...t.leads.map((l) => l.id), ...t.credits.map((c) => c.artistId)])];
   return {
-    artistIds, artistNames: artistIds.map((id) => lib.artistById.get(id)?.name ?? '').join(' '), albumId: t.albumId, albumTitle: t.albumTitle ?? '',
-    eraIds: t.eraIds, eraNames: eraNames(lib, t.eraIds), genres: t.allGenres, date: t.releaseDate, hasAudio: !!t.file, hasCover: !!t.cover,
+    artistIds, artistNames: namesOfArtists(lib, artistIds), albumIds: t.albumId ? [t.albumId] : [], albumTitles: t.albumTitle ?? '',
+    eraIds: t.eraIds, eraNames: eraNames(lib, t.eraIds), genres: t.allGenres, dates: [t.releaseDate], hasAudio: !!t.file, hasCover: !!t.cover,
     memories: t.memories ?? 0, rating: t.effectiveRating > 0.001 ? t.effectiveRating : null,
   };
 }
@@ -96,8 +109,32 @@ export function albumSubject(lib: Library, a: Library['albums'][number]): Subjec
   const tracks = a.trackIds.map((id) => lib.trackById.get(id)).filter((t): t is Track => !!t);
   const artistIds = [...new Set([...a.leads.map((l) => l.id), ...a.credits.map((c) => c.artistId), ...tracks.flatMap((t) => t.credits.map((c) => c.artistId))])];
   return {
-    artistIds, artistNames: artistIds.map((id) => lib.artistById.get(id)?.name ?? '').join(' '), albumId: a.id, albumTitle: a.title, eraIds: a.eraIds, eraNames: eraNames(lib, a.eraIds),
-    genres: a.genres, date: a.releaseDate, hasAudio: tracks.some((t) => t.file), hasCover: !!a.cover, memories: tracks.reduce((n, t) => n + (t.memories ?? 0), 0), rating: a.rating,
+    artistIds, artistNames: namesOfArtists(lib, artistIds), albumIds: [a.id], albumTitles: a.title, eraIds: a.eraIds, eraNames: eraNames(lib, a.eraIds),
+    genres: a.genres, dates: [a.releaseDate], hasAudio: tracks.some((t) => t.file), hasCover: !!a.cover, memories: sum(tracks.map((t) => t.memories ?? 0)), rating: a.rating,
+  };
+}
+
+/** An artist through everything they are a lead on (their tracks, and the albums those are on). */
+export function artistSubject(lib: Library, artistId: string): Subject {
+  const tracks = lib.tracks.filter((t) => t.leads.some((l) => l.id === artistId));
+  const albums = [...new Set(tracks.flatMap((t) => (t.albumId ? [t.albumId] : [])))];
+  return {
+    artistIds: [artistId], artistNames: lib.artistById.get(artistId)?.name ?? '', albumIds: albums, albumTitles: albums.map((id) => lib.albumById.get(id)?.title ?? '').join(' '),
+    eraIds: [...new Set(tracks.flatMap((t) => t.eraIds))], eraNames: eraNames(lib, [...new Set(tracks.flatMap((t) => t.eraIds))]),
+    genres: [...new Set(tracks.flatMap((t) => t.allGenres))], dates: tracks.map((t) => t.releaseDate), hasAudio: tracks.some((t) => t.file),
+    hasCover: !!lib.artistById.get(artistId)?.image, memories: sum(tracks.map((t) => t.memories ?? 0)), rating: meanRating(tracks),
+  };
+}
+
+/** An era through its albums' tracks and its singles. */
+export function eraSubject(lib: Library, e: Library['eras'][number]): Subject {
+  const albums = e.albumIds.flatMap((id) => lib.albumById.get(id) ?? []);
+  const tracks = [...albums.flatMap((a) => a.trackIds.flatMap((id) => lib.trackById.get(id) ?? [])), ...e.trackIds.flatMap((id) => lib.trackById.get(id) ?? [])];
+  const artistIds = [...new Set(tracks.flatMap((t) => t.leads.map((l) => l.id)))];
+  return {
+    artistIds, artistNames: namesOfArtists(lib, artistIds), albumIds: albums.map((a) => a.id), albumTitles: albums.map((a) => a.title).join(' '), eraIds: [e.id], eraNames: e.name,
+    genres: [...new Set(tracks.flatMap((t) => t.allGenres))], dates: [...albums.map((a) => a.releaseDate), ...e.trackIds.map((id) => lib.trackById.get(id)?.releaseDate ?? null)],
+    hasAudio: tracks.some((t) => t.file), hasCover: !!(e.cover || albums.some((a) => a.cover)), memories: sum(tracks.map((t) => t.memories ?? 0)), rating: meanRating(tracks),
   };
 }
 
@@ -127,7 +164,9 @@ export function makeChip(lib: Library, key: FilterKey, typed: string): Chip | nu
 }
 
 /** "artist: Kendrick" typed as one string: the key and the rest, or null when it is just words. */
-export function splitTyped(text: string): { key: FilterKey; rest: string } | null {
+export function splitTyped(text: string, scope?: FilterScope): { key: FilterKey; rest: string } | null {
   const m = /^\s*(has|artist|album|era|genre|before|after|rating)\s*:\s*(.*)$/i.exec(text);
-  return m ? { key: m[1].toLowerCase() as FilterKey, rest: m[2] } : null;
+  if (!m) return null;
+  const key = m[1].toLowerCase() as FilterKey;
+  return !scope || FILTER_DOCS[key].scopes.includes(scope) ? { key, rest: m[2] } : null;
 }

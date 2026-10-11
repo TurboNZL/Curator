@@ -26,3 +26,9 @@ export function sortTracks(tracks: Track[], key: SortKey, dir: SortDir): Track[]
     return sign * asc[key](a, b);
   });
 }
+
+export const TRACK_SORTS: { value: SortKey; label: string; dir: SortDir }[] = [
+  { value: 'rating', label: 'Rating', dir: 'desc' }, { value: 'title', label: 'Title', dir: 'asc' }, { value: 'artist', label: 'Artist', dir: 'asc' },
+  { value: 'album', label: 'Album', dir: 'asc' }, { value: 'released', label: 'Release date', dir: 'desc' }, { value: 'memories', label: 'Memories', dir: 'desc' },
+  { value: 'comparisons', label: 'Times compared', dir: 'desc' },
+];
