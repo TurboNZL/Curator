@@ -25,6 +25,9 @@ Notes:
 - Nothing here has been run on a device. The sandbox that wrote it had no Android SDK, so the first CI run is the first compile of the Android project; expect to fix small things.
 - The desktop self-update was checked up to "disabled in a development run"; real updates need an installed build and a release.
 
+## Icons
+The launcher icon, the website icon, the desktop icon and the title logo all come from one drawing (`scripts/gen-icons.mjs`): a ring, a six-bladed wheel and a hub, which is also the shape of the white notification icon (`ic_stat_curator.xml`). The launcher icon is the same drawing in flat colours on the dark adaptive background.
+
 ## Discord (desktop app)
 
-Settings > Discord. Create an application at discord.com/developers/applications (its name is shown after "Listening to"), optionally add an image named `logo` under Rich Presence > Art Assets, paste the Application ID. Discord's desktop client must be running. Tested against a fake Discord IPC socket and a real Electron; not against real Discord.
+See [DISCORD.md](DISCORD.md) for the full guide (application id, art asset, privacy setting, Flatpak and Snap). Tested against a fake Discord IPC socket and a real Electron; not against real Discord.
