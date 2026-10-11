@@ -25,6 +25,9 @@ loads it from its own offline copy or from the server. Wire types and validators
 `transfer` carries a full snapshot (`queue`, `source`, `history`, `position`, `volume`); the receiver restores it with `player.restore()` and plays. Everything uses the
 normal token (`?token=` on the event stream, because `EventSource` cannot set headers).
 
+## Spotify devices in the same list
+The cast button also lists your **Spotify devices** (Soloist on the Pi, the Spotify app on a phone or PC, a speaker) under a *Spotify devices* heading, when the server is signed in to Spotify (Settings → Library & server → Spotify). They are not Curator devices (they cannot be remote-controlled like one, and Curator's queue and playback rules still decide what comes next): choosing one makes it the place where **Spotify tracks** (tracks with a Spotify link and no audio file) play from this device, and a Spotify track that is already playing moves there. While one plays the player bar says *Playing on <device>*. Details: [SPOTIFY.md](SPOTIFY.md).
+
 ## Limits
 - A browser tab that was never clicked can refuse to start sound ("Press play: this browser blocked starting by itself"). The desktop app has no such rule.
 - The queue of the device being controlled is shown as playing state only; queue editing acts on the device you are on.

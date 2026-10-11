@@ -38,6 +38,8 @@
 }
 
 html, body, #root { height: 100%; }
+/* never scroll sideways: a stray wide element is clipped, not an extra scroll area (the app is vertical; the Android WebView otherwise pans) */
+html, body { overflow-x: hidden; overscroll-behavior-x: none; }
 body { @apply bg-bg text-fg font-sans antialiased; margin: 0; }
 * { scrollbar-width: thin; scrollbar-color: hsl(var(--line)) transparent; }
 
@@ -179,10 +181,70 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 .bt-wf { display: flex; align-items: center; gap: 0.5rem; flex: none; height: 2.25rem; padding: 0 0.5rem 0 0.9rem; -webkit-app-region: drag; user-select: none;
   background: var(--tb-bg, hsl(var(--surface))); color: var(--tb-fg, inherit); border-bottom: 1px solid hsl(var(--line)); font-size: 0.8rem; font-weight: 600; z-index: 60; }
 .bt-wf-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--title-font, inherit); text-shadow: var(--tb-text-shadow, none); }
-.bt-wf-btns { display: flex; gap: 0.25rem; order: var(--wf-order, 1); -webkit-app-region: no-drag; }
-.bt-wf-btn { display: grid; place-items: center; width: 2rem; height: 1.6rem; border-radius: var(--close-r, 6px); background: transparent; color: inherit; }
-.bt-wf-btn:hover { background: var(--close-hover-bg, hsl(var(--hover))); }
-.bt-wf-close:hover { background: #e5484d; color: #fff; }
-[data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"] { --wf-order: -1; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-title { text-align: center; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { width: 1.6rem; border-radius: 9999px; }
+.bt-wf-btns { display: flex; gap: 0.25rem; align-items: center; order: var(--wf-order, 1); -webkit-app-region: no-drag; }
+/* Minimise and maximise hover with a neutral wash of the bar's own text colour; only Close turns red (or what the style's Close looks like). Never the close button's colours on the others. */
+.bt-wf-btn { display: grid; place-items: center; width: 2rem; height: 1.6rem; border-radius: var(--wf-r, 6px); background: var(--wf-bg, transparent); border: var(--wf-border, 0); color: inherit; box-shadow: var(--wf-shadow, none); transition: background 0.12s; }
+.bt-wf-btn:is(:hover, :focus-visible) { background: var(--wf-hover, color-mix(in srgb, currentColor 16%, transparent)); box-shadow: var(--wf-shadow-hover, var(--wf-shadow, none)); }
+.bt-wf-btn:active { background: var(--wf-active, color-mix(in srgb, currentColor 26%, transparent)); }
+.bt-wf-close:is(:hover, :focus-visible) { background: var(--wf-close-hover, #e5484d); color: var(--wf-close-fg, #fff); }
+.bt-wf-close:active { background: var(--wf-close-active, var(--wf-close-hover, #c93b40)); }
+/* neutral Close (the style has no red one) */
+:is([data-ui="gtk4"], [data-ui="material"], [data-ui="holo"], [data-ui="lgux"], [data-ui="winamp"]) .bt-wf-close:is(:hover, :focus-visible) { background: color-mix(in srgb, currentColor 22%, transparent); color: inherit; }
+:is([data-ui="gtk4"], [data-ui="material"], [data-ui="holo"], [data-ui="lgux"]) .bt-wf-btn { --wf-r: 9999px; width: 1.7rem; height: 1.7rem; }
+[data-ui="breeze"] { --wf-close-hover: #da4453; }
+/* Windows 10 and 11: full-height rectangles; Close is the system red */
+:is([data-ui="win10"], [data-ui="win11"]) .bt-wf { padding-right: 0; }
+:is([data-ui="win10"], [data-ui="win11"]) .bt-wf-btns { gap: 0; align-self: stretch; }
+:is([data-ui="win10"], [data-ui="win11"]) .bt-wf-btn { --wf-r: 0; width: 2.9rem; height: auto; align-self: stretch; }
+[data-ui="win11"] .bt-wf-close { --wf-r: 0 0.4rem 0 0; }
+[data-ui="win10"] { --wf-close-hover: #e81123; }
+[data-ui="win11"] { --wf-close-hover: #c42b1c; }
+/* Windows 7: small glossy caption buttons hanging from the top edge; Close is the red one */
+[data-ui="win7"] .bt-wf-btns { gap: 0; align-self: flex-start; margin-right: 0.15rem; }
+[data-ui="win7"] .bt-wf-btn { --wf-r: 0 0 4px 4px; --wf-border: 1px solid rgb(0 0 0 / 0.5); --wf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.55) 0, rgb(255 255 255 / 0.2) 49.9%, rgb(0 0 0 / 0.08) 50%, rgb(255 255 255 / 0.3) 100%);
+  --wf-hover: linear-gradient(to bottom, rgb(190 225 255 / 0.9) 0, rgb(120 190 255 / 0.55) 49.9%, rgb(40 130 230 / 0.6) 50%, rgb(130 210 255 / 0.75) 100%); --wf-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.5); --wf-shadow-hover: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 0 6px rgb(120 200 255 / 0.8);
+  width: 1.7rem; height: 1.2rem; color: #fff; border-top: 0; margin-left: -1px; }
+[data-ui="win7"] .bt-wf-close { width: 2.9rem; --wf-bg: linear-gradient(to bottom, #ecb7ab 0, #e08b7b 49.9%, #c8412a 50%, #de6e42 100%); }
+[data-ui="win7"] .bt-wf-close:is(:hover, :focus-visible) { background: linear-gradient(to bottom, #f6cdc3 0, #ef9f8e 49.9%, #de3a1c 50%, #f77f45 100%); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 0 6px rgb(255 120 90 / 0.9); }
+/* Windows XP: small square buttons with a white edge; Close is red-orange */
+[data-ui="winxp"] .bt-wf-btn { --wf-r: 3px; --wf-border: 1px solid #fff; --wf-bg: linear-gradient(135deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.12)); --wf-hover: linear-gradient(135deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.5)); --wf-shadow-hover: 0 0 4px rgb(255 255 255 / 0.9); width: 1.35rem; height: 1.35rem; color: #fff; }
+[data-ui="winxp"] .bt-wf-close { --wf-bg: linear-gradient(135deg, #e8a08a, #d4452a 55%, #b3290f); }
+[data-ui="winxp"] .bt-wf-close:is(:hover, :focus-visible) { background: linear-gradient(135deg, #f0b09a, #e4553a 55%, #c3392f); }
+/* Windows 98: raised grey squares with black glyphs; they press in */
+[data-ui="win98"] .bt-wf-btn { --wf-r: 0; --wf-bg: #c0c0c0; --wf-hover: #c0c0c0; --wf-active: #c0c0c0; --wf-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf; width: 1.15rem; height: 1rem; color: #000; }
+[data-ui="win98"] .bt-wf-btn:active { box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px #808080, inset -2px -2px #dfdfdf; }
+[data-ui="win98"] .bt-wf-close:is(:hover, :focus-visible) { background: #c0c0c0; color: #000; }
+/* Winamp: small metal squares */
+[data-ui="winamp"] .bt-wf-btn { --wf-r: 0; --wf-bg: var(--wa-metal); --wf-shadow: var(--wa-up); width: 1.1rem; height: 1rem; }
+/* macOS, Aqua, Liquid Glass: three traffic lights on the left, Close first; their glyphs show while the pointer is over the group */
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) { --wf-order: -1; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf { padding-left: 0.75rem; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-title { text-align: center; margin-right: 3.6rem; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns { gap: 8px; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { order: -1; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { --wf-r: 9999px; width: 12px; height: 12px; --wf-border: 0.5px solid rgb(0 0 0 / 0.22); color: transparent; --wf-bg: #febc2e; --wf-hover: #febc2e; --wf-active: #d9a025; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Maximise"], :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Restore"] { --wf-bg: #28c840; --wf-hover: #28c840; --wf-active: #20a135; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { --wf-bg: #ff5f57; --wf-close-hover: #ff5f57; --wf-close-active: #d94e47; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:hover .bt-wf-btn, :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:focus-within .bt-wf-btn { color: rgb(0 0 0 / 0.6); }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn svg { width: 8px; height: 8px; }
+[data-ui="aqua"] .bt-wf-btn { --wf-bg: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-hover: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-border: 1px solid #8a6310; --wf-shadow: inset 0 1px 1px rgb(255 255 255 / 0.6); }
+[data-ui="aqua"] .bt-wf-btn[aria-label="Maximise"], [data-ui="aqua"] .bt-wf-btn[aria-label="Restore"] { --wf-bg: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-hover: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-border: 1px solid #1a6a17; }
+[data-ui="aqua"] .bt-wf-close { --wf-bg: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-close-hover: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-border: 1px solid #8e1e19; }
+
+/* the guides in Settings (components/GuidesTab.tsx): plain readable typography under the theme's colours */
+.guide { font-size: 0.92rem; line-height: 1.65; }
+.guide h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 0.75rem; }
+.guide h2 { font-size: 1.2rem; font-weight: 700; margin: 1.6rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid hsl(var(--line)); }
+.guide h3 { font-size: 1.02rem; font-weight: 600; margin: 1.2rem 0 0.35rem; }
+.guide h4 { font-weight: 600; margin: 1rem 0 0.25rem; }
+.guide p, .guide ul, .guide ol, .guide table, .guide pre, .guide blockquote { margin: 0.6rem 0; }
+.guide ul { list-style: disc; padding-left: 1.4rem; } .guide ol { list-style: decimal; padding-left: 1.5rem; } .guide li { margin: 0.2rem 0; } .guide li > ul, .guide li > ol { margin: 0.2rem 0; }
+.guide code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84em; background: hsl(var(--raised)); padding: 0.1rem 0.3rem; border-radius: 0.3rem; overflow-wrap: anywhere; }
+.guide pre { background: hsl(var(--raised)); border: 1px solid hsl(var(--line)); border-radius: 0.5rem; padding: 0.7rem 0.85rem; overflow-x: auto; }
+.guide pre code { background: none; padding: 0; font-size: 0.82rem; overflow-wrap: normal; white-space: pre; }
+.guide a { color: hsl(var(--accent)); text-decoration: underline; text-underline-offset: 2px; }
+.guide blockquote { border-left: 3px solid hsl(var(--accent)); padding: 0.1rem 0.9rem; color: hsl(var(--muted)); }
+.guide hr { border: 0; border-top: 1px solid hsl(var(--line)); margin: 1.2rem 0; }
+.guide table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.86rem; }
+.guide th, .guide td { border: 1px solid hsl(var(--line)); padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
+.guide th { background: hsl(var(--raised)); font-weight: 600; }

@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
-import { FILTER_DOCS, HAS_VALUES, makeChip, splitTyped, type Chip, type FilterKey } from '../lib/filters.ts';
+import { FILTER_DOCS, HAS_VALUES, filterKeys, makeChip, splitTyped, type Chip, type FilterScope } from '../lib/filters.ts';
+import { allReleaseTags } from '../lib/releaseOps.ts';
 import { usePresence } from '../lib/presence.ts';
 import { cn } from '../lib/cn.ts';
 
@@ -14,7 +15,7 @@ interface Suggestion { id: string; label: string; hint?: string; run: () => void
  * takes the last one off.
  */
 export function FilterBar({ chips, onChips, text, onText, scope, placeholder = 'Search, or filter: artist, era, before…' }: {
-  chips: Chip[]; onChips: (c: Chip[]) => void; text: string; onText: (t: string) => void; scope: 'tracks' | 'albums'; placeholder?: string;
+  chips: Chip[]; onChips: (c: Chip[]) => void; text: string; onText: (t: string) => void; scope: FilterScope; placeholder?: string;
 }) {
   const lib = useLibrary();
   const box = useRef<HTMLDivElement>(null);
@@ -22,10 +23,10 @@ export function FilterBar({ chips, onChips, text, onText, scope, placeholder = '
   const [focus, setFocus] = useState(false);
   const [hi, setHi] = useState(0);
   const [pos, setPos] = useState<React.CSSProperties>({});
-  const keys = (Object.keys(FILTER_DOCS) as FilterKey[]).filter((k) => scope === 'tracks' || !FILTER_DOCS[k].tracksOnly);
+  const keys = filterKeys(scope);
 
   const add = (c: Chip | null) => { if (!c) return false; if (!chips.some((x) => x.key === c.key && x.value === c.value)) onChips([...chips, c]); onText(''); return true; };
-  const split = splitTyped(text);
+  const split = splitTyped(text, scope);
 
   const years = useMemo(() => [...new Set([...lib.albums.map((a) => a.releaseDate), ...lib.tracks.map((t) => t.releaseDate)].flatMap((d) => (d ? [d.slice(0, 4)] : [])))].sort().reverse().slice(0, 12), [lib]);
   const suggestions: Suggestion[] = useMemo(() => {
@@ -42,6 +43,7 @@ export function FilterBar({ chips, onChips, text, onText, scope, placeholder = '
     else if (key === 'album') out.push(...named(lib.albums.map((a) => ({ label: a.title }))));
     else if (key === 'era') out.push(...named(lib.eras.map((e) => ({ label: e.name }))));
     else if (key === 'genre') out.push(...named(lib.genres.map((g) => ({ label: g.name }))));
+    else if (key === 'tag') out.push(...named(allReleaseTags(lib.releases).map((t) => ({ label: t }))));
     else if (key === 'has') out.push(...HAS_VALUES.filter((v) => !r || v.startsWith(r)).map((v) => ({ id: v, label: v, run: () => add(makeChip(lib, 'has', v)) })));
     else if (key === 'before' || key === 'after') {
       const typedChip = makeChip(lib, key, rest);
@@ -79,7 +81,7 @@ export function FilterBar({ chips, onChips, text, onText, scope, placeholder = '
 
   return (
     <>
-      <div ref={box} role="search" className={cn('input flex min-h-[2.25rem] min-w-[16rem] flex-1 cursor-text flex-wrap items-center gap-1.5 !py-1 sm:max-w-xl', focus && 'bt-focus')} onClick={() => input.current?.focus()}>
+      <div ref={box} role="search" className={cn('input flex min-h-[2.25rem] min-w-[min(16rem,100%)] flex-1 cursor-text flex-wrap items-center gap-1.5 !py-1 sm:max-w-xl', focus && 'bt-focus')} onClick={() => input.current?.focus()}>
         <Search size={14} className="shrink-0 text-muted" />
         {chips.map((c, i) => (
           <span key={`${c.key}${c.value}`} className="chip gap-1 !bg-accent/15 !text-fg">

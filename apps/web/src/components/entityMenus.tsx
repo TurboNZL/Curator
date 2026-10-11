@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { canPlay } from '../lib/spotifyPlayer.ts';
-import { Disc, Download, FileAudio, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
+import { Disc, Download, FileAudio, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary, type Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -60,6 +60,7 @@ export function useAlbumMenuItems() {
     ...actions(ids, { type: 'album', id: album.id }),
     { separator: true },
     { label: 'Edit album…', icon: <Pencil size={15} />, run: () => edit({ kind: 'album', id: album.id }) },
+    { label: 'Add to an album playlist…', icon: <ListPlus size={15} />, run: () => edit({ kind: 'add-album-to-playlist', id: album.id }) },
     { label: 'Add audio files…', icon: <FileAudio size={15} />, run: () => edit({ kind: 'upload', id: album.id }) },
     { label: 'New release…', icon: <Plus size={15} />, run: () => edit({ kind: 'new-release', id: album.id }) },
     { label: 'Import a release from YouTube…', icon: <Download size={15} />, run: () => edit({ kind: 'import-into-album', id: album.id }) },

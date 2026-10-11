@@ -35,11 +35,21 @@ export function safeUrl(u: unknown): string | null {
 /** YouTube's "prove you are not a bot" answer to a download. */
 export const isBotCheck = (message: string) => /confirm you.?re not a bot|sign in to confirm/i.test(message);
 
+/** YouTube serving the page but refusing the media itself ("unable to download video data: HTTP Error 403"). */
+export const isForbidden = (message: string) => /HTTP Error 403|403: Forbidden/i.test(message);
+
 /**
- * Clients that need no PO token. Tried once more when the default client is stopped by the bot check
- * (it often works for a track the default client was refused).
+ * Other player clients to try, in order, when the default one is stopped by the bot check or a 403. Which clients still work
+ * changes every few months (`android_vr` was removed from yt-dlp's defaults in August 2026 because it started returning 403s,
+ * so it is deliberately not listed). None of these need a PO token. The real cure for a 403 is usually a current yt-dlp.
  */
-export const FALLBACK_CLIENTS = ['--extractor-args', 'youtube:player_client=android_vr,web_embedded'];
+export const FALLBACK_CLIENTS: string[][] = [
+  ['--extractor-args', 'youtube:player_client=visionos,web_embedded,mweb'],
+  ['--extractor-args', 'youtube:player_client=android'],
+  ['--extractor-args', 'youtube:player_client=tv_downgraded'],
+];
+
+export const FORBIDDEN_HELP = 'YouTube refused the media download (HTTP 403). Update yt-dlp first (yt-dlp -U, or pip/nightly; 2026.08.19 or newer is needed) and make sure a JavaScript runtime (Node 22 or Deno) is installed, then press “Download missing audio” again.';
 
 export const BOT_HELP = 'YouTube wants proof that this server is not a bot. Give yt-dlp a cookies file: set CURATOR_YTDLP_COOKIES (see docs/YTDLP_COOKIES.md), then press “Download missing audio” again.';
 
@@ -93,12 +103,7 @@ export class Acquirer {
     job.state = 'running';
     const work = mkdtempSync(join(this.o.dataDir, 'tmp', 'dl-'));
     try {
-      try { await this.exec(job.url, work); }
-      catch (e) {
-        if (!(e instanceof Error) || !isBotCheck(e.message)) throw e;
-        try { await this.exec(job.url, work, FALLBACK_CLIENTS); }
-        catch (e2) { throw new Error(isBotCheck((e2 as Error).message) ? `${BOT_HELP} (${(e2 as Error).message.slice(-200)})` : (e2 as Error).message); }
-      }
+      await this.download(job.url, work);
       const out = readdirSync(work).find((f) => /\.(mp3|m4a|opus|ogg|flac|wav)$/i.test(f));
       if (!out) throw new Error('yt-dlp finished but produced no audio file');
       const path = join(work, out);
@@ -113,6 +118,19 @@ export class Acquirer {
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
+  }
+
+  /** The default clients first, then each fallback while the failure is one that another client can get around. */
+  private async download(url: string, work: string) {
+    let last: Error;
+    try { return await this.exec(url, work); } catch (e) { last = e as Error; }
+    if (!isBotCheck(last.message) && !isForbidden(last.message)) throw last;
+    for (const extra of FALLBACK_CLIENTS) {
+      try { return await this.exec(url, work, extra); } catch (e) { last = e as Error; }
+      if (!isBotCheck(last.message) && !isForbidden(last.message)) throw last;
+    }
+    const tail = last.message.slice(-200);
+    throw new Error(isBotCheck(last.message) ? `${BOT_HELP} (${tail})` : `${FORBIDDEN_HELP} (${tail})`);
   }
 
   /** Merge into the *current* track record (it may have been edited while downloading). */

@@ -19,10 +19,33 @@ export interface ServerUpdate {
   status: 'idle' | 'running' | 'done' | 'error'; log: string[]; restarting: boolean;
 }
 
+/** What GET /api/admin/health returns (packages/server/src/health.ts): a cheap look at the machine the server runs on. */
+export interface ServerHealth {
+  snapshot: {
+    at: number; host: string; platform: string; arch: string; node: string; uptimeS: number; processUptimeS: number;
+    cpu: { cores: number; load1: number; load5: number; load15: number };
+    memory: { totalBytes: number; availableBytes: number; rssBytes: number };
+    swap: { totalBytes: number; usedBytes: number } | null;
+    tempC: number | null;
+    throttle: { underVoltage: boolean; frequencyCapped: boolean; throttled: boolean; underVoltageEver: boolean } | null;
+    disks: { label: string; path: string; freeBytes: number; totalBytes: number; system: boolean }[];
+    probe: { writeMs: number; readMs: number } | null;
+    db: { bytes: number; walBytes: number };
+  };
+  warnings: { level: 'warn' | 'bad'; id: string; message: string }[];
+}
+export interface StorageEntry { kind: 'files' | 'tmp' | 'cache'; label: string; hint: string; link: string; path: string; moved: boolean; freeBytes: number; totalBytes: number; system: boolean }
+export interface StorageInfo {
+  entries: StorageEntry[]; dataDir: string;
+  job: { status: 'idle' | 'running' | 'done' | 'error'; kind?: StorageEntry['kind']; message?: string; progress?: { phase: string; copiedBytes: number; totalBytes: number; files: number } };
+}
+
 export interface ImportPreview {
   title: string; artist: string; thumbnail: string | null;
   /** every cover candidate, best first */
   thumbnails?: string[];
+  /** when the album came out, if an exact match was found online */
+  releaseDate?: string | null;
   entries: { id: string; title: string; rawTitle: string; url: string; duration: number | null }[];
 }
 
@@ -45,6 +68,17 @@ export class Api {
 
   health() { return fetch(this.url('/api/health')).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
   status() { return this.req<ServerStatus>('/api/status'); }
+  releaseDates(albums: { id: string; album: string; artist: string }[]) { return this.req<{ results: { id: string; answer: DateAnswerRes | null }[] }>('/api/dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albums }) }); }
+  soloist() { return this.req<SoloistInfo>('/api/soloist'); }
+  soloistConfig(c: { deviceName?: string; apiKey?: string; autoStart?: boolean }) { return this.req<SoloistInfo>('/api/soloist/config', { method: 'POST', body: JSON.stringify(c) }); }
+  soloistInstall() { return this.req<SoloistInfo>('/api/soloist/install', { method: 'POST' }); }
+  soloistStart() { return this.req<SoloistInfo>('/api/soloist/start', { method: 'POST' }); }
+  soloistStop() { return this.req<SoloistInfo>('/api/soloist/stop', { method: 'POST' }); }
+  soloistRemove() { return this.req<SoloistInfo>('/api/soloist', { method: 'DELETE' }); }
+  serverHealth() { return this.req<ServerHealth>('/api/admin/health'); }
+  storageInfo() { return this.req<StorageInfo>('/api/admin/storage'); }
+  moveStorage(kind: StorageEntry['kind'], target: string) { return this.req<{ ok: true }>('/api/admin/storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, target }) }); }
+  tunnelToken() { return this.req<{ found: boolean; token?: string; source?: string }>('/api/admin/tunnel-token'); }
   updateInfo() { return this.req<ServerUpdate>('/api/admin/update'); }
   startUpdate() { return this.req<{ ok: true }>('/api/admin/update', { method: 'POST' }); }
   pull(since: number, limit = 1000) { return this.req<PullResponse>(`/api/sync/pull?since=${since}&limit=${limit}`); }
@@ -104,7 +138,12 @@ export interface SpotifyImportTrack { uri: string; id: string; title: string; ar
 export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyImportTrack[]; source: 'embed' | 'api' | 'oembed' | 'file'; note?: string }
 export interface MatchTrackReq { id: string; title: string; artist: string; album?: string; durationMs?: number | null; spotifyUrl?: string | null }
 export interface MatchCandidate { url: string; title: string; channel: string; seconds: number | null; score: number; method: 'odesli' | 'search' }
+export interface DateAnswerRes { date: string; source: 'spotify' | 'itunes' | 'musicbrainz' }
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
 
+export interface SoloistInfo {
+  supported: boolean; reason?: string; installed: boolean; version: string | null; configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean;
+  running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;
+}
 export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }
 export interface SpotifyPlayerInfo { playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null }; track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null }

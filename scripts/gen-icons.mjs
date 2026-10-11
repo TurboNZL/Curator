@@ -28,33 +28,48 @@ const wheel = (cx, cy, r0, r1, n, twist, width, a0 = -Math.PI / 2) => Array.from
 const circle = (cx, cy, r) => `M${f(cx - r)},${f(cy)}a${r},${r} 0 1,0 ${2 * r},0a${r},${r} 0 1,0 ${-2 * r},0Z`;
 
 // ---- the full-colour mark on a 512 canvas ----
+// The same drawing as the notification icon (a ring, a six-bladed compressor wheel, a hub), which is the one that reads best, with colour
+// and detail added: a lit red ring, a record with fine grooves and a sheen, glossy blades with a bright leading edge, and a bolted hub.
 const C = 256;
-const housing = circle(C, C, 236) + circle(C + 18, C - 20, 205); // an offset hole makes a scroll: thin at the top right, thick at the lower left
-// a fox-tail plume flicking out of the thick end of the housing, its upper edge cut into the zigzag of a tail tip
-const tail = 'M158,452C120,486 56,490 8,452L42,448L16,428L56,428L36,406L76,406C86,378 94,350 102,326L132,382C142,406 152,430 158,452Z';
-const SCALE = 0.86; // room for the tail inside the rounded square
-const blades = wheel(C, C, 38, 150, 9, 0.95, 0.34);
+const ring = circle(C, C, 236) + circle(C, C, 214);
+const BLADES = 6;
+const blades = wheel(C, C, 52, 176, BLADES, 0.95, 0.5);
+const SCALE = 0.9;
+const grooves = [196, 182, 168].map((r) => `<circle cx="${C}" cy="${C}" r="${r}"/>`).join('');
+const bolts = Array.from({ length: BLADES }, (_, i) => { const [x, y] = pol(C, C, 31, -Math.PI / 2 + (i * 2 * Math.PI) / BLADES); return `<circle cx="${f(x)}" cy="${f(y)}" r="4.5"/>`; }).join('');
+const edges = Array.from({ length: BLADES }, (_, i) => { // a thin bright line along each blade's leading edge
+  const a = -Math.PI / 2 + (i * 2 * Math.PI) / BLADES, pts = Array.from({ length: 15 }, (_x, n) => { const sx = n / 14, [x, y] = pol(C, C, 52 + 124 * sx, a + 0.95 * sx); return `${f(x)},${f(y)}`; });
+  return `M${pts.join('L')}`; }).join('');
 
 export const logoSvg = (size = 512) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="${size}" height="${size}" role="img" aria-label="Music Curator">
   <defs>
-    <radialGradient id="glow" cx="30%" cy="72%" r="75%"><stop offset="0" stop-color="${RED}" stop-opacity=".42"/><stop offset="1" stop-color="${RED}" stop-opacity="0"/></radialGradient>
-    <linearGradient id="fin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2a1a"/><stop offset="1" stop-color="${RED}"/></linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#26262f"/><stop offset="1" stop-color="${INK}"/></linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="${RED}" stop-opacity=".30"/><stop offset=".7" stop-color="${RED}" stop-opacity=".06"/><stop offset="1" stop-color="${RED}" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5a44"/><stop offset=".5" stop-color="${RED}"/><stop offset="1" stop-color="${RED_DARK}"/></linearGradient>
+    <linearGradient id="fin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4a36"/><stop offset="1" stop-color="#b30500"/></linearGradient>
+    <radialGradient id="hub" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#ff6a55"/><stop offset=".55" stop-color="${RED}"/><stop offset="1" stop-color="${RED_DARK}"/></radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".55"/></filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="${CHAR}"/>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
   <rect width="512" height="512" rx="112" fill="url(#glow)"/>
-  <g transform="translate(${f(256 * (1 - SCALE) + 6)} ${f(256 * (1 - SCALE) - 6)}) scale(${SCALE})">
-  <path d="${housing}" fill-rule="evenodd" fill="${RED}"/>
-  <path d="${tail}" fill="${RED}"/>
-  <circle cx="${C}" cy="${C}" r="196" fill="${INK}"/>
-  <g fill="none" stroke="${GROOVE}" stroke-width="3"><circle cx="${C}" cy="${C}" r="176"/><circle cx="${C}" cy="${C}" r="160"/></g>
-  <path d="${blades}" fill="url(#fin)"/>
-  <circle cx="${C}" cy="${C}" r="40" fill="${RED}"/><circle cx="${C}" cy="${C}" r="15" fill="${INK}"/>
+  <g transform="translate(${f(256 * (1 - SCALE))} ${f(256 * (1 - SCALE))}) scale(${SCALE})">
+    <path d="${ring}" fill-rule="evenodd" fill="url(#ring)"/>
+    <circle cx="${C}" cy="${C}" r="206" fill="#101015"/>
+    <g fill="none" stroke="${GROOVE}" stroke-width="2.5">${grooves}</g>
+    <path d="M${C},${C} L${f(C + 206 * Math.cos(-2.3))},${f(C + 206 * Math.sin(-2.3))} A206,206 0 0 1 ${f(C + 206 * Math.cos(-0.75))},${f(C + 206 * Math.sin(-0.75))} Z" fill="url(#sheen)"/>
+    <g filter="url(#soft)"><path d="${blades}" fill="url(#fin)"/></g>
+    <path d="${edges}" fill="none" stroke="#ffb3a8" stroke-opacity=".75" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="${C}" cy="${C}" r="50" fill="url(#hub)"/>
+    <circle cx="${C}" cy="${C}" r="50" fill="none" stroke="#ffb3a8" stroke-opacity=".5" stroke-width="2"/>
+    <g fill="#2a0300" fill-opacity=".7">${bolts}</g>
+    <circle cx="${C}" cy="${C}" r="13" fill="${INK}"/><circle cx="${C - 3}" cy="${C - 4}" r="3.5" fill="#fff" fill-opacity=".5"/>
   </g>
 </svg>
 `;
 
 // ---- Android: the adaptive icon's foreground sits in the 66 dp safe zone of a 108 dp canvas ----
-const k = (66 / 512) * SCALE, off = 21 + 33 * (1 - SCALE) + 0; // scale and offset into the 108 viewport
+const k = (66 / 512) * SCALE, off = 21 + 33 * (1 - SCALE); // scale and offset into the 108 viewport
 const tx = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_m, x, y) => `${f(+x * k + off)},${f(+y * k + off)}`);
 // the circle helpers use relative arcs (a r r 0 1,0 dx,0): scale those separately
 const scaledCircle = (cx, cy, r) => circle(cx * k + off, cy * k + off, r * k);
@@ -62,9 +77,9 @@ const vec = (w, paths) => `<vector xmlns:android="http://schemas.android.com/apk
 const apath = (fill, d, extra = '') => `    <path android:fillColor="${fill}" ${extra}android:pathData="${d}" />\n`;
 
 export const launcherForeground = vec(108,
-  apath(RED, scaledCircle(C, C, 236) + scaledCircle(C + 18, C - 20, 205), 'android:fillType="evenOdd" ') +
-  apath(RED, tx(tail)) + apath(INK, scaledCircle(C, C, 196)) +
-  apath(RED, tx(blades)) + apath(RED, scaledCircle(C, C, 40)) + apath(INK, scaledCircle(C, C, 15)));
+  apath(RED, scaledCircle(C, C, 236) + scaledCircle(C, C, 214), 'android:fillType="evenOdd" ') +
+  apath('#101015', scaledCircle(C, C, 206)) +
+  apath(RED, tx(blades)) + apath(RED, scaledCircle(C, C, 50)) + apath(INK, scaledCircle(C, C, 13)));
 
 // the notification's small icon: white only, so Android can tint it; just the wheel in a ring, readable at 24 dp
 const m = (d, s, o) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_x, x, y) => `${f(+x * s + o)},${f(+y * s + o)}`);
@@ -90,6 +105,8 @@ if (process.argv.includes('--png')) {
   };
   await shot(512, join(root, 'apps/web/public/icon-512.png'));
   await shot(192, join(root, 'apps/web/public/icon-192.png'));
+  await shot(32, join(root, 'apps/web/public/favicon-32.png'));
+  await shot(256, join(root, 'apps/electron/build/icon-256.png'));
   await shot(512, join(root, 'apps/electron/build/icon.png'));
   await b.close();
 }

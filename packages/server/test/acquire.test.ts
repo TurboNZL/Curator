@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync, readdirSync }
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Store } from '../src/db.ts';
-import { Acquirer, BOT_HELP, isBotCheck, safeUrl } from '../src/acquire.ts';
+import { Acquirer, BOT_HELP, FORBIDDEN_HELP, isBotCheck, isForbidden, safeUrl } from '../src/acquire.ts';
 import { ytdlpArgs } from '../src/config.ts';
 
 let dir: string, store: Store;
@@ -125,7 +125,8 @@ describe('YouTube bot check', () => {
     const calls = (await import('node:fs')).readFileSync(join(dir, 'argv.log'), 'utf8').trim().split('\n');
     expect(calls).toHaveLength(2);
     expect(calls[0]).not.toContain('player_client');
-    expect(calls[1]).toContain('youtube:player_client=android_vr,web_embedded');
+    expect(calls[1]).toContain('youtube:player_client=visionos,web_embedded,mweb');
+    expect(calls.join(' ')).not.toContain('android_vr');
   });
   it('when the retry is stopped too, the failure says to supply cookies', async () => {
     store.push([track('t', 'https://youtu.be/x')]);
@@ -135,6 +136,34 @@ describe('YouTube bot check', () => {
     expect(job.state).toBe('failed');
     expect(job.error).toContain(BOT_HELP.slice(0, 40));
     expect(job.error).toContain('CURATOR_YTDLP_COOKIES');
+  });
+  it('a 403 on the media is retried through the other clients until one gets through', async () => {
+    const path = join(dir, 'f403-yt-dlp');
+    writeFileSync(path, `#!/bin/sh
+echo "$@" >> "${dir}/argv.log"
+case "$*" in *player_client=android*) ok=1;; esac
+if [ -z "$ok" ]; then echo "ERROR: unable to download video data: HTTP Error 403: Forbidden" >&2; exit 1; fi
+while [ "$1" != "-o" ]; do shift; done
+printf "audio" > "$(dirname "$2")/vid.mp3"
+`);
+    chmodSync(path, 0o755);
+    store.push([track('t', 'https://youtu.be/x')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: path });
+    a.enqueueMissing(); await a.drained();
+    expect([...a.jobs.values()][0].state).toBe('done');
+    expect((await import('node:fs')).readFileSync(join(dir, 'argv.log'), 'utf8').trim().split('\n')).toHaveLength(3);
+  });
+  it('when every client gets a 403 the failure says to update yt-dlp', async () => {
+    const path = join(dir, 'always403');
+    writeFileSync(path, `#!/bin/sh\necho "ERROR: unable to download video data: HTTP Error 403: Forbidden" >&2\nexit 1\n`);
+    chmodSync(path, 0o755);
+    store.push([track('t', 'https://youtu.be/x')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: path });
+    a.enqueueMissing(); await a.drained();
+    const job = [...a.jobs.values()][0];
+    expect(job.state).toBe('failed');
+    expect(job.error).toContain(FORBIDDEN_HELP.slice(0, 40));
+    expect(isForbidden('x HTTP Error 403: Forbidden')).toBe(true);
   });
   it('puts the configured cookies file on every call', async () => {
     store.push([track('t', 'https://youtu.be/x')]);

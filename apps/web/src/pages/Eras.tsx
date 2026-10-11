@@ -1,4 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ListToolbar } from '../components/ListToolbar.tsx';
+import { EntityList } from '../components/EntityList.tsx';
+import { eraSubject, matchesAll, splitTyped, type Chip } from '../lib/filters.ts';
+import { ERA_SORTS, eraRows, sortEras } from '../lib/listSort.ts';
+import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams } from 'react-router-dom';
 import { Layers, MoreHorizontal, Pencil, Play, Plus } from 'lucide-react';
@@ -6,6 +11,8 @@ import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
+import { PlaylistCover } from '../components/PlaylistCover.tsx';
+import { playlistCount } from '../lib/playlists.ts';
 import { Notes } from '../components/Notes.tsx';
 import { DetailLayout } from '../components/DetailLayout.tsx';
 import { SingleGrid } from '../components/SingleCard.tsx';
@@ -18,25 +25,34 @@ import { useAlbumMenuItems } from '../components/entityMenus.tsx';
 export function ErasPage() {
   const lib = useLibrary();
   const edit = useEditor((s) => s.open);
-  const rows = useMemo(() => [...lib.eras].sort((a, b) => a.name.localeCompare(b.name)).map((e) => {
-    const albums = e.albumIds.flatMap((id) => lib.albumById.get(id) ?? []);
-    return { era: e, albums, singles: e.trackIds.flatMap((id) => lib.trackById.get(id) ?? []), cover: e.cover || albums.find((a) => a.cover)?.cover || null };
-  }), [lib]);
+  const [q, setQ] = useState('');
+  const [chips, setChips] = useState<Chip[]>([]);
+  const page = usePageState('eras', ERA_SORTS, { sort: 'name' });
+  const all = useMemo(() => eraRows(lib), [lib]);
+  const rows = useMemo(() => {
+    const needle = splitTyped(q, 'eras') ? '' : q.toLowerCase();
+    const f = all.filter((r) => r.era.name.toLowerCase().includes(needle) && (!chips.length || matchesAll(chips, eraSubject(lib, r.era))));
+    return sortEras(f, page.sort, page.dir);
+  }, [lib, all, q, chips, page.sort, page.dir]);
   return (
     <div>
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Eras <span className="text-base font-normal text-muted">{rows.length}</span></h1>
         <button className="btn" onClick={() => edit({ kind: 'new-era', id: '' })}><Plus size={15} />New era</button>
       </div>
-      {!rows.length && <p className="max-w-xl text-sm text-muted">An era groups albums and singles that belong to the same period (a phase of an artist, a scene). Make one here and fill it, or choose it in an album’s or single’s editor. Eras can overlap, and notes and playlists can belong to them.</p>}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
-        {rows.map(({ era, albums, singles, cover }) => (
-          <Link key={era.id} to={`/eras/${era.id}`} className="bt-tile group block">
-            <Cover hash={cover} seed={era.name} className="transition-transform group-hover:scale-[1.02]" />
-            <div className="bt-cap-t mt-2 truncate text-sm font-medium">{era.name}</div>
-            <div className="bt-cap text-xs text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
-          </Link>))}
-      </div>
+      <ListToolbar scope="eras" chips={chips} onChips={setChips} text={q} onText={setQ} placeholder="Search eras, or filter: artist, genre, before…" sorts={ERA_SORTS} sort={page.sort} dir={page.dir} onSort={page.setSort} onFlip={page.flip} view={page.view} onView={page.setView} />
+      {!all.length && <p className="max-w-xl text-sm text-muted">An era groups albums and singles that belong to the same period (a phase of an artist, a scene). Make one here and fill it, or choose it in an album’s or single’s editor. Eras can overlap, and notes and playlists can belong to them.</p>}
+      {all.length > 0 && !rows.length && <p className="text-sm text-muted">No eras match.</p>}
+      {page.view === 'list'
+        ? <EntityList rows={rows.map(({ era, albums, singles, cover }) => ({ id: era.id, to: `/eras/${era.id}`, cover, seed: era.name, title: era.name, sub: `${plural(albums.length, 'album')} · ${plural(singles.length, 'single')}` }))} />
+        : <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>
+            {rows.map(({ era, albums, singles, cover }) => (
+              <Link key={era.id} to={`/eras/${era.id}`} className="bt-tile group block">
+                <Cover hash={cover} seed={era.name} className="transition-transform group-hover:scale-[1.02]" />
+                <div className="bt-cap-t mt-2 truncate text-sm font-medium">{era.name}</div>
+                <div className="bt-cap text-xs text-muted">{plural(albums.length, 'album')} · {plural(singles.length, 'single')}</div>
+              </Link>))}
+          </div>}
     </div>
   );
 }
@@ -79,7 +95,7 @@ export function EraPage() {
       {singles.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Singles</h2><SingleGrid tracks={singles} /></section>}
       {playlists.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Playlists</h2>
         <div className="grid gap-3 sm:grid-cols-2">{playlists.map((p) => (
-          <Link key={p.id} to="/playlists" className="card flex items-center gap-3 p-3 hover:bg-raised/50"><Cover hash={p.cover} seed={p.name} className="h-12 w-12 shrink-0" /><div className="min-w-0"><div className="truncate font-medium">{p.name}</div><div className="text-xs text-muted">{plural(p.trackIds.length, 'track')}</div></div></Link>))}</div></section>}
+          <Link key={p.id} to="/playlists" className="card flex items-center gap-3 p-3 hover:bg-raised/50"><PlaylistCover playlist={p} className="h-12 w-12 shrink-0" /><div className="min-w-0"><div className="truncate font-medium">{p.name}</div><div className="text-xs text-muted">{plural(playlistCount(lib, p).n, playlistCount(lib, p).noun)}</div></div></Link>))}</div></section>}
       {!albums.length && !singles.length && !playlists.length && <p className="text-sm text-muted">Nothing in this era yet. Edit the era to add albums, singles and playlists, or choose it in an album’s or single’s editor.</p>}
       {menu.element}
     </DetailLayout>

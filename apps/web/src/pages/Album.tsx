@@ -63,7 +63,8 @@ export function AlbumPage() {
                 <button role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3 text-left text-sm" onClick={() => choose({ kind: 'release', id: r.id })}>
                   <Cover hash={r.cover || album.cover} seed={r.title} className="h-11 w-11 shrink-0" />
                   <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
-                    <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {plural(r.trackIds.length, 'track')}</span></span>
+                    <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {plural(r.trackIds.length, 'track')}</span>
+                    {(r.tags?.length ?? 0) > 0 && <span className="mt-0.5 flex flex-wrap gap-1">{r.tags!.map((t) => <span key={t} className="chip !px-1.5 !py-0 text-[10px]">{t}</span>)}</span>}</span>
                 </button>
                 <button className="-my-2 flex shrink-0 items-center self-stretch px-2.5 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={14} /></button>
               </div>);

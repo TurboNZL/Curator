@@ -11,6 +11,13 @@ describe('taste seeds', () => {
   });
 });
 
+describe('taste seeds when few artists qualify', () => {
+  it('fills up with the best of the middling ones so Discover is not one artist, but never with disliked ones', () => {
+    const lib = { tracks: [track('A', 9), track('B', 5), track('C', 4.5), track('D', 4.2), track('E', 5.2), track('F', 2)] } as unknown as Library;
+    expect(tasteSeeds(lib).map((s) => s.name).sort()).toEqual(['A', 'B', 'C', 'D', 'E']);
+  });
+});
+
 describe('merging suggestions', () => {
   const seeds = [{ name: 'A', weight: 1 }, { name: 'B', weight: 0.5 }];
   const similar = [[{ name: 'X', mbid: 'x', score: 10 }, { name: 'Y', mbid: 'y', score: 5 }, { name: 'Mine', mbid: 'm', score: 9 }], [{ name: 'Y', mbid: 'y', score: 8 }, { name: 'Z', mbid: 'z', score: 2 }]];

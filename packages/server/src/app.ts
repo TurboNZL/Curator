@@ -9,6 +9,8 @@ import { Acquirer } from './acquire.ts';
 import { analyzeAudio } from './audioinfo.ts';
 import { Matcher, type MatchTrack } from './match.ts';
 import { similarArtists } from './recommend.ts';
+import { lookupAlbumDate } from './dates.ts';
+import { Soloist } from './soloist.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
@@ -16,6 +18,9 @@ import { SpotifyAccount, SpotifyError, oembed, parseRef, resolveLink } from './s
 import { streamSSE } from 'hono/streaming';
 import { ConnectHub, parseCommand, parseSnapshot } from './connect.ts';
 import { checkTools } from './tools.ts';
+import { assessHealth, collectHealth } from './health.ts';
+import { findTunnelToken } from './tunnel.ts';
+import { StorageError, StorageMover, describeStorage, isKind } from './storage.ts';
 import { BackupError, databaseSnapshot, filesArchive, importFiles, readDatabaseRecords, readStream, saveUpload } from './backup.ts';
 import { Readable } from 'node:stream';
 import { rmSync } from 'node:fs';
@@ -37,6 +42,8 @@ export function createApp(
   updater = new Updater({ script: config.updateScript, restart: config.updateRestart, exit: () => process.exit(1) }),
   spotify = new SpotifyAccount(config.dataDir, { env: process.env }),
   matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
+  mover = new StorageMover(config.dataDir),
+  soloist = new Soloist(config.dataDir),
 ) {
   const app = new Hono();
 
@@ -65,6 +72,24 @@ export function createApp(
       tools: { ...(await checkTools({ ytdlp: config.ytdlp, ffmpegDir: config.ffmpegDir })), cookies: !!config.ytdlpArgs?.includes('--cookies') },
     });
   });
+
+  // ---- Server health (health.ts): cheap enough to ask every few seconds ----
+  app.get('/api/admin/health', async (c) => {
+    const snapshot = await collectHealth(config.dataDir);
+    return c.json({ snapshot, warnings: assessHealth(snapshot) });
+  });
+
+  // ---- Storage locations (storage.ts): move the library files, temp files or yt-dlp cache to another drive ----
+  app.get('/api/admin/storage', (c) => c.json({ entries: describeStorage(config.dataDir), job: mover.state(), dataDir: config.dataDir }));
+  app.post('/api/admin/storage', async (c) => {
+    const b = (await c.req.json().catch(() => null)) as { kind?: unknown; target?: unknown } | null;
+    if (!isKind(b?.kind) || typeof b?.target !== 'string') return c.json({ error: 'kind and target are required' }, 400);
+    try { mover.start(b.kind, b.target); } catch (e) { return c.json({ error: (e as Error).message }, e instanceof StorageError ? 409 : 500); }
+    return c.json({ ok: true }, 202);
+  });
+
+  // The Cloudflare tunnel token this server was set up with, for copying (read on request, never part of /api/status)
+  app.get('/api/admin/tunnel-token', (c) => c.json(findTunnelToken(config.dataDir)));
 
   // ---- Update server (update.ts): only offered when this is a service install of a git checkout ----
   app.get('/api/admin/update', (c) => c.json({ available: updater.available, restarts: updater.restarts, ...updater.state() }));
@@ -157,6 +182,29 @@ export function createApp(
     for (let i = 0; i < tracks.length; i += 3) out.push(...(await Promise.all(tracks.slice(i, i + 3).map((t) => matcher.match(t, methods)))));
     return c.json({ results: out });
   });
+
+  // ---- release dates (dates.ts): when albums came out, a few per request (MusicBrainz asks for about one request a second) ----
+  app.post('/api/dates', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { albums?: unknown };
+    const albums = (Array.isArray(b.albums) ? b.albums : []).slice(0, 8).flatMap((a: any) => typeof a?.id === 'string' && typeof a.album === 'string' && typeof a.artist === 'string' ? [{ id: a.id, album: a.album.slice(0, 200), artist: a.artist.slice(0, 200) }] : []);
+    if (!albums.length) return c.json({ error: 'nothing to look up' }, 400);
+    const useSpotify = spotify.status().signedIn ? spotify : null;
+    const results = [];
+    for (const a of albums) results.push({ id: a.id, answer: await lookupAlbumDate(a, { spotify: useSpotify }) });
+    return c.json({ results });
+  });
+
+  // ---- Soloist (soloist.ts): Spotify's own headless Connect client, installed and run by this server so Curator plays Spotify tracks itself ----
+  app.get('/api/soloist', async (c) => c.json(await soloist.status()));
+  app.post('/api/soloist/config', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown };
+    try { soloist.configure({ deviceName: typeof b.deviceName === 'string' ? b.deviceName : undefined, apiKey: typeof b.apiKey === 'string' ? b.apiKey : undefined, autoStart: typeof b.autoStart === 'boolean' ? b.autoStart : undefined }); return c.json(await soloist.status()); }
+    catch (e) { return c.json({ error: (e as Error).message }, 400); }
+  });
+  app.post('/api/soloist/install', async (c) => { try { await soloist.install(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 502); } });
+  app.post('/api/soloist/start', async (c) => { try { soloist.start(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 400); } });
+  app.post('/api/soloist/stop', async (c) => { await soloist.stop(); return c.json(await soloist.status()); });
+  app.delete('/api/soloist', async (c) => { soloist.uninstall(); return c.json(await soloist.status()); });
 
   // ---- Spotify (spotify.ts): links, public playlists, and the user's own sign-in for their playlists ----
   const spotifyFail = (e: unknown) => { if (e instanceof SpotifyError) return c_json(e); throw e; };

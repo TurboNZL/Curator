@@ -106,7 +106,7 @@ describe('sign-in', () => {
   });
 });
 
-import { parseMusicBrainzSearch, parseSimilar } from '../src/recommend.ts';
+import { ALGORITHMS, parseMusicBrainzSearch, parseSimilar, similarArtists } from '../src/recommend.ts';
 describe('player', () => {
   const CLIENT = 'b'.repeat(32);
   async function signedIn(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
@@ -165,5 +165,50 @@ describe('recommendation sources', () => {
     expect(parseSimilar([{ name: 'B', artist_mbid: 'm2', score: 3 }, { name: 'A', artist_mbid: 'm1', score: 9 }, { name: 'no id' }]).map((a) => a.name)).toEqual(['A', 'B']);
     expect(parseSimilar({ data: [{ name: 'C', artist_mbid: 'm3', score: 1 }] })).toHaveLength(1);
     expect(parseSimilar(null)).toEqual([]);
+  });
+});
+
+describe('similar artists lookup', () => {
+  it('falls back to the older algorithm when the first returns nothing', async () => {
+    const urls: string[] = [];
+    const f = (async (u: string) => {
+      urls.push(u);
+      if (u.includes('musicbrainz')) return new Response(JSON.stringify({ artists: [{ id: 'm1', name: 'Drake', score: 100 }] }));
+      return new Response(u.includes(ALGORITHMS[0]) ? '[]' : JSON.stringify([{ artist_mbid: 'x', name: 'Future', score: 5 }]));
+    }) as unknown as typeof fetch;
+    expect((await similarArtists('Drake', f)).map((a) => a.name)).toEqual(['Future']);
+    expect(urls.filter((u) => u.includes('labs.api'))).toHaveLength(2);
+  });
+  it('accepts a single exact-name match even when MusicBrainz scores it below 90', () => {
+    expect(parseMusicBrainzSearch({ artists: [{ id: 'z', name: 'Tyler, The Creator', score: 85 }] }, 'Tyler, the Creator')).toBe('z');
+  });
+});
+
+import { cleanDate, lookupAlbumDate, pickItunesDate, pickMusicBrainzDate } from '../src/dates.ts';
+describe('release dates', () => {
+  it('only well-formed dates pass', () => {
+    expect(cleanDate('2024-06-14T07:00:00Z')).toBe('2024-06-14'); expect(cleanDate('2019-06')).toBe('2019-06'); expect(cleanDate('1999')).toBe('1999');
+    expect(cleanDate('0000-00-00')).toBeNull(); expect(cleanDate('soon')).toBeNull(); expect(cleanDate(undefined)).toBeNull();
+  });
+  it('iTunes: exact album and artist only', () => {
+    const results = [{ collectionName: 'HABIBTI (Deluxe)', artistName: 'Drake', releaseDate: '2026-09-05T07:00:00Z' }, { collectionName: 'Other', artistName: 'Drake', releaseDate: '2020-01-01T08:00:00Z' }];
+    expect(pickItunesDate(results, 'HABIBTI', 'Drake')).toBe('2026-09-05');
+    expect(pickItunesDate(results, 'HABIBTI', 'Someone Else')).toBeNull();
+    expect(pickItunesDate(results, 'Nope', 'Drake')).toBeNull();
+  });
+  it('MusicBrainz: strong exact matches only', () => {
+    const j = { 'release-groups': [{ score: 100, title: 'Nevermind', 'first-release-date': '1991-09-24', 'artist-credit': [{ name: 'Nirvana' }] }, { score: 60, title: 'Nevermind', 'first-release-date': '2011', 'artist-credit': [{ name: 'Nirvana' }] }] };
+    expect(pickMusicBrainzDate(j, 'Nevermind', 'Nirvana')).toBe('1991-09-24');
+    expect(pickMusicBrainzDate({ 'release-groups': [j['release-groups'][1]] }, 'Nevermind', 'Nirvana')).toBeNull();
+  });
+  it('tries Spotify, then iTunes, then MusicBrainz', async () => {
+    const calls: string[] = [];
+    const f = (async (u: string) => { calls.push(u.includes('itunes') ? 'itunes' : 'mb'); return new Response(u.includes('itunes') ? '{"results":[]}' : JSON.stringify({ 'release-groups': [{ score: 98, title: 'A', 'first-release-date': '2001-02', 'artist-credit': [{ name: 'B' }] }] })); }) as unknown as typeof fetch;
+    const spotify = { search: async () => [{ album: 'A', artists: ['B'], releaseDate: null }] } as never;
+    expect(await lookupAlbumDate({ album: 'A', artist: 'B' }, { fetchImpl: f, spotify })).toEqual({ date: '2001-02', source: 'musicbrainz' });
+    expect(calls).toEqual(['itunes', 'mb']);
+    const sp = { search: async () => [{ album: 'A', artists: ['B'], releaseDate: '2003-04-05' }] } as never;
+    expect(await lookupAlbumDate({ album: 'A', artist: 'B' }, { fetchImpl: f, spotify: sp })).toEqual({ date: '2003-04-05', source: 'spotify' });
+    expect(await lookupAlbumDate({ album: 'A', artist: 'Unknown artist' }, { fetchImpl: f })).toBeNull();
   });
 });

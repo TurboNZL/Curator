@@ -26,13 +26,14 @@ export function DiscoverPage() {
   const [list, setList] = useState<Suggestion[]>(saved?.list ?? []);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [noData, setNoData] = useState<string[]>([]);
   const [tracks, setTracks] = useState<Record<string, SpotifyImportTrack[] | 'loading' | string>>({});
   const stop = useRef(false);
   const seeds = useMemo(() => tasteSeeds(lib), [lib]);
   useEffect(() => () => { stop.current = true; }, []);
 
   async function find() {
-    stop.current = false; setError(null);
+    stop.current = false; setError(null); setNoData([]);
     const similar: { name: string; mbid: string; score: number }[][] = [];
     try {
       for (const [i, s] of seeds.entries()) {
@@ -41,6 +42,7 @@ export function DiscoverPage() {
         similar.push((await api().similarArtists(s.name)).artists);
         await sleep(1100); // MusicBrainz asks for one request a second
       }
+      setNoData(seeds.filter((_, i) => !similar[i]?.length).map((s) => s.name));
       const merged = mergeSuggestions(seeds, similar, lib.artists.map((a) => a.name));
       setList(merged);
       try { localStorage.setItem(KEY, JSON.stringify({ at: Date.now(), list: merged })); } catch { /* storage blocked */ }
@@ -71,12 +73,13 @@ export function DiscoverPage() {
       <section className="card space-y-3 p-5">
         <h2 className="flex items-center gap-2 font-semibold"><Sparkles size={16} className="text-accent" />Your taste</h2>
         {seeds.length ? <div className="flex flex-wrap gap-1.5">{seeds.map((s) => <span key={s.name} className="chip">{s.name}</span>)}</div>
-          : <p className="text-sm text-muted">Vote on more tracks first (Rank): artists whose tracks you rate 6 or higher, with at least 3 comparisons each, become the seeds.</p>}
+          : <p className="text-sm text-muted">Vote on more tracks first (Rank): artists whose tracks have at least 3 comparisons each and rate well become the seeds (up to 8; the best-rated ones come first).</p>}
         <div className="flex flex-wrap items-center gap-2"><button className="btn btn-accent" disabled={!configured || !seeds.length || !!busy} onClick={() => void find()}>{busy ? <Loader2 size={15} className="animate-spin" /> : <Compass size={15} />}Find artists like these</button>
           {busy && <button className="btn" onClick={() => { stop.current = true; setBusy(null); }}>Stop</button>}
           {saved && !busy && <span className="text-xs text-muted">last run {new Date(saved.at).toLocaleDateString()}</span>}</div>
         {busy && <div className="text-sm text-muted" role="status">{busy}</div>}
         {!configured && <div className="text-xs text-muted">Needs your server (Settings).</div>}
+        {noData.length > 0 && !busy && <div className="text-xs text-muted">The open data has nothing for {noData.join(', ')} (no match on MusicBrainz, or too few listeners on ListenBrainz); the others were used.</div>}
         {error && <div className="rounded-theme bg-bad/15 p-3 text-sm text-bad">{error}</div>}
       </section>
       {list.length > 0 && <section className="space-y-2">

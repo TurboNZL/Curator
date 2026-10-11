@@ -8,6 +8,8 @@ import { useLibrary } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
 import { api, useStore } from '../lib/store.ts';
 import { Field, Modal } from './forms.tsx';
+import { Select } from './Select.tsx';
+import { foldIntoRelease, siblingDate } from '../lib/releaseOps.ts';
 
 /**
  * Import a YouTube album into an album you already have: a deluxe edition that adds a few songs (and maybe reorders them), or the real
@@ -25,6 +27,8 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
   const [pv, setPv] = useState<ImportPreview | null>(null);
   const [rows, setRows] = useState<MergeRow[]>([]);
   const [releaseTitle, setReleaseTitle] = useState('');
+  /** '' = make a new release; otherwise the id of the existing release the imported tracks are folded into */
+  const [into, setInto] = useState('');
   const [makeDefault, setMakeDefault] = useState(false);
   const [useCover, setUseCover] = useState(true);
   const [rename, setRename] = useState(false);
@@ -67,7 +71,17 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         const links = pv.thumbnails?.length ? pv.thumbnails : pv.thumbnail ? [pv.thumbnail] : [];
         if (links.length) { try { cover = await fetchCoverFromLinks(links); } catch (e) { coverNote = (e as Error).message; } }
       }
-      const releaseId = put('releases', { albumId: album.id, title: releaseTitle.trim() || pv.title, cover, releaseDate: null, trackIds: order });
+      const target = into ? lib.releases.find((r) => r.id === into && r.albumId === album.id) : undefined;
+      const dates = lib.releases.filter((r) => r.albumId === album.id);
+      let releaseId: string;
+      if (target) {
+        // folded into an existing release: it keeps its name and date, gains the tracks it lacked (in the edition's order) and a cover if it had none
+        releaseId = target.id;
+        patch('releases', target.id, { trackIds: foldIntoRelease(target.trackIds, included.map((r, i) => ({ trackId: r.trackId, newId: newIds.get(i) }))), ...(!target.cover && cover ? { cover } : {}), ...(!target.releaseDate ? { releaseDate: siblingDate(dates, album.defaultReleaseId, target.id) ?? pv.releaseDate ?? null } : {}) });
+      } else {
+        // a new release starts with the date the album's other releases have (a Spotify import brings the real one)
+        releaseId = put('releases', { albumId: album.id, title: releaseTitle.trim() || pv.title, cover, releaseDate: siblingDate(dates, album.defaultReleaseId) ?? pv.releaseDate ?? null, trackIds: order });
+      }
       const albumPatch: Record<string, unknown> = {
         trackOrder: insertNewTracks(album.trackIds, included.map((r, i) => ({ trackId: r.trackId, newId: newIds.get(i), include: true }))),
         ...(cover ? { covers: [...(rawAlbum?.covers ?? []), cover] } : {}),
@@ -76,7 +90,7 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         ...(rename && pv.title.trim() ? { title: pv.title.trim() } : {}),
       };
       patch('albums', album.id, albumPatch);
-      logJournal('add', `Imported a release into ${album.title}`, `${releaseTitle || pv.title}: ${newIds.size} new tracks, ${included.length - newIds.size} already in the album`, album.id);
+      logJournal('add', `Imported a release into ${album.title}`, `${target ? `into “${target.title}”` : releaseTitle || pv.title}: ${newIds.size} new tracks, ${included.length - newIds.size} already in the album`, album.id);
       if (download && needDownload.length) { await syncNow(); await api().acquire(needDownload).catch(() => undefined); }
       if (coverNote) { setDone(`Imported, but the cover could not be fetched: ${coverNote}`); setBusy(null); return; }
       onClose();
@@ -98,7 +112,11 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
           <input autoFocus className="input" placeholder="https://music.youtube.com/playlist?list=…" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && url.trim() && !busy && void lookUp()} /></Field>
       ) : (<>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Release name"><input className="input" value={releaseTitle} onChange={(e) => setReleaseTitle(e.target.value)} /></Field>
+          <div className="space-y-3">
+            <Field label="Put it in" hint="Merge it into a release you already have (the one a Spotify import made, say) instead of adding a second one."><Select value={into} onChange={setInto}
+              options={[{ value: '', label: 'A new release' }, ...lib.releases.filter((r) => r.albumId === album.id).map((r) => ({ value: r.id, label: `Merge into: ${r.title}${r.releaseDate ? ` · ${r.releaseDate}` : ''}`, hint: `${r.trackIds.length} tracks` }))]} /></Field>
+            {!into && <Field label="Release name"><input className="input" value={releaseTitle} onChange={(e) => setReleaseTitle(e.target.value)} /></Field>}
+          </div>
           <div className="space-y-1.5 pt-5 text-sm">
             <label className="flex items-center gap-2"><input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />Make this the album's default release</label>
             {pv.thumbnail && <label className="flex items-center gap-2"><input type="checkbox" checked={useCover} onChange={(e) => setUseCover(e.target.checked)} />Add its cover to the album</label>}

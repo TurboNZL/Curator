@@ -29,6 +29,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const dataDir = resolve(env.CURATOR_DATA_DIR ?? './data');
   mkdirSync(join(dataDir, 'files'), { recursive: true });
   mkdirSync(join(dataDir, 'tmp'), { recursive: true });
+  mkdirSync(join(dataDir, 'cache'), { recursive: true });
 
   const port = Number(env.CURATOR_PORT ?? DEFAULT_PORT);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`Invalid CURATOR_PORT: ${env.CURATOR_PORT}`);
@@ -40,7 +41,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     token: env.CURATOR_TOKEN ?? loadOrCreateToken(dataDir),
     maxUploadBytes: Number(env.CURATOR_MAX_UPLOAD_MB ?? 1024) * 1024 * 1024,
     ytdlp: env.CURATOR_YTDLP,
-    ytdlpArgs: ytdlpArgs(env),
+    ytdlpArgs: withCacheDir(ytdlpArgs(env), dataDir),
     ffmpegDir: env.CURATOR_FFMPEG_DIR,
     webDir: env.CURATOR_WEB_DIR ? resolve(env.CURATOR_WEB_DIR) : defaultWebDir(),
     updateScript: defaultUpdateScript(env),
@@ -69,6 +70,15 @@ function defaultUpdateScript(env: NodeJS.ProcessEnv): string | undefined {
 function defaultWebDir(): string | undefined {
   const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../../../apps/web/dist');
   return existsSync(join(dir, 'index.html')) ? dir : undefined;
+}
+
+/**
+ * yt-dlp keeps a cache (the YouTube player code it works out, signatures) in ~/.cache, which on a Raspberry Pi is the SD card and
+ * is written on every download. Keep it next to the library instead, unless the person chose a place with --cache-dir.
+ */
+export function withCacheDir(args: string[] | undefined, dataDir: string): string[] {
+  const own = args ?? [];
+  return own.some((a) => a === '--cache-dir' || a.startsWith('--cache-dir=') || a === '--no-cache-dir') ? own : ['--cache-dir', join(dataDir, 'cache'), ...own];
 }
 
 /**

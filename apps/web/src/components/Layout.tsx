@@ -69,6 +69,7 @@ const MOBILE_HIDDEN = ['/discover', '/singles', '/eras', '/playlists', '/stats',
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
   { label: 'Import from Spotify', icon: ListMusic, target: { kind: 'import-spotify', id: '' } },
+  { label: 'Find YouTube links for tracks', icon: Search, target: { kind: 'match-links', id: '' } },
   { label: 'Add audio files', icon: FileAudio, target: { kind: 'upload', id: '' } },
   { label: 'New album', icon: Disc3, target: { kind: 'new-album', id: '' } },
   { label: 'New track', icon: Music2, target: { kind: 'new-track', id: '' } },
@@ -156,7 +157,7 @@ export function Layout() {
           ))}
           <div className="mt-auto"><SyncDot /></div>
         </aside>
-        <main className={cn('min-w-0 flex-1 overflow-y-auto', hasPlayer && 'has-player')}>
+        <main className={cn('min-w-0 flex-1 overflow-y-auto overflow-x-hidden', hasPlayer && 'has-player')}>
           <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
             <div className="bt-topin relative mx-auto flex max-w-3xl items-center gap-3">
               <img src={logo} alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0 md:hidden" draggable={false} />

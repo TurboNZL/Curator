@@ -1,3 +1,4 @@
+import { lookupAlbumDate } from './dates.ts';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
@@ -8,7 +9,7 @@ import { filePath } from './files.ts';
 
 export interface PreviewEntry { id: string; title: string; rawTitle: string; url: string; duration: number | null }
 /** `thumbnail` is the best candidate; `thumbnails` lists every candidate best-first so a failing one can be skipped. */
-export interface Preview { title: string; artist: string; thumbnail: string | null; thumbnails: string[]; entries: PreviewEntry[] }
+export interface Preview { title: string; artist: string; thumbnail: string | null; thumbnails: string[]; entries: PreviewEntry[]; /** when the album came out, when an exact match was found online */ releaseDate?: string | null }
 
 const NOISE = /\s*[(\[]\s*(official\s*(music\s*)?(video|audio|lyric\s*video|visuali[sz]er)|lyrics?(\s*video)?|audio|visuali[sz]er|hd|hq|explicit)\s*[)\]]\s*/gi;
 
@@ -111,6 +112,8 @@ export class Importer {
       p.thumbnails = [...squares, apple, ...p.thumbnails.filter((u) => !isSquareHost(u))];
       p.thumbnail = p.thumbnails[0];
     }
+    // when it came out, so the release the import makes starts with a date (exact matches only; never fails the preview)
+    p.releaseDate = (await lookupAlbumDate({ album: p.title, artist: p.artist }, { fetchImpl: this.o.fetchImpl }).catch(() => null))?.date ?? null;
     return p;
   }
 

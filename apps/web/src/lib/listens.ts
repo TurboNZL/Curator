@@ -1,3 +1,4 @@
+import { allSpotifyIds } from './spotifyLinks.ts';
 import type { Library } from './library.ts';
 import { spotifyTrackId } from './spotify.ts';
 
@@ -29,8 +30,7 @@ export function trackMatcher(lib: Library) {
   const byId = new Map<string, string>();
   const byName = new Map<string, string>();
   for (const t of lib.tracks) {
-    const id = spotifyTrackId(t.spotifyUrl);
-    if (id) byId.set(id, t.id);
+    for (const id of allSpotifyIds(t)) if (!byId.has(id)) byId.set(id, t.id); // a song's single and album versions are different Spotify tracks
     const key = `${norm(t.title)}|${norm(t.leads[0]?.name ?? t.artistName)}`;
     if (!byName.has(key)) byName.set(key, t.id);
   }

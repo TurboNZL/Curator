@@ -8,6 +8,10 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 > The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Toolbar* UI style and *Zinc* colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
 
+## Start here
+
+**[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** is the plain-language way in: install the desktop app (nothing else needed), or set up a home server on a Raspberry Pi with one command. Every guide in `docs/` is also readable inside the app (Settings → Guides).
+
 ## What it does
 
 **Ranking**
@@ -17,17 +21,21 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 **Library**
 - **Hierarchy:** Era (a collection of albums and singles, e.g. a phase of an artist) › Album › Release (a specific edition, with its own cover, date and tracklist) › Track. Singles are tracks on no album, with their own cover. Each album has a cover pool and a default release.
 - **Credits are the artist.** There is no "artist" field: the *Lead artist* credit is the artist; producer, writer, featured and any role you invent are credits too. An album's credits, genres and cover flow down to its tracks until you change them.
-- **Filtering** with Discord-style chips (`artist:`, `album:`, `era:`, `genre:`, `before:`, `after:`, `rating:`, `has:`) plus free text, sortable tables, search, stats, and a **library health** page that finds missing covers, links, dates and lead credits and fixes them in bulk.
+- **One toolbar on every list** (Artists, Albums, Eras, Tracks, Singles): search with Discord-style chips (`artist:`, `album:`, `era:`, `genre:`, `tag:`, `before:`, `after:`, `rating:`, `has:`; each page offers the ones that make sense for it), a sort column with direction, and a covers/list switch, remembered per page. Playlists show a Spotify-style 2×2 mosaic of their first covers, and can hold whole albums.
+- **Library health** finds missing covers, links, dates and lead credits and fixes them in bulk: *Find dates automatically* (from another release of the album, Spotify, iTunes, MusicBrainz), *Find YouTube links*, and **Merge duplicate tracks** (the single and the album version of one song become one track that keeps every Spotify link, vote and play). Releases can carry your own **tags**, and one release can be merged into another.
 - **Notes:** write-ups tied to any number of artists, albums, tracks, releases, eras or playlists, with categories you make yourself, shown on each entity's page. A journal on the home page records what you did.
 
 **Playback**
 - A real queue (play next, add, reorder, shuffle that keeps rule pairs together), playback rules, play history per track, a bass boost, media keys and lock-screen controls.
-- **Play on a device:** every device using your server appears in the player; move playback to another one or use this one as its remote ([docs/CONNECT.md](docs/CONNECT.md)).
+- **Play on a device:** every device using your server appears in the player, together with your **Spotify devices**; move playback to another one or use this one as its remote ([docs/CONNECT.md](docs/CONNECT.md)). Spotify tracks without a file play through Spotify, and the server can install and run Spotify's **Soloist** itself so no other Spotify app has to be open ([docs/SPOTIFY.md](docs/SPOTIFY.md)).
 - **Offline:** keep any album or playlist's audio on the device, within a storage limit you set.
 
 **Getting music in**
-- Import a whole album from a YouTube / YouTube Music link (yt-dlp on the server, with cover art), add audio files from your device, or add tracks by hand. The server can download missing audio for tracks that have a YouTube link.
+- Import a whole album from a YouTube / YouTube Music link (a release made this way starts with the album's date when one is known, and can be merged into a release you already have) (yt-dlp on the server, with cover art), add audio files from your device, or add tracks by hand. The server can download missing audio for tracks that have a YouTube link.
 - Backup and restore of the database and files from Settings, and a one-time migration from a legacy database.
+
+**Running the server**
+- **Server health** in Settings (free space on every disk, CPU temperature and load, memory, power, disk speed), **storage locations** (move the library files, temp folder and yt-dlp cache off the SD card while it runs), and buttons to copy the access token and the Cloudflare tunnel token.
 
 ## The apps
 
@@ -53,7 +61,9 @@ How it works: a colour theme is a set of CSS variables written onto `<html>` by 
 
 ## Running it
 
-You need **Node 22.13+** and **pnpm** ([docs/TESTING.md](docs/TESTING.md) has nvm instructions). From the repo root:
+**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/curator`. Details and what it does: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md).
+
+**From the source**, for development or any other machine: you need **Node 22.13+** and **pnpm** ([docs/TESTING.md](docs/TESTING.md) has nvm instructions). From the repo root:
 
 ```bash
 # once, and after each update (--ignore-scripts skips dependency install scripts; none are needed to run the server or build the web client)
@@ -80,6 +90,8 @@ The server prints its address and a token (also in `<data dir>/token`). Open the
 | `CURATOR_YTDLP`, `CURATOR_FFMPEG_DIR` | found on `PATH` | Tools for YouTube import and downloads. |
 | `CURATOR_YTDLP_COOKIES`, `CURATOR_YTDLP_ARGS` | none | A cookies file and extra arguments for yt-dlp ([docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md)). |
 | `CURATOR_WEB_DIR` | `apps/web/dist` | The client build to serve. |
+| `CURATOR_TUNNEL_TOKEN` | none | A Cloudflare tunnel token to offer under Settings → Copy tunnel token (else `<data>/tunnel-token` or the cloudflared service is read). |
+| `CURATOR_UPDATE` | auto | `0` hides the Update server button, `1` shows it outside systemd. |
 
 Desktop app only: `CURATOR_DESKTOP_PORT` (default 47814) and `CURATOR_SOFTWARE_RENDERING=1` (turn the GPU off, for diagnosing a driver).
 
@@ -92,7 +104,7 @@ To bring an old library across: `CURATOR_DATA_DIR=… node --experimental-strip-
 
 ## Guides
 
-[docs/TESTING.md](docs/TESTING.md) (try it with your own library) · [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups) · [docs/UPDATING.md](docs/UPDATING.md) · [docs/ELECTRON.md](docs/ELECTRON.md) · [docs/ANDROID.md](docs/ANDROID.md) · [docs/CONNECT.md](docs/CONNECT.md) · [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) · [docs/appearance/](docs/appearance/README.md) · [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) · [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
+[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) (start here) · [docs/TESTING.md](docs/TESTING.md) (try it with your own library) · [docs/DISCORD.md](docs/DISCORD.md) · [docs/SPOTIFY.md](docs/SPOTIFY.md) · [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups) · [docs/UPDATING.md](docs/UPDATING.md) · [docs/ELECTRON.md](docs/ELECTRON.md) · [docs/ANDROID.md](docs/ANDROID.md) · [docs/CONNECT.md](docs/CONNECT.md) · [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) · [docs/appearance/](docs/appearance/README.md) · [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) · [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
 
 ## Tests
 

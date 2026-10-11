@@ -44,6 +44,8 @@ export interface ReleaseData {
   title: string;
   cover: string | null;
   releaseDate: string | null;
+  /** the user's own labels for this edition ("vinyl", "clean", "deluxe", "2026 remaster"); optional */
+  tags?: string[];
   /** ordered */
   trackIds: string[];
 }
@@ -63,6 +65,8 @@ export interface TrackData {
   file: string | null;
   initialRating: number | null;
   spotifyUrl: string | null;
+  /** other Spotify links of the same song (a single that later came out on an album has a second one); `spotifyUrl` is the one played */
+  spotifyUrls?: string[];
   geniusUrl: string | null;
   youtubeMusicUrl: string | null;
   bitrate: string | null;
@@ -81,6 +85,10 @@ export interface PlaylistData {
   description: string | null;
   cover: string | null;
   createdAt: number;
+  /** 'tracks' (the default, also when missing) lists songs; 'albums' lists whole albums, which play front to back */
+  kind?: 'tracks' | 'albums';
+  /** the albums of an album playlist, in order */
+  albumIds?: string[];
   trackIds: string[];
   /** "Playlist note": why a track is in this playlist, or anything else about it there (track id -> text) */
   trackNotes?: Record<string, string>;

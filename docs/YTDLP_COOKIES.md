@@ -10,7 +10,7 @@ YouTube sometimes refuses a download from a server it does not trust and asks th
 
 ## What the server already does
 
-- When a download is refused like this it **retries once** with the player clients that need no proof of origin (`android_vr`, `web_embedded`). That rescues many tracks on its own.
+- When a download is refused like this it **retries once** with the player clients that need no proof of origin (`visionos`, `web_embedded`, `mweb`, then `android`, `tv_downgraded`; `android_vr` was dropped because YouTube now answers it with 403). That rescues many tracks on its own.
 - If that is refused too, the track is marked failed with a message that points here. **Settings → Audio → Progress** lists every failed track and its error. Pressing **Download missing audio** again retries them.
 - YouTube is also gentler on slow clients: the server downloads two tracks at a time. Retrying later, in a smaller batch, often works.
 

@@ -15,7 +15,9 @@ import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.ts
 import { Section } from '../components/Section.tsx';
 import { SpotifyCard } from '../components/SpotifyCard.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
+import { GuidesTab } from '../components/GuidesTab.tsx';
 import { ServerUpdateCard } from '../components/ServerUpdate.tsx';
+import { ConnectionTokens, ServerHealthCard } from '../components/ServerHealthCard.tsx';
 import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
 
 
@@ -41,7 +43,7 @@ export function SettingsPage() {
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
   const [params, setParams] = useSearchParams();
-  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
+  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'look';
 
   return (
@@ -66,10 +68,13 @@ export function SettingsPage() {
         <label className="block space-y-1 text-sm">Token<input className="input font-mono" type="password" placeholder="contents of <data dir>/token" value={token} onChange={(e) => setToken(e.target.value)} /></label>
         <div className="flex flex-wrap items-center gap-2"><button className="btn" onClick={test}>Test connection</button><button className="btn btn-accent" onClick={save}>Save &amp; sync</button>
           <button className="btn btn-ghost" onClick={() => void syncNow()} disabled={sync.state === 'syncing'}><RefreshCw size={15} className={cn(sync.state === 'syncing' && 'animate-spin')} />Sync now</button></div>
+        <ConnectionTokens />
         {status && <div className="rounded-theme bg-raised p-3 text-sm">{typeof status === 'string' ? status : <>Connected · {status.files.count} files ({fmtBytes(status.files.bytes)}) · cursor {status.cursor}
           {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'} · cookies: {status.tools.cookies ? 'set' : 'not set'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
+
+      <ServerHealthCard />
 
       <ServerUpdateCard />
 
@@ -81,6 +86,8 @@ export function SettingsPage() {
 
       <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
       </>}
+
+      {tab === 'guides' && <GuidesTab />}
 
       {tab === 'app' && <>
       {desktop() && <Section title="Desktop app">

@@ -16,7 +16,7 @@ const TABS = [{ id: 'overview', label: 'Overview' }, { id: 'top', label: 'Top' }
 type Tab = (typeof TABS)[number]['id'];
 
 function Panel({ title, children, right, className }: { title: string; children: React.ReactNode; right?: React.ReactNode; className?: string }) {
-  return <section className={cn('card space-y-3 p-5', className)}><div className="flex items-center justify-between gap-2"><h2 className="font-semibold">{title}</h2>{right}</div>{children}</section>;
+  return <section className={cn('card min-w-0 space-y-3 p-5', className)}><div className="flex items-center justify-between gap-2"><h2 className="font-semibold">{title}</h2>{right}</div>{children}</section>;
 }
 
 function Overview({ s, lib }: { s: ListenStats; lib: ReturnType<typeof useLibrary> }) {

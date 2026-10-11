@@ -1,13 +1,29 @@
-import { useState } from 'react';
-import { Cast, Check, Monitor, Radio, Smartphone } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Cast, Check, Monitor, Music, Radio, Smartphone, Speaker } from 'lucide-react';
 import type { DeviceInfo } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { control, disconnect, myId, pullFrom, pushTo, useConnect } from '../lib/connect.ts';
 import { usePlayer } from '../lib/player.ts';
 import { usePopups } from '../lib/popups.ts';
-import { useStore } from '../lib/store.ts';
+import { api, useStore } from '../lib/store.ts';
+import { chooseSpotifyDevice, useSpotifyLink } from '../lib/spotifyPlayer.ts';
+import type { SpotifyDeviceInfo } from '../lib/api.ts';
 import { cn } from '../lib/cn.ts';
 import { Popover } from './Popover.tsx';
+
+/** Spotify Connect devices of the signed-in account (Soloist, the phone's Spotify app, a speaker), refreshed while the list is open. */
+function useSpotifyDevices(): SpotifyDeviceInfo[] {
+  const signedIn = useSpotifyLink((s) => s.signedIn);
+  const [list, setList] = useState<SpotifyDeviceInfo[]>([]);
+  useEffect(() => {
+    if (!signedIn) { setList([]); return; }
+    let alive = true, t: number | undefined;
+    const tick = () => { api().spotifyDevices().then((r) => alive && setList(r.devices), () => alive && setList([])).finally(() => { if (alive) t = window.setTimeout(tick, 8000); }); };
+    tick();
+    return () => { alive = false; if (t) clearTimeout(t); };
+  }, [signedIn]);
+  return list;
+}
 
 const iconFor = (d: DeviceInfo) => (d.kind === 'android' ? Smartphone : d.kind === 'electron' ? Monitor : Cast);
 
@@ -20,6 +36,9 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
   const hereTrack = usePlayer((s) => s.queue.currentId);
   const me = myId();
   const [err, setErr] = useState<string | null>(null);
+  const spotify = useSpotifyDevices();
+  const engine = usePlayer((s) => s.engine);
+  const chosen = useStore((s) => s.settings.spotifyDeviceId);
   if (!configured) return <p className="p-3 text-sm text-muted">Connect needs your server. Add its address and token in Settings.</p>;
   if (!live) return <p className="p-3 text-sm text-muted">Connecting to the server…</p>;
   const sorted = [...devices].sort((a, b) => Number(b.id === me) - Number(a.id === me) || a.name.localeCompare(b.name));
@@ -63,7 +82,22 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
             </div>
           </div>);
       })}
-      {devices.length < 2 && <p className="px-3 py-2 text-xs text-muted">Open Curator on another device that uses this server and it appears here. Then you can play on it from here, or move what is playing between them.</p>}
+      {spotify.length > 0 && <>
+        <div className="mt-1 border-t border-line/60 px-3 pb-0.5 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Spotify devices</div>
+        {spotify.map((d) => {
+          const selected = chosen === d.id;
+          const playing = selected && engine === 'spotify' && !remoteId;
+          return (
+            <button key={d.id} type="button" data-selected={selected || undefined} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised/60" aria-label={`Spotify device ${d.name}`}
+              title={selected ? 'Spotify tracks play here' : 'Play Spotify tracks on this device'} onClick={() => run(() => chooseSpotifyDevice(d), false)}>
+              {d.type.toLowerCase() === 'speaker' ? <Speaker size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} /> : <Music size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} />}
+              <span className="min-w-0 flex-1"><span className={cn('flex items-center gap-1.5 font-medium', selected && 'text-accent')}><span className="truncate">{d.name}</span>{playing && <Radio size={12} className="shrink-0 animate-pulse" aria-label="Playing" />}</span>
+                <span className="block truncate text-xs text-muted">Spotify · {d.type}{d.active ? ' · active' : ''}{playing ? ' · playing from Curator' : selected ? ' · where Spotify tracks play' : ''}</span></span>
+              {selected && <Check size={16} className="shrink-0 text-accent" />}
+            </button>);
+        })}
+      </>}
+      {devices.length < 2 && !spotify.length && <p className="px-3 py-2 text-xs text-muted">Open Curator on another device that uses this server and it appears here. Then you can play on it from here, or move what is playing between them.</p>}
       {err && <p className="px-3 pb-2 text-xs text-bad">{err}</p>}
     </div>
   );

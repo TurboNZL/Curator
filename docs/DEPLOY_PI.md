@@ -1,6 +1,12 @@
 # Running the server on a Raspberry Pi
 
-Written from the server's actual behaviour (`packages/server`). The parts that depend on your Pi (model, OS, drive) are marked **check**. Nothing here has been run on a real Pi yet. Report anything that does not match and this file gets fixed.
+Written from the server's actual behaviour (`packages/server`). The parts that depend on your Pi (model, OS, drive) are marked **check**. Report anything that does not match and this file gets fixed.
+
+> **The short way:** one command does sections 2, 3 and 4 below (Node, the app, the service, yt-dlp, ffmpeg, a weekly yt-dlp update) and prints the address and token:
+> ```
+> curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/music/curator
+> ```
+> Mount the drive first (section 1; or use the folder your desktop already mounts). `--dry-run` shows what it would do; running it again updates. [GETTING_STARTED.md](GETTING_STARTED.md) has the plain-language version. Everything below is the same thing by hand, plus what the script does not cover. The script itself has only been checked with `bash -n` and a dry run, not on a real Pi: if a step fails it says which, and the manual sections below are the fallback.
 
 ## 0. What you need
 - A Pi 64-bit OS (Raspberry Pi OS 64-bit / Debian 12+). The server is plain Node, so any model that runs it works; downloads and ffmpeg are the slow part on older Pis.
@@ -89,6 +95,16 @@ sudo tailscale serve --bg 47813
 tailscale serve status          # prints the https://<pi>.<tailnet>.ts.net URL
 ```
 Open that URL on your phone (also on Tailscale). With this in place you can set `CURATOR_HOST=127.0.0.1` so the plain-HTTP port is not reachable on the LAN at all; the trade-off is that `http://<pi>:47813` stops working. Check `tailscale serve --help` on your version, the CLI changed in 1.52. Do not expose port 47813 to the public internet: the only protection is the token.
+
+## 5b. Keeping the SD card healthy, and watching the Pi
+An SD card dies from writes, not from age. What writes on this server and where it goes:
+- **The library (`CURATOR_DATA_DIR`)**: database, audio, pictures, temporary downloads, the yt-dlp cache and Soloist's files all live under it. Put it on the external drive (section 1) and none of that touches the card. Settings → Library & server → **Server health** warns when it is on the system disk.
+- **Already installed on the card?** Settings → **Server health → Storage locations** moves the library files, the temporary folder and the yt-dlp cache to another drive while the server runs (it copies and checks every file before switching, and leaves a link where the folder was). The database stays in the data folder: point `CURATOR_DATA_DIR` at the drive for that (stop the service, copy `curator.db*`, change the unit).
+- **yt-dlp's cache** used to go to `~/.cache` (the card). The server now passes `--cache-dir <data>/cache` itself, unless you set your own `--cache-dir` in `CURATOR_YTDLP_ARGS`.
+- **Scratch space** (`TMPDIR`) of ffmpeg and yt-dlp is `<data>/tmp`, set by the server.
+- **The system's own writing** (not Curator's): keep logs in memory with `sudo mkdir -p /etc/systemd/journald.conf.d && printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=50M\n' | sudo tee /etc/systemd/journald.conf.d/volatile.conf` (you lose logs at reboot), add `noatime` to the root line in `/etc/fstab`, and do not enable swap on the card (`sudo dphys-swapfile swapoff; sudo systemctl disable dphys-swapfile`).
+- **Server health** (Settings): free space on every disk the server uses, CPU temperature and load, memory and swap, whether the power supply dipped (`vcgencmd get_throttled`), how fast the disk answers a 4 KB synced write, and the database size. It reads a few kernel files and writes 4 KB every 30 seconds at most, only while the page is open. Warnings are plain sentences; nothing is stored.
+- **Copy the access token or the Cloudflare tunnel token** from the Server card (Settings → Library & server). The tunnel token is read from `CURATOR_TUNNEL_TOKEN`, from `<data folder>/tunnel-token`, or from the cloudflared systemd service when the server may read it; otherwise the button says where to put it.
 
 ## 6. Backups
 - **Files** (`files/`) are immutable and content-addressed, so a plain `rsync -a /mnt/curator/data/files/ <backup>/files/` is incremental and safe while running.

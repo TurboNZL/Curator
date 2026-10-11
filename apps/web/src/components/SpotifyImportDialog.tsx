@@ -1,3 +1,4 @@
+import { withLink } from '../lib/spotifyLinks.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUp, Link2, ListMusic, Loader2, User } from 'lucide-react';
@@ -88,7 +89,13 @@ export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
       const artistIds = new Map(lib.artists.map((a) => [norm(a.name), a.id]));
       const artist = (n: string) => { const k = norm(n); let id = artistIds.get(k); if (!id) { id = put('artists', { name: n.trim(), image: null } satisfies ArtistData); artistIds.set(k, id); } return id; };
       const trackIdOf = new Map<string, string>();
-      for (const t of plan.tracks) if (t.existingTrackId) trackIdOf.set(t.src.uri, t.existingTrackId);
+      for (const t of plan.tracks) if (t.existingTrackId) {
+        trackIdOf.set(t.src.uri, t.existingTrackId);
+        // reused by title and artist: this Spotify track may be another release of the same song (the single, then the album), so keep its link too
+        const have = lib.trackById.get(t.existingTrackId);
+        const more = have && withLink(have, `https://open.spotify.com/track/${t.src.id}`);
+        if (more) patch('tracks', t.existingTrackId, more);
+      }
       let albumsMade = 0, tracksMade = 0, coverFails = 0;
       const newAlbumIds: { id: string; releaseId: string | null; coverFrom: string | null }[] = [];
       if (makeAlbums) {

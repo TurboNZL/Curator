@@ -13,6 +13,17 @@ import { spotifyTrackId } from './spotify.ts';
 interface LinkState { signedIn: boolean | null; error: string | null; lastState: SpotifyPlayerInfo | null }
 export const useSpotifyLink = create<LinkState>(() => ({ signedIn: null, error: null, lastState: null }));
 
+/**
+ * Make a Spotify device the one Spotify tracks play on (this device's choice). When a Spotify track is playing right now it moves there
+ * with the playback, so picking a device in the list behaves like Spotify Connect.
+ */
+export async function chooseSpotifyDevice(d: { id: string; name: string }): Promise<void> {
+  const st = useStore.getState();
+  const was = st.settings.spotifyDeviceId;
+  st.updateSettings({ spotifyDeviceId: d.id, spotifyDeviceName: d.name });
+  if (spotifyEngine.active() && was !== d.id) await api().spotifyCommand('transfer', d.id);
+}
+
 export const spotifyUriOf = (t: { spotifyUrl?: string | null }): string | null => { const id = spotifyTrackId(t.spotifyUrl); return id ? `spotify:track:${id}` : null; };
 
 export async function refreshSpotifyStatus(): Promise<boolean> {

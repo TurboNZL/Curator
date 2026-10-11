@@ -40,11 +40,12 @@ export function PlaylistDialog({ playlistId, onClose }: { playlistId?: string; o
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [cover, setCover] = useState<string | null>(existing?.cover ?? null);
+  const [kind, setKind] = useState<'tracks' | 'albums'>(existing?.kind ?? 'tracks');
   if (playlistId && !existing) return null;
   const save = () => {
     const d = { name: name.trim(), description: description.trim() || null, cover };
     if (existing) patch('playlists', existing.id, d);
-    else put('playlists', { ...d, createdAt: Date.now(), trackIds: [] } satisfies PlaylistData);
+    else put('playlists', { ...d, createdAt: Date.now(), trackIds: [], ...(kind === 'albums' ? { kind, albumIds: [] } : {}) } satisfies PlaylistData);
     onClose();
   };
   return (
@@ -52,6 +53,10 @@ export function PlaylistDialog({ playlistId, onClose }: { playlistId?: string; o
       {existing && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${existing.name}”? The tracks stay in your library.`)) { remove('playlists', existing.id); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!name.trim()} onClick={save}>{existing ? 'Save' : 'Create'}</button></div></>}>
       <ImagePicker hash={cover} onChange={setCover} seed={name || 'playlist'} />
+      <p className="-mt-2 text-xs text-muted">Leave the picture empty and the playlist shows a mosaic of the covers of its first four {kind === 'albums' ? 'albums' : 'tracks'}.</p>
+      {!existing && <Field label="What does it hold?"><div className="flex gap-2" role="group" aria-label="Playlist type">
+        <button type="button" className={`btn ${kind === 'tracks' ? 'btn-accent' : ''}`} aria-pressed={kind === 'tracks'} onClick={() => setKind('tracks')}>Songs</button>
+        <button type="button" className={`btn ${kind === 'albums' ? 'btn-accent' : ''}`} aria-pressed={kind === 'albums'} onClick={() => setKind('albums')}>Albums</button></div></Field>}
       <Field label="Name"><input autoFocus className="input" placeholder="e.g. Late night jazz" value={name} onChange={(e) => setName(e.target.value)} /></Field>
       <Field label="Description"><textarea className="input" rows={3} placeholder="What's the vibe of this collection?" value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
     </Modal>
@@ -75,12 +80,41 @@ export function AddToPlaylistDialog({ trackId, onClose }: { trackId: string; onC
     <Modal title="Add to playlist" onClose={onClose} footer={<button className="btn btn-accent ml-auto" onClick={onClose}>Done</button>}>
       <div className="text-sm text-muted">{track.title} · {track.artistName}</div>
       <div className="max-h-64 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">
-        {lib.playlists.map((p) => { const on = p.trackIds.includes(trackId); return (
+        {lib.playlists.filter((p) => p.kind !== 'albums').map((p) => { const on = p.trackIds.includes(trackId); return (
           <button key={p.id} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => toggle(p.id, p.trackIds)}>
             <span className="flex h-5 w-5 items-center justify-center rounded border border-line">{on && <Check size={13} />}</span><span className="flex-1 truncate">{p.name}</span><span className="text-xs text-muted">{p.trackIds.length}</span></button>); })}
-        {!lib.playlists.length && <div className="px-3 py-3 text-sm text-muted">No playlists yet. Make one below.</div>}
+        {!lib.playlists.some((p) => p.kind !== 'albums') && <div className="px-3 py-3 text-sm text-muted">No playlists yet. Make one below.</div>}
       </div>
       <div className="flex gap-2"><input className="input" placeholder="New playlist name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
+        <button className="btn shrink-0" disabled={!name.trim()} onClick={create}><Plus size={15} />Create &amp; add</button></div>
+    </Modal>
+  );
+}
+
+/** Put one album on one or more album playlists (or a new one). Ticking toggles membership immediately. */
+export function AddAlbumToPlaylistDialog({ albumId, onClose }: { albumId: string; onClose: () => void }) {
+  const lib = useLibrary();
+  const { put, patch } = useStore();
+  const [name, setName] = useState('');
+  const album = lib.albumById.get(albumId);
+  if (!album) return null;
+  const lists = lib.playlists.filter((p) => p.kind === 'albums');
+  const toggle = (id: string, ids: string[]) => patch('playlists', id, { albumIds: ids.includes(albumId) ? ids.filter((x) => x !== albumId) : [...ids, albumId] });
+  const create = () => {
+    if (!name.trim()) return;
+    put('playlists', { name: name.trim(), description: null, cover: null, createdAt: Date.now(), trackIds: [], kind: 'albums', albumIds: [albumId] } satisfies PlaylistData);
+    setName('');
+  };
+  return (
+    <Modal title="Add to album playlist" onClose={onClose} footer={<button className="btn btn-accent ml-auto" onClick={onClose}>Done</button>}>
+      <div className="text-sm text-muted">{album.title} · {album.artistName}</div>
+      <div className="max-h-64 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">
+        {lists.map((p) => { const on = (p.albumIds ?? []).includes(albumId); return (
+          <button key={p.id} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => toggle(p.id, p.albumIds ?? [])}>
+            <span className="flex h-5 w-5 items-center justify-center rounded border border-line">{on && <Check size={13} />}</span><span className="flex-1 truncate">{p.name}</span><span className="text-xs text-muted">{(p.albumIds ?? []).length}</span></button>); })}
+        {!lists.length && <div className="px-3 py-3 text-sm text-muted">No album playlists yet. Make one below.</div>}
+      </div>
+      <div className="flex gap-2"><input className="input" placeholder="New album playlist name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()} />
         <button className="btn shrink-0" disabled={!name.trim()} onClick={create}><Plus size={15} />Create &amp; add</button></div>
     </Modal>
   );

@@ -4,6 +4,7 @@ import { trackPath } from '../lib/trackPath.ts';
 import { Cast, Info, ListMusic, Pause, Play, Shuffle, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
+import { useStore } from '../lib/store.ts';
 import { usePopups } from '../lib/popups.ts';
 import { usePresence } from '../lib/presence.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -27,6 +28,7 @@ const pct = (v: number, max: number) => ({ '--p': `${max > 0 ? Math.min(100, (v 
 export function PlayerBar() {
   const lib = useLibrary();
   const p = usePlayer();
+  const spotifyDevice = useStore((st) => st.settings.spotifyDeviceName);
   const v = usePlaybackView();
   const edit = useEditor((s) => s.open);
   const current = v.trackId ? lib.trackById.get(v.trackId) : undefined;
@@ -57,6 +59,7 @@ export function PlayerBar() {
             <div className="min-w-0">
               <div className="bt-ptitle truncate text-sm font-medium"><Link to={trackPath(track)} className="hover:underline" title="Go to this track in your library">{track.title}</Link></div>
               <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
+              {!v.remote && p.engine === 'spotify' && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {spotifyDevice || 'Spotify'}</div>}
               {v.remote && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {v.remote.name}</div>}
             </div>
             <button type="button" className="btn btn-ghost !p-1.5 shrink-0" title="Track info" aria-label="Track info" onClick={() => edit({ kind: 'track-details', id: track.id })}><Info size={16} /></button>
