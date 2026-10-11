@@ -30,6 +30,11 @@ export interface DeviceSettings {
   eqBass: number;
   eqBands: number[];
   eqPreamp: number;
+  /** Spotify Connect device this app sends tracks to (id from the account's device list; '' = none) and its name for display */
+  spotifyDeviceId: string;
+  spotifyDeviceName: string;
+  /** play tracks that have a Spotify link but no audio file through Spotify */
+  spotifyAuto: boolean;
   /** vibration feedback on presses (the Android app and phones that support it) */
   haptics: boolean;
 }
@@ -61,7 +66,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));

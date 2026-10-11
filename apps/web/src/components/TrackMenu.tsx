@@ -1,4 +1,5 @@
 import { Info, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Minus, Disc3, StickyNote, User } from 'lucide-react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import type { Track } from '../lib/derive.ts';
 import type { EditTarget } from '../lib/editor.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -16,9 +17,9 @@ export function useTrackMenuItems() {
     const memories = t.memories ?? 0;
     const open = (target: EditTarget) => () => edit(target);
     return [
-      { label: 'Play', icon: <Play size={15} />, run: onPlay, disabled: !t.file },
-      { label: 'Play next', icon: <ListStart size={15} />, run: () => enqueue(t.id, 'next'), disabled: !t.file },
-      { label: 'Add to queue', icon: <ListEnd size={15} />, run: () => enqueue(t.id, 'last'), disabled: !t.file },
+      { label: 'Play', icon: <Play size={15} />, run: onPlay, disabled: !canPlay(t) },
+      { label: 'Play next', icon: <ListStart size={15} />, run: () => enqueue(t.id, 'next'), disabled: !canPlay(t) },
+      { label: 'Add to queue', icon: <ListEnd size={15} />, run: () => enqueue(t.id, 'last'), disabled: !canPlay(t) },
       { label: 'Add to playlist…', icon: <ListPlus size={15} />, run: open({ kind: 'add-to-playlist', id: t.id }) },
       ...(t.albumId ? [] : [{ label: 'Add to album…', icon: <Disc3 size={15} />, run: open({ kind: 'add-to-album', id: t.id }) }]),
       { separator: true },

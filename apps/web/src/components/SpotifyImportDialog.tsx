@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileUp, Link2, ListMusic, Loader2, LogIn, User } from 'lucide-react';
+import { FileUp, Link2, ListMusic, Loader2, User } from 'lucide-react';
 import type { ArtistData } from '@curator/core';
 import { leadCredit, newAlbumData, newTrackData } from '../lib/defaults.ts';
 import type { SpotifyImportTrack, SpotifyList } from '../lib/api.ts';
@@ -11,6 +11,7 @@ import { parseAccountData, parseTextList, planImport, type ImportPlan } from '..
 import { readZip } from '../lib/zipRead.ts';
 import { cn } from '../lib/cn.ts';
 import { Field, Modal } from './forms.tsx';
+import { SpotifyAccountPanel } from './SpotifyAccountPanel.tsx';
 
 type Source = 'link' | 'account' | 'file' | 'text';
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -20,6 +21,21 @@ const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g
  * "Account data" file from Spotify's privacy page, or a typed list. Whatever the way, the result is the same review screen: the playlist,
  * and an album for each new track that you complete later with a YouTube album link (Library health).
  */
+function PlaylistPicker({ onPick, busy }: { onPick: (id: string) => void; busy: boolean }) {
+  const [mine, setMine] = useState<{ id: string; name: string; tracks: number | null; owner: string; mine: boolean }[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { api().spotifyPlaylists().then((r) => setMine(r.playlists)).catch((e: Error) => setErr(e.message)); }, []);
+  return (
+    <div className="space-y-1">
+      <div className="max-h-72 space-y-1 overflow-y-auto">{mine?.map((p) => <button key={p.id} className="flex w-full items-center gap-2 rounded-theme px-2 py-1.5 text-left hover:bg-raised" disabled={busy} onClick={() => onPick(p.id)}>
+        <ListMusic size={14} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 truncate">{p.name}</span><span className="text-xs text-muted">{p.tracks ?? '?'} tracks{!p.mine ? ` · ${p.owner}` : ''}</span></button>)}
+        {mine && !mine.length && <div className="text-muted">No playlists found.</div>}{!mine && !err && <div className="text-muted">Loading…</div>}</div>
+      {err && <div className="text-bad">{err}</div>}
+      <p className="text-xs text-muted">Spotify only lets this app read playlists you own or collaborate on; others fail with a clear message (use the link tab for those).</p>
+    </div>
+  );
+}
+
 export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
   const lib = useLibrary();
   const { put, patch } = useStore();
@@ -41,11 +57,6 @@ export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
-  const [acct, setAcct] = useState<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean } | null>(null);
-  const [clientId, setClientId] = useState('');
-  const [redirect, setRedirect] = useState('');
-  const [pasted, setPasted] = useState('');
-  const [mine, setMine] = useState<{ id: string; name: string; tracks: number | null; owner: string; mine: boolean }[] | null>(null);
 
   const guard = async (what: string, f: () => Promise<void>) => {
     setBusy(what); setError(null);
@@ -53,8 +64,6 @@ export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
   };
   const open = (l: SpotifyList) => { setList(l); setName(l.name); setSkipped(new Set()); setChoices(null); };
 
-  const loadAccount = () => guard('Checking…', async () => { const s = await api().spotifyStatus(); setAcct(s); setClientId(s.clientId); setRedirect(s.redirectUri); if (s.signedIn) setMine((await api().spotifyPlaylists()).playlists); });
-  useEffect(() => { if (source === 'account' && configured && !acct) void loadAccount(); }, [source]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function readFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -156,24 +165,7 @@ export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
           <button className="btn btn-accent" disabled={!url.trim() || !!busy || !configured} onClick={() => void guard('Reading the playlist…', async () => open(await api().spotifyResolve(url.trim())))}>Look up</button>
         </div>}
 
-        {source === 'account' && <div className="space-y-3 text-sm">
-          {!acct ? <div className="text-muted">{configured ? 'Checking…' : 'Needs a server.'}</div> : acct.signedIn ? (<>
-            <div className="flex items-center gap-2"><span className="text-good">Signed in to Spotify.</span><button className="btn btn-ghost !py-1 text-xs" onClick={() => void guard('Signing out…', async () => { await api().spotifySignOut(); setMine(null); await loadAccount(); })}>Sign out</button></div>
-            <div className="max-h-72 space-y-1 overflow-y-auto">{mine?.map((p) => <button key={p.id} className="flex w-full items-center gap-2 rounded-theme px-2 py-1.5 text-left hover:bg-raised" disabled={!!busy} onClick={() => void guard('Reading the playlist…', async () => open(await api().spotifyPlaylist(p.id)))}>
-              <ListMusic size={14} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 truncate">{p.name}</span><span className="text-xs text-muted">{p.tracks ?? '?'} tracks{!p.mine ? ` · ${p.owner}` : ''}</span></button>)}
-              {mine && !mine.length && <div className="text-muted">No playlists found.</div>}</div>
-            <p className="text-xs text-muted">Spotify only lets this app read playlists you own or collaborate on; others fail with a clear message (use the link tab for those).</p>
-          </>) : (<>
-            <ol className="list-decimal space-y-1 pl-5 text-muted"><li>Make an app at <b>developer.spotify.com/dashboard</b> (free; Spotify requires Premium for the account that owns it). Set its Redirect URI to the address below exactly.</li>
-              <li>Paste the app's <b>Client ID</b> here and save.</li><li>Press <b>Sign in with Spotify</b>, allow access, and copy the address Spotify sends you to (the page may show an error: that is fine, copy the whole address).</li><li>Paste it below.</li></ol>
-            <div className="grid gap-2 sm:grid-cols-2"><Field label="Client ID"><input className="input font-mono" value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="32 letters and digits" /></Field>
-              <Field label="Redirect URI"><input className="input font-mono" value={redirect} onChange={(e) => setRedirect(e.target.value)} /></Field></div>
-            <div className="flex flex-wrap gap-2"><button className="btn" disabled={!clientId.trim() || !!busy} onClick={() => void guard('Saving…', async () => setAcct(await api().spotifyConfig(clientId.trim(), redirect.trim() || undefined)))}>Save</button>
-              <button className="btn btn-accent" disabled={!acct.configured || !!busy} onClick={() => void guard('Opening Spotify…', async () => { window.open((await api().spotifyAuthUrl()).url, '_blank', 'noopener'); })}><LogIn size={15} />Sign in with Spotify</button></div>
-            <Field label="Address Spotify sent you to"><input className="input font-mono" value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder="http://127.0.0.1:47813/api/spotify/callback?code=…" /></Field>
-            <button className="btn" disabled={!pasted.trim() || !!busy} onClick={() => void guard('Connecting…', async () => { await api().spotifyExchange(pasted.trim()); setPasted(''); await loadAccount(); })}>Connect</button>
-          </>)}
-        </div>}
+        {source === 'account' && <SpotifyAccountPanel>{() => <PlaylistPicker busy={!!busy} onPick={(id) => void guard('Reading the playlist…', async () => open(await api().spotifyPlaylist(id)))} />}</SpotifyAccountPanel>}
 
         {source === 'file' && <div className="space-y-2 text-sm"><p className="text-muted">The most reliable way: on spotify.com/account/privacy request <b>Account data</b> (arrives in a day or so), then choose the .zip, or <code>Playlist1.json</code> / <code>YourLibrary.json</code> from it. No server needed.</p>
           <button className="btn btn-accent" disabled={!!busy} onClick={() => fileInput.current?.click()}><FileUp size={15} />Choose file…</button>

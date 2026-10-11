@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams } from 'react-router-dom';
 import { Layers, MoreHorizontal, Pencil, Play, Plus } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
@@ -52,7 +53,7 @@ export function EraPage() {
   const albums = era.albumIds.flatMap((id) => lib.albumById.get(id) ?? []);
   const singles = era.trackIds.flatMap((id) => lib.trackById.get(id) ?? []);
   const playlists = era.playlistIds.flatMap((id) => lib.playlists.find((p) => p.id === id) ?? []);
-  const ids = [...albums.flatMap((a) => a.trackIds), ...singles.map((t) => t.id)].filter((t) => lib.trackById.get(t)?.file);
+  const ids = [...albums.flatMap((a) => a.trackIds), ...singles.map((t) => t.id)].filter((t) => canPlay(lib.trackById.get(t)));
   const cover = era.cover || albums.find((a) => a.cover)?.cover || null;
   return (
     <DetailLayout right={<Notes lib={lib} type="era" id={era.id} />}>

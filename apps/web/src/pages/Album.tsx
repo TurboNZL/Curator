@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Disc, Download, FileAudio, Layers, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
@@ -41,7 +42,7 @@ export function AlbumPage() {
 
   const ids = viewTrackIds(lib, album, view);
   const tracks = ids.map((t) => lib.trackById.get(t)!);
-  const playable = tracks.filter((t) => t.file).map((t) => t.id);
+  const playable = tracks.filter(canPlay).map((t) => t.id);
   const cover = release?.cover || album.cover;
 
   return (

@@ -8,6 +8,7 @@ import { useStore } from './store.ts';
 import { resumeEq, setEq } from './eq.ts';
 import { eqConfig } from './eqConfig.ts';
 import { isFlat } from './eqPresets.ts';
+import { refreshSpotifyStatus, spotifyCan, spotifyEngine, spotifyUriOf } from './spotifyPlayer.ts';
 
 interface Source { type: SourceType; id: string | null }
 
@@ -89,11 +90,11 @@ export const usePlayer = create<PlayerState>((set, get) => {
   };
 
   /** playbackLogs are append-only; skips are logged too so stats can tell them apart */
-  const position = () => (native ? get().time : audio?.currentTime ?? get().time);
+  const position = () => (spotifyEngine.active() || native ? get().time : audio?.currentTime ?? get().time);
 
   function logPlay(isSkip: boolean) {
     const id = get().queue.currentId;
-    if (!id || (!audio && !native)) return;
+    if (!id || (!audio && !native && !spotifyEngine.active())) return;
     const dur = position();
     if (dur < 1) return;
     const s = get().source;
@@ -130,7 +131,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       sim = advance(sim, rules(), get().source.type);
       if (!sim.currentId) break;
       const t = lib().trackById.get(sim.currentId);
-      if (!t?.file) continue; // the page skips tracks without audio too
+      if (!t?.file) { if (spotifyCan(t)) break; continue; } // the page skips tracks without audio too; one it plays through Spotify ends the window
       const item = nativeItem(sim.currentId);
       if (!item) break; // a track only this page can play: the page takes over when the app's player gets there
       out.push(item);
@@ -158,6 +159,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
   function load(trackId: string | null, autoStart = true) {
     const seq = ++loadSeq; // a newer load supersedes one still resolving its source
     if (!trackId) {
+      void spotifyEngine.release(true);
       if (native) nativeAudio.stop();
       native = false;
       if (audio) { audio.pause(); audio.removeAttribute('src'); }
@@ -165,7 +167,19 @@ export const usePlayer = create<PlayerState>((set, get) => {
       return true;
     }
     const track = lib().trackById.get(trackId);
+    if (track && !track.file && spotifyCan(track)) {
+      // no audio file, but Spotify can play it: tell the chosen Spotify device what to play (lib/spotifyPlayer.ts)
+      if (native) { nativeAudio.stop(); native = false; }
+      if (audio) { audio.pause(); audio.removeAttribute('src'); }
+      const at = pendingSeek ?? 0; pendingSeek = null;
+      set({ error: null, time: at, duration: 0, playing: autoStart });
+      spotifyEngine.setListener(onSpotify);
+      spotifyEngine.play(spotifyUriOf(track)!, Math.round(at * 1000), autoStart).catch((e: Error) => { if (seq === loadSeq) set({ error: `Spotify: ${e.message}`, playing: false }); });
+      updateMediaSession(trackId);
+      return true;
+    }
     if (!track?.file) return false;
+    if (spotifyEngine.active()) void spotifyEngine.release(true);
     set({ error: null, time: 0 });
     const file = track.file;
     void (async () => {
@@ -193,6 +207,18 @@ export const usePlayer = create<PlayerState>((set, get) => {
     })().catch((e: Error) => { if (seq === loadSeq) set({ error: `Could not load this track (${e.message})`, playing: false }); });
     updateMediaSession(trackId);
     return true;
+  }
+
+  /** What the Spotify device reports about the track Curator sent it. */
+  function onSpotify(r: { playing: boolean; timeMs: number; durationMs: number; ended: boolean }) {
+    if (r.ended) {
+      logPlay(false);
+      const q = get().queue;
+      set({ history: pushHistory(get().history, q.currentId) });
+      go(advance(q, rules(), get().source.type));
+      return;
+    }
+    set({ playing: r.playing, time: r.timeMs / 1000, ...(r.durationMs ? { duration: r.durationMs / 1000 } : {}) });
   }
 
   /** The app's player moved to another track by itself (the track ended, or Next/Previous in the notification, a headset or the car). Follow it. */
@@ -268,8 +294,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => get().next());
     navigator.mediaSession.setActionHandler('previoustrack', () => get().prev());
-    navigator.mediaSession.setActionHandler('play', () => void el().play());
-    navigator.mediaSession.setActionHandler('pause', () => el().pause());
+    navigator.mediaSession.setActionHandler('play', () => { if (spotifyEngine.active()) get().toggle(); else void el().play(); });
+    navigator.mediaSession.setActionHandler('pause', () => { if (spotifyEngine.active()) get().pause(); else el().pause(); });
   }
 
   /** Move to `q.currentId`, skipping tracks that have no audio yet. */
@@ -294,7 +320,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
     play(trackId, list, source = { type: 'track', id: null }) {
       const track = lib().trackById.get(trackId);
-      if (!track?.file) { set({ error: 'This track has no audio file yet', source }); return; }
+      if (!track || (!track.file && !spotifyCan(track))) { set({ error: 'This track has no audio file yet', source }); return; }
       const shuffled = get().shuffle ? shuffleWithRules(list.filter((id) => id !== trackId), rules()) : null;
       const ordered = shuffled ? [trackId, ...shuffled] : list;
       const prev = get().queue.currentId;
@@ -305,31 +331,32 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
     toggle() {
       if (!get().queue.currentId) return;
+      if (spotifyEngine.active()) { if (get().playing) { void spotifyEngine.pause(); set({ playing: false }); } else { void spotifyEngine.resume(); set({ playing: true }); } return; }
       if (native) { if (get().playing) { nativeAudio.pause(); set({ playing: false }); } else { nativeAudio.play(); set({ playing: true }); } return; }
       const a = el();
       if (a.paused) void a.play(); else a.pause();
     },
 
-    pause() { if (native) { nativeAudio.pause(); set({ playing: false }); } else if (audio) audio.pause(); },
+    pause() { if (spotifyEngine.active()) { void spotifyEngine.pause(); set({ playing: false }); } else if (native) { nativeAudio.pause(); set({ playing: false }); } else if (audio) audio.pause(); },
 
     next() {
       const q = get().queue;
-      if (native || (audio && !audio.ended)) logPlay(true);
+      if (native || spotifyEngine.active() || (audio && !audio.ended)) logPlay(true);
       set({ history: pushHistory(get().history, q.currentId) });
       go(advance(q, rules(), get().source.type));
     },
 
     prev() {
       const h = get().history;
-      if (position() > 3 || !h.length) { if (native) { nativeAudio.seek(0); set({ time: 0 }); } else el().currentTime = 0; return; }
+      if (position() > 3 || !h.length) { if (spotifyEngine.active()) { void spotifyEngine.seek(0); set({ time: 0 }); } else if (native) { nativeAudio.seek(0); set({ time: 0 }); } else el().currentTime = 0; return; }
       const id = h[h.length - 1];
       const q = get().queue;
       set({ history: h.slice(0, -1) });
       go({ ...q, currentId: id, user: q.currentId ? [q.currentId, ...q.user] : q.user });
     },
 
-    seek(t) { if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
-    setVolume(v) { el().volume = v; nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
+    seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
+    setVolume(v) { el().volume = v; if (spotifyEngine.active()) void spotifyEngine.volume(v); nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
     toggleShuffle() { set({ shuffle: !get().shuffle }); },
 
     enqueue(trackId, where = 'last') {
@@ -386,3 +413,10 @@ const pushEq = (settings: ReturnType<typeof useStore.getState>['settings']) => {
 };
 useStore.subscribe((s) => pushEq(s.settings));
 pushEq(useStore.getState().settings);
+
+// whether Spotify can play for this device: asked once the server is known, and again when it changes
+if (typeof window !== 'undefined') {
+  setTimeout(() => void refreshSpotifyStatus(), 1500);
+  let last = '';
+  useStore.subscribe((st) => { const k = `${st.settings.serverUrl}|${st.settings.token}`; if (k !== last) { last = k; void refreshSpotifyStatus(); } });
+}

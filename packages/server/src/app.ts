@@ -8,6 +8,7 @@ import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
 import { analyzeAudio } from './audioinfo.ts';
 import { Matcher, type MatchTrack } from './match.ts';
+import { similarArtists } from './recommend.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
@@ -173,6 +174,32 @@ export function createApp(
   app.get('/api/spotify/callback', async (c) => {
     try { await spotify.exchange(c.req.url); return c.html('<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Connected to Spotify</h2><p>You can close this tab and go back to Curator.</p>'); }
     catch (e) { return c.html(`<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Could not connect</h2><p>${String((e as Error).message).replace(/[<&]/g, ' ')}</p>`, 400); }
+  });
+  // playback: Spotify plays, Curator sends commands (the web API; Soloist on the Pi is just one more device in this list)
+  app.get('/api/spotify/player/devices', async (c) => { try { return c.json({ devices: await spotify.devices() }); } catch (e) { return spotifyFail(e); } });
+  app.get('/api/spotify/player/state', async (c) => { try { return c.json({ state: await spotify.playerState() }); } catch (e) { return spotifyFail(e); } });
+  app.post('/api/spotify/player/play', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { uris?: unknown; deviceId?: unknown; positionMs?: unknown };
+    const uris = (Array.isArray(b.uris) ? b.uris : []).filter((u): u is string => typeof u === 'string' && /^spotify:track:[A-Za-z0-9]{22}$/.test(u));
+    if (!uris.length) return c.json({ error: 'no Spotify tracks to play' }, 400);
+    try { await spotify.play({ uris, deviceId: typeof b.deviceId === 'string' && b.deviceId ? b.deviceId : undefined, positionMs: typeof b.positionMs === 'number' ? b.positionMs : undefined }); return c.json({ ok: true }); } catch (e) { return spotifyFail(e); }
+  });
+  app.post('/api/spotify/player/command', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { type?: unknown; deviceId?: unknown; value?: unknown };
+    const types = ['pause', 'resume', 'next', 'previous', 'seek', 'volume', 'shuffle', 'queue', 'transfer'] as const;
+    const type = types.find((t) => t === b.type);
+    if (!type) return c.json({ error: 'unknown command' }, 400);
+    try { await spotify.command({ type, deviceId: typeof b.deviceId === 'string' && b.deviceId ? b.deviceId : undefined, value: b.value as number | boolean | string | undefined }); return c.json({ ok: true }); } catch (e) { return spotifyFail(e); }
+  });
+  app.get('/api/spotify/search', async (c) => {
+    const q = (c.req.query('q') ?? '').trim().slice(0, 200);
+    if (!q) return c.json({ error: 'empty search' }, 400);
+    try { return c.json({ tracks: await spotify.search(q) }); } catch (e) { return spotifyFail(e); }
+  });
+  app.get('/api/recommend/similar', async (c) => {
+    const artist = (c.req.query('artist') ?? '').trim().slice(0, 120);
+    if (!artist) return c.json({ error: 'artist missing' }, 400);
+    return c.json({ artists: await similarArtists(artist) });
   });
   app.post('/api/spotify/signout', (c) => { spotify.signOut(); return c.json(spotify.status()); });
   app.get('/api/spotify/playlists', async (c) => { try { return c.json({ playlists: await spotify.playlists() }); } catch (e) { return spotifyFail(e); } });

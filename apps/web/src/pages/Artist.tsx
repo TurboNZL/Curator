@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { MoreHorizontal, Pencil, Play, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { usePlayer } from '../lib/player.ts';
@@ -40,7 +41,7 @@ export function ArtistPage() {
   const albums = era ? allAlbums.filter((a) => a.eraIds.includes(era)) : allAlbums;
   const tracks = (era ? allTracks.filter((t) => t.eraIds.includes(era)) : allTracks).sort((a, b) => b.effectiveRating - a.effectiveRating || b.elo - a.elo);
   const singles = tracks.filter((t) => !t.albumId);
-  const playable = tracks.filter((t) => t.file).map((t) => t.id);
+  const playable = tracks.filter(canPlay).map((t) => t.id);
   const visible = tracks.slice(0, shown);
   const left = tracks.length - visible.length;
   return (

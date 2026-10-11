@@ -1,4 +1,5 @@
 import { FilterBar } from '../components/FilterBar.tsx';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { makeChip, matchesAll, splitTyped, trackSubject, type Chip, type FilterKey } from '../lib/filters.ts';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
@@ -38,7 +39,7 @@ export function TracksPage() {
     return sortTracks(f, sort, dir);
   }, [lib, q, sort, dir, chips]);
 
-  const playable = tracks.filter((t) => t.file).map((t) => t.id);
+  const playable = tracks.filter(canPlay).map((t) => t.id);
   const pick = (k: SortKey) => { if (k === sort) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(k); setDir(defaultDir(k)); } };
 
   return (

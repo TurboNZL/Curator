@@ -36,6 +36,12 @@ export interface SpotifyTrack {
 }
 export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyTrack[]; source: 'embed' | 'api' | 'oembed'; note?: string }
 
+export interface SpotifyDevice { id: string; name: string; type: string; active: boolean; volume: number | null }
+export interface SpotifyPlayerState {
+  playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null };
+  track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null;
+}
+
 export class SpotifyError extends Error {
   readonly status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -97,7 +103,7 @@ export interface SpotifyAuthState {
   token?: { access: string; refresh: string; expiresAt: number; scope: string };
 }
 
-const SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read';
+const SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read user-read-playback-state user-modify-playback-state user-read-currently-playing';
 export const DEFAULT_REDIRECT = 'http://127.0.0.1:47813/api/spotify/callback';
 const b64url = (b: Buffer) => b.toString('base64url');
 
@@ -169,6 +175,73 @@ export class SpotifyAccount {
       return (await res.json()) as T;
     }
     throw new SpotifyError(429, 'Spotify is rate limiting this app; try again in a minute');
+  }
+
+  /** Any call that changes something, or answers 204 (the player endpoints). */
+  private async call(method: 'PUT' | 'POST', path: string, body?: unknown): Promise<void> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let res: Response;
+      try { res = await this.f(`https://api.spotify.com/v1${path}`, { method, headers: { Authorization: `Bearer ${await this.access()}`, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15_000) }); }
+      catch (e) { if (e instanceof SpotifyError) throw e; throw new SpotifyError(502, `Could not reach Spotify (${(e as Error).message})`); }
+      if (res.status === 429) { await new Promise((r) => setTimeout(r, Math.min(3000, (Number(res.headers.get('retry-after')) || 1) * 1000))); continue; }
+      if (res.ok) return;
+      const msg = ((await res.json().catch(() => null)) as { error?: { message?: string; reason?: string } } | null)?.error;
+      if (res.status === 404 || msg?.reason === 'NO_ACTIVE_DEVICE') throw new SpotifyError(404, 'No Spotify device is awake. Open Spotify on a device (or start Soloist on the Pi) and pick it as the device.');
+      if (res.status === 403) throw new SpotifyError(403, msg?.reason === 'PREMIUM_REQUIRED' ? 'Spotify Premium is required to control playback' : `Spotify refused: ${msg?.message ?? 'forbidden'}. Sign in again so Curator gets playback permission.`);
+      if (res.status === 401) throw new SpotifyError(401, 'The Spotify sign-in is no longer valid; sign in again');
+      throw new SpotifyError(502, `Spotify answered ${res.status}${msg?.message ? `: ${msg.message}` : ''}`);
+    }
+    throw new SpotifyError(429, 'Spotify is rate limiting this app; try again in a minute');
+  }
+
+  /** Spotify Connect devices of the account: the phone, the PC app, Soloist on the Pi, a speaker. */
+  async devices(): Promise<SpotifyDevice[]> {
+    const j = await this.get<{ devices?: { id: string; name: string; type: string; is_active: boolean; volume_percent?: number | null; is_restricted?: boolean }[] }>('/me/player/devices');
+    return (j.devices ?? []).filter((d) => d.id && !d.is_restricted).map((d) => ({ id: d.id, name: d.name, type: d.type, active: d.is_active, volume: d.volume_percent ?? null }));
+  }
+
+  /** What Spotify is playing now (null when nothing is, which Spotify reports as 204). */
+  async playerState(): Promise<SpotifyPlayerState | null> {
+    const token = await this.access();
+    let res: Response;
+    try { res = await this.f('https://api.spotify.com/v1/me/player?additional_types=track', { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000) }); }
+    catch (e) { throw new SpotifyError(502, `Could not reach Spotify (${(e as Error).message})`); }
+    if (res.status === 204) return null;
+    if (res.status === 401) throw new SpotifyError(401, 'The Spotify sign-in is no longer valid; sign in again');
+    if (!res.ok) throw new SpotifyError(res.status === 429 ? 429 : 502, `Spotify answered ${res.status}`);
+    const j = (await res.json().catch(() => null)) as { is_playing?: boolean; progress_ms?: number; shuffle_state?: boolean; device?: { id?: string; name?: string; volume_percent?: number | null };
+      item?: { uri?: string; id?: string; name?: string; duration_ms?: number; artists?: { name: string }[]; album?: { name?: string; images?: { url: string }[] } } | null } | null;
+    if (!j) return null;
+    const t = j.item;
+    return { playing: !!j.is_playing, progressMs: j.progress_ms ?? 0, shuffle: !!j.shuffle_state, device: { id: j.device?.id ?? '', name: j.device?.name ?? '', volume: j.device?.volume_percent ?? null },
+      track: t?.uri ? { uri: t.uri, id: t.id ?? '', title: t.name ?? '', artists: (t.artists ?? []).map((a) => a.name), album: t.album?.name ?? '', cover: t.album?.images?.[0]?.url ?? null, durationMs: t.duration_ms ?? 0 } : null };
+  }
+
+  /** Start these tracks (in order) on a device, optionally from a position. Spotify keeps playing the list after the first. */
+  play(o: { uris: string[]; deviceId?: string; positionMs?: number }) {
+    return this.call('PUT', `/me/player/play${o.deviceId ? `?device_id=${encodeURIComponent(o.deviceId)}` : ''}`, { uris: o.uris.slice(0, 50), ...(o.positionMs ? { position_ms: Math.round(o.positionMs) } : {}) });
+  }
+  command(c: { type: 'pause' | 'resume' | 'next' | 'previous' | 'seek' | 'volume' | 'shuffle' | 'queue' | 'transfer'; deviceId?: string; value?: number | boolean | string }) {
+    const dev = c.deviceId ? `${'?'}device_id=${encodeURIComponent(c.deviceId)}` : '';
+    const withDev = (q: string) => `${q}${dev ? (q.includes('?') ? '&' : '?') + dev.slice(1) : ''}`;
+    switch (c.type) {
+      case 'pause': return this.call('PUT', `/me/player/pause${dev}`);
+      case 'resume': return this.call('PUT', `/me/player/play${dev}`);
+      case 'next': return this.call('POST', `/me/player/next${dev}`);
+      case 'previous': return this.call('POST', `/me/player/previous${dev}`);
+      case 'seek': return this.call('PUT', withDev(`/me/player/seek?position_ms=${Math.max(0, Math.round(Number(c.value) || 0))}`));
+      case 'volume': return this.call('PUT', withDev(`/me/player/volume?volume_percent=${Math.min(100, Math.max(0, Math.round(Number(c.value) || 0)))}`));
+      case 'shuffle': return this.call('PUT', withDev(`/me/player/shuffle?state=${c.value ? 'true' : 'false'}`));
+      case 'queue': return this.call('POST', withDev(`/me/player/queue?uri=${encodeURIComponent(String(c.value ?? ''))}`));
+      case 'transfer': return this.call('PUT', '/me/player', { device_ids: [c.deviceId ?? ''], play: true });
+    }
+  }
+
+  /** Find tracks by text (Development Mode returns few results per query). */
+  async search(q: string, limit = 10): Promise<SpotifyTrack[]> {
+    const j = await this.get<{ tracks?: { items: { id: string; uri: string; name: string; duration_ms?: number; artists?: { name: string }[]; album?: { name?: string; uri?: string; release_date?: string; images?: { url: string }[]; artists?: { name: string }[] } }[] } }>(`/search?type=track&limit=${Math.min(10, limit)}&q=${encodeURIComponent(q)}`);
+    return (j.tracks?.items ?? []).map((t) => ({ uri: t.uri, id: t.id, title: t.name, artists: (t.artists ?? []).map((a) => a.name), album: t.album?.name ?? '', albumUri: t.album?.uri ?? null, albumArtist: t.album?.artists?.[0]?.name ?? null,
+      durationMs: t.duration_ms ?? null, cover: t.album?.images?.[0]?.url ?? null, releaseDate: t.album?.release_date ?? null, trackNumber: null, isrc: null }));
   }
 
   async playlists(): Promise<{ id: string; name: string; tracks: number | null; owner: string; cover: string | null; mine: boolean }[]> {

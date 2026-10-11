@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Disc, Download, FileAudio, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary, type Library } from '../lib/derive.ts';
@@ -15,7 +16,7 @@ function useTrackListActions() {
   const play = usePlayer((s) => s.play);
   const enqueue = usePlayer((s) => s.enqueue);
   return (ids: string[], source: Parameters<typeof play>[2]): MenuItem[] => {
-    const playable = ids.filter((id) => lib.trackById.get(id)?.file);
+    const playable = ids.filter((id) => canPlay(lib.trackById.get(id)));
     const none = !playable.length;
     return [
       { label: 'Play', icon: <Play size={15} />, run: () => play(playable[0], playable, source), disabled: none },

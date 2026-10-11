@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { ArrowDown, ArrowUp, Link2, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { moveTrack, removeTrack } from '../lib/defaults.ts';
@@ -21,7 +22,7 @@ export function PlaylistsPage() {
   const [adding, setAdding] = useState('');
   const open = lib.playlists.find((p) => p.id === openId);
   const tracks = open ? open.trackIds.map((id) => lib.trackById.get(id)).filter((t) => !!t) : [];
-  const playable = tracks.filter((t) => t.file).map((t) => t.id);
+  const playable = tracks.filter(canPlay).map((t) => t.id);
   const matches = adding.length > 1 ? lib.tracks.filter((t) => `${t.title} ${t.artistName}`.toLowerCase().includes(adding.toLowerCase())).slice(0, 6) : [];
 
   return (

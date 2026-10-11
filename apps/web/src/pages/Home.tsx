@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link } from 'react-router-dom';
 import { HeartPulse, Play, Swords, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -53,7 +54,7 @@ export function HomePage() {
   const resume = () => {
     if (!last) return;
     const album = last.t.albumId ? lib.albumById.get(last.t.albumId) : undefined;
-    const ids = album ? album.trackIds.filter((id) => lib.trackById.get(id)?.file) : [last.t.id];
+    const ids = album ? album.trackIds.filter((id) => canPlay(lib.trackById.get(id))) : [last.t.id];
     play(last.t.id, ids.length ? ids : [last.t.id], album ? { type: 'album', id: album.id } : { type: 'track', id: last.t.id });
   };
   // albums heard lately, newest first

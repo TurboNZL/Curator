@@ -1,6 +1,6 @@
 import { WindowFrame } from './WindowFrame.tsx';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { BarChart3, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
+import { BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
@@ -22,6 +22,7 @@ const NAV = [
   { to: '/playlists', label: 'Playlists', icon: ListMusic },
   { to: '/queue', label: 'Queue', icon: ListOrdered },
   { to: '/notes', label: 'Notes', icon: Network },
+  { to: '/discover', label: 'Discover', icon: Compass },
   { to: '/stats', label: 'Stats', icon: BarChart3 },
   { to: '/health', label: 'Health', icon: Stethoscope },
   { to: '/settings', label: 'Settings', icon: Settings },
@@ -63,7 +64,7 @@ function SyncDot() {
 const LIBRARY = ['/artists', '/albums', '/singles', '/eras', '/tracks', '/playlists'];
 const TOOLBAR_LABEL: Record<string, string> = { '/': 'Journal' };
 
-const MOBILE_HIDDEN = ['/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
+const MOBILE_HIDDEN = ['/discover', '/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
 
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },

@@ -1,4 +1,5 @@
 import { Play } from 'lucide-react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -14,7 +15,7 @@ export function SingleGrid({ tracks }: { tracks: Track[] }) {
   const edit = useEditor((s) => s.open);
   const menu = useMenu();
   const itemsFor = useTrackMenuItems();
-  const ids = tracks.filter((t) => t.file).map((t) => t.id);
+  const ids = tracks.filter(canPlay).map((t) => t.id);
   return (
     <>
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(var(--grid-min), 1fr))' }}>

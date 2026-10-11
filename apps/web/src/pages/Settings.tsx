@@ -13,6 +13,7 @@ import { cacheBytes, removeAudio } from '../lib/files.ts';
 import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
+import { SpotifyCard } from '../components/SpotifyCard.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
 import { ServerUpdateCard } from '../components/ServerUpdate.tsx';
 import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
@@ -71,6 +72,8 @@ export function SettingsPage() {
       </Section>
 
       <ServerUpdateCard />
+
+      <SpotifyCard />
 
       <Section title="Backup: export and import"><BackupCard /></Section>
 

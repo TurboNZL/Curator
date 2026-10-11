@@ -1,0 +1,44 @@
+/**
+ * Where "more like this" comes from, since Spotify's own recommendation endpoints are closed to new apps. Two open sources, both best effort
+ * (a failure is an empty answer, never an error): MusicBrainz turns an artist name into an id, ListenBrainz's labs service lists artists whose
+ * listeners overlap. UNVERIFIED against the live services from the build sandbox: the shapes below follow their public documentation as
+ * remembered, and the pure parts are tested with fixtures.
+ */
+type Fetch = typeof fetch;
+const UA = 'MusicCurator/1.0 (personal music library; https://github.com/TurboNZL/Curator)';
+
+export interface SimilarArtist { name: string; mbid: string; score: number }
+
+export function parseMusicBrainzSearch(j: unknown, name: string): string | null {
+  const list = (j as { artists?: { id?: string; name?: string; score?: number }[] } | null)?.artists ?? [];
+  const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const hit = list.find((a) => a.id && norm(a.name ?? '') === norm(name) && (a.score ?? 0) >= 90) ?? null;
+  return hit?.id ?? null;
+}
+
+export function parseSimilar(j: unknown): SimilarArtist[] {
+  const rows = Array.isArray(j) ? j : Array.isArray((j as { data?: unknown[] } | null)?.data) ? (j as { data: unknown[] }).data : [];
+  const out: SimilarArtist[] = [];
+  for (const r of rows as { name?: string; artist_mbid?: string; score?: number; reference_mbid?: string }[]) {
+    if (!r?.name || !r.artist_mbid) continue;
+    out.push({ name: r.name, mbid: r.artist_mbid, score: Number(r.score) || 0 });
+  }
+  return out.sort((a, b) => b.score - a.score);
+}
+
+export async function artistMbid(name: string, f: Fetch = fetch): Promise<string | null> {
+  try {
+    const res = await f(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(`artist:"${name.replace(/"/g, '')}"`)}&fmt=json&limit=5`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(10_000) });
+    return res.ok ? parseMusicBrainzSearch(await res.json(), name) : null;
+  } catch { return null; }
+}
+
+export async function similarArtists(name: string, f: Fetch = fetch, limit = 20): Promise<SimilarArtist[]> {
+  const mbid = await artistMbid(name, f);
+  if (!mbid) return [];
+  try {
+    const algorithm = 'session_based_days_9000_session_300_contribution_5_threshold_15_limit_50_skip_30';
+    const res = await f(`https://labs.api.listenbrainz.org/similar-artists/json?artist_mbids=${mbid}&algorithm=${algorithm}`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15_000) });
+    return res.ok ? parseSimilar(await res.json()).slice(0, limit) : [];
+  } catch { return []; }
+}

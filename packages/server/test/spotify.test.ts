@@ -105,3 +105,65 @@ describe('sign-in', () => {
     await expect(a.playlists()).resolves.toBeTruthy();
   });
 });
+
+import { parseMusicBrainzSearch, parseSimilar } from '../src/recommend.ts';
+describe('player', () => {
+  const CLIENT = 'b'.repeat(32);
+  async function signedIn(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
+    const d = mkdtempSync(join(tmpdir(), 'sp-'));
+    const f = (async (u: string, init?: RequestInit) => (String(u).includes('accounts.spotify.com') ? json({ access_token: 'AT', refresh_token: 'RT', expires_in: 3600 }) : handler(String(u), init))) as unknown as typeof fetch;
+    const a = new SpotifyAccount(d, { fetchImpl: f, now: () => 1000 });
+    a.configure(CLIENT); a.authUrl();
+    await a.exchange(`http://x/?code=C&state=${JSON.parse(readFileSync(join(d, 'spotify.json'), 'utf8')).pending.state}`);
+    return a;
+  }
+  it('asks for playback permission when signing in', () => {
+    const a = new SpotifyAccount(mkdtempSync(join(tmpdir(), 'sp-'))); a.configure(CLIENT);
+    expect(new URL(a.authUrl()).searchParams.get('scope')).toContain('user-modify-playback-state');
+  });
+  it('lists devices, plays tracks on one and sends commands', async () => {
+    const calls: string[] = [];
+    const a = await signedIn((u, init) => {
+      calls.push(`${init?.method ?? 'GET'} ${u.replace('https://api.spotify.com/v1', '')} ${init?.body ?? ''}`);
+      if (u.endsWith('/me/player/devices')) return json({ devices: [{ id: 'd1', name: 'Soloist (pi)', type: 'Speaker', is_active: false, volume_percent: 50 }, { id: 'd2', name: 'Locked', type: 'x', is_active: false, is_restricted: true }] });
+      return new Response(null, { status: 204 });
+    });
+    expect(await a.devices()).toEqual([{ id: 'd1', name: 'Soloist (pi)', type: 'Speaker', active: false, volume: 50 }]);
+    await a.play({ uris: ['spotify:track:aaaaaaaaaaaaaaaaaaaaaa'], deviceId: 'd1', positionMs: 1500.4 });
+    await a.command({ type: 'seek', value: 30000, deviceId: 'd1' });
+    await a.command({ type: 'volume', value: 150 });
+    await a.command({ type: 'next' });
+    expect(calls).toContain('PUT /me/player/play?device_id=d1 {"uris":["spotify:track:aaaaaaaaaaaaaaaaaaaaaa"],"position_ms":1500}');
+    expect(calls).toContain('PUT /me/player/seek?position_ms=30000&device_id=d1 ');
+    expect(calls).toContain('PUT /me/player/volume?volume_percent=100 ');
+    expect(calls).toContain('POST /me/player/next ');
+  });
+  it('explains a missing device and Premium', async () => {
+    const a = await signedIn(() => json({ error: { reason: 'NO_ACTIVE_DEVICE', message: 'x' } }, 404));
+    await expect(a.command({ type: 'pause' })).rejects.toThrow(/device is awake/);
+    const b = await signedIn(() => json({ error: { reason: 'PREMIUM_REQUIRED' } }, 403));
+    await expect(b.command({ type: 'pause' })).rejects.toThrow(/Premium/);
+  });
+  it('reads the player state, and null when nothing plays', async () => {
+    const a = await signedIn(() => json({ is_playing: true, progress_ms: 4000, device: { id: 'd1', name: 'Pi' }, item: { uri: 'spotify:track:aaaaaaaaaaaaaaaaaaaaaa', id: 'aaaaaaaaaaaaaaaaaaaaaa', name: 'Song', duration_ms: 200000, artists: [{ name: 'A' }], album: { name: 'Alb', images: [{ url: 'https://i.scdn.co/x' }] } } }));
+    expect(await a.playerState()).toMatchObject({ playing: true, progressMs: 4000, track: { title: 'Song', durationMs: 200000, artists: ['A'] } });
+    const b = await signedIn(() => new Response(null, { status: 204 }));
+    expect(await b.playerState()).toBeNull();
+  });
+  it('searches tracks', async () => {
+    const a = await signedIn((u) => json({ tracks: { items: [{ id: 'aaaaaaaaaaaaaaaaaaaaaa', uri: 'spotify:track:aaaaaaaaaaaaaaaaaaaaaa', name: 'Song', artists: [{ name: 'A' }], album: { name: 'Alb' } }] } }));
+    expect((await a.search('A Song'))[0]).toMatchObject({ title: 'Song', artists: ['A'], album: 'Alb' });
+  });
+});
+
+describe('recommendation sources', () => {
+  it('picks the exact artist from MusicBrainz and ignores lookalikes', () => {
+    expect(parseMusicBrainzSearch({ artists: [{ id: 'x', name: 'Drake Bell', score: 80 }, { id: 'abc', name: 'Drake', score: 100 }] }, 'drake')).toBe('abc');
+    expect(parseMusicBrainzSearch({ artists: [{ id: 'x', name: 'Other', score: 100 }] }, 'Drake')).toBeNull();
+  });
+  it('reads similar artists in either shape, best first', () => {
+    expect(parseSimilar([{ name: 'B', artist_mbid: 'm2', score: 3 }, { name: 'A', artist_mbid: 'm1', score: 9 }, { name: 'no id' }]).map((a) => a.name)).toEqual(['A', 'B']);
+    expect(parseSimilar({ data: [{ name: 'C', artist_mbid: 'm3', score: 1 }] })).toHaveLength(1);
+    expect(parseSimilar(null)).toEqual([]);
+  });
+});

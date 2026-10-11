@@ -72,6 +72,12 @@ export class Api {
   spotifyResolve(url: string) { return this.req<SpotifyList>('/api/spotify/resolve', { method: 'POST', body: JSON.stringify({ url }) }); }
   spotifyCover(uri: string) { return this.req<{ hash: string; url: string }>('/api/spotify/cover', { method: 'POST', body: JSON.stringify({ uri }) }); }
   match(tracks: MatchTrackReq[], methods: ('odesli' | 'search')[]) { return this.req<{ results: MatchResultRes[] }>('/api/match', { method: 'POST', body: JSON.stringify({ tracks, methods }) }); }
+  spotifyDevices() { return this.req<{ devices: SpotifyDeviceInfo[] }>('/api/spotify/player/devices'); }
+  spotifyPlayerState() { return this.req<{ state: SpotifyPlayerInfo | null }>('/api/spotify/player/state'); }
+  spotifyPlay(uris: string[], deviceId: string, positionMs = 0) { return this.req<{ ok: true }>('/api/spotify/player/play', { method: 'POST', body: JSON.stringify({ uris, deviceId, positionMs }) }); }
+  spotifyCommand(type: 'pause' | 'resume' | 'next' | 'previous' | 'seek' | 'volume' | 'shuffle' | 'queue' | 'transfer', deviceId: string, value?: number | boolean | string) { return this.req<{ ok: true }>('/api/spotify/player/command', { method: 'POST', body: JSON.stringify({ type, deviceId, value }) }); }
+  spotifySearch(q: string) { return this.req<{ tracks: SpotifyImportTrack[] }>(`/api/spotify/search?q=${encodeURIComponent(q)}`); }
+  similarArtists(artist: string) { return this.req<{ artists: { name: string; mbid: string; score: number }[] }>(`/api/recommend/similar?artist=${encodeURIComponent(artist)}`); }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
     return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');
@@ -99,3 +105,6 @@ export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: strin
 export interface MatchTrackReq { id: string; title: string; artist: string; album?: string; durationMs?: number | null; spotifyUrl?: string | null }
 export interface MatchCandidate { url: string; title: string; channel: string; seconds: number | null; score: number; method: 'odesli' | 'search' }
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
+
+export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }
+export interface SpotifyPlayerInfo { playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null }; track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null }
