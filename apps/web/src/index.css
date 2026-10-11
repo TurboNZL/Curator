@@ -220,13 +220,24 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) { --wf-order: -1; }
 :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf { padding-left: 0.75rem; }
 :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-title { text-align: center; margin-right: 3.6rem; }
+/* the dialogs of these styles paint yellow and green dots into their title bars (--tb-bg), because there the real buttons are drawn on top; the window frame has real buttons of its own, so it takes only the bar's colour */
+[data-ui="macos"] .bt-wf { background: color-mix(in srgb, hsl(var(--fg)) 3%, hsl(var(--surface))); }
+[data-ui="aqua"] .bt-wf { background: linear-gradient(to bottom, color-mix(in srgb, hsl(var(--bg)) 40%, white), color-mix(in srgb, hsl(var(--bg)) 85%, black)); }
 :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns { gap: 8px; }
 :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { order: -1; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { --wf-r: 9999px; width: 12px; height: 12px; --wf-border: 0.5px solid rgb(0 0 0 / 0.22); color: transparent; --wf-bg: #febc2e; --wf-hover: #febc2e; --wf-active: #d9a025; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Maximise"], :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Restore"] { --wf-bg: #28c840; --wf-hover: #28c840; --wf-active: #20a135; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { --wf-bg: #ff5f57; --wf-close-hover: #ff5f57; --wf-close-active: #d94e47; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:hover .bt-wf-btn, :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:focus-within .bt-wf-btn { color: rgb(0 0 0 / 0.6); }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn svg { width: 8px; height: 8px; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { --wf-r: 9999px; position: relative; width: 12px; height: 12px; padding: 0; color: transparent; --wf-glyph: #995700; --wf-border: 0.5px solid #e1a73e; --wf-bg: #febc2e; --wf-hover: #febc2e; --wf-active: #c49a22; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Maximise"], :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Restore"] { --wf-glyph: #006500; --wf-border: 0.5px solid #2dac2f; --wf-bg: #28c840; --wf-hover: #28c840; --wf-active: #1f9a30; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { --wf-glyph: #4d0000; --wf-border: 0.5px solid #e2463f; --wf-bg: #ff5f57; --wf-close-hover: #ff5f57; --wf-close-active: #bf4943; }
+/* Sequoia draws its own glyphs, shown while the pointer is over the group of three: x, minus, and for the green one two arrowheads (full screen) */
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn svg { display: none; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn::after { content: ""; position: absolute; inset: 0; margin: auto; width: 8px; height: 8px; background: var(--wf-glyph); opacity: 0; transition: opacity 0.08s; -webkit-mask: var(--glyph) center / contain no-repeat; mask: var(--glyph) center / contain no-repeat; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:hover .bt-wf-btn::after, :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:focus-within .bt-wf-btn::after { opacity: 0.85; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4h6' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1.3 1.3l5.4 5.4M6.7 1.3L1.3 6.7' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Maximise"] { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M.8 .8h3.6L.8 4.4zM7.2 7.2H3.6l3.6-3.6z'/%3E%3C/svg%3E"); }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Restore"] { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4.2h2.8V1.4zM7 3.8H4.2v2.8z'/%3E%3C/svg%3E"); }
+/* Aqua's green button shows a plus */
+[data-ui="aqua"] .bt-wf-btn[aria-label="Maximise"], [data-ui="aqua"] .bt-wf-btn[aria-label="Restore"] { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4h6M4 1v6' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
 [data-ui="aqua"] .bt-wf-btn { --wf-bg: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-hover: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-border: 1px solid #8a6310; --wf-shadow: inset 0 1px 1px rgb(255 255 255 / 0.6); }
 [data-ui="aqua"] .bt-wf-btn[aria-label="Maximise"], [data-ui="aqua"] .bt-wf-btn[aria-label="Restore"] { --wf-bg: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-hover: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-border: 1px solid #1a6a17; }
 [data-ui="aqua"] .bt-wf-close { --wf-bg: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-close-hover: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-border: 1px solid #8e1e19; }

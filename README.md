@@ -125,3 +125,7 @@ Passing unit tests are not enough here: the server and the web client have been 
 - Browsers can't hold gigabytes: the web client has a storage limit (and optional "make room automatically"); Electron and Android are meant to hold full offline copies.
 - Service workers (installable/offline PWA) need HTTPS or `localhost`; over plain HTTP on a LAN the app works online only. Use Tailscale or an HTTPS proxy (see the Pi guide).
 - YouTube import needs `yt-dlp` and `ffmpeg` on the machine running the server, and recent yt-dlp also needs a JavaScript runtime for YouTube (see the Pi guide).
+
+## License
+
+Music Curator is released under the [MIT License](LICENSE). Third-party pieces keep their own licenses: the npm packages and bundled fonts (for example the `@fontsource` families, SIL OFL) under theirs, and Spotify Soloist and yt-dlp are **not** part of this repository: Soloist is downloaded from Spotify's own server under Spotify's terms, yt-dlp from its own project.

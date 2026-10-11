@@ -23,11 +23,14 @@ export function archiveName(arch: string = osArch()): string | null {
   return a ? `soloist_release_${a}.tar.gz` : null;
 }
 
-export interface SoloistConfig { deviceName: string; apiKey: string; autoStart: boolean }
+export interface SoloistConfig { deviceName: string; apiKey: string; autoStart: boolean; outputDevice: string }
+/** Whether Soloist can reach a sound server (PipeWire or PulseAudio) from the account this server runs as, and what to do if not. */
+export interface AudioCheck { ok: boolean; server: 'pipewire' | 'pulseaudio' | null; runtimeDir: string | null; hint: string | null }
 export interface SoloistStatus {
   supported: boolean; reason?: string;
   installed: boolean; version: string | null;
-  configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean;
+  configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean; outputDevice: string;
+  audio: AudioCheck;
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error';
   message: string | null; log: string[];
   downloadsUrl: string;
@@ -42,6 +45,8 @@ export interface SoloistDeps {
   restartDelayMs?: number;
   /** run `soloist --version` */
   version?: (bin: string) => Promise<string | null>;
+  /** test seams for the audio check */
+  uid?: number; env?: NodeJS.ProcessEnv; exists?: (path: string) => boolean;
 }
 
 const run = (cmd: string, args: string[], spawnImpl: Spawn = spawn): Promise<string> => new Promise((resolve, reject) => {
@@ -73,18 +78,46 @@ export class Soloist {
   private get cfgPath() { return join(this.dir, 'config.json'); }
 
   config(): SoloistConfig {
-    try { const c = JSON.parse(readFileSync(this.cfgPath, 'utf8')) as Partial<SoloistConfig>; return { deviceName: c.deviceName ?? 'Curator', apiKey: c.apiKey ?? '', autoStart: c.autoStart ?? true }; }
-    catch { return { deviceName: 'Curator', apiKey: '', autoStart: true }; }
+    try { const c = JSON.parse(readFileSync(this.cfgPath, 'utf8')) as Partial<SoloistConfig>; return { deviceName: c.deviceName ?? 'Curator', apiKey: c.apiKey ?? '', autoStart: c.autoStart ?? true, outputDevice: c.outputDevice ?? '' }; }
+    catch { return { deviceName: 'Curator', apiKey: '', autoStart: true, outputDevice: '' }; }
   }
   /** Saves the device name and, when one is given, the key. An empty key leaves the stored one alone. */
-  configure(o: { deviceName?: string; apiKey?: string; autoStart?: boolean }) {
+  configure(o: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string }) {
     const cur = this.config();
     const name = (o.deviceName ?? cur.deviceName).trim().slice(0, 60);
     if (!name) throw new Error('Give the device a name.');
     mkdirSync(this.dir, { recursive: true });
-    const next: SoloistConfig = { deviceName: name, apiKey: o.apiKey?.trim() ? o.apiKey.trim() : cur.apiKey, autoStart: o.autoStart ?? cur.autoStart };
+    const next: SoloistConfig = { deviceName: name, apiKey: o.apiKey?.trim() ? o.apiKey.trim() : cur.apiKey, autoStart: o.autoStart ?? cur.autoStart, outputDevice: (o.outputDevice ?? cur.outputDevice).trim().slice(0, 200) };
     writeFileSync(this.cfgPath, JSON.stringify(next), { mode: 0o600 });
     try { chmodSync(this.cfgPath, 0o600); } catch { /* a filesystem without modes */ }
+  }
+
+  /**
+   * Soloist plays only through PipeWire or PulseAudio, and finds them through the user's runtime folder (/run/user/<uid>). A server started
+   * by systemd as its own account has no such session in its environment, so Soloist connected to Spotify but had nowhere to send the
+   * sound. This finds the sockets of a session that does exist for this account (kept alive by `loginctl enable-linger`) and hands them over.
+   */
+  private audioSockets() {
+    const exists = this.d.exists ?? existsSync, env = this.d.env ?? process.env;
+    const uid = this.d.uid ?? (typeof process.getuid === 'function' ? process.getuid() : -1);
+    const dirs = [env.XDG_RUNTIME_DIR, uid >= 0 ? `/run/user/${uid}` : undefined].filter((x): x is string => !!x);
+    for (const dir of [...new Set(dirs)]) {
+      if (exists(join(dir, 'pipewire-0'))) return { dir, server: 'pipewire' as const, pulse: exists(join(dir, 'pulse', 'native')) ? join(dir, 'pulse', 'native') : null };
+      if (exists(join(dir, 'pulse', 'native'))) return { dir, server: 'pulseaudio' as const, pulse: join(dir, 'pulse', 'native') };
+    }
+    return null;
+  }
+  audio(): AudioCheck {
+    const found = this.audioSockets();
+    if (found) return { ok: true, server: found.server, runtimeDir: found.dir, hint: null };
+    return { ok: false, server: null, runtimeDir: null, hint: 'No sound server is running for the account that runs this server, so Soloist connects to Spotify but cannot play anything. On the Pi run: sudo /home/curator/music-curator/scripts/setup-pi-audio.sh (it installs PipeWire and keeps it running for the curator account), then press Start again.' };
+  }
+  /** The environment Soloist is started with: the normal one plus the audio session this account can reach. */
+  private soloistEnv(): NodeJS.ProcessEnv {
+    const base = { ...(this.d.env ?? process.env) };
+    const found = this.audioSockets();
+    if (found) { base.XDG_RUNTIME_DIR = found.dir; if (found.pulse && !base.PULSE_SERVER) base.PULSE_SERVER = `unix:${found.pulse}`; }
+    return base;
   }
 
   support(): { ok: boolean; reason?: string } {
@@ -97,7 +130,7 @@ export class Soloist {
     const sup = this.support(), c = this.config(), installed = existsSync(this.bin);
     return {
       supported: sup.ok, reason: sup.reason, installed, version: installed && sup.ok ? await (this.d.version ?? this.readVersion.bind(this))(this.bin).catch(() => null) : null,
-      configured: !!c.apiKey, deviceName: c.deviceName, hasKey: !!c.apiKey, autoStart: c.autoStart,
+      configured: !!c.apiKey, deviceName: c.deviceName, hasKey: !!c.apiKey, autoStart: c.autoStart, outputDevice: c.outputDevice, audio: this.audio(),
       running: !!this.child, state: this.state, message: this.message, log: this.log.slice(-12), downloadsUrl: 'https://developer.spotify.com/documentation/soloist/reference/downloads-and-updates',
     };
   }
@@ -142,7 +175,9 @@ export class Soloist {
     if (this.child) return;
     this.wanted = true; this.state = 'starting'; this.message = null;
     mkdirSync(join(this.dir, 'cache'), { recursive: true });
-    const child = (this.d.spawnImpl ?? spawn)(this.bin, ['--device-name', c.deviceName, '--api-key', c.apiKey, '--cache-dir', join(this.dir, 'cache')], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const args = ['--device-name', c.deviceName, '--api-key', c.apiKey, '--cache-dir', join(this.dir, 'cache'), ...(c.outputDevice ? ['--pipewire-device', c.outputDevice] : [])];
+    const child = (this.d.spawnImpl ?? spawn)(this.bin, args, { stdio: ['ignore', 'pipe', 'pipe'], env: this.soloistEnv() });
+    if (!this.audio().ok) { this.log.push('Warning: no PipeWire or PulseAudio session found for this account; Soloist will have no sound output.'); }
     this.child = child;
     const keep = (d: Buffer) => {
       for (const line of d.toString().split('\n').map((l) => l.trim()).filter(Boolean)) this.log.push(line.replaceAll(c.apiKey, '•••').slice(0, 300));
@@ -163,7 +198,7 @@ export class Soloist {
         return;
       }
       this.crashes++;
-      this.message = `Soloist stopped (exit ${code}). ${/audio|pulse|pipewire/i.test(this.log.join(' ')) ? 'It needs PipeWire or PulseAudio on this machine.' : this.log.at(-1) ?? ''}`.trim();
+      this.message = `Soloist stopped (exit ${code}). ${/audio|pulse|pipewire/i.test(this.log.join(' ')) || !this.audio().ok ? (this.audio().hint ?? 'It needs PipeWire or PulseAudio on this machine.') : this.log.at(-1) ?? ''}`.trim();
       if (this.crashes > 5) { this.state = 'error'; this.wanted = false; this.message += ' Gave up after 5 tries.'; return; }
       this.state = 'starting';
       this.timer = setTimeout(() => { if (this.wanted && !this.child) { try { this.start(); } catch (e) { this.state = 'error'; this.message = (e as Error).message; } } }, this.d.restartDelayMs ?? 5000);

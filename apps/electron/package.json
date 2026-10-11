@@ -1,6 +1,7 @@
 {
   "name": "@curator/electron",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "description": "Music Curator desktop app: the web client plus its own server, with the library on disk",
   "author": "Music Curator",
