@@ -56,25 +56,44 @@ function currentSnapshot(): PlaybackSnapshot | null {
   return s.trackId ? s : null;
 }
 
-/** Move playback to `id` (null or this device's id = bring it back here). */
-export async function transferTo(id: string | null) {
-  const me = myId();
-  const target = id && id !== me ? id : null;
+/**
+ * What can be done with another device. They differ in who plays and whether this device stays linked afterwards:
+ *  - pullFrom(id)    "Play here": what that device is playing moves to this one (same track, same position, same queue); it stops there.
+ *  - pushTo(id)      "Send there": what plays here (or on the device being controlled) moves to that device and stops here;
+ *                    this device stays linked as its remote until you disconnect.
+ *  - pushTo(id, {keepHere}) "Play on both": that device starts the same track and this one carries on, with no link.
+ *  - control(id)     use this device as the remote of that one without moving anything.
+ *  - disconnect()    drop the link: the device that was being controlled keeps playing, this one is its own player again.
+ * Playback is always whole: the track, the position and the queue travel together, so nothing restarts or skips.
+ */
+export async function pullFrom(id: string) {
+  const d = useConnect.getState().devices.find((x) => x.id === id);
+  if (!d?.state?.trackId) throw new Error('That device is not playing anything');
+  const snap = { ...d.state, position: positionNow(d, useConnect.getState().receivedAt) };
+  const wasPlaying = snap.playing;
+  void send(id, { type: 'pause' });
+  useConnect.setState({ remoteId: null });
+  usePlayer.getState().restore(snap, { play: wasPlaying });
+  publish();
+}
+
+export async function pushTo(id: string, opts: { keepHere?: boolean } = {}) {
+  if (id === myId()) return pullFromRemoteOrNothing();
   const from = remoteDevice();
   const snap = currentSnapshot();
-  if (target === (from?.id ?? null)) return;
-  if (target) {
-    if (!snap) { useConnect.setState({ remoteId: target }); return; }
-    if (from) void send(from.id, { type: 'pause' }); else usePlayer.getState().pause();
-    await send(target, { type: 'transfer', snapshot: { ...snap, playing: true } });
-    useConnect.setState({ remoteId: target });
-  } else {
-    if (from) void send(from.id, { type: 'pause' });
-    useConnect.setState({ remoteId: null });
-    if (snap) usePlayer.getState().restore(snap, { play: true });
-    publish();
-  }
+  if (!snap) { useConnect.setState({ remoteId: id }); return; } // nothing to send: just take the remote
+  if (!opts.keepHere) { if (from && from.id !== id) void send(from.id, { type: 'pause' }); else if (!from) usePlayer.getState().pause(); }
+  await send(id, { type: 'transfer', snapshot: { ...snap, playing: opts.keepHere ? snap.playing : true } });
+  useConnect.setState({ remoteId: opts.keepHere ? useConnect.getState().remoteId : id });
 }
+
+export function control(id: string) { useConnect.setState({ remoteId: id === myId() ? null : id }); }
+
+/** Stop being the remote of another device. It keeps playing; nothing is sent to it. */
+export function disconnect() { useConnect.setState({ remoteId: null }); publish(); }
+
+/** "This device" while controlling another: bring its playback here. */
+async function pullFromRemoteOrNothing() { const r = remoteDevice(); if (r) await pullFrom(r.id); }
 
 /** What the player bar shows and which commands its buttons send: this device's player, or the remote one's. */
 export function usePlaybackView() {

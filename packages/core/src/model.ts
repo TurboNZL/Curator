@@ -34,6 +34,8 @@ export interface AlbumData {
   /** @deprecated old single-era field; membership now lives in EraData.albumIds. Still read, dropped when the album is saved. */
   eraId?: string | null;
   defaultReleaseId?: string | null;
+  /** made by a Spotify import from a few tracks and no source for the whole album: Health asks for a YouTube album link to complete it */
+  needsSource?: boolean;
   /** explicit track order (ids); wins over the release tracklist. Set when the user reorders or adds tracks by hand. */
   trackOrder?: string[];
 }
@@ -64,18 +66,24 @@ export interface TrackData {
   geniusUrl: string | null;
   youtubeMusicUrl: string | null;
   bitrate: string | null;
+  /** what the audio file really measured (server /api/audio/analyze): see Health > Check audio quality */
+  audioCheck?: AudioCheck | null;
   bpm: number | null;
   key: string | null;
   memories: number;
   syncWithAlbumCredits: boolean;
   queueRules: Record<string, unknown>;
 }
+/** The result of measuring a track's audio file. `cutoffHz`: highest frequency with sound; `looksLike`: the bit rate class that points to. */
+export interface AudioCheck { kbps: number; codec: string; cutoffHz: number; looksLike: number; verdict: 'ok' | 'transcode' | 'unknown'; file: string; at: number }
 export interface PlaylistData {
   name: string;
   description: string | null;
   cover: string | null;
   createdAt: number;
   trackIds: string[];
+  /** "Playlist note": why a track is in this playlist, or anything else about it there (track id -> text) */
+  trackNotes?: Record<string, string>;
 }
 export interface GroupMemberData {
   entityType: 'artist' | 'album' | 'track' | 'release' | 'era' | 'playlist';
@@ -121,8 +129,16 @@ export interface VoteData {
   timestamp: number;
 }
 export interface PlaybackLogData {
+  /** '' for a play imported from another service whose track is not in the library (it is matched again whenever the library changes) */
   trackId: string; timestamp: number; duration: number | null;
   sourceType: string | null; sourceId: string | null; isSkip: boolean;
+  /** set on plays imported from a service's history (Spotify's extended streaming history); `timestamp` is when the play ended, like Spotify's `ts` */
+  imported?: 'spotify';
+  /** how the service named the play (used when the track is not in the library) */
+  name?: string; artist?: string; album?: string;
+  /** spotify:track:<id> */
+  uri?: string;
+  shuffle?: boolean | null; platform?: string | null; reasonStart?: string | null; reasonEnd?: string | null;
 }
 export interface ProfileData {
   name: string; theme: string; accentColor: string; playbackMode: string;

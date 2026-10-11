@@ -126,7 +126,8 @@ export const applyWallpaper = (theme: ThemeId, settings: WallpaperSettings) => {
   ensureHost();
   const custom = settings.custom ? getCustomImage() : null;
   img!.style.background = custom ? `center / cover no-repeat url("${custom}")` : themeWallpaper(theme);
-  dim!.style.opacity = String(settings.darkness);
+  // a black layer over a light picture turns it grey: it counts for much less on a light theme
+  dim!.style.opacity = String(root.dataset.mode === "light" ? settings.darkness * 0.4 : settings.darkness);
   root.setAttribute("data-wallpaper", "on");
 };
 

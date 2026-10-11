@@ -69,7 +69,7 @@ export const useStore = create<State>((set, get) => {
       await flushUploads(a); // images first, so records never point at a hash the server lacks for long
       // 1. push everything queued
       for (;;) {
-        const keys = (await db.getAll('outbox')).slice(0, 500);
+        const keys = (await db.getAll("outbox")).slice(0, 2000);
         if (!keys.length) break;
         const recs = (await Promise.all(keys.map((k) => db.get('records', [k.table, k.id])))).filter((r): r is SyncRecord => !!r);
         await a.push(recs);

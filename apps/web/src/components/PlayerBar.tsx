@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { trackPath } from '../lib/trackPath.ts';
 import { Cast, Info, ListMusic, Pause, Play, Shuffle, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -53,7 +55,7 @@ export function PlayerBar() {
               <Cover hash={track.cover} seed={track.albumTitle ?? track.title} className="h-12 w-12" />
             </button>
             <div className="min-w-0">
-              <div className="bt-ptitle truncate text-sm font-medium">{track.title}</div>
+              <div className="bt-ptitle truncate text-sm font-medium"><Link to={trackPath(track)} className="hover:underline" title="Go to this track in your library">{track.title}</Link></div>
               <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
               {v.remote && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {v.remote.name}</div>}
             </div>

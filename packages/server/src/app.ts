@@ -6,9 +6,13 @@ import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
+import { analyzeAudio } from './audioinfo.ts';
+import { Matcher, type MatchTrack } from './match.ts';
+import { similarArtists } from './recommend.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
+import { SpotifyAccount, SpotifyError, oembed, parseRef, resolveLink } from './spotify.ts';
 import { streamSSE } from 'hono/streaming';
 import { ConnectHub, parseCommand, parseSnapshot } from './connect.ts';
 import { checkTools } from './tools.ts';
@@ -31,6 +35,8 @@ export function createApp(
   importer = new Importer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   hub = new ConnectHub(),
   updater = new Updater({ script: config.updateScript, restart: config.updateRestart, exit: () => process.exit(1) }),
+  spotify = new SpotifyAccount(config.dataDir, { env: process.env }),
+  matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
 ) {
   const app = new Hono();
 
@@ -42,6 +48,8 @@ export function createApp(
 
   // Everything else needs the token. `?token=` exists because <audio src> cannot set headers.
   app.use('/api/*', async (c, next) => {
+    // Spotify sends the browser here after the user allows access; the secret `state` in the address is what authorises it
+    if (c.req.path === '/api/spotify/callback') return next();
     const bearer = c.req.header('Authorization')?.replace(/^Bearer\s+/i, '');
     if (!tokenOk(bearer ?? c.req.query('token'), config.token)) return c.json({ error: 'unauthorized' }, 401);
     await next();
@@ -116,6 +124,16 @@ export function createApp(
   });
 
   // Re-download audio for tracks that have a source URL but no file (e.g. after losing the old uploads folder).
+  // ---- audio check: what a file really is (bit rate, codec, highest frequency with sound), for the "fake 320" check in Health ----
+  app.post('/api/audio/analyze', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { hash?: unknown };
+    const hash = typeof body.hash === 'string' ? body.hash : '';
+    if (!/^[0-9a-f]{64}$/.test(hash)) return c.json({ error: 'bad hash' }, 400);
+    const path = store.hasFile(hash) && filePath(config.dataDir, hash);
+    if (!path || !existsSync(path)) return c.json({ error: 'no such file' }, 404);
+    return c.json(await analyzeAudio(path, { ffmpegDir: config.ffmpegDir }));
+  });
+
   app.post('/api/acquire', async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { trackIds?: unknown };
     const ids = Array.isArray(body.trackIds) ? body.trackIds.filter((x): x is string => typeof x === 'string') : undefined;
@@ -126,6 +144,81 @@ export function createApp(
     const count = (s: string) => jobs.filter((j) => j.state === s).length;
     return c.json({ queued: count('queued'), running: count('running'), done: count('done'), failed: count('failed'),
       failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error }) => ({ trackId, error })) });
+  });
+
+  // ---- find the YouTube page of tracks that have none (match.ts): a few tracks per request, the page asks again for the next batch ----
+  app.post('/api/match', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { tracks?: unknown; methods?: unknown };
+    const methods = (Array.isArray(b.methods) ? b.methods : ['odesli', 'search']).filter((m): m is 'odesli' | 'search' => m === 'odesli' || m === 'search');
+    const tracks = (Array.isArray(b.tracks) ? b.tracks : []).slice(0, 12).flatMap((t: any): MatchTrack[] => typeof t?.id === 'string' && typeof t.title === 'string'
+      ? [{ id: t.id, title: t.title.slice(0, 200), artist: String(t.artist ?? '').slice(0, 200), album: typeof t.album === 'string' ? t.album : undefined, durationMs: typeof t.durationMs === 'number' ? t.durationMs : null, spotifyUrl: typeof t.spotifyUrl === 'string' ? t.spotifyUrl : null }] : []);
+    if (!tracks.length || !methods.length) return c.json({ error: 'nothing to match' }, 400);
+    const out = [];
+    for (let i = 0; i < tracks.length; i += 3) out.push(...(await Promise.all(tracks.slice(i, i + 3).map((t) => matcher.match(t, methods)))));
+    return c.json({ results: out });
+  });
+
+  // ---- Spotify (spotify.ts): links, public playlists, and the user's own sign-in for their playlists ----
+  const spotifyFail = (e: unknown) => { if (e instanceof SpotifyError) return c_json(e); throw e; };
+  const c_json = (e: SpotifyError) => new Response(JSON.stringify({ error: e.message }), { status: e.status, headers: { 'content-type': 'application/json' } });
+  app.get('/api/spotify/status', (c) => c.json(spotify.status()));
+  app.post('/api/spotify/config', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { clientId?: unknown; redirectUri?: unknown };
+    try { spotify.configure(String(b.clientId ?? ''), typeof b.redirectUri === 'string' && b.redirectUri ? b.redirectUri : undefined); return c.json(spotify.status()); } catch (e) { return spotifyFail(e); }
+  });
+  app.get('/api/spotify/auth-url', (c) => { try { return c.json({ url: spotify.authUrl() }); } catch (e) { return spotifyFail(e); } });
+  app.post('/api/spotify/exchange', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { url?: unknown };
+    try { await spotify.exchange(String(b.url ?? '')); return c.json(spotify.status()); } catch (e) { return spotifyFail(e); }
+  });
+  app.get('/api/spotify/callback', async (c) => {
+    try { await spotify.exchange(c.req.url); return c.html('<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Connected to Spotify</h2><p>You can close this tab and go back to Curator.</p>'); }
+    catch (e) { return c.html(`<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Could not connect</h2><p>${String((e as Error).message).replace(/[<&]/g, ' ')}</p>`, 400); }
+  });
+  // playback: Spotify plays, Curator sends commands (the web API; Soloist on the Pi is just one more device in this list)
+  app.get('/api/spotify/player/devices', async (c) => { try { return c.json({ devices: await spotify.devices() }); } catch (e) { return spotifyFail(e); } });
+  app.get('/api/spotify/player/state', async (c) => { try { return c.json({ state: await spotify.playerState() }); } catch (e) { return spotifyFail(e); } });
+  app.post('/api/spotify/player/play', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { uris?: unknown; deviceId?: unknown; positionMs?: unknown };
+    const uris = (Array.isArray(b.uris) ? b.uris : []).filter((u): u is string => typeof u === 'string' && /^spotify:track:[A-Za-z0-9]{22}$/.test(u));
+    if (!uris.length) return c.json({ error: 'no Spotify tracks to play' }, 400);
+    try { await spotify.play({ uris, deviceId: typeof b.deviceId === 'string' && b.deviceId ? b.deviceId : undefined, positionMs: typeof b.positionMs === 'number' ? b.positionMs : undefined }); return c.json({ ok: true }); } catch (e) { return spotifyFail(e); }
+  });
+  app.post('/api/spotify/player/command', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { type?: unknown; deviceId?: unknown; value?: unknown };
+    const types = ['pause', 'resume', 'next', 'previous', 'seek', 'volume', 'shuffle', 'queue', 'transfer'] as const;
+    const type = types.find((t) => t === b.type);
+    if (!type) return c.json({ error: 'unknown command' }, 400);
+    try { await spotify.command({ type, deviceId: typeof b.deviceId === 'string' && b.deviceId ? b.deviceId : undefined, value: b.value as number | boolean | string | undefined }); return c.json({ ok: true }); } catch (e) { return spotifyFail(e); }
+  });
+  app.get('/api/spotify/search', async (c) => {
+    const q = (c.req.query('q') ?? '').trim().slice(0, 200);
+    if (!q) return c.json({ error: 'empty search' }, 400);
+    try { return c.json({ tracks: await spotify.search(q) }); } catch (e) { return spotifyFail(e); }
+  });
+  app.get('/api/recommend/similar', async (c) => {
+    const artist = (c.req.query('artist') ?? '').trim().slice(0, 120);
+    if (!artist) return c.json({ error: 'artist missing' }, 400);
+    return c.json({ artists: await similarArtists(artist) });
+  });
+  app.post('/api/spotify/signout', (c) => { spotify.signOut(); return c.json(spotify.status()); });
+  app.get('/api/spotify/playlists', async (c) => { try { return c.json({ playlists: await spotify.playlists() }); } catch (e) { return spotifyFail(e); } });
+  app.get('/api/spotify/playlist/:id', async (c) => {
+    const id = c.req.param('id');
+    if (!/^[A-Za-z0-9]{22}$/.test(id)) return c.json({ error: 'bad playlist id' }, 400);
+    try { return c.json(await spotify.playlist(id)); } catch (e) { return spotifyFail(e); }
+  });
+  app.post('/api/spotify/resolve', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { url?: unknown };
+    try { return c.json(await resolveLink(b.url, { account: spotify })); } catch (e) { return spotifyFail(e); }
+  });
+  app.post('/api/spotify/cover', async (c) => {
+    // a track or album link -> its cover saved in the file store (what oEmbed's thumbnail is)
+    const b = (await c.req.json().catch(() => ({}))) as { uri?: unknown };
+    const ref = parseRef(b.uri);
+    if (!ref) return c.json({ error: 'bad link' }, 400);
+    try { const m = await oembed(ref); if (!m.cover) return c.json({ error: 'Spotify gave no cover' }, 404); return c.json(await importer.fetchFirstCover([m.cover])); }
+    catch (e) { if (e instanceof ImportError) return c.json({ error: e.message }, e.status as 400); return spotifyFail(e); }
   });
 
   // Album import step 1: look up a YouTube/playlist link (metadata only) so the user can review before anything downloads.

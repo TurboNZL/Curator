@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Disc, FileAudio, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
+import { Disc, Download, FileAudio, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, User, Layers } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary, type Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -15,7 +16,7 @@ function useTrackListActions() {
   const play = usePlayer((s) => s.play);
   const enqueue = usePlayer((s) => s.enqueue);
   return (ids: string[], source: Parameters<typeof play>[2]): MenuItem[] => {
-    const playable = ids.filter((id) => lib.trackById.get(id)?.file);
+    const playable = ids.filter((id) => canPlay(lib.trackById.get(id)));
     const none = !playable.length;
     return [
       { label: 'Play', icon: <Play size={15} />, run: () => play(playable[0], playable, source), disabled: none },
@@ -61,6 +62,7 @@ export function useAlbumMenuItems() {
     { label: 'Edit album…', icon: <Pencil size={15} />, run: () => edit({ kind: 'album', id: album.id }) },
     { label: 'Add audio files…', icon: <FileAudio size={15} />, run: () => edit({ kind: 'upload', id: album.id }) },
     { label: 'New release…', icon: <Plus size={15} />, run: () => edit({ kind: 'new-release', id: album.id }) },
+    { label: 'Import a release from YouTube…', icon: <Download size={15} />, run: () => edit({ kind: 'import-into-album', id: album.id }) },
     ...(planConvertToSingle(lib, album) ? [{ label: 'Convert to a single…', icon: <Disc size={15} />, run: () => convert(album) }] : []),
     { separator: true },
     ...album.leads.map((l) => ({ label: `Go to ${l.name}`, icon: <User size={15} />, to: `/artists/${l.id}` })),

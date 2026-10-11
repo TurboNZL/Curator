@@ -82,7 +82,7 @@ export function parsePreview(info: any): Preview {
   };
 }
 
-const COVER_HOSTS = ['ytimg.com', 'ggpht.com', 'googleusercontent.com', 'mzstatic.com'];
+const COVER_HOSTS = ['ytimg.com', 'ggpht.com', 'googleusercontent.com', 'mzstatic.com', 'scdn.co'];
 const MAX_COVER = 10 * 1024 * 1024;
 
 export class ImportError extends Error {
@@ -143,7 +143,7 @@ export class Importer {
   async fetchCover(url: unknown): Promise<string> {
     const u = safeUrl(url);
     const host = u ? new URL(u).hostname : '';
-    if (!u || !u.startsWith('https://') || !COVER_HOSTS.some((h) => host === h || host.endsWith('.' + h))) throw new ImportError(400, 'Only YouTube image links are allowed');
+    if (!u || !u.startsWith('https://') || !COVER_HOSTS.some((h) => host === h || host.endsWith('.' + h))) throw new ImportError(400, 'Only YouTube, Apple and Spotify image links are allowed');
     let res: Response;
     try { res = await (this.o.fetchImpl ?? fetch)(u, { headers: { Accept: 'image/*' }, signal: AbortSignal.timeout(20_000) }); }
     catch (e) { throw new ImportError(502, `could not reach the image host (${(e as Error).cause instanceof Error ? ((e as Error).cause as Error).message : (e as Error).message})`); }

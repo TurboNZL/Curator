@@ -149,7 +149,7 @@ export async function downloadAudio(hash: string, protect: ReadonlySet<string> =
   const res = await fetch(api().fileUrl(hash));
   if (!res.ok) throw new Error(`Server said ${res.status}`);
   const blob = await res.blob();
-  const limit = st.settings.storageLimitMb * 1024 * 1024;
+  const limit = st.settings.storageLimitOn ? st.settings.storageLimitMb * 1024 * 1024 : Infinity;
   const drop = pickEvictions(useStore.getState().audioCache, blob.size, limit, new Set([...protect, hash]));
   if (!drop || (drop.length && !st.settings.evictOldest)) throw new CacheLimitError();
   if (drop.length) await removeAudio(drop);
@@ -206,7 +206,7 @@ export async function keepOffline(hashes: string[], set: (p: KeepProgress) => vo
   let done = 0;
   for (const h of todo) {
     try { await downloadAudio(h, batch); } catch (e) {
-      set({ running: false, done, total: todo.length, message: e instanceof CacheLimitError ? 'Stopped: storage limit reached. Raise it in Settings.' : 'Stopped: could not reach the server.' });
+      set({ running: false, done, total: todo.length, message: e instanceof CacheLimitError ? 'Stopped: storage limit reached. Raise it or turn the Storage limiter off in Settings.' : 'Stopped: could not reach the server.' });
       return;
     }
     set({ running: true, done: ++done, total: todo.length, message: null });

@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react';
+import { Pencil, StickyNote } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { trackInfo } from '../lib/trackinfo.ts';
@@ -19,7 +19,7 @@ export function TrackDetails({ id, onClose }: { id: string; onClose: () => void 
   const info = trackInfo(lib, id);
   const stat = (label: string, value: string) => <div className="rounded-theme bg-raised px-3 py-2"><div className="text-[11px] uppercase tracking-wider text-muted">{label}</div><div className="text-sm font-semibold tabular-nums">{value}</div></div>;
   return (
-    <Modal title="Track details" onClose={onClose} footer={<button className="btn ml-auto" onClick={() => edit({ kind: 'track', id })}><Pencil size={15} />Edit</button>}>
+    <Modal title="Track details" onClose={onClose} footer={<div className="ml-auto flex flex-wrap gap-2"><button className="btn" onClick={() => edit({ kind: 'new-note', id: `track:${id}` })}><StickyNote size={15} />Write a note</button><button className="btn" onClick={() => edit({ kind: 'track', id })}><Pencil size={15} />Edit</button></div>}>
       <div><div className="text-lg font-semibold">{t.title}</div><div className="text-sm text-muted">{t.artistName}{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
       <div className="flex items-center gap-3"><Rating track={t} size="lg" /><span className="text-sm text-muted">{t.comparisons < 3 ? `Needs ${3 - t.comparisons} more comparison${3 - t.comparisons === 1 ? '' : 's'} before the vote rating is used.` : 'Rating comes from votes.'}</span></div>
       <div className="grid grid-cols-3 gap-2">

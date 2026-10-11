@@ -19,7 +19,9 @@ export interface DeviceSettings {
   wallpaper: boolean;
   wallpaperDarkness: number;
   wallpaperCustom: boolean;
-  /** soft cap for locally cached audio, in MB (browser storage is limited) */
+  /** the Storage limiter: off by default. When on, locally cached audio stops at `storageLimitMb` */
+  storageLimitOn: boolean;
+  /** the size of that cap, in MB */
   storageLimitMb: number;
   /** when the limit is reached, drop the least recently played offline tracks instead of stopping */
   evictOldest: boolean;
@@ -28,6 +30,11 @@ export interface DeviceSettings {
   eqBass: number;
   eqBands: number[];
   eqPreamp: number;
+  /** Spotify Connect device this app sends tracks to (id from the account's device list; '' = none) and its name for display */
+  spotifyDeviceId: string;
+  spotifyDeviceName: string;
+  /** play tracks that have a Spotify link but no audio file through Spotify */
+  spotifyAuto: boolean;
   /** vibration feedback on presses (the Android app and phones that support it) */
   haptics: boolean;
 }
@@ -37,6 +44,11 @@ const KEY = 'curator.settings';
 /** What the Electron desktop app (apps/electron) puts on `window`. Absent in a browser. */
 export interface CuratorDesktop {
   token: string; version: string; dataDir: string; platform: string; port: number;
+  /** the window's title bar is drawn by the page (a setting of the app, applied at start) */
+  customFrame?: boolean;
+  windowControl?(action: 'minimize' | 'maximize' | 'close'): void;
+  setCustomFrame?(on: boolean): Promise<void>;
+  onWindowState?(cb: (maximized: boolean) => void): () => void;
   chooseLibraryFolder(): Promise<string | null>;
   showLibraryFolder(): Promise<void>;
   /** Discord Rich Presence (the app's main process talks to the local Discord client) */
@@ -47,14 +59,14 @@ export interface CuratorDesktop {
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
   updates: import('./native.ts').NativeUpdates;
 }
-export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; status: 'off' | 'no-id' | 'connecting' | 'connected' };
+export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; builtIn?: boolean; status: 'off' | 'no-id' | 'connecting' | 'connected' };
 export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
 
 export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));

@@ -166,3 +166,23 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
   input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outline: none; box-shadow: var(--chk-focus); }
   input[type='checkbox']:disabled, input[type='radio']:disabled { opacity: 0.45; cursor: not-allowed; }
 }
+
+/* a long button label wraps on a narrow screen instead of pushing the page sideways */
+.btn { max-width: 100%; }
+@media (max-width: 640px) { .btn { white-space: normal; text-align: center; } }
+
+/* "Go to track" flashes the row it lands on */
+@keyframes bt-row-flash { 0%, 60% { background: hsl(var(--accent) / 0.28); } 100% { background: transparent; } }
+.bt-row-flash { animation: bt-row-flash 2.6s ease-out; }
+
+/* the desktop app's themed title bar (components/WindowFrame.tsx): colours, size and shape come from the UI style's dialog variables */
+.bt-wf { display: flex; align-items: center; gap: 0.5rem; flex: none; height: 2.25rem; padding: 0 0.5rem 0 0.9rem; -webkit-app-region: drag; user-select: none;
+  background: var(--tb-bg, hsl(var(--surface))); color: var(--tb-fg, inherit); border-bottom: 1px solid hsl(var(--line)); font-size: 0.8rem; font-weight: 600; z-index: 60; }
+.bt-wf-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--title-font, inherit); text-shadow: var(--tb-text-shadow, none); }
+.bt-wf-btns { display: flex; gap: 0.25rem; order: var(--wf-order, 1); -webkit-app-region: no-drag; }
+.bt-wf-btn { display: grid; place-items: center; width: 2rem; height: 1.6rem; border-radius: var(--close-r, 6px); background: transparent; color: inherit; }
+.bt-wf-btn:hover { background: var(--close-hover-bg, hsl(var(--hover))); }
+.bt-wf-close:hover { background: #e5484d; color: #fff; }
+[data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"] { --wf-order: -1; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-title { text-align: center; }
+:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { width: 1.6rem; border-radius: 9999px; }

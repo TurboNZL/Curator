@@ -3,10 +3,11 @@
 Spotify-Connect-style remote control. Every device that has Curator open and uses the same server shows up in the player's device
 list (the cast icon in the player bar, and in the top bar when nothing is playing here). From any of them you can:
 
-- **Move playback** to another device: pick it. The track, queue and position go with it and this device pauses.
-- **Control** it: while another device plays, this device's play/pause, next, previous, seek and volume act on it. The bar says
-  "Playing on <device>".
-- **Bring it back**: pick "(this device)".
+- **Play here** (pull): what another device is playing moves to this one, same track, same position, same queue; it stops there.
+- **Send there** (push): what plays here moves to that device and stops here. This device stays linked as its remote.
+- **Play on both**: that device starts the same track and this one keeps playing, with no link: two devices at once.
+- **Control**: use this device as the remote of another one without moving anything. The bar says "Playing on <device>".
+- **Disconnect**: drop the link. The other device keeps playing and this one is its own player again, so you can start something else here.
 
 Name a device in Settings > This device. Unnamed devices are called after their browser and system ("Firefox on Linux").
 

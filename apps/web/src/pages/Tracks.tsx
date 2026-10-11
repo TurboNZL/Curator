@@ -1,4 +1,5 @@
 import { FilterBar } from '../components/FilterBar.tsx';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { makeChip, matchesAll, splitTyped, trackSubject, type Chip, type FilterKey } from '../lib/filters.ts';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
@@ -17,11 +18,12 @@ export function TracksPage() {
   const lib = useLibrary();
   const edit = useEditor((s) => s.open);
   const play = usePlayer((s) => s.play);
-  const [q, setQ] = useState('');
+  const [params] = useSearchParams();
+  // /tracks?track=<id> (Go to track, for a single) starts with its title typed in, so it is the one on screen
+  const [q, setQ] = useState(() => { const t = params.get('track'); return (t && lib.trackById.get(t)?.title) || ''; });
   const [sort, setSort] = useState<SortKey>('rating');
   const [dir, setDir] = useState<SortDir>('desc');
   // a link such as /tracks?era=<id> or ?artist=<id> starts with that filter already on
-  const [params] = useSearchParams();
   const [chips, setChips] = useState<Chip[]>(() => (['artist', 'era', 'album', 'genre'] as FilterKey[]).flatMap((k) => {
     const v = params.get(k);
     if (!v) return [];
@@ -37,7 +39,7 @@ export function TracksPage() {
     return sortTracks(f, sort, dir);
   }, [lib, q, sort, dir, chips]);
 
-  const playable = tracks.filter((t) => t.file).map((t) => t.id);
+  const playable = tracks.filter(canPlay).map((t) => t.id);
   const pick = (k: SortKey) => { if (k === sort) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(k); setDir(defaultDir(k)); } };
 
   return (

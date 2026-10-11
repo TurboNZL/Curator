@@ -10,7 +10,7 @@ afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('desktop config', () => {
   it('defaults to a library inside the app folder and a port next to the Pi server\'s', () => {
-    expect(loadDesktopConfig(dir, {})).toEqual({ dataDir: join(dir, 'library'), port: DESKTOP_PORT });
+    expect(loadDesktopConfig(dir, {})).toEqual({ dataDir: join(dir, 'library'), port: DESKTOP_PORT, customFrame: false });
     expect(DESKTOP_PORT).toBe(47814);
   });
   it('remembers the chosen folder, and the environment overrides it', () => {
@@ -18,7 +18,7 @@ describe('desktop config', () => {
     expect(loadDesktopConfig(dir, {}).dataDir).toBe('/mnt/music');
     expect(loadDesktopConfig(dir, { CURATOR_DATA_DIR: '/elsewhere' }).dataDir).toBe('/elsewhere');
     saveDesktopConfig(dir, { port: 50000 });
-    expect(loadDesktopConfig(dir, {})).toEqual({ dataDir: '/mnt/music', port: 50000 }); // saving one setting keeps the other
+    expect(loadDesktopConfig(dir, {})).toEqual({ dataDir: '/mnt/music', port: 50000, customFrame: false }); // saving one setting keeps the other
   });
   it('ignores a broken file and an impossible port', () => {
     writeFileSync(join(dir, 'desktop.json'), '{nope');

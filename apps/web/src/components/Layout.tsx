@@ -1,5 +1,6 @@
+import { WindowFrame } from './WindowFrame.tsx';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { BarChart3, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
+import { BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
@@ -21,6 +22,7 @@ const NAV = [
   { to: '/playlists', label: 'Playlists', icon: ListMusic },
   { to: '/queue', label: 'Queue', icon: ListOrdered },
   { to: '/notes', label: 'Notes', icon: Network },
+  { to: '/discover', label: 'Discover', icon: Compass },
   { to: '/stats', label: 'Stats', icon: BarChart3 },
   { to: '/health', label: 'Health', icon: Stethoscope },
   { to: '/settings', label: 'Settings', icon: Settings },
@@ -62,10 +64,11 @@ function SyncDot() {
 const LIBRARY = ['/artists', '/albums', '/singles', '/eras', '/tracks', '/playlists'];
 const TOOLBAR_LABEL: Record<string, string> = { '/': 'Journal' };
 
-const MOBILE_HIDDEN = ['/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
+const MOBILE_HIDDEN = ['/discover', '/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
 
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
+  { label: 'Import from Spotify', icon: ListMusic, target: { kind: 'import-spotify', id: '' } },
   { label: 'Add audio files', icon: FileAudio, target: { kind: 'upload', id: '' } },
   { label: 'New album', icon: Disc3, target: { kind: 'new-album', id: '' } },
   { label: 'New track', icon: Music2, target: { kind: 'new-track', id: '' } },
@@ -140,6 +143,7 @@ export function Layout() {
   }, [toggle]);
   return (
     <div className="flex h-full flex-col">
+      <WindowFrame />
       <div className="bt-scrim" aria-hidden />
       <div className="flex min-h-0 flex-1">
         <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">

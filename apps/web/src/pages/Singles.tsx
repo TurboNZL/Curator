@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { canPlay } from '../lib/spotifyPlayer.ts';
 import { FileAudio, LayoutGrid, List, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
@@ -16,7 +17,7 @@ export function SinglesPage() {
   const [q, setQ] = useState('');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const singles = useMemo(() => lib.singles.filter((t) => `${t.title} ${t.artistName}`.toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.title.localeCompare(b.title)), [lib, q]);
-  const playable = singles.filter((t) => t.file).map((t) => t.id);
+  const playable = singles.filter(canPlay).map((t) => t.id);
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center gap-3">
