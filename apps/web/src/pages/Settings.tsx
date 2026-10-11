@@ -17,7 +17,7 @@ import { SpotifyCard } from '../components/SpotifyCard.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
 import { GuidesTab } from '../components/GuidesTab.tsx';
 import { ServerUpdateCard } from '../components/ServerUpdate.tsx';
-import { ConnectionTokens, ServerHealthCard } from '../components/ServerHealthCard.tsx';
+import { ConnectionTokens, PairDevice, ServerHealthCard } from '../components/ServerHealthCard.tsx';
 import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
 
 
@@ -69,6 +69,7 @@ export function SettingsPage() {
         <div className="flex flex-wrap items-center gap-2"><button className="btn" onClick={test}>Test connection</button><button className="btn btn-accent" onClick={save}>Save &amp; sync</button>
           <button className="btn btn-ghost" onClick={() => void syncNow()} disabled={sync.state === 'syncing'}><RefreshCw size={15} className={cn(sync.state === 'syncing' && 'animate-spin')} />Sync now</button></div>
         <ConnectionTokens />
+        <PairDevice />
         {status && <div className="rounded-theme bg-raised p-3 text-sm">{typeof status === 'string' ? status : <>Connected · {status.files.count} files ({fmtBytes(status.files.bytes)}) · cursor {status.cursor}
           {status.tools && <div className={status.tools.ytdlp && status.tools.ffmpeg ? 'text-good' : 'text-warn'}>yt-dlp: {status.tools.ytdlp ?? 'NOT FOUND'} · ffmpeg: {status.tools.ffmpeg ?? 'NOT FOUND'} · cookies: {status.tools.cookies ? 'set' : 'not set'}{!(status.tools.ytdlp && status.tools.ffmpeg) && ' — YouTube import and downloads will not work until both are installed on the server.'}</div>}</>}</div>}
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
