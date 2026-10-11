@@ -97,6 +97,7 @@ export class Api {
   analyzeAudio(hash: string) { return this.req<{ codec: string; kbps: number; sampleRate: number; durationSec: number; cutoffHz: number; looksLike: number; verdict: 'ok' | 'transcode' | 'unknown' }>('/api/audio/analyze', { method: 'POST', body: JSON.stringify({ hash }) }); }
   // ---- Spotify (server/src/spotify.ts) and YouTube matching (match.ts) ----
   spotifyStatus() { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; streaming?: boolean; configured: boolean }>('/api/spotify/status'); }
+  spotifyDiagnose() { return this.req<SpotifyDiagnosis>('/api/spotify/diagnose'); }
   spotifySdkToken() { return this.req<{ token: string; expiresInMs: number }>('/api/spotify/sdk-token'); }
   spotifyConfig(clientId: string, redirectUri?: string) { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean }>('/api/spotify/config', { method: 'POST', body: JSON.stringify({ clientId, redirectUri }) }); }
   spotifyAuthUrl(streaming = false) { return this.req<{ url: string }>(`/api/spotify/auth-url${streaming ? '?streaming=1' : ''}`); }
@@ -150,5 +151,6 @@ export interface SoloistInfo {
   beam: { enabled: boolean; sink: 'ready' | 'missing' | 'error' | 'unchecked'; sinkMessage: string | null; streamPath: string; listeners: number; running: boolean; error: string | null; bytes: number };
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;
 }
+export interface SpotifyDiagnosis { signedIn: boolean; permissions: string[]; clientIdStart: string; refresh?: string; me?: { status: number; product?: string | null; country?: string | null; body?: string }; devices?: { status: number; devices?: string[]; body?: string } }
 export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null; /** Spotify accepts no commands from other apps for this device */ restricted?: boolean }
 export interface SpotifyPlayerInfo { playing: boolean; progressMs: number; shuffle: boolean; device: { id: string; name: string; volume: number | null }; track: { uri: string; id: string; title: string; artists: string[]; album: string; cover: string | null; durationMs: number } | null }

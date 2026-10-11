@@ -165,6 +165,30 @@ export class SpotifyAccount {
     return this.load().token!.access;
   }
   /**
+   * What Spotify says about this sign-in, for the "Check the connection" button: the permissions the saved token holds and the raw answers
+   * of the calls Curator depends on. Never returns the token itself.
+   */
+  async diagnose(): Promise<Record<string, unknown>> {
+    const s = this.load();
+    const out: Record<string, unknown> = { signedIn: !!s.token, permissions: s.token?.scope ? s.token.scope.split(' ') : [], clientIdStart: (this.envClient || s.clientId || '').slice(0, 6) };
+    if (!s.token) return out;
+    let access: string;
+    try { access = await this.access(); } catch (e) { out.refresh = (e as Error).message; return out; }
+    const probe = async (path: string) => {
+      try {
+        const r = await this.f(`https://api.spotify.com/v1${path}`, { headers: { Authorization: `Bearer ${access}` }, signal: AbortSignal.timeout(15_000) });
+        const text = await r.text().catch(() => '');
+        if (!r.ok) return { status: r.status, body: text.replace(/\s+/g, ' ').trim().slice(0, 300) };
+        let j: Record<string, unknown> = {}; try { j = JSON.parse(text) as Record<string, unknown>; } catch { /* empty body */ }
+        return { status: r.status, ...(path === '/me' ? { product: j.product ?? null, country: j.country ?? null } : {}), ...(path.endsWith('/devices') ? { devices: ((j.devices as { name: string; type: string; is_restricted?: boolean }[] | undefined) ?? []).map((d) => `${d.name} (${d.type}${d.is_restricted ? ', restricted' : ''})`) } : {}) };
+      } catch (e) { return { status: 0, body: (e as Error).message }; }
+    };
+    out.me = await probe('/me');
+    out.devices = await probe('/me/player/devices');
+    return out;
+  }
+
+  /**
    * A short-lived access token for Spotify's Web Playback SDK, which runs in the page and plays the audio there. The SDK has to hold the
    * token itself; the refresh token never leaves the server. Needs the `streaming` permission (added to the sign-in later than the rest,
    * so an older sign-in has to be repeated once).
@@ -184,8 +208,10 @@ export class SpotifyAccount {
       if (res.status === 429) { await new Promise((r) => setTimeout(r, Math.min(5000, (Number(res.headers.get('retry-after')) || 1) * 1000))); continue; }
       if (res.status === 401) throw new SpotifyError(401, 'The Spotify sign-in is no longer valid; sign in again');
       if (res.ok) return (await res.json()) as T;
-      const said = ((await res.json().catch(() => null)) as { error?: { message?: string } | string } | null)?.error;
-      const why = typeof said === 'string' ? said : said?.message;
+      const raw = await res.text().catch(() => '');
+      let said: { message?: string } | string | undefined;
+      try { said = (JSON.parse(raw) as { error?: { message?: string } | string }).error; } catch { /* not JSON */ }
+      const why = (typeof said === 'string' ? said : said?.message) || raw.replace(/\s+/g, ' ').trim().slice(0, 160) || undefined;
       if (res.status === 403) throw new SpotifyError(403, `Spotify refused (403${why ? `: ${why}` : ''}). In Development Mode an app can only read the account of its owner and the people added under User Management in the Spotify dashboard, and an older sign-in may lack a permission: signing out and in again fixes that.`);
       if (res.status === 404) throw new SpotifyError(404, `Spotify cannot find that${why ? ` (${why})` : ''}`);
       throw new SpotifyError(502, `Spotify answered ${res.status}${why ? `: ${why}` : ''}`);

@@ -1,10 +1,33 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { LogIn } from 'lucide-react';
 import { api, useStore } from '../lib/store.ts';
+import type { SpotifyDiagnosis } from '../lib/api.ts';
 import { refreshSpotifyStatus } from '../lib/spotifyPlayer.ts';
 import { Field } from './forms.tsx';
 
 type Status = { clientId: string; redirectUri: string; signedIn: boolean; streaming?: boolean; configured: boolean };
+
+/** "Check the connection": what Spotify answers for this sign-in, in plain terms, for when devices or playlists do not load. */
+function CheckConnection() {
+  const [d, setD] = useState<SpotifyDiagnosis | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const run = async () => { setBusy(true); setErr(null); try { setD(await api().spotifyDiagnose()); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); } };
+  const line = (label: string, r?: { status: number; body?: string }, ok?: string) => r && <div><span className="text-muted">{label}:</span> {r.status >= 200 && r.status < 300 ? <span className="text-good">OK{ok ? ` (${ok})` : ''}</span> : <span className="text-bad">{r.status || 'no answer'} {r.body}</span>}</div>;
+  return (
+    <div className="space-y-1.5">
+      <button className="btn btn-ghost !py-1 text-xs" disabled={busy} onClick={() => void run()}>{busy ? 'Checking…' : 'Check the connection'}</button>
+      {err && <div className="text-xs text-bad">{err}</div>}
+      {d && <div className="space-y-0.5 rounded-theme bg-raised p-2 font-mono text-xs">
+        {d.refresh && <div className="text-bad">Refreshing the sign-in failed: {d.refresh}</div>}
+        <div><span className="text-muted">Permissions held:</span> {d.permissions.length ? d.permissions.join(', ') : '(none recorded)'}</div>
+        {line('Your account', d.me, d.me?.product ? `${d.me.product}${d.me.country ? `, ${d.me.country}` : ''}` : undefined)}
+        {line('Device list', d.devices, d.devices?.devices ? (d.devices.devices.length ? d.devices.devices.join('; ') : 'no devices running') : undefined)}
+        <div className="text-muted">App id starts with {d.clientIdStart || '(none)'}</div>
+      </div>}
+    </div>
+  );
+}
 
 /**
  * Connecting Curator's server to a Spotify account (Authorization Code with PKCE; the server holds the token). Used by Settings and by the
@@ -33,6 +56,7 @@ export function SpotifyAccountPanel({ children, onStatus }: { children?: (s: Sta
     <div className="space-y-3 text-sm">
       {acct.signedIn ? (<>
         <div className="flex items-center gap-2"><span className="text-good">Signed in to Spotify.</span><button className="btn btn-ghost !py-1 text-xs" onClick={() => void guard('Signing out…', async () => { await api().spotifySignOut(); await load(); })}>Sign out</button></div>
+        <CheckConnection />
         {children?.(acct)}
       </>) : (<>
         <ol className="list-decimal space-y-1 pl-5 text-muted"><li>Make an app at <b>developer.spotify.com/dashboard</b> (free; Spotify requires Premium for the account that owns it). Set its Redirect URI to the address below exactly.</li>
