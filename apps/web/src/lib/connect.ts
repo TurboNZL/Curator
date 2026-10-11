@@ -6,6 +6,8 @@ import { desktop } from './settings.ts';
 import { guessDeviceName as guess, positionNow } from './connectPure.ts';
 export { positionNow };
 import { api, useStore } from './store.ts';
+import { spotifyEngine } from './spotifyPlayer.ts';
+import { stopBeam } from './beam.ts';
 
 /**
  * Connect, in the manner of Spotify Connect: every device that has this app open and a server configured appears in a list. Pick
@@ -91,6 +93,28 @@ export function control(id: string) { useConnect.setState({ remoteId: id === myI
 
 /** Stop being the remote of another device. It keeps playing; nothing is sent to it. */
 export function disconnect() { useConnect.setState({ remoteId: null }); publish(); }
+
+/**
+ * "Play on this device only": drop everything that is not local. Stops controlling another Curator device (it keeps playing), pauses
+ * Spotify and stops the stream of the server's Soloist, and forgets the chosen Spotify device so that the next local track starts at once,
+ * without anything still tied to Spotify. A Spotify-only track needs a Spotify device chosen again to play.
+ */
+export async function localOnly() {
+  useConnect.setState({ remoteId: null });
+  const st = useStore.getState();
+  stopBeam();
+  await spotifyEngine.release(true);
+  if (st.settings.spotifyDeviceId) st.updateSettings({ spotifyDeviceId: '', spotifyDeviceName: '' });
+  publish();
+}
+
+/** Is anything that is not local connected: another device being controlled, a Spotify device chosen, Spotify or the stream playing? */
+export function useNotLocal(): boolean {
+  const remoteId = useConnect((s) => s.remoteId);
+  const chosen = useStore((s) => !!s.settings.spotifyDeviceId);
+  const engine = usePlayer((s) => s.engine);
+  return !!remoteId || chosen || engine === 'spotify';
+}
 
 /** "This device" while controlling another: bring its playback here. */
 async function pullFromRemoteOrNothing() { const r = remoteDevice(); if (r) await pullFrom(r.id); }

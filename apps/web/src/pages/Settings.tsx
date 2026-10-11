@@ -43,7 +43,7 @@ export function SettingsPage() {
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
   const [params, setParams] = useSearchParams();
-  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
+  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, { id: 'spotify', label: 'Spotify' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'look';
 
   return (
@@ -78,14 +78,14 @@ export function SettingsPage() {
 
       <ServerUpdateCard />
 
-      <SpotifyCard />
-
       <Section title="Backup: export and import"><BackupCard /></Section>
 
       <Section title="Genres and roles"><Vocabulary /></Section>
 
       <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
       </>}
+
+      {tab === 'spotify' && <SpotifyCard />}
 
       {tab === 'guides' && <GuidesTab />}
 

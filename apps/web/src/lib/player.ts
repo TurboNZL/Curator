@@ -4,7 +4,7 @@ import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, s
 import { moveTrack } from './defaults.ts';
 import { audioSource, imageSource, localAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
-import { BEAM_ID, beamFailed, setBeamVolume } from './beam.ts';
+import { BEAM_ID, beamActive, beamFailed, setBeamVolume } from './beam.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
 import { resumeEq, setEq } from './eq.ts';
@@ -373,7 +373,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
-    setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active()) void spotifyEngine.volume(v); nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
+    setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
     toggleShuffle() { set({ shuffle: !get().shuffle }); },
 
     enqueue(trackId, where = 'last') {

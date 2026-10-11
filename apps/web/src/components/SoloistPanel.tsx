@@ -2,11 +2,39 @@ import { useEffect, useRef, useState } from 'react';
 import { Download, Loader2, Play, Square, Trash2 } from 'lucide-react';
 import type { SoloistInfo } from '../lib/api.ts';
 import { api, useStore } from '../lib/store.ts';
-import { desktop } from '../lib/settings.ts';
 import { forgetBeamInfo } from '../lib/beam.ts';
 import { Field } from './forms.tsx';
 
 const STATE: Record<SoloistInfo['state'], string> = { stopped: 'Stopped', starting: 'Starting…', running: 'Running', expired: 'Updating (the build expired)…', installing: 'Installing…', error: 'Problem' };
+
+/** Soloist's own volume (Spotify's volume for that device). Set it once, around the top, and use the player bar for everyday volume: the player bar slider acts on this device at once, while this one goes through Spotify and takes a moment. */
+function SoloistVolume({ name }: { name: string }) {
+  const [id, setId] = useState<string | null | undefined>(undefined);
+  const [v, setV] = useState(100);
+  const [err, setErr] = useState<string | null>(null);
+  const timer = useRef<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api().spotifyDevices().then((r) => { const d = r.devices.find((x) => x.name === name); if (!alive) return; setId(d?.id || null); if (d?.volume != null) setV(d.volume); }, (e: Error) => { if (alive) { setId(null); setErr(e.message); } });
+    return () => { alive = false; };
+  }, [name]);
+  const set = (n: number) => {
+    setV(n); setErr(null);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => { if (id) api().spotifyCommand('volume', id, n).catch((e: Error) => setErr(e.message)); }, 250);
+  };
+  return (
+    <div className="space-y-1.5">
+      <div className="font-medium">Soloist’s volume</div>
+      {id === undefined ? <p className="text-xs text-muted">Looking for Soloist in your Spotify devices…</p>
+        : id === null ? <p className="text-xs text-muted">Spotify does not list “{name}” yet. Start Soloist (it can take a few seconds) and open this tab again.{err ? ` (${err})` : ''}</p>
+        : <>
+          <div className="flex items-center gap-3"><input type="range" aria-label="Soloist volume" className="bt-range bt-hit flex-1" style={{ ['--p' as string]: `${v}%` }} min={0} max={100} step={1} value={v} onChange={(e) => set(Number(e.target.value))} /><span className="w-10 text-right text-xs tabular-nums text-muted">{v}%</span></div>
+          <p className="text-xs text-muted">Set this once (a high level is best) and use the volume slider in the player bar for everyday listening: that one changes the sound on this device at once. This one goes through Spotify and takes a moment to be heard.</p>
+          {err && <p className="text-xs text-bad">{err}</p>}</>}
+    </div>
+  );
+}
 
 /**
  * Spotify Soloist, installed and run by the server: Spotify's own headless Connect client. Once it runs, a device with the name chosen here
@@ -46,14 +74,17 @@ export function SoloistPanel() {
   if (!configured) return null;
   if (!info) return error ? <div className="rounded-theme bg-bad/15 p-3 text-sm text-bad">{error}</div> : null;
   if (!info.supported) return (
-    <div className="space-y-1 border-t border-line pt-4 text-sm"><div className="font-medium">Soloist</div><p className="text-muted">{info.reason} Spotify only makes Soloist for Linux. On other systems use the Spotify app on this computer or a phone: it appears in the device list (cast button) too, and Curator controls it.</p></div>);
+    <div className="space-y-1 border-t border-line pt-4 text-sm"><div className="font-medium">Soloist</div>
+      <p className="text-muted">{info.reason}</p>
+      <p className="text-xs text-muted">Everywhere else, Spotify plays through the Spotify app on a computer or phone: it appears in the device list (cast button) and Curator controls it.</p></div>);
 
   const working = !!busy || ['installing', 'expired'].includes(info.state);
   return (
     <div className="space-y-3 border-t border-line pt-4 text-sm">
       <div className="flex flex-wrap items-center gap-2"><div className="font-medium">Soloist: play Spotify inside Curator</div>
         <span className={info.state === 'running' ? 'chip !text-good' : info.state === 'error' ? 'chip !text-bad' : 'chip'}>{STATE[info.state]}</span>{info.version && <span className="text-xs text-muted">{info.version}</span>}</div>
-      <p className="text-muted">{desktop() ? 'Installs Spotify’s own player (Soloist) inside this app. It runs while Curator runs, and Spotify tracks play through this computer’s speakers like any other track: no Spotify app has to be open.' : 'Installs Spotify’s own headless Spotify Connect player on the machine that runs your server; it plays through that machine’s speakers.'} It shows up in the device list as “{info.deviceName}”. It needs Spotify Premium and PipeWire or PulseAudio audio. Soloist is Spotify’s software, downloaded from Spotify’s server, under Spotify’s terms; builds expire after 90 days and Curator replaces them by itself.</p>
+      <div className="rounded-theme border border-line px-3 py-2 text-xs"><span className="text-muted">Runs on:</span> <b>{info.host.name}</b>{info.host.model ? <span className="text-muted"> · {info.host.model}</span> : null}<span className="text-muted"> · the server this app is connected to, not this device</span></div>
+      <p className="text-muted">Spotify’s own headless Spotify Connect player. It runs on your Raspberry Pi (the server), never in this app or on a desktop, and plays through the Pi’s sound output. Turn on “Send the sound to the apps” below to hear it on this device instead. It shows up in the device list as “{info.deviceName}”. It needs Spotify Premium and PipeWire or PulseAudio audio. Soloist is Spotify’s software, downloaded from Spotify’s server, under Spotify’s terms; builds expire after 90 days and Curator replaces them by itself.</p>
 
       <ol className="space-y-3">
         <li className="space-y-1.5"><div className="font-medium">1. Install</div>
@@ -88,6 +119,7 @@ export function SoloistPanel() {
       </ol>
       {busy && <div className="text-muted" role="status">{busy}</div>}
       {info.message && info.state !== 'running' && <div className={info.state === 'error' ? 'rounded-theme bg-bad/15 p-3 text-bad' : 'text-muted'}>{info.message}</div>}
+      {info.running && <SoloistVolume name={info.deviceName} />}
       {info.state === 'running' && <p className="text-good">Running. Open the cast button in the player: “{info.deviceName}” is under Spotify devices.</p>}
       {info.log.length > 0 && info.state !== 'stopped' && <details className="text-xs text-muted"><summary className="cursor-pointer">Soloist’s own messages</summary><pre className="mt-1 max-h-40 overflow-auto rounded-theme bg-raised p-2">{info.log.join('\n')}</pre></details>}
       {error && <div className="rounded-theme bg-bad/15 p-3 text-bad">{error}</div>}

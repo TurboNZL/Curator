@@ -147,6 +147,8 @@ export interface MatchResultRes { id: string; candidates: MatchCandidate[]; erro
 
 export interface SoloistInfo {
   supported: boolean; reason?: string; installed: boolean; version: string | null; configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean; outputDevice: string;
+  /** the machine Soloist runs on (the server) */
+  host: { name: string; model: string | null; isPi: boolean };
   audio: { ok: boolean; server: 'pipewire' | 'pulseaudio' | null; runtimeDir: string | null; hint: string | null };
   beam: { enabled: boolean; sink: 'ready' | 'missing' | 'error' | 'unchecked'; sinkMessage: string | null; streamPath: string; listeners: number; running: boolean; error: string | null; bytes: number };
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;

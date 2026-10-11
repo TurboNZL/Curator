@@ -10,13 +10,16 @@ import { nativeAudio, nativeAudioAvailable } from './nativeAudio.ts';
  */
 export const BEAM_ID = 'spotify-beam';
 
-let cached: { at: number; enabled: boolean; deviceName: string } | null = null;
-async function soloistBeam(): Promise<{ enabled: boolean; deviceName: string }> {
+let cached: { at: number; enabled: boolean; deviceName: string; host: string } | null = null;
+async function soloistBeam(): Promise<{ enabled: boolean; deviceName: string; host: string }> {
   if (cached && Date.now() - cached.at < 20_000) return cached;
-  try { const i = await api().soloist(); cached = { at: Date.now(), enabled: !!i.beam?.enabled && i.running, deviceName: i.deviceName }; }
-  catch { cached = { at: Date.now(), enabled: false, deviceName: '' }; }
+  try { const i = await api().soloist(); cached = { at: Date.now(), enabled: !!i.beam?.enabled && i.running, deviceName: i.deviceName, host: i.supported ? i.host.name : '' }; }
+  catch { cached = { at: Date.now(), enabled: false, deviceName: '', host: '' }; }
   return cached;
 }
+/** What was last learned about the server's Soloist (its Spotify name and the machine it runs on), for labels. Filled by `refreshSoloistInfo`. */
+export const peekSoloist = () => cached;
+export const refreshSoloistInfo = () => soloistBeam();
 export const forgetBeamInfo = () => { cached = null; };
 
 /** Is the Spotify device of this app the server's Soloist, and is it beaming? */

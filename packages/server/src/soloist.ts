@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { arch as osArch, platform as osPlatform } from 'node:os';
+import { arch as osArch, hostname as osHostname, platform as osPlatform } from 'node:os';
 import { join } from 'node:path';
 import { Beam, SINK, type BeamDeps, type BeamStatus } from './beam.ts';
 
@@ -24,6 +24,14 @@ export function archiveName(arch: string = osArch()): string | null {
   return a ? `soloist_release_${a}.tar.gz` : null;
 }
 
+/** The machine the server (and so Soloist) runs on, so the settings can say where the sound is made. */
+export interface SoloistHost { name: string; model: string | null; isPi: boolean }
+
+function readPiModel(): string | null {
+  for (const p of ['/proc/device-tree/model', '/sys/firmware/devicetree/base/model']) { try { const m = readFileSync(p, 'utf8').replace(/\0/g, '').trim(); if (m) return m; } catch { /* not a device-tree machine */ } }
+  return null;
+}
+
 export interface SoloistConfig { deviceName: string; apiKey: string; autoStart: boolean; outputDevice: string; /** send Soloist's sound to a virtual output that the apps listen to (beam.ts) instead of the speakers */ beam: boolean }
 /** Whether Soloist can reach a sound server (PipeWire or PulseAudio) from the account this server runs as, and what to do if not. */
 export interface AudioCheck { ok: boolean; server: 'pipewire' | 'pulseaudio' | null; runtimeDir: string | null; hint: string | null }
@@ -31,6 +39,8 @@ export interface SoloistStatus {
   supported: boolean; reason?: string;
   installed: boolean; version: string | null;
   configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean; outputDevice: string;
+  /** where Soloist runs: the machine this server is on */
+  host: SoloistHost;
   audio: AudioCheck;
   /** beaming Soloist's sound to the apps (beam.ts) */
   beam: { enabled: boolean; sink: 'ready' | 'missing' | 'error' | 'unchecked'; sinkMessage: string | null; streamPath: string } & BeamStatus;
@@ -51,6 +61,8 @@ export interface SoloistDeps {
   /** test seams for the audio check */
   uid?: number; env?: NodeJS.ProcessEnv; exists?: (path: string) => boolean; desktop?: boolean;
   /** where ffmpeg and pactl live when they are not on PATH, and test seams for the beam */
+  /** test seams for where it runs: the device-tree model (a Raspberry Pi says so) and the host name */
+  model?: string | null; hostname?: string;
   ffmpegDir?: string; beamDeps?: BeamDeps; pactl?: (args: string[]) => Promise<string>;
 }
 
@@ -134,9 +146,21 @@ export class Soloist {
     return base;
   }
 
+  host(): SoloistHost {
+    const model = this.d.model !== undefined ? this.d.model : readPiModel();
+    return { name: this.d.hostname ?? osHostname(), model, isPi: !!model && /raspberry pi/i.test(model) };
+  }
+
+  /** Soloist is Spotify's headless player for a Pi that has speakers or a DAC: it is offered on a Raspberry Pi only (CURATOR_SOLOIST=1 allows another Linux machine). */
   support(): { ok: boolean; reason?: string } {
-    if (this.platform !== 'linux') return { ok: false, reason: 'Soloist only runs on Linux (a Raspberry Pi or another Linux machine).' };
+    if (this.platform !== 'linux') return { ok: false, reason: 'Soloist only runs on Linux, on your Raspberry Pi.' };
     if (!archiveName(this.d.arch ?? osArch())) return { ok: false, reason: `Spotify has no Soloist build for this processor (${this.d.arch ?? osArch()}).` };
+    const h = this.host();
+    if (!h.isPi && (this.d.env ?? process.env).CURATOR_SOLOIST !== '1') {
+      return { ok: false, reason: this.d.desktop ?? !!process.versions.electron
+        ? 'Soloist runs on your Raspberry Pi server only, not in this app. Connect this app to your Pi (Settings > Library & server) and set Soloist up there.'
+        : `Soloist runs on your Raspberry Pi only, and this server (${h.name}) is not one. Open Curator on the Pi's server to set Soloist up there.` };
+    }
     return { ok: true };
   }
 
@@ -144,7 +168,7 @@ export class Soloist {
     const sup = this.support(), c = this.config(), installed = existsSync(this.bin);
     return {
       supported: sup.ok, reason: sup.reason, installed, version: installed && sup.ok ? await (this.d.version ?? this.readVersion.bind(this))(this.bin).catch(() => null) : null,
-      configured: !!c.apiKey, deviceName: c.deviceName, hasKey: !!c.apiKey, autoStart: c.autoStart, outputDevice: c.outputDevice, audio: this.audio(),
+      configured: !!c.apiKey, deviceName: c.deviceName, hasKey: !!c.apiKey, autoStart: c.autoStart, outputDevice: c.outputDevice, host: this.host(), audio: this.audio(),
       beam: { enabled: c.beam, sink: this.sink.state, sinkMessage: this.sink.message, streamPath: '/api/soloist/stream', ...this.beam.status() },
       running: !!this.child, state: this.state, message: this.message, log: this.log.slice(-12), downloadsUrl: 'https://developer.spotify.com/documentation/soloist/reference/downloads-and-updates',
     };
