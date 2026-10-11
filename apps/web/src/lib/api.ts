@@ -1,4 +1,3 @@
-import { appFileProxy } from './native.ts';
 import type { Command, PlaybackSnapshot, PullResponse, SyncRecord } from '@curator/core';
 import type { DeviceSettings } from './settings.ts';
 
@@ -12,6 +11,12 @@ export interface ServerStatus {
   disk: { free: number; total: number } | Record<string, number>;
   /** versions of the programs YouTube import needs, null when the server cannot run them */
   tools?: { ytdlp: string | null; ffmpeg: string | null; /** a cookies file is configured for yt-dlp */ cookies?: boolean };
+}
+
+/** "Update server": the server pulls the newest code, rebuilds the web client and restarts itself (only on a service install of the checkout). */
+export interface ServerUpdate {
+  available: boolean; restarts: boolean;
+  status: 'idle' | 'running' | 'done' | 'error'; log: string[]; restarting: boolean;
 }
 
 export interface ImportPreview {
@@ -40,6 +45,8 @@ export class Api {
 
   health() { return fetch(this.url('/api/health')).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
   status() { return this.req<ServerStatus>('/api/status'); }
+  updateInfo() { return this.req<ServerUpdate>('/api/admin/update'); }
+  startUpdate() { return this.req<{ ok: true }>('/api/admin/update', { method: 'POST' }); }
   pull(since: number, limit = 1000) { return this.req<PullResponse>(`/api/sync/pull?since=${since}&limit=${limit}`); }
   push(records: SyncRecord[]) {
     return this.req<{ applied: number; cursor: number }>('/api/sync/push', { method: 'POST', body: JSON.stringify({ records }) });
@@ -72,10 +79,5 @@ export class Api {
   connectState(device: string, name: string, state: PlaybackSnapshot | null) { return this.req<{ ok: true }>('/api/connect/state', { method: 'POST', body: JSON.stringify({ device, name, state }) }); }
   connectCommand(from: string, to: string, command: Command) { return this.req<{ ok: true }>('/api/connect/command', { method: 'POST', body: JSON.stringify({ from, to, command }) }); }
   /** `<audio src>` / `<img src>` cannot send headers, hence ?token= */
-  fileUrl(hash: string) {
-    const path = `/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`;
-    // the Android app serves plain-http servers' files from its own origin (see appFileProxy)
-    if (/^http:/i.test(this.s.serverUrl.trim()) && appFileProxy()) return `${location.origin}/__server${path}`;
-    return this.url(path);
-  }
+  fileUrl(hash: string) { return this.url(`/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`); }
 }

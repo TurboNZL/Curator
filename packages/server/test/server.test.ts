@@ -143,3 +143,38 @@ describe('web client hosting', () => {
     rmSync(web, { recursive: true, force: true });
   });
 });
+
+describe('update server', () => {
+  it('is unavailable without a script and runs one when configured', async () => {
+    expect((await app.request('/api/admin/update', { headers: auth })).status).toBe(200);
+    const off = await (await app.request('/api/admin/update', { headers: auth })).json() as { available: boolean };
+    expect(off.available).toBe(false);
+    expect((await app.request('/api/admin/update', { method: 'POST', headers: auth })).status).toBe(404);
+
+    const script = join(dir, 'repo', 'scripts', 'update.sh');
+    mkdirSync(join(dir, 'repo', 'scripts'), { recursive: true });
+    writeFileSync(script, '#!/usr/bin/env bash\necho "args: $@"\necho step two\n');
+    let exited = false;
+    const { Updater } = await import('../src/update.ts');
+    const app2 = createApp(loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN } as never), store, undefined, undefined, undefined, new Updater({ script, restart: true, exit: () => { exited = true; }, exitDelayMs: 10 }));
+    expect((await app2.request('/api/admin/update', { method: 'POST', headers: auth })).status).toBe(202);
+    expect((await app2.request('/api/admin/update', { method: 'POST', headers: auth })).status).toBe(409);
+    let st: { status: string; log: string[]; restarting: boolean } = { status: 'running', log: [], restarting: false };
+    for (let i = 0; i < 50 && st.status === 'running'; i++) { await new Promise((r) => setTimeout(r, 40)); st = await (await app2.request('/api/admin/update', { headers: auth })).json() as typeof st; }
+    expect(st.status).toBe('done');
+    expect(st.log).toEqual(['args: --live', 'step two']);
+    expect(st.restarting).toBe(true);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(exited).toBe(true);
+  });
+  it('reports a failing script', async () => {
+    const script = join(dir, 'fail.sh');
+    writeFileSync(script, '#!/usr/bin/env bash\necho boom >&2\nexit 3\n');
+    const { Updater } = await import('../src/update.ts');
+    const u = new Updater({ script, restart: true, exit: () => { throw new Error('must not restart'); } });
+    expect(u.start()).toBe(true);
+    for (let i = 0; i < 50 && u.state().status === 'running'; i++) await new Promise((r) => setTimeout(r, 40));
+    expect(u.state().status).toBe('error');
+    expect(u.state().log.at(-1)).toContain('code 3');
+  });
+});

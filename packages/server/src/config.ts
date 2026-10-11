@@ -16,6 +16,10 @@ export interface Config {
   ffmpegDir?: string;
   /** built web client to serve at `/`; unset/missing = API only */
   webDir?: string;
+  /** scripts/update.sh of the checkout this server runs from, when "Update server" may be offered (under systemd, or CURATOR_UPDATE=1) */
+  updateScript?: string;
+  /** the server runs under a service manager that starts it again when it exits (systemd sets INVOCATION_ID) */
+  updateRestart?: boolean;
 }
 
 /** Obscure by default so it doesn't collide with 8080/3000/5173 and isn't an obvious scan target. */
@@ -39,6 +43,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ytdlpArgs: ytdlpArgs(env),
     ffmpegDir: env.CURATOR_FFMPEG_DIR,
     webDir: env.CURATOR_WEB_DIR ? resolve(env.CURATOR_WEB_DIR) : defaultWebDir(),
+    updateScript: defaultUpdateScript(env),
+    updateRestart: !!env.INVOCATION_ID,
   };
 }
 
@@ -49,6 +55,14 @@ function loadOrCreateToken(dataDir: string): string {
   writeFileSync(path, token + '\n', { mode: 0o600 });
   try { chmodSync(path, 0o600); } catch { /* some external-drive filesystems (exFAT/NTFS) have no modes */ }
   return token;
+}
+
+/** The checkout's update script, only when this looks like a service install (systemd) or CURATOR_UPDATE=1 asks for it. */
+function defaultUpdateScript(env: NodeJS.ProcessEnv): string | undefined {
+  if (env.CURATOR_UPDATE === '0' || !(env.CURATOR_UPDATE === '1' || env.INVOCATION_ID)) return undefined;
+  const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+  const script = join(repo, 'scripts/update.sh');
+  return existsSync(script) && existsSync(join(repo, '.git')) ? script : undefined;
 }
 
 /** apps/web/dist next to this package in the monorepo, if it has been built */

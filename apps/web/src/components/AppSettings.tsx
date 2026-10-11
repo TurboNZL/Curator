@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { desktop, type DiscordInfo } from '../lib/settings.ts';
-import { appVersion, nativeUpdates, webClientUpdates, type UpdateState } from '../lib/native.ts';
+import { appVersion, nativeUpdates, type UpdateState } from '../lib/native.ts';
 import { Section } from './Section.tsx';
 
 const describe = (s: UpdateState): string => {
@@ -50,29 +50,6 @@ export function AppUpdatesCard() {
           </div>
         </div>
       </details>
-    </Section>
-  );
-}
-
-/** Android app: pull the newest web client from the user's own server, no new APK needed. */
-export function WebClientCard() {
-  const wc = webClientUpdates();
-  const [state, setState] = useState<UpdateState>(() => wc?.state() ?? { status: 'idle' });
-  useEffect(() => (wc ? wc.onState(setState) : undefined), []); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!wc) return null;
-  const busy = state.status === 'checking' || state.status === 'downloading';
-  const v = wc.version();
-  const text = state.status === 'checking' ? 'Asking your server…' : state.status === 'downloading' ? `Downloading ${state.message ?? ''}…`
-    : state.status === 'ready' ? 'Updated. Reload to use it.' : state.status === 'error' ? `Could not update: ${state.message ?? 'unknown error'}` : state.message ?? '';
-  return (
-    <Section title="Web client">
-      <p className="text-sm text-muted">The app shows the web client bundled with it. This downloads the newer one your server hosts (update the server first), so interface fixes arrive without installing a new APK. {v ? `Using the server's build ${v}.` : 'Using the bundled build.'}</p>
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <button className="btn" disabled={busy} onClick={() => wc.update()}>Update web client</button>
-        {state.status === 'ready' && <button className="btn btn-accent" onClick={() => wc.reload()}>Reload now</button>}
-        {v && <button className="btn btn-ghost" disabled={busy} onClick={() => wc.useBundled()}>Use the bundled one</button>}
-        <span className={state.status === 'error' ? 'text-warn' : 'text-muted'}>{text}</span>
-      </div>
     </Section>
   );
 }

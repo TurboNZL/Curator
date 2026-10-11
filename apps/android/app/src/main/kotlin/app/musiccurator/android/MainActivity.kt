@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import java.io.File
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -26,7 +25,7 @@ import androidx.webkit.WebViewAssetLoader
 import app.musiccurator.android.update.AppUpdater
 
 /**
- * Shows the web client (bundled in the app's assets, served from a private https address so IndexedDB and fetch behave like on the
+ * Shows the web client (bundled in the app's assets, served from http://localhost, a secure context, so IndexedDB and fetch behave like on the
  * web) full screen. The library, voting and everything else are the web app; this class only supplies what a browser cannot:
  * file picking, opening links outside, the update bridge and the server address for Android Auto.
  */
@@ -70,11 +69,10 @@ class MainActivity : AppCompatActivity() {
         web.setBackgroundColor(0xFF0B0B10.toInt())
         web.addJavascriptInterface(CuratorBridge(this), "CuratorAndroid")
 
-        val loader = WebViewAssetLoader.Builder().setDomain(HOST).addPathHandler("/", SpaAssets(this)).build()
+        val loader = WebViewAssetLoader.Builder().setDomain(HOST).setHttpAllowed(true).addPathHandler("/", SpaAssets(this)).build()
         web.webViewClient = object : WebViewClient() {
-            // the library's images and audio from a plain-http server first (their path never names an app file), then the app's own pages
-            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                ServerFiles.answer(request, ServerPrefs(this@MainActivity).serverUrl, HOST) ?: loader.shouldInterceptRequest(request.url)
+            // only the app's own pages are answered here; the library's images and audio go straight to the server through Chromium's own network stack
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? = loader.shouldInterceptRequest(request.url)
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == HOST) return false
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
@@ -97,14 +95,10 @@ class MainActivity : AppCompatActivity() {
         AppUpdater.listener = { s ->
             web.post { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('curator-update',{detail:${s.json()}}))", null) }
         }
-        WebClientUpdater.listener = { s ->
-            web.post { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('curator-webclient',{detail:${s.json()}}))", null) }
-        }
-        WebClientUpdater.reloader = { web.post { web.clearCache(true); web.loadUrl("https://$HOST/") } }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
 
-        if (savedInstanceState == null) web.loadUrl("https://$HOST/") else web.restoreState(savedInstanceState)
+        if (savedInstanceState == null) web.loadUrl("http://$HOST/") else web.restoreState(savedInstanceState)
     }
 
     override fun onStart() {
@@ -117,8 +111,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         AppUpdater.listener = null
-        WebClientUpdater.listener = null
-        WebClientUpdater.reloader = null
         web.destroy()
         super.onDestroy()
     }
@@ -130,16 +122,11 @@ class MainActivity : AppCompatActivity() {
     private class SpaAssets(private val context: android.content.Context) : WebViewAssetLoader.PathHandler {
         override fun handle(path: String): WebResourceResponse? {
             val name = path.trimStart('/').ifEmpty { "index.html" }
-            // a client downloaded from the user's server (WebClientUpdater) wins over the bundled one
-            val updated = WebClientUpdater.root(context)?.let { File(it, name).takeIf { f -> f.isFile && f.canonicalPath.startsWith(it.canonicalPath + File.separator) } }
-            if (updated != null) return WebResourceResponse(mime(name), null, updated.inputStream())
-            if (name.endsWith(".meta")) return WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
             val stream = try { context.assets.open(name) } catch (e: java.io.IOException) { null }
             if (stream != null) return WebResourceResponse(mime(name), null, stream)
             if (name.substringAfterLast('/').contains('.'))
                 return WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)))
-            val index = WebClientUpdater.root(context)?.let { File(it, "index.html") }
-            return WebResourceResponse("text/html", "utf-8", index?.inputStream() ?: context.assets.open("index.html"))
+            return WebResourceResponse("text/html", "utf-8", context.assets.open("index.html"))
         }
 
         private fun mime(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {
@@ -162,5 +149,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private companion object { const val HOST = "appassets.androidplatform.net" }
+    private companion object { /**
+         * The page is served from http://localhost (answered by the asset loader, never sent anywhere). Chromium treats localhost as a
+         * secure context (crypto.subtle, IndexedDB, media session all work) but, unlike an https page, it applies no mixed-content rules,
+         * so a plain-http home server's images and audio load directly through Chromium's network stack: as fast as in a browser.
+         */
+        const val HOST = "localhost" }
 }

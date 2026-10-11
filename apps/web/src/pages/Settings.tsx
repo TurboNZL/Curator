@@ -11,7 +11,8 @@ import { DefaultImages, PlaybackRules, Vocabulary } from '../components/Settings
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
-import { AppUpdatesCard, WebClientCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
+import { ServerUpdateCard } from '../components/ServerUpdate.tsx';
+import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
 
 
 export function SettingsPage() {
@@ -70,6 +71,8 @@ export function SettingsPage() {
         <div className="text-xs text-muted">Status: {sync.state}{sync.error && ` — ${sync.error}`} · {sync.pending} changes waiting · last sync {sync.lastSync ? new Date(sync.lastSync).toLocaleTimeString() : 'never'}</div>
       </Section>
 
+      <ServerUpdateCard />
+
       {desktop() && <Section title="Desktop app">
         <p className="text-sm text-muted">This app runs its own server and keeps your library in a folder. Put it on a big drive: audio you keep offline lives there too. To use your home server instead, fill in its address and token under Server.</p>
         <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
@@ -80,7 +83,6 @@ export function SettingsPage() {
       </Section>}
       <DiscordCard />
       <AppUpdatesCard />
-      <WebClientCard />
       <Section title="This device (Play on a device)">
         <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
         <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>
