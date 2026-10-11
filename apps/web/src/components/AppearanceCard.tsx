@@ -214,7 +214,7 @@ export function WallpaperCard() {
           <span className="absolute bottom-2 left-2 rounded bg-black/40 px-1.5 py-0.5 text-xs text-white/90">{custom ? 'Your picture' : 'Theme wallpaper'}</span>
         </div>
         <label className="block text-sm"><span className="mb-1 flex justify-between"><span className="font-medium">Darkness</span><span className="tabular-nums text-muted">{Math.round(settings.wallpaperDarkness * 100)}%</span></span>
-          <input type="range" min={0} max={90} step={1} className="bt-range h-1 w-full" style={{ '--p': `${(settings.wallpaperDarkness / 0.9) * 100}%` } as React.CSSProperties} value={Math.round(settings.wallpaperDarkness * 100)} onChange={(e) => updateSettings({ wallpaperDarkness: Number(e.target.value) / 100 })} aria-label="Wallpaper darkness" />
+          <input type="range" min={0} max={90} step={1} className="bt-range bt-hit w-full" style={{ '--p': `${(settings.wallpaperDarkness / 0.9) * 100}%` } as React.CSSProperties} value={Math.round(settings.wallpaperDarkness * 100)} onChange={(e) => updateSettings({ wallpaperDarkness: Number(e.target.value) / 100 })} aria-label="Wallpaper darkness" />
           <span className="text-xs text-muted">Raises the opacity of a black layer over the wallpaper.</span></label>
         <div className="flex flex-wrap gap-2">
           <label className="btn cursor-pointer"><Upload size={15} />{hasCustom ? 'Choose another picture' : 'Load a picture'}<input type="file" accept="image/*" hidden onChange={(e) => void upload(e.target.files?.[0], e.target)} /></label>

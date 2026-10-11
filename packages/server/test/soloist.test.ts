@@ -18,7 +18,7 @@ function rig(over: { code?: number; sockets?: string[] } = {}) {
   const children: { child: FakeChild; args: string[]; env?: NodeJS.ProcessEnv }[] = [];
   let downloads = 0;
   const s = new Soloist(dir, {
-    platform: 'linux', arch: 'arm64', restartDelayMs: 5, uid: 998, env: { PATH: '/usr/bin' }, exists: (p) => (over.sockets ?? []).includes(p),
+    platform: 'linux', arch: 'arm64', model: 'Raspberry Pi 5 Model B Rev 1.0', hostname: 'curator-pi', restartDelayMs: 5, uid: 998, env: { PATH: '/usr/bin' }, exists: (p) => (over.sockets ?? []).includes(p),
     fetchImpl: (async (url: string) => { downloads++; expect(url).toBe('https://soloist-builds.spotifycdn.com/soloist_release_arm64.tar.gz'); return new Response(new Uint8Array([1, 2, 3])); }) as unknown as typeof fetch,
     untar: async (_a, into) => { writeFileSync(join(into, 'soloist'), '#!/bin/sh\n'); },
     version: async () => 'soloist 1.2.3 (built 2026-10-01)',
@@ -37,6 +37,18 @@ describe('Soloist module', () => {
     const st = await s.status();
     expect(st.supported).toBe(false); expect(st.reason).toMatch(/Linux/);
     await expect(s.install()).rejects.toThrow(/Linux/);
+  });
+  it('is offered on a Raspberry Pi only, and says which machine it runs on', async () => {
+    const pi = new Soloist(dir, { platform: 'linux', arch: 'arm64', model: 'Raspberry Pi 5 Model B Rev 1.0', hostname: 'curator-pi' });
+    expect(await pi.status()).toMatchObject({ supported: true, host: { name: 'curator-pi', model: 'Raspberry Pi 5 Model B Rev 1.0', isPi: true } });
+    const pc = new Soloist(dir, { platform: 'linux', arch: 'x64', model: null, hostname: 'desktop-pc', env: {} });
+    const st = await pc.status();
+    expect(st.supported).toBe(false); expect(st.reason).toMatch(/Raspberry Pi only/); expect(st.reason).toMatch(/desktop-pc/);
+    expect(st.host).toMatchObject({ name: 'desktop-pc', isPi: false });
+    await expect(pc.install()).rejects.toThrow(/Raspberry Pi/);
+    // the desktop app's own server says so in its words, and an owner can allow another Linux machine
+    expect((await new Soloist(dir, { platform: 'linux', arch: 'x64', model: null, env: {}, desktop: true }).status()).reason).toMatch(/not in this app/);
+    expect((await new Soloist(dir, { platform: 'linux', arch: 'x64', model: null, env: { CURATOR_SOLOIST: '1' } }).status()).supported).toBe(true);
   });
   it('keeps the API key in a private file and never reports it', async () => {
     const { s } = rig();
@@ -93,7 +105,7 @@ describe('Soloist module', () => {
     const pactl: string[][] = [];
     const children: { args: string[]; env?: NodeJS.ProcessEnv }[] = [];
     const s = new Soloist(dir, {
-      platform: 'linux', arch: 'arm64', uid: 998, env: {}, exists: (p) => p === '/run/user/998/pipewire-0',
+      platform: 'linux', arch: 'arm64', model: 'Raspberry Pi 4 Model B', uid: 998, env: {}, exists: (p) => p === '/run/user/998/pipewire-0',
       untar: async (_a, into) => { writeFileSync(join(into, 'soloist'), '#!/bin/sh\n'); }, version: async () => 'v',
       fetchImpl: (async () => new Response(new Uint8Array([1]))) as unknown as typeof fetch,
       pactl: async (a) => { pactl.push(a); return a[0] === 'list' ? '0\talsa_output.x\tmodule-alsa-card.c\ts16le 2ch 44100Hz\tRUNNING\n' : '19'; },
@@ -144,7 +156,7 @@ describe('Soloist module', () => {
   });
   it('comes back by itself when the server starts, if it was set up and left on', async () => {
     const a = rig(); await a.s.install(); a.s.configure({ deviceName: 'Curator', apiKey: 'k' });
-    const b = new Soloist(dir, { platform: 'linux', arch: 'arm64', spawnImpl: ((_b: string, args: string[]) => { const c = new FakeChild(); a.children.push({ child: c, args }); return c; }) as never });
+    const b = new Soloist(dir, { platform: 'linux', arch: 'arm64', model: 'Raspberry Pi 5', spawnImpl: ((_b: string, args: string[]) => { const c = new FakeChild(); a.children.push({ child: c, args }); return c; }) as never });
     b.autoStart();
     expect(a.children.length).toBe(1);
     await b.stop();

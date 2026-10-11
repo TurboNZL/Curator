@@ -145,6 +145,8 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
   .bt-panel-title { background: var(--panel-tb-bg); color: var(--panel-tb-fg); margin: var(--panel-tb-margin); padding: var(--panel-tb-pad); font-family: var(--title-font); text-shadow: var(--tb-text-shadow); }
 
   /* A range draws its own track only when a style asks for it (--rng-appearance: none); the fill comes from --p */
+  /* a slider is easier to grab when its box is taller than the bar it draws: the track stays thin and centred, the grab area is 24 px */
+  .bt-hit { height: 1.5rem; cursor: pointer; }
   .bt-range { appearance: var(--rng-appearance); -webkit-appearance: var(--rng-appearance); background: transparent; }
   .bt-range::-webkit-slider-runnable-track { height: var(--rng-h); border-radius: var(--rng-r); border: var(--rng-border); box-shadow: var(--rng-shadow); background: linear-gradient(to right, var(--rng-fill) var(--p, 0%), var(--rng-track) var(--p, 0%)); }
   .bt-range::-moz-range-track { height: var(--rng-h); border-radius: var(--rng-r); border: var(--rng-border); box-shadow: var(--rng-shadow); background: linear-gradient(to right, var(--rng-fill) var(--p, 0%), var(--rng-track) var(--p, 0%)); }

@@ -45,9 +45,9 @@ export function EqualizerCard() {
       </div>
       <div className={cn('grid gap-3 sm:grid-cols-2', off && 'opacity-50')}>
         <label className="block text-sm"><span className="mb-1 flex justify-between"><span className="font-medium">Bass boost</span><span className="tabular-nums text-muted">+{s.eqBass} dB</span></span>
-          <input type="range" min={0} max={12} step={1} className="bt-range h-1 w-full" style={{ '--p': `${(s.eqBass / 12) * 100}%` } as CSSProperties} disabled={off} value={s.eqBass} onChange={(e) => update({ eqBass: Number(e.target.value) })} aria-label="Bass boost in decibels" /></label>
+          <input type="range" min={0} max={12} step={1} className="bt-range bt-hit w-full" style={{ '--p': `${(s.eqBass / 12) * 100}%` } as CSSProperties} disabled={off} value={s.eqBass} onChange={(e) => update({ eqBass: Number(e.target.value) })} aria-label="Bass boost in decibels" /></label>
         <label className="block text-sm"><span className="mb-1 flex justify-between"><span className="font-medium">Overall level</span><span className="tabular-nums text-muted">{sign(s.eqPreamp)} dB</span></span>
-          <input type="range" min={-12} max={12} step={1} className="bt-range h-1 w-full" style={{ '--p': `${((s.eqPreamp + 12) / 24) * 100}%` } as CSSProperties} disabled={off} value={s.eqPreamp} onChange={(e) => update({ eqPreamp: Number(e.target.value) })} aria-label="Overall level in decibels" /></label>
+          <input type="range" min={-12} max={12} step={1} className="bt-range bt-hit w-full" style={{ '--p': `${((s.eqPreamp + 12) / 24) * 100}%` } as CSSProperties} disabled={off} value={s.eqPreamp} onChange={(e) => update({ eqPreamp: Number(e.target.value) })} aria-label="Overall level in decibels" /></label>
       </div>
     </div>
   );

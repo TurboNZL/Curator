@@ -78,7 +78,7 @@ export function PlayerBar() {
           </div>
           <div className="bt-times hidden w-full max-w-xl items-center gap-2 text-xs tabular-nums text-muted sm:flex">
             <span className="w-9 text-right">{fmtTime(v.time)}</span>
-            <input type="range" aria-label="Seek" className="bt-range h-1 flex-1" style={pct(v.time, v.duration)} min={0} max={v.duration || 1} step={0.1} value={v.time} onChange={(e) => v.seek(Number(e.target.value))} />
+            <input type="range" aria-label="Seek" className="bt-range bt-hit flex-1" style={pct(v.time, v.duration)} min={0} max={v.duration || 1} step={0.1} value={v.time} onChange={(e) => v.seek(Number(e.target.value))} />
             <span className="w-9">{fmtTime(v.duration)}</span>
           </div>
         </div>
@@ -86,7 +86,7 @@ export function PlayerBar() {
           <button ref={setDevBtn} type="button" data-popover-trigger className={cn('btn-ghost btn !p-2', (devicesOpen || v.remote) && 'text-accent')} title="Play on a device" aria-label="Play on a device" aria-expanded={devicesOpen} onClick={usePopups.getState().toggleDevices}><Cast size={16} /></button>
           <button ref={setQueueBtn} type="button" data-popover-trigger className={cn('btn-ghost btn !p-2', queueOpen && 'text-accent')} title="Queue" aria-label="Queue" aria-expanded={queueOpen} onClick={toggleQueue}><ListMusic size={16} /></button>
           <Volume2 size={16} className="text-muted" />
-          <input type="range" aria-label="Volume" className="bt-range h-1 w-24" style={pct(v.volume, 1)} min={0} max={1} step={0.01} value={v.volume} onChange={(e) => v.setVolume(Number(e.target.value))} />
+          <input type="range" aria-label="Volume" className="bt-range bt-hit w-24" style={pct(v.volume, 1)} min={0} max={1} step={0.01} value={v.volume} onChange={(e) => v.setVolume(Number(e.target.value))} />
         </div>
       </div>
       <CoverPreview anchor={coverBtn} track={track} />
