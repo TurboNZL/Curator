@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, ChevronDown, ClipboardPaste, ImageDown } from 'lucide-react';
+import { HealthHero } from '../components/HealthHero.tsx';
+import { AudioQualityCard, MissingAudioCard } from '../components/AudioTools.tsx';
 import { BulkLinks } from '../components/BulkLinks.tsx';
 import type { LinkKind } from '../lib/bulkLinks.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
@@ -57,9 +59,9 @@ export function HealthPage() {
   const openItem = (i: HealthItem) => (i.kind === 'track' || i.kind === 'album' || i.kind === 'artist' || i.kind === 'release') && edit({ kind: i.kind, id: i.id });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div><h1 className="text-2xl font-bold">Library health</h1>
-        <p className="text-sm text-muted">{problems.length ? `${problems.length} of ${checks.length} checks need a look.` : 'Everything checks out.'} Click an item to fix it.</p></div>
+    <div className="mx-auto max-w-5xl space-y-4">
+      <HealthHero lib={lib} problems={problems.length} total={checks.length} />
+      <div className="grid gap-4 md:grid-cols-2"><MissingAudioCard /><AudioQualityCard /></div>
       {checks.map((c) => (
         <section key={c.id} className="card overflow-hidden">
           <button className="flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setOpen(open === c.id ? null : c.id)} aria-expanded={open === c.id}>

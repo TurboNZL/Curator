@@ -19,7 +19,9 @@ export interface DeviceSettings {
   wallpaper: boolean;
   wallpaperDarkness: number;
   wallpaperCustom: boolean;
-  /** soft cap for locally cached audio, in MB (browser storage is limited) */
+  /** the Storage limiter: off by default. When on, locally cached audio stops at `storageLimitMb` */
+  storageLimitOn: boolean;
+  /** the size of that cap, in MB */
   storageLimitMb: number;
   /** when the limit is reached, drop the least recently played offline tracks instead of stopping */
   evictOldest: boolean;
@@ -59,7 +61,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));

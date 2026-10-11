@@ -64,12 +64,16 @@ export interface TrackData {
   geniusUrl: string | null;
   youtubeMusicUrl: string | null;
   bitrate: string | null;
+  /** what the audio file really measured (server /api/audio/analyze): see Health > Check audio quality */
+  audioCheck?: AudioCheck | null;
   bpm: number | null;
   key: string | null;
   memories: number;
   syncWithAlbumCredits: boolean;
   queueRules: Record<string, unknown>;
 }
+/** The result of measuring a track's audio file. `cutoffHz`: highest frequency with sound; `looksLike`: the bit rate class that points to. */
+export interface AudioCheck { kbps: number; codec: string; cutoffHz: number; looksLike: number; verdict: 'ok' | 'transcode' | 'unknown'; file: string; at: number }
 export interface PlaylistData {
   name: string;
   description: string | null;

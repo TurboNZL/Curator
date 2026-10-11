@@ -3,9 +3,10 @@ import { EqualizerCard } from '../components/EqualizerCard.tsx';
 import { guessDeviceName } from '../lib/connect.ts';
 import { desktop } from '../lib/settings.ts';
 import { useEffect, useState } from 'react';
-import { Download, RefreshCw } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { nativeUpdates } from '../lib/native.ts';
+import { RefreshCw } from 'lucide-react';
 import { Api, type ServerStatus } from '../lib/api.ts';
-import { useLibrary } from '../lib/derive.ts';
 import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
@@ -19,7 +20,6 @@ import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSett
 
 export function SettingsPage() {
   const { settings, updateSettings, sync, syncNow } = useStore();
-  const lib = useLibrary();
   const [url, setUrl] = useState(settings.serverUrl);
   const [token, setToken] = useState(settings.token);
   const [status, setStatus] = useState<ServerStatus | string | null>(null);
@@ -36,32 +36,29 @@ export function SettingsPage() {
   }
   const save = () => { updateSettings({ serverUrl: url.trim(), token: token.trim() }); };
 
-  const missing = lib.tracks.filter((t) => !t.file && t.youtubeMusicUrl).length;
-  async function acquire() {
-    try { const r = await api().acquire(); setAcq(`Queued ${r.queued} tracks.`); }
-    catch { setAcq('Could not reach the server.'); }
-  }
-  const [failures, setFailures] = useState<{ title: string; error: string }[]>([]);
-  async function acquireStatus() {
-    try {
-      const r = await api().acquireStatus();
-      setAcq(`${r.queued} queued · ${r.running} running · ${r.done} done · ${r.failed} failed`);
-      setFailures(r.failures.map((f) => ({ title: lib.trackById.get(f.trackId)?.title ?? f.trackId, error: f.error })));
-    } catch { setAcq('Could not reach the server.'); setFailures([]); }
-  }
-  const needsCookies = failures.some((f) => /cookies|not a bot/i.test(f.error));
   const limitBytes = settings.storageLimitMb * 1024 * 1024;
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
+  const [params, setParams] = useSearchParams();
+  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
+  const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'look';
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
+      <div role="tablist" aria-label="Settings sections" className="flex gap-1 overflow-x-auto border-b border-line pb-px">
+        {tabs.map((t) => (
+          <button key={t.id} role="tab" aria-selected={tab === t.id} data-selected={tab === t.id || undefined} onClick={() => setParams({ tab: t.id }, { replace: true })}
+            className={cn('-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors', tab === t.id ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg')}>{t.label}</button>))}
+      </div>
 
+      {tab === 'look' && <>
       <AppearanceLayout />
 
       <Section title="Wallpaper"><WallpaperCard /></Section>
+      </>}
 
+      {tab === 'library' && <>
       <Section title="Server">
         <p className="text-sm text-muted">Optional. Everything works offline; with a server this device syncs your library, votes and audio. Leave the URL empty if this app is served by the server itself.</p>
         <label className="block space-y-1 text-sm">URL<input className="input" placeholder="http://raspberrypi.local:47813" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
@@ -75,6 +72,14 @@ export function SettingsPage() {
 
       <ServerUpdateCard />
 
+      <Section title="Backup: export and import"><BackupCard /></Section>
+
+      <Section title="Genres and roles"><Vocabulary /></Section>
+
+      <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
+      </>}
+
+      {tab === 'app' && <>
       {desktop() && <Section title="Desktop app">
         <p className="text-sm text-muted">This app runs its own server and keeps your library in a folder. Put it on a big drive: audio you keep offline lives there too. To use your home server instead, fill in its address and token under Server.</p>
         <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
@@ -86,6 +91,9 @@ export function SettingsPage() {
       </Section>}
       <DiscordCard />
       <AppUpdatesCard />
+      </>}
+
+      {tab === 'playback' && <>
       <Section title="This device (Play on a device)">
         <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
         <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>
@@ -93,37 +101,20 @@ export function SettingsPage() {
       </Section>
       <Section title="Sound (equalizer)"><EqualizerCard /></Section>
 
-      <Section title="Backup: export and import"><BackupCard /></Section>
-
-      <Section title="Audio">
-        <p className="text-sm text-muted">{lib.tracks.filter((t) => t.file).length} of {lib.tracks.length} tracks have audio on the server. {missing} have a YouTube source and no file.</p>
-        <div className="flex flex-wrap items-center gap-2"><button className="btn btn-accent" onClick={acquire} disabled={!settings.token}><Download size={15} />Download missing audio</button><button className="btn" onClick={acquireStatus} disabled={!settings.token}>Progress</button></div>
-        {acq && <div className="text-sm text-muted">{acq}</div>}
-        {failures.length > 0 && (
-          <div className="space-y-1 rounded-theme bg-bad/10 p-3 text-xs" role="status">
-            <div className="font-medium text-bad">Failed downloads (press “Download missing audio” to try them again)</div>
-            <ul className="space-y-0.5">{failures.map((f, i) => <li key={i}><span className="font-medium">{f.title}</span><span className="text-muted"> — {f.error}</span></li>)}</ul>
-            {needsCookies && <div className="pt-1 text-warn">YouTube is asking this server to prove it is not a bot. Give yt-dlp a cookies file: see docs/YTDLP_COOKIES.md.</div>}
-          </div>)}
-        <p className="text-xs text-muted">Downloads run on the server and need yt-dlp and ffmpeg installed there.</p>
-      </Section>
-
       <Section title="Playback rules"><PlaybackRules /></Section>
 
-      <Section title="Genres and roles"><Vocabulary /></Section>
-
-      <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
-
-      <Section title="This device's storage">
-        <p className="text-sm text-muted">Browsers can only hold a limited amount, so offline audio stops at the limit you set (or, with “Make room automatically”, replaces the tracks played longest ago). The desktop and Android apps keep full offline copies; here, use “Keep offline” on albums and playlists.</p>
-        <div className="h-2 overflow-hidden rounded-full bg-raised"><div className="h-full bg-accent" style={{ width: `${Math.min(100, (audioBytes / limitBytes) * 100)}%` }} /></div>
+      <Section title="Storage limiter">
+        <p className="text-sm text-muted">Off by default: nothing is capped. Turn it on to stop offline audio on this device from growing past a size you choose (any app, browser, desktop or phone). With “Make room automatically” the tracks played longest ago are removed instead of stopping.</p>
+        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={settings.storageLimitOn} onChange={(e) => updateSettings({ storageLimitOn: e.target.checked })} />Limit offline audio on this device</label>
+        <div className="h-2 overflow-hidden rounded-full bg-raised"><div className="h-full bg-accent" style={{ width: settings.storageLimitOn ? `${Math.min(100, (audioBytes / limitBytes) * 100)}%` : '0%' }} /></div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-          <span>{fmtBytes(audioBytes)} of offline audio ({Object.keys(audioCache).length} files) · limit {settings.storageLimitMb} MB{usage ? ` · browser allows ${fmtBytes(usage.quota)}` : ''}</span>
+          <span>{fmtBytes(audioBytes)} of offline audio ({Object.keys(audioCache).length} files){settings.storageLimitOn ? ` · limit ${settings.storageLimitMb} MB` : ' · no limit'}{usage ? ` · this device allows ${fmtBytes(usage.quota)}` : ''}</span>
           <span className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2">Limit MB<input className="input !w-24" type="number" min={100} step={100} value={settings.storageLimitMb} onChange={(e) => updateSettings({ storageLimitMb: Number(e.target.value) || 2048 })} /></label>
-            <label className="flex items-center gap-1.5" title="When full, remove the offline tracks you played longest ago to make room"><input type="checkbox" checked={settings.evictOldest} onChange={(e) => updateSettings({ evictOldest: e.target.checked })} />Make room automatically</label>
+            <label className="flex items-center gap-2">Limit MB<input className="input !w-24" type="number" min={100} step={100} disabled={!settings.storageLimitOn} value={settings.storageLimitMb} onChange={(e) => updateSettings({ storageLimitMb: Number(e.target.value) || 2048 })} /></label>
+            <label className="flex items-center gap-1.5" title="When full, remove the offline tracks you played longest ago to make room"><input type="checkbox" disabled={!settings.storageLimitOn} checked={settings.evictOldest} onChange={(e) => updateSettings({ evictOldest: e.target.checked })} />Make room automatically</label>
             <button className="btn" disabled={!audioBytes} onClick={() => void removeAudio(Object.keys(audioCache))}>Clear offline audio</button></span></div>
       </Section>
+      </>}
     </div>
   );
 }
