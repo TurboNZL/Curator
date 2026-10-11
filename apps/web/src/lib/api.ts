@@ -1,3 +1,4 @@
+import { appFileProxy } from './native.ts';
 import type { Command, PlaybackSnapshot, PullResponse, SyncRecord } from '@curator/core';
 import type { DeviceSettings } from './settings.ts';
 
@@ -71,5 +72,10 @@ export class Api {
   connectState(device: string, name: string, state: PlaybackSnapshot | null) { return this.req<{ ok: true }>('/api/connect/state', { method: 'POST', body: JSON.stringify({ device, name, state }) }); }
   connectCommand(from: string, to: string, command: Command) { return this.req<{ ok: true }>('/api/connect/command', { method: 'POST', body: JSON.stringify({ from, to, command }) }); }
   /** `<audio src>` / `<img src>` cannot send headers, hence ?token= */
-  fileUrl(hash: string) { return this.url(`/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`); }
+  fileUrl(hash: string) {
+    const path = `/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`;
+    // the Android app serves plain-http servers' files from its own origin (see appFileProxy)
+    if (/^http:/i.test(this.s.serverUrl.trim()) && appFileProxy()) return `${location.origin}/__server${path}`;
+    return this.url(path);
+  }
 }

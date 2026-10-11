@@ -1,16 +1,36 @@
-# Push a tag like v0.2.0 to build the desktop installers and the Android APK and attach them to a GitHub release.
-# The installed apps update themselves from that release (Electron: electron-updater; Android: apps/android AppUpdater).
+# Every merge to main builds the Android APK and the desktop installers and publishes them as a new release; the installed apps
+# update themselves from it (Electron: electron-updater; Android: apps/android AppUpdater). Nothing to tag by hand.
+# The version is the year, the month and a counter: v2026.10.0, v2026.10.1, ... (the counter restarts each month).
+# Documentation-only changes do not release. "Run workflow" in the Actions tab releases the current main on demand.
 name: Release
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.next.outputs.tag }}
     steps:
-      - run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes || true
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Work out the next version
+        id: next
+        run: |
+          prefix="v$(date -u +%Y.%-m)."
+          last=$(git tag -l "${prefix}*" | sed "s/^${prefix}//" | sort -n | tail -1)
+          tag="${prefix}$(( ${last:--1} + 1 ))"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Releasing $tag"
+      - name: Create the release (this also creates the tag)
+        run: gh release create "${{ steps.next.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "${{ steps.next.outputs.tag }}" --generate-notes
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
 
   desktop:
@@ -28,7 +48,7 @@ jobs:
       - run: pnpm install --ignore-scripts --filter @curator/web --filter @curator/core --filter @curator/server --filter @curator/electron
       - name: Set the version from the tag
         shell: bash
-        run: cd apps/electron && npm pkg set version="${GITHUB_REF_NAME#v}"
+        run: cd apps/electron && npm pkg set version="$(echo '${{ needs.release.outputs.tag }}' | sed 's/^v//')"
       - run: pnpm --filter @curator/electron dist:publish
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
 
@@ -49,8 +69,9 @@ jobs:
       - run: pnpm --filter @curator/web build
       - name: Build the APK
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          TAG='${{ needs.release.outputs.tag }}'
+          VERSION="${TAG#v}"
           gradle -p apps/android :app:assembleRelease -PappVersion="$VERSION"
           cp apps/android/app/build/outputs/apk/release/app-release.apk "music-curator-$VERSION.apk"
-          gh release upload "$GITHUB_REF_NAME" "music-curator-$VERSION.apk" --clobber
+          gh release upload "$TAG" "music-curator-$VERSION.apk" --clobber
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }

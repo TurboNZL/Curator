@@ -25,4 +25,18 @@ class ServerFileRouteTest {
         assertNull(t(url = ""))
         assertNull(t(host = null))
     }
+
+    private fun p(url: String = server, method: String = "GET", host: String? = "appassets.androidplatform.net", path: String? = "/__server/api/files/abc", query: String? = "token=x") =
+        ServerFileRoute.proxyTarget(url, method, host, "appassets.androidplatform.net", path, query)
+
+    @Test fun proxiesTheSameOriginPath() = assertEquals("$server/api/files/abc?token=x", p())
+    @Test fun proxyKeepsAReverseProxyPrefix() = assertEquals("http://pi:8080/music/api/files/abc?token=x", p(url = "http://pi:8080/music"))
+    @Test fun proxyIgnoresEverythingElse() {
+        assertNull(p(method = "PUT"))
+        assertNull(p(host = "example.com"))
+        assertNull(p(path = "/api/files/abc"))
+        assertNull(p(path = "/__server/api/sync/pull"))
+        assertNull(p(path = "/__server/api/files/../../etc"))
+        assertNull(p(url = "https://pi.tailnet.ts.net"))
+    }
 }

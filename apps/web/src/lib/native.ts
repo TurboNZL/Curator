@@ -20,9 +20,14 @@ export interface NativeUpdates {
 /** What the Android app puts on `window` (a Java interface: strings only, so results come back as JSON and updates as events). */
 interface AndroidBridge { setServer(url: string, token: string): void; version(): string; updateState(): string; checkForUpdate(): void; installUpdate(): void; hasUpdateToken(): boolean; setUpdateToken(t: string): void;
   // newer app versions only
-  webClientState?(): string; webClientVersion?(): string; updateWebClient?(): void; reloadWebClient?(): void; useBundledWebClient?(): void }
+  fileProxy?(): boolean; webClientState?(): string; webClientVersion?(): string; updateWebClient?(): void; reloadWebClient?(): void; useBundledWebClient?(): void }
 const android = (): AndroidBridge | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { CuratorAndroid?: AndroidBridge }).CuratorAndroid);
 
+/**
+ * True when the app answers `/__server/…` itself (streaming the server's files with Range support). Images and audio then load from
+ * the page's own https origin, so the WebView's mixed-content rules never apply and they start as fast as in a browser.
+ */
+export const appFileProxy = (): boolean => { try { return android()?.fileProxy?.() === true; } catch { return false; } };
 export const isAndroidApp = () => !!android();
 export const appVersion = (): string | null => desktop()?.version ?? android()?.version() ?? null;
 
