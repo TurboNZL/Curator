@@ -13,10 +13,12 @@ import { ArtistLinks } from './ArtistLinks.tsx';
 import type { SourceType } from '@curator/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
-export function TrackTable({ tracks, source, sourceId = null, numbered = false, showAlbum = true, extra }: {
+export function TrackTable({ tracks, source, sourceId = null, numbered = false, showAlbum = true, extra, below }: {
   tracks: Track[]; source: SourceType; sourceId?: string | null; numbered?: boolean; showAlbum?: boolean;
   /** extra controls at the end of each row (e.g. move/remove in a playlist) */
   extra?: (t: Track, index: number) => React.ReactNode;
+  /** a full-width line under a row (e.g. a playlist note) */
+  below?: (t: Track, index: number) => React.ReactNode;
 }) {
   const play = usePlayer((s) => s.play);
   const enqueue = usePlayer((s) => s.enqueue);
@@ -42,7 +44,8 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   return (
     <div className="divide-y divide-line/60 [container-type:inline-size]">
       {tracks.map((t, i) => (
-        <div key={t.id} data-track-id={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
+        <div key={t.id}>
+        <div data-track-id={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
           onContextMenu={menu.onContextMenu(itemsFor(t, () => play(t.id, ids, { type: source, id: sourceId })), `Actions for ${t.title}`, t.id)}>
           <button className="relative w-6 shrink-0 text-center text-sm text-muted disabled:cursor-not-allowed" disabled={!t.file}
             onClick={() => play(t.id, ids, { type: source, id: sourceId })} title={t.file ? 'Play' : 'No audio file yet'}>
@@ -68,6 +71,8 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
           <button data-menu-trigger className="p-1 text-muted hover:text-fg" aria-label={`More actions for ${t.title}`} aria-haspopup="menu" aria-expanded={menu.at?.key === t.id} onClick={(e) => menu.toggle(e.currentTarget, t.id, itemsFor(t, () => play(t.id, ids, { type: source, id: sourceId })), `Actions for ${t.title}`)}><MoreHorizontal size={16} /></button>
           <div className="flex w-20 justify-end"><Rating track={t} size="sm" /></div>
           {extra?.(t, i)}
+        </div>
+        {below?.(t, i)}
         </div>
       ))}
       {menu.element}

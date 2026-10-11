@@ -80,6 +80,8 @@ export interface PlaylistData {
   cover: string | null;
   createdAt: number;
   trackIds: string[];
+  /** "Playlist note": why a track is in this playlist, or anything else about it there (track id -> text) */
+  trackNotes?: Record<string, string>;
 }
 export interface GroupMemberData {
   entityType: 'artist' | 'album' | 'track' | 'release' | 'era' | 'playlist';
@@ -125,8 +127,16 @@ export interface VoteData {
   timestamp: number;
 }
 export interface PlaybackLogData {
+  /** '' for a play imported from another service whose track is not in the library (it is matched again whenever the library changes) */
   trackId: string; timestamp: number; duration: number | null;
   sourceType: string | null; sourceId: string | null; isSkip: boolean;
+  /** set on plays imported from a service's history (Spotify's extended streaming history); `timestamp` is when the play ended, like Spotify's `ts` */
+  imported?: 'spotify';
+  /** how the service named the play (used when the track is not in the library) */
+  name?: string; artist?: string; album?: string;
+  /** spotify:track:<id> */
+  uri?: string;
+  shuffle?: boolean | null; platform?: string | null; reasonStart?: string | null; reasonEnd?: string | null;
 }
 export interface ProfileData {
   name: string; theme: string; accentColor: string; playbackMode: string;
