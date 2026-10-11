@@ -4,7 +4,7 @@ import type { Listen } from '../src/lib/listens.ts';
 
 let n = 0;
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime();
-const L = (ts: number, o: Partial<Listen> = {}): Listen => ({ id: `l${n++}`, ts, ms: 200000, trackId: null, title: 'Song', artist: 'Artist', album: 'Album', uri: 'spotify:track:aaaaaaaaaaaaaaaaaaaaaa', skipped: false, shuffle: null, platform: 'linux', reasonEnd: null, source: 'spotify', ...o });
+const L = (ts: number, o: Partial<Listen> = {}): Listen => ({ id: `l${n++}`, ts, ms: 200000, trackId: null, artistId: null, albumId: null, title: 'Song', artist: 'Artist', album: 'Album', uri: 'spotify:track:aaaaaaaaaaaaaaaaaaaaaa', skipped: false, shuffle: null, platform: 'linux', reasonEnd: null, source: 'spotify', ...o });
 
 describe('listen stats', () => {
   const day = (d: number, h = 12, o: Partial<Listen> = {}) => L(at(2026, 8, d, h), o);

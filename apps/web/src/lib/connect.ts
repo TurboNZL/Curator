@@ -8,6 +8,7 @@ export { positionNow };
 import { api, useStore } from './store.ts';
 import { spotifyEngine } from './spotifyPlayer.ts';
 import { stopBeam } from './beam.ts';
+import { HeaderEventSource, type EventSourceLike } from './sse.ts';
 
 /**
  * Connect, in the manner of Spotify Connect: every device that has this app open and a server configured appears in a list. Pick
@@ -154,19 +155,20 @@ function onCommand(c: Command) {
   setTimeout(publish, 150);
 }
 
-let source: EventSource | null = null;
+let source: EventSourceLike | null = null;
 let retry: ReturnType<typeof setTimeout> | undefined;
 let heartbeat: ReturnType<typeof setInterval> | undefined;
 let key = '';
 
 function open() {
   const st = useStore.getState().settings;
-  const next = `${st.serverUrl}|${st.token}|${st.deviceId}|${st.deviceName}`;
+  const next = `${st.serverUrl}|${st.token}|${st.cfAccessId}|${st.cfAccessSecret}|${st.deviceId}|${st.deviceName}`;
   if (!st.token) { stop(); return; }
   if (source && next === key) return;
   stop();
   key = next;
-  const es = (source = new EventSource(api().connectStreamUrl(myId(), myName(), deviceKind())));
+  const streamUrl = api().connectStreamUrl(myId(), myName(), deviceKind());
+  const es: EventSourceLike = (source = api().needsHeaderFetch ? new HeaderEventSource(streamUrl, api().access) : new EventSource(streamUrl) as EventSourceLike);
   es.onopen = () => { useConnect.setState({ live: true }); publish(); };
   es.addEventListener('connect', (e) => {
     const ev = JSON.parse((e as MessageEvent).data) as ServerEvent;
@@ -180,7 +182,7 @@ function open() {
   es.onerror = () => {
     useConnect.setState({ live: false });
     // the browser retries by itself unless the server answered with an error (wrong token, restart): then start over after a pause
-    if (es.readyState === EventSource.CLOSED) { source = null; key = ''; clearTimeout(retry); retry = setTimeout(open, 5000); }
+    if (es.readyState === 2 /* CLOSED */) { source = null; key = ''; clearTimeout(retry); retry = setTimeout(open, 5000); }
   };
   clearInterval(heartbeat);
   heartbeat = setInterval(() => { if (usePlayer.getState().playing) publish(); }, 4000);
@@ -205,5 +207,5 @@ export function startConnect() {
       if (Math.abs(s.time - expected) > 2) soon();
     }
   });
-  useStore.subscribe((s, prev) => { if (s.settings.token !== prev.settings.token || s.settings.serverUrl !== prev.settings.serverUrl || s.settings.deviceName !== prev.settings.deviceName) open(); });
+  useStore.subscribe((s, prev) => { if (s.settings.cfAccessId !== prev.settings.cfAccessId || s.settings.cfAccessSecret !== prev.settings.cfAccessSecret || s.settings.token !== prev.settings.token || s.settings.serverUrl !== prev.settings.serverUrl || s.settings.deviceName !== prev.settings.deviceName) open(); });
 }

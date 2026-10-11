@@ -7,6 +7,11 @@ describe('pairing code', () => {
     expect(decodePairCode(encodePairCode(p))).toEqual(p);
     expect(decodePairCode(encodePairCode({ url: '', token: 'x' }))).toEqual({ url: '', token: 'x' });
   });
+  it('carries a Cloudflare Access service token when there is one', () => {
+    const p = { url: 'https://m.example.com', token: 't', access: { id: 'abc.access', secret: 'shh' } };
+    expect(decodePairCode(encodePairCode(p))).toEqual(p);
+    expect(decodePairCode(encodePairCode({ url: '', token: 't', access: { id: '', secret: 'x' } }))).toEqual({ url: '', token: 't' });
+  });
   it('survives line breaks and spaces added by a messenger, and a trailing slash', () => {
     const c = encodePairCode({ url: 'http://pi:47813/', token: 'abc' });
     expect(decodePairCode(` ${c.slice(0, 12)}\n${c.slice(12)} `)).toEqual({ url: 'http://pi:47813', token: 'abc' });

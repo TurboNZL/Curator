@@ -12,6 +12,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
@@ -49,7 +50,13 @@ class PlaybackService : MediaLibraryService() {
         // Everything played is kept on the phone (512 MB, oldest dropped first): replaying a track, or seeking back in it, does not download it again
         val simpleCache = SimpleCache(File(cacheDir, "audio"), LeastRecentlyUsedCacheEvictor(512L * 1024 * 1024), StandaloneDatabaseProvider(this))
         cache = simpleCache
-        val sources = CacheDataSource.Factory().setCache(simpleCache).setUpstreamDataSourceFactory(DefaultDataSource.Factory(this))
+        // a server behind Cloudflare Access wants the service token on every request (read when the request is made, so a change in Settings applies at once)
+        val prefsForHeaders = ServerPrefs(this)
+        val upstream = ResolvingDataSource.Factory(DefaultDataSource.Factory(this)) { spec ->
+            val extra = prefsForHeaders.accessHeaders()
+            if (extra.isEmpty()) spec else spec.withAdditionalHeaders(extra)
+        }
+        val sources = CacheDataSource.Factory().setCache(simpleCache).setUpstreamDataSourceFactory(upstream)
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(sources))

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Clock, Download, Flame, History, Upload, Users, SkipForward, Shuffle } from 'lucide-react';
+import { Clock, Download, Flame, History, LayoutGrid, List, Upload, Users, SkipForward, Shuffle } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
 import { computeStats } from '../lib/stats.ts';
 import { buildListens, type Listen } from '../lib/listens.ts';
-import { computeListenStats, dayKey, rangeFor, RANGES, type RangeId, type ListenStats, type TopRow } from '../lib/listenStats.ts';
-import { trackPath } from '../lib/trackPath.ts';
+import { computeListenStats, dayKey, type ListenStats, type TopRow } from '../lib/listenStats.ts';
+import { filterListens, filterRange, applyFilter, loadFilter, saveFilter, type StatsFilter } from '../lib/statsFilter.ts';
+import { statsPath } from '../lib/entityStats.ts';
+import { StatsFilters } from '../components/StatsFilters.tsx';
+import { TopGrid } from '../components/TopGrid.tsx';
 import { cn } from '../lib/cn.ts';
 import { Area, Bars, Calendar, Donut, fmtHours, Heatgrid, Kpi, Panel, RankList } from '../components/charts.tsx';
 import { ExportHistoryDialog, ImportHistoryDialog } from '../components/HistoryTools.tsx';
@@ -35,9 +38,9 @@ function Overview({ s, lib }: { s: ListenStats; lib: ReturnType<typeof useLibrar
         {feature && <p className="text-sm text-muted">Most played: <b className="text-fg">{feature.label}</b> ({feature.plays.toLocaleString()} plays). Longest session {fmtHours(s.sessions.longestMs)}, {s.daysActive.toLocaleString()} active days.</p>}
       </Panel>
       <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Top artists"><RankList rows={s.topArtists.slice(0, 6).map((r) => ({ key: r.key, label: r.label, value: r.plays }))} unit={(n) => `${n.toLocaleString()}`} /></Panel>
-        <Panel title="Top tracks"><RankList rows={s.topTracks.slice(0, 6).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: r.plays }))} /></Panel>
-        <Panel title="Top albums"><RankList rows={s.topAlbums.slice(0, 6).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: r.plays }))} /></Panel>
+        <Panel title="Top artists"><RankList rows={s.topArtists.slice(0, 6).map((r) => ({ key: r.key, label: r.label, value: r.plays, to: r.id ? statsPath('artist', r.id) : undefined }))} unit={(n) => `${n.toLocaleString()}`} /></Panel>
+        <Panel title="Top tracks"><RankList rows={s.topTracks.slice(0, 6).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: r.plays, to: r.id ? statsPath('track', r.id) : undefined }))} /></Panel>
+        <Panel title="Top albums"><RankList rows={s.topAlbums.slice(0, 6).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: r.plays, to: r.id ? statsPath('album', r.id) : undefined }))} /></Panel>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {s.onThisDay.length > 0 && <Panel title="On this day"><ul className="space-y-1.5 text-sm">{s.onThisDay.map((d) => <li key={d.year} className="flex gap-3"><b className="w-12 shrink-0 tabular-nums">{d.year}</b><span className="min-w-0 truncate text-muted">{d.plays} play{d.plays === 1 ? '' : 's'}{d.top ? ` · ${d.top}` : ''}</span></li>)}</ul></Panel>}
@@ -49,14 +52,25 @@ function Overview({ s, lib }: { s: ListenStats; lib: ReturnType<typeof useLibrar
 }
 
 function Top({ s, byTime, lib }: { s: ListenStats; byTime: boolean; lib: ReturnType<typeof useLibrary> }) {
-  const rows = (list: TopRow[], link = false) => [...list].sort((a, b) => (byTime ? b.ms - a.ms : b.plays - a.plays)).slice(0, 25).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: byTime ? r.ms : r.plays, extra: byTime ? `${r.plays.toLocaleString()} plays` : fmtHours(r.ms), to: link && r.trackId ? trackPath(lib.trackById.get(r.trackId) ?? { id: r.trackId }) : undefined }));
+  void lib;
+  const [view, setView] = useState<'grid' | 'list'>(() => { try { return localStorage.getItem('curator.statsTopView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } });
+  const choose = (v: 'grid' | 'list') => { setView(v); try { localStorage.setItem('curator.statsTopView', v); } catch { /* private window */ } };
+  const rows = (list: TopRow[], kind: 'artist' | 'album' | 'track') => [...list].sort((a, b) => (byTime ? b.ms - a.ms : b.plays - a.plays)).slice(0, 25).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: byTime ? r.ms : r.plays, extra: byTime ? `${r.plays.toLocaleString()} plays` : fmtHours(r.ms), to: r.id ? statsPath(kind, r.id) : undefined }));
   const unit = byTime ? fmtHours : (n: number) => n.toLocaleString();
   return (
-    <div className="grid gap-4 xl:grid-cols-3">
-      <Panel title="Artists"><RankList rows={rows(s.topArtists)} unit={unit} /></Panel>
-      <Panel title="Tracks"><RankList rows={rows(s.topTracks, true)} unit={unit} /></Panel>
-      <Panel title="Albums"><RankList rows={rows(s.topAlbums)} unit={unit} /></Panel>
-      {s.notInLibrary.length > 0 && <Panel className="xl:col-span-3" title="Played a lot, not in your library" right={<span className="text-xs text-muted">import them: Add › Import from Spotify</span>}>
+    <div className="space-y-4">
+      <div className="flex justify-end" role="group" aria-label="View">
+        <button className={cn('btn !rounded-r-none !py-1 !text-xs', view === 'grid' && 'btn-accent')} aria-pressed={view === 'grid'} onClick={() => choose('grid')}><LayoutGrid size={13} />Grid</button>
+        <button className={cn('btn !rounded-l-none !py-1 !text-xs', view === 'list' && 'btn-accent')} aria-pressed={view === 'list'} onClick={() => choose('list')}><List size={13} />List</button>
+      </div>
+      {view === 'grid'
+        ? <TopGrid artists={s.topArtists} albums={s.topAlbums} tracks={s.topTracks} byTime={byTime} />
+        : <div className="grid gap-4 xl:grid-cols-3">
+            <Panel title="Artists"><RankList rows={rows(s.topArtists, 'artist')} unit={unit} /></Panel>
+            <Panel title="Tracks"><RankList rows={rows(s.topTracks, 'track')} unit={unit} /></Panel>
+            <Panel title="Albums"><RankList rows={rows(s.topAlbums, 'album')} unit={unit} /></Panel>
+          </div>}
+      {s.notInLibrary.length > 0 && <Panel title="Played a lot, not in your library" right={<span className="text-xs text-muted">import them: Add › Import from Spotify</span>}>
         <RankList rows={s.notInLibrary.slice(0, 20).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: r.plays }))} /></Panel>}
     </div>
   );
@@ -136,11 +150,13 @@ function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof 
             <ul className="divide-y divide-line/50">
               {g.items.map((l) => {
                 const t = l.trackId ? lib.trackById.get(l.trackId) : undefined;
-                const body = <><span className="block truncate text-sm font-medium">{l.title}</span><span className="block truncate text-xs text-muted">{l.artist}{l.album ? ` · ${l.album}` : ''}</span></>;
+                const body = <>
+                  <span className="block truncate text-sm font-medium">{t ? <Link to={statsPath('track', t.id)} className="hover:underline">{l.title}</Link> : l.title}</span>
+                  <span className="block truncate text-xs text-muted">{l.artistId ? <Link to={statsPath('artist', l.artistId)} className="hover:underline">{l.artist}</Link> : l.artist}{l.album && <> · {l.albumId ? <Link to={statsPath('album', l.albumId)} className="hover:underline">{l.album}</Link> : l.album}</>}</span></>;
                 return (
                   <li key={l.id} className="flex items-center gap-3 py-1.5">
                     <time className="w-[4.5rem] shrink-0 whitespace-nowrap text-right text-xs tabular-nums text-muted" dateTime={new Date(l.ts).toISOString()}>{new Date(l.ts - l.ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
-                    <div className="min-w-0 flex-1">{t ? <Link to={trackPath(t)} className="block hover:underline">{body}</Link> : body}</div>
+                    <div className="min-w-0 flex-1">{body}</div>
                     {l.skipped && <span className="chip text-warn">skipped</span>}
                     {l.source === 'spotify' && <span className="chip hidden sm:inline-flex">Spotify</span>}
                     {!t && <span className="chip hidden text-muted md:inline-flex" title="Not in your library">not in library</span>}
@@ -180,12 +196,15 @@ export function StatsPage() {
   const lib = useLibrary();
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as Tab;
-  const [range, setRange] = useState<RangeId>('all');
-  const [thirty, setThirty] = useState(false);
+  const [filter, setFilterState] = useState<StatsFilter>(loadFilter);
+  const setFilter = (f: StatsFilter) => { setFilterState(f); saveFilter(f); };
   const [byTime, setByTime] = useState(false);
   const [dialog, setDialog] = useState<'import' | 'export' | null>(null);
   const listens = useMemo(() => buildListens(lib), [lib]);
-  const s = useMemo(() => computeListenStats(listens, rangeFor(range), { minMs: thirty ? 30_000 : 0 }), [listens, range, thirty]);
+  // the extras (source, skips, platform, time of day, words, library chips), then the range and the shortest play that counts
+  const narrowed = useMemo(() => applyFilter(lib, listens, filter), [lib, listens, filter]);
+  const s = useMemo(() => computeListenStats(narrowed, filterRange(filter), { minMs: filter.minMs }), [narrowed, filter]);
+  const shown = useMemo(() => filterListens(lib, listens, filter), [lib, listens, filter]);
   const imported = listens.filter((l) => l.source === 'spotify').length;
   return (
     <div className="space-y-5">
@@ -198,16 +217,15 @@ export function StatsPage() {
         {TABS.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setParams({ tab: t.id }, { replace: true })}
           className={cn('-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors', tab === t.id ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg')}>{t.label}</button>)}
       </div>
-      {tab !== 'library' && tab !== 'history' && (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-1" role="group" aria-label="Time range">{RANGES.map((r) => <button key={r.id} className={cn('btn !py-1 !text-xs', range === r.id && 'btn-accent')} aria-pressed={range === r.id} onClick={() => setRange(r.id)}>{r.label}</button>)}</div>
-          <label className="ml-auto flex items-center gap-1.5 text-xs text-muted" title="stats.fm only counts a play that lasted at least 30 seconds"><input type="checkbox" checked={thirty} onChange={(e) => setThirty(e.target.checked)} />Only plays of 30 s or more</label>
-          {tab === 'top' && <label className="flex items-center gap-1.5 text-xs text-muted"><input type="checkbox" checked={byTime} onChange={(e) => setByTime(e.target.checked)} />Rank by time</label>}
+      {tab !== 'library' && (
+        <div className="space-y-2">
+          <StatsFilters value={filter} onChange={setFilter} listens={listens} />
+          {tab === 'top' && <label className="flex items-center justify-end gap-1.5 text-xs text-muted"><input type="checkbox" checked={byTime} onChange={(e) => setByTime(e.target.checked)} />Rank by time</label>}
         </div>)}
       {tab === 'overview' && <Overview s={s} lib={lib} />}
       {tab === 'top' && <Top s={s} byTime={byTime} lib={lib} />}
       {tab === 'activity' && <Activity s={s} />}
-      {tab === 'history' && <Timeline listens={listens} lib={lib} />}
+      {tab === 'history' && <Timeline listens={shown} lib={lib} />}
       {tab === 'library' && <LibraryTab />}
       <p className="flex items-center gap-1.5 text-xs text-muted"><History size={12} />{listens.length.toLocaleString()} plays in total{imported ? `, ${imported.toLocaleString()} imported from Spotify` : ''}.</p>
       {dialog === 'import' && <ImportHistoryDialog onClose={() => setDialog(null)} />}

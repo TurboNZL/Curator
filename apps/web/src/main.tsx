@@ -25,7 +25,7 @@ startPresence();
 // the Android app's car interface needs the server address too; the app's own page is served from a private address, so a blank URL means "this origin"
 {
   let last = '';
-  const push = (s: { serverUrl: string; token: string }) => { const k = `${s.serverUrl}|${s.token}`; if (k !== last) { last = k; syncNativeServer(s.serverUrl, s.token); } };
+  const push = (s: { serverUrl: string; token: string; cfAccessId: string; cfAccessSecret: string }) => { const k = `${s.serverUrl}|${s.token}|${s.cfAccessId}|${s.cfAccessSecret}`; if (k !== last) { last = k; syncNativeServer(s.serverUrl, s.token, { id: s.cfAccessId, secret: s.cfAccessSecret }); } };
   push(useStore.getState().settings);
   useStore.subscribe((st) => push(st.settings));
 }
@@ -34,7 +34,7 @@ startPresence();
 {
   const p = pairFromSearch(location.search);
   if (new URLSearchParams(location.search).has('pair')) {
-    if (p && confirm(`Connect this device to ${p.url || location.origin}?`)) useStore.getState().updateSettings({ serverUrl: p.url === location.origin ? '' : p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}) });
+    if (p && confirm(`Connect this device to ${p.url || location.origin}?`)) useStore.getState().updateSettings({ serverUrl: p.url === location.origin ? '' : p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}), ...(p.access ? { cfAccessId: p.access.id, cfAccessSecret: p.access.secret } : {}) });
     history.replaceState(null, '', location.pathname + location.hash);
   }
 }

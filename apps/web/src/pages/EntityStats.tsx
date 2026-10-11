@@ -8,6 +8,7 @@ import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { entityStats, entityTrackIds, isStatsKind, type StatsKind } from '../lib/entityStats.ts';
+import { loadFilter } from '../lib/statsFilter.ts';
 import { trackInfo } from '../lib/trackinfo.ts';
 import { trackPath } from '../lib/trackPath.ts';
 import { fmtBytes, plural } from '../lib/cn.ts';
@@ -40,7 +41,9 @@ export function EntityStatsPage() {
   const [editing, setEditing] = useState(false);
   const kind = isStatsKind(k) ? k : null;
   const ids = kind ? entityTrackIds(lib, kind, id) : null;
-  const stats = useMemo(() => (ids ? entityStats(lib, ids) : null), [lib, ids]);
+  // plays shorter than the shortest length chosen on the Stats page (30 s by default) do not count here either
+  const minMs = useMemo(() => loadFilter().minMs, []);
+  const stats = useMemo(() => (ids ? entityStats(lib, ids, minMs) : null), [lib, ids, minMs]);
   if (!kind || !ids || !stats) return <div className="text-muted">Nothing to show stats for. <Link className="underline" to="/stats">Stats</Link></div>;
 
   const track = kind === 'track' ? lib.trackById.get(id) : undefined;
@@ -88,7 +91,7 @@ export function EntityStatsPage() {
       {editing && <InlineModals.Provider value><EditorFor target={{ kind, id }} close={() => setEditing(false)} /></InlineModals.Provider>}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi icon={<Music2 size={13} />} label="Plays" value={l.plays.toLocaleString()} sub={l.lastTs ? `last ${new Date(l.lastTs).toLocaleDateString()}` : 'never played here'} />
+        <Kpi icon={<Music2 size={13} />} label="Plays" value={l.plays.toLocaleString()} sub={l.lastTs ? `last ${new Date(l.lastTs).toLocaleDateString()}${minMs ? ` · plays of ${Math.round(minMs / 1000)} s or more` : ''}` : 'never played here'} />
         <Kpi icon={<Clock size={13} />} label="Time listened" value={fmtHours(l.ms)} sub={l.firstTs ? `since ${new Date(l.firstTs).toLocaleDateString()}` : undefined} />
         <Kpi icon={<SkipForward size={13} />} label="Skips" value={l.skips.toLocaleString()} sub={`${Math.round(l.skipRate * 100)}% of plays`} />
         <Kpi icon={<Swords size={13} />} label="Votes" value={`${stats.votes.wins} – ${stats.votes.losses}`} sub={`won – lost${stats.votes.draws ? `, ${stats.votes.draws} equal` : ''}`} />
