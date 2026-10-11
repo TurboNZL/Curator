@@ -44,6 +44,8 @@ export interface ReleaseData {
   title: string;
   cover: string | null;
   releaseDate: string | null;
+  /** the user's own labels for this edition ("vinyl", "clean", "deluxe", "2026 remaster"); optional */
+  tags?: string[];
   /** ordered */
   trackIds: string[];
 }

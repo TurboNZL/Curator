@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
 import { FILTER_DOCS, HAS_VALUES, filterKeys, makeChip, splitTyped, type Chip, type FilterScope } from '../lib/filters.ts';
+import { allReleaseTags } from '../lib/releaseOps.ts';
 import { usePresence } from '../lib/presence.ts';
 import { cn } from '../lib/cn.ts';
 
@@ -42,6 +43,7 @@ export function FilterBar({ chips, onChips, text, onText, scope, placeholder = '
     else if (key === 'album') out.push(...named(lib.albums.map((a) => ({ label: a.title }))));
     else if (key === 'era') out.push(...named(lib.eras.map((e) => ({ label: e.name }))));
     else if (key === 'genre') out.push(...named(lib.genres.map((g) => ({ label: g.name }))));
+    else if (key === 'tag') out.push(...named(allReleaseTags(lib.releases).map((t) => ({ label: t }))));
     else if (key === 'has') out.push(...HAS_VALUES.filter((v) => !r || v.startsWith(r)).map((v) => ({ id: v, label: v, run: () => add(makeChip(lib, 'has', v)) })));
     else if (key === 'before' || key === 'after') {
       const typedChip = makeChip(lib, key, rest);

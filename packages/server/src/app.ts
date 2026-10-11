@@ -9,6 +9,7 @@ import { Acquirer } from './acquire.ts';
 import { analyzeAudio } from './audioinfo.ts';
 import { Matcher, type MatchTrack } from './match.ts';
 import { similarArtists } from './recommend.ts';
+import { lookupAlbumDate } from './dates.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
@@ -178,6 +179,17 @@ export function createApp(
     const out = [];
     for (let i = 0; i < tracks.length; i += 3) out.push(...(await Promise.all(tracks.slice(i, i + 3).map((t) => matcher.match(t, methods)))));
     return c.json({ results: out });
+  });
+
+  // ---- release dates (dates.ts): when albums came out, a few per request (MusicBrainz asks for about one request a second) ----
+  app.post('/api/dates', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { albums?: unknown };
+    const albums = (Array.isArray(b.albums) ? b.albums : []).slice(0, 8).flatMap((a: any) => typeof a?.id === 'string' && typeof a.album === 'string' && typeof a.artist === 'string' ? [{ id: a.id, album: a.album.slice(0, 200), artist: a.artist.slice(0, 200) }] : []);
+    if (!albums.length) return c.json({ error: 'nothing to look up' }, 400);
+    const useSpotify = spotify.status().signedIn ? spotify : null;
+    const results = [];
+    for (const a of albums) results.push({ id: a.id, answer: await lookupAlbumDate(a, { spotify: useSpotify }) });
+    return c.json({ results });
   });
 
   // ---- Spotify (spotify.ts): links, public playlists, and the user's own sign-in for their playlists ----

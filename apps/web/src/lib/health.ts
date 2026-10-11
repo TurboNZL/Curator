@@ -18,6 +18,8 @@ export interface HealthCheck {
   albumLinks?: boolean;
   /** items come in groups of the same thing, each group can be merged into one */
   mergeGroups?: boolean;
+  /** a tool that fills in the missing dates by itself */
+  autoDates?: boolean;
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -69,7 +71,7 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.spotifyUrl).map((x) => t(x)) },
     { id: 'no-genius', title: 'Tracks without a Genius link', why: 'Optional: lyrics and annotations.', bulk: 'geniusUrl',
       items: lib.tracks.filter((x) => !x.geniusUrl).map((x) => t(x)) },
-    { id: 'release-no-date', title: 'Releases without a date', why: 'Open the release and set its date.',
+    { id: 'release-no-date', title: 'Releases without a date', why: 'Find them automatically: from another dated release of the same album, or from Spotify, iTunes and MusicBrainz. Or open a release and set the date yourself.', autoDates: true,
       items: lib.releases.filter((r) => !r.releaseDate).map((r) => ({ kind: 'release' as const, id: r.id, label: `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? 'unknown album'}` })) },
     { id: 'album-no-genre', title: 'Albums without a genre', why: 'Tracks that follow the album take their genres from it.',
       items: lib.albums.filter((a) => !a.genres.length).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },

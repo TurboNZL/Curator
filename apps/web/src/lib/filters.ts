@@ -4,7 +4,7 @@ import type { Library, Track } from './library.ts';
  * The filter language of the Tracks and Albums pages, in the style of Discord's search: free text plus chips such as
  * `artist: Kendrick`, `before: 2019`, `has: audio`. Chips combine with AND; a chip's own words are matched loosely.
  */
-export type FilterKey = 'has' | 'artist' | 'album' | 'era' | 'genre' | 'before' | 'after' | 'rating';
+export type FilterKey = 'has' | 'artist' | 'album' | 'era' | 'genre' | 'tag' | 'before' | 'after' | 'rating';
 
 export interface Chip {
   key: FilterKey;
@@ -24,6 +24,7 @@ export const FILTER_DOCS: Record<FilterKey, { hint: string; example: string; sco
   album: { hint: 'On an album', example: 'album: GNX', scopes: ['tracks', 'artists', 'eras'] },
   era: { hint: 'In an era', example: 'era: Summer 2024', scopes: ['tracks', 'albums', 'artists', 'singles'] },
   genre: { hint: 'Has a genre', example: 'genre: Hip hop', scopes: ALL },
+  tag: { hint: 'A release has this tag', example: 'tag: vinyl', scopes: ['tracks', 'albums', 'singles'] },
   before: { hint: 'Released before a year or date', example: 'before: 2019-06', scopes: ALL },
   after: { hint: 'Released after a year or date', example: 'after: 2020', scopes: ALL },
   rating: { hint: 'Rating, like >7 or <4 or 8', example: 'rating: >7', scopes: ['tracks', 'albums', 'artists', 'singles'] },
@@ -68,7 +69,7 @@ const norm = (s: string) => s.toLowerCase();
  * span several albums and dates, so those are lists (`before:` / `after:` match when any of them does).
  */
 export interface Subject {
-  artistIds: string[]; artistNames: string; albumIds: string[]; albumTitles: string; eraIds: string[]; eraNames: string; genres: string[];
+  artistIds: string[]; artistNames: string; albumIds: string[]; albumTitles: string; eraIds: string[]; eraNames: string; genres: string[]; tags: string[];
   dates: (string | null)[]; hasAudio: boolean; hasCover: boolean; memories: number; rating: number | null;
 }
 
@@ -82,6 +83,7 @@ function chipMatches(c: Chip, s: Subject): boolean {
     case 'artist': return byId ? s.artistIds.includes(c.value) : norm(s.artistNames).includes(v);
     case 'album': return byId ? s.albumIds.includes(c.value) : norm(s.albumTitles).includes(v);
     case 'era': return byId ? s.eraIds.includes(c.value) : norm(s.eraNames).includes(v);
+    case 'tag': return s.tags.some((g) => norm(g) === v || norm(g).includes(v));
     case 'genre': return s.genres.some((g) => norm(g) === v || norm(g).includes(v));
     case 'before': { const r = dateRange(c.value); return !!r && s.dates.some((x) => { const d = released(x); return !!d && d.to < r.from; }); }
     case 'after': { const r = dateRange(c.value); return !!r && s.dates.some((x) => { const d = released(x); return !!d && d.from > r.to; }); }
@@ -90,6 +92,24 @@ function chipMatches(c: Chip, s: Subject): boolean {
 }
 
 const eraNames = (lib: Library, ids: string[]) => ids.map((e) => lib.eraById.get(e)?.name ?? '').join(' ');
+
+/** the tags of the releases an album has, and of the releases a track is on (cached per library snapshot) */
+const tagCache = new WeakMap<Library, { album: Map<string, string[]>; track: Map<string, string[]> }>();
+function tagIndex(lib: Library) {
+  let c = tagCache.get(lib);
+  if (!c) {
+    c = { album: new Map(), track: new Map() };
+    for (const r of lib.releases) {
+      if (!r.tags?.length) continue;
+      c.album.set(r.albumId, [...new Set([...(c.album.get(r.albumId) ?? []), ...r.tags])]);
+      for (const id of r.trackIds) c.track.set(id, [...new Set([...(c.track.get(id) ?? []), ...r.tags])]);
+    }
+    tagCache.set(lib, c);
+  }
+  return c;
+}
+const tagsOfAlbum = (lib: Library, id: string) => tagIndex(lib).album.get(id) ?? [];
+const tagsOfTrack = (lib: Library, id: string) => tagIndex(lib).track.get(id) ?? [];
 
 const namesOfArtists = (lib: Library, ids: string[]) => ids.map((id) => lib.artistById.get(id)?.name ?? '').join(' ');
 const sum = (xs: number[]) => xs.reduce((n, x) => n + x, 0);
@@ -100,7 +120,7 @@ export function trackSubject(lib: Library, t: Track): Subject {
   const artistIds = [...new Set([t.artistId, ...t.leads.map((l) => l.id), ...t.credits.map((c) => c.artistId)])];
   return {
     artistIds, artistNames: namesOfArtists(lib, artistIds), albumIds: t.albumId ? [t.albumId] : [], albumTitles: t.albumTitle ?? '',
-    eraIds: t.eraIds, eraNames: eraNames(lib, t.eraIds), genres: t.allGenres, dates: [t.releaseDate], hasAudio: !!t.file, hasCover: !!t.cover,
+    eraIds: t.eraIds, eraNames: eraNames(lib, t.eraIds), genres: t.allGenres, tags: tagsOfTrack(lib, t.id), dates: [t.releaseDate], hasAudio: !!t.file, hasCover: !!t.cover,
     memories: t.memories ?? 0, rating: t.effectiveRating > 0.001 ? t.effectiveRating : null,
   };
 }
@@ -110,7 +130,7 @@ export function albumSubject(lib: Library, a: Library['albums'][number]): Subjec
   const artistIds = [...new Set([...a.leads.map((l) => l.id), ...a.credits.map((c) => c.artistId), ...tracks.flatMap((t) => t.credits.map((c) => c.artistId))])];
   return {
     artistIds, artistNames: namesOfArtists(lib, artistIds), albumIds: [a.id], albumTitles: a.title, eraIds: a.eraIds, eraNames: eraNames(lib, a.eraIds),
-    genres: a.genres, dates: [a.releaseDate], hasAudio: tracks.some((t) => t.file), hasCover: !!a.cover, memories: sum(tracks.map((t) => t.memories ?? 0)), rating: a.rating,
+    genres: a.genres, tags: tagsOfAlbum(lib, a.id), dates: [a.releaseDate], hasAudio: tracks.some((t) => t.file), hasCover: !!a.cover, memories: sum(tracks.map((t) => t.memories ?? 0)), rating: a.rating,
   };
 }
 
@@ -121,7 +141,7 @@ export function artistSubject(lib: Library, artistId: string): Subject {
   return {
     artistIds: [artistId], artistNames: lib.artistById.get(artistId)?.name ?? '', albumIds: albums, albumTitles: albums.map((id) => lib.albumById.get(id)?.title ?? '').join(' '),
     eraIds: [...new Set(tracks.flatMap((t) => t.eraIds))], eraNames: eraNames(lib, [...new Set(tracks.flatMap((t) => t.eraIds))]),
-    genres: [...new Set(tracks.flatMap((t) => t.allGenres))], dates: tracks.map((t) => t.releaseDate), hasAudio: tracks.some((t) => t.file),
+    genres: [...new Set(tracks.flatMap((t) => t.allGenres))], tags: [], dates: tracks.map((t) => t.releaseDate), hasAudio: tracks.some((t) => t.file),
     hasCover: !!lib.artistById.get(artistId)?.image, memories: sum(tracks.map((t) => t.memories ?? 0)), rating: meanRating(tracks),
   };
 }
@@ -133,7 +153,7 @@ export function eraSubject(lib: Library, e: Library['eras'][number]): Subject {
   const artistIds = [...new Set(tracks.flatMap((t) => t.leads.map((l) => l.id)))];
   return {
     artistIds, artistNames: namesOfArtists(lib, artistIds), albumIds: albums.map((a) => a.id), albumTitles: albums.map((a) => a.title).join(' '), eraIds: [e.id], eraNames: e.name,
-    genres: [...new Set(tracks.flatMap((t) => t.allGenres))], dates: [...albums.map((a) => a.releaseDate), ...e.trackIds.map((id) => lib.trackById.get(id)?.releaseDate ?? null)],
+    genres: [...new Set(tracks.flatMap((t) => t.allGenres))], tags: [], dates: [...albums.map((a) => a.releaseDate), ...e.trackIds.map((id) => lib.trackById.get(id)?.releaseDate ?? null)],
     hasAudio: tracks.some((t) => t.file), hasCover: !!(e.cover || albums.some((a) => a.cover)), memories: sum(tracks.map((t) => t.memories ?? 0)), rating: meanRating(tracks),
   };
 }
@@ -157,6 +177,7 @@ export function makeChip(lib: Library, key: FilterKey, typed: string): Chip | nu
     case 'artist': return { key, ...find(lib.artists, (a) => a.name) };
     case 'album': return { key, ...find(lib.albums, (a) => a.title) };
     case 'era': return { key, ...find(lib.eras, (e) => e.name) };
+    case 'tag': { const all = [...new Set(lib.releases.flatMap((r) => r.tags ?? []))]; const g = all.find((x) => norm(x) === norm(text)); return { key, value: g ?? text, label: g ?? text }; }
     case 'genre': { const g = lib.genres.find((x) => norm(x.name) === norm(text)); return { key, value: g?.name ?? text, label: g?.name ?? text }; }
     case 'before': case 'after': return dateRange(text) ? { key, value: text, label: text } : null;
     case 'rating': return ratingTest(text) ? { key, value: text, label: text } : null;
@@ -165,7 +186,7 @@ export function makeChip(lib: Library, key: FilterKey, typed: string): Chip | nu
 
 /** "artist: Kendrick" typed as one string: the key and the rest, or null when it is just words. */
 export function splitTyped(text: string, scope?: FilterScope): { key: FilterKey; rest: string } | null {
-  const m = /^\s*(has|artist|album|era|genre|before|after|rating)\s*:\s*(.*)$/i.exec(text);
+  const m = /^\s*(has|artist|album|era|genre|tag|before|after|rating)\s*:\s*(.*)$/i.exec(text);
   if (!m) return null;
   const key = m[1].toLowerCase() as FilterKey;
   return !scope || FILTER_DOCS[key].scopes.includes(scope) ? { key, rest: m[2] } : null;

@@ -68,7 +68,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
       const albumId = put('albums', newAlbumData({ title: title.trim(), credits, genres, cover: null, covers: cover ? [cover] : [], coverPicked: false }));
       const ids = picked.map((r, i) => put('tracks', newTrackData({ title: r.title.trim(), credits, youtubeMusicUrl: r.url, albums: [{ albumId, order: i }] })));
       // the imported edition is the album's default release: it carries the cover and the tracklist
-      const releaseId = put('releases', { albumId, title: title.trim(), cover, releaseDate: null, trackIds: ids });
+      const releaseId = put('releases', { albumId, title: title.trim(), cover, releaseDate: pv.releaseDate ?? null, trackIds: ids });
       useStore.getState().patch('albums', albumId, { trackOrder: ids, defaultReleaseId: releaseId });
       logJournal('add', `Imported album: ${title.trim()}`, `${ids.length} tracks from YouTube`, albumId);
       if (download) { await syncNow(); await api().acquire(ids).catch(() => undefined); }

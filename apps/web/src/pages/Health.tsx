@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, ChevronDown, ClipboardPaste, GitMerge, ImageDown, Search } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, ChevronDown, ClipboardPaste, GitMerge, ImageDown, Search } from 'lucide-react';
 import { HealthHero } from '../components/HealthHero.tsx';
 import { AudioQualityCard, MissingAudioCard } from '../components/AudioTools.tsx';
 import { BulkLinks } from '../components/BulkLinks.tsx';
@@ -89,6 +89,7 @@ export function HealthPage() {
                 <button className="btn" disabled={!configured || covers?.running} onClick={() => void fillCovers(c.items.map((i) => i.id))}><ImageDown size={15} />Try YouTube thumbnails</button>
                 <span className="text-xs text-muted">{!configured ? 'Needs a server (Settings).' : covers ? `${covers.done}/${covers.total} done${covers.failed ? `, ${covers.failed} failed` : ''}${covers.running ? '…' : ''}` : 'Uses each album\'s first track link. Check the results; replace any that look wrong.'}</span></div>}
               {(c.bulk || c.matchLinks) && <div className="flex flex-wrap gap-2 px-4 pb-2">{c.matchLinks && <button className="btn btn-accent" onClick={() => edit({ kind: 'match-links', id: '' })}><Search size={15} />Find YouTube links</button>}{c.bulk && <button className="btn" onClick={() => setBulk(c.bulk!)}><ClipboardPaste size={15} />Paste links by album</button>}</div>}
+              {c.autoDates && <div className="px-4 pb-2"><button className="btn btn-accent" onClick={() => edit({ kind: 'find-dates', id: '' })}><CalendarCheck size={15} />Find dates automatically</button></div>}
               {c.addLead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`${c.addLead!.label} (${c.items.length})?`) && addLeadCredits(c.items)}>{c.addLead.label}</button></div>}
               {c.fix && <div className="px-4 pb-2"><button className="btn text-bad" onClick={() => confirm(`${c.fix!.label} (${c.items.length})?`) && c.items.forEach((i) => remove(c.fix!.table, i.id))}>{c.fix.label}</button></div>}
               {c.mergeGroups ? <div className="max-h-[28rem] space-y-2 overflow-y-auto px-4 pb-3">{[...new Set(c.items.map((i) => i.group))].slice(0, 100).map((g) => { const group = c.items.filter((i) => i.group === g); return (

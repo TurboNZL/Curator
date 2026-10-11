@@ -1,3 +1,5 @@
+import { allReleaseTags, planMergeReleases, siblingDate } from '../lib/releaseOps.ts';
+import { FindDatesDialog } from './FindDatesDialog.tsx';
 import { MergeTracksDialog } from './MergeTracksDialog.tsx';
 import { SpotifyLinks } from './SpotifyLinks.tsx';
 import { X } from 'lucide-react';
@@ -346,13 +348,40 @@ function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: s
 }
 
 /** Create or edit a release (an edition of an album with its own tracklist, date and cover). */
+/** Fold this release into another release of the album (the other one survives). */
+function MergeReleaseInto({ releaseId, onDone }: { releaseId: string; onDone: () => void }) {
+  const lib = useLibrary();
+  const { patch, remove } = useStore();
+  const me = lib.releases.find((r) => r.id === releaseId);
+  const others = lib.releases.filter((r) => r.albumId === me?.albumId && r.id !== releaseId);
+  const [into, setInto] = useState('');
+  if (!me || !others.length) return null;
+  const plan = into ? planMergeReleases(lib, into, releaseId) : null;
+  const run = () => {
+    if (!plan) return;
+    patch('releases', into, plan.keepPatch);
+    if (Object.keys(plan.albumPatch).length) patch('albums', me.albumId, plan.albumPatch);
+    remove('releases', plan.removeId);
+    onDone();
+  };
+  return (
+    <div className="space-y-2 rounded-theme border border-line p-3">
+      <div className="text-sm font-medium">Merge into another release</div>
+      <p className="text-xs text-muted">Two entries of the same edition (the one a Spotify import made and the one a YouTube import made, say) become one. The other release survives; this one is deleted.</p>
+      <Select value={into} onChange={setInto} placeholder={`Merge “${me.title}” into…`} options={others.map((r) => ({ value: r.id, label: `${r.title}${r.releaseDate ? ` · ${r.releaseDate}` : ''}`, hint: `${r.trackIds.length} tracks` }))} />
+      {plan && plan.summary.length > 0 && <ul className="list-disc pl-5 text-xs text-muted">{plan.summary.map((x) => <li key={x}>{x}</li>)}</ul>}
+      <button className="btn" disabled={!plan} onClick={run}>Merge</button>
+    </div>
+  );
+}
+
 function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; albumId?: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, patch, remove } = useStore();
   const existing = releaseId ? lib.releases.find((r) => r.id === releaseId) : undefined;
   const album = lib.albumById.get(existing?.albumId ?? albumId ?? '');
   const [added, setAdded] = useState<string[]>([]);
-  const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: album.title, cover: null, releaseDate: null, trackIds: [...album.trackIds] } : null);
+  const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: album.title, cover: null, releaseDate: siblingDate(lib.releases.filter((x) => x.albumId === album.id), album.defaultReleaseId), trackIds: [...album.trackIds] } : null);
   if (!r || !album) return null;
   const live = r.trackIds.filter((id) => lib.trackById.has(id));
   const save = () => {
@@ -368,6 +397,7 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
           onChange={(h) => setR({ ...r, cover: h })} onAdd={(h) => { setAdded((x) => [...x, h]); setR({ ...r, cover: h }); }} /></Field>
       <Field label="Title"><input autoFocus className="input" value={r.title} onChange={(e) => setR({ ...r, title: e.target.value })} /></Field>
       <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} /></Field>
+      <Field label="Tags" hint="Optional labels of your own for this edition: vinyl, clean, deluxe, 2026 remaster… Filter albums with tag:."><TagInput placeholder="Add a tag, press Enter" value={r.tags ?? []} onChange={(tags) => setR({ ...r, tags })} suggestions={allReleaseTags(lib.releases)} /></Field>
       <div className="space-y-1"><div className="text-sm text-muted">Tracklist ({live.length})</div>
         {live.map((id, i) => (
           <div key={id} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-1.5 text-sm"><span className="w-5 text-right text-xs text-muted">{i + 1}</span><span className="min-w-0 flex-1 truncate">{lib.trackById.get(id)!.title}</span>
@@ -376,6 +406,7 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
             <button type="button" className="px-1 text-muted hover:text-bad" aria-label="Remove from release" onClick={() => setR({ ...r, trackIds: removeTrack(live, id) })}>×</button></div>))}
         <TrackPicker value={null} onChange={(id) => id && setR({ ...r, trackIds: appendTrack(live, id) })} /></div>
       {releaseId && <button className="btn" onClick={() => { patch('albums', album.id, { defaultReleaseId: releaseId, trackOrder: live }); onClose(); }}>Use this tracklist and edition as the album's default</button>}
+      {releaseId && <MergeReleaseInto releaseId={releaseId} onDone={onClose} />}
     </Modal>
   );
 }
@@ -446,6 +477,7 @@ export function EditorHost() {
   if (target.kind === 'new-playlist') return <PlaylistDialog key="new-playlist" onClose={close} />;
   if (target.kind === 'playlist') return <PlaylistDialog key={key} playlistId={target.id} onClose={close} />;
   if (target.kind === 'add-to-playlist') return <AddToPlaylistDialog key={key} trackId={target.id} onClose={close} />;
+  if (target.kind === 'find-dates') return <FindDatesDialog key="find-dates" onClose={close} />;
   if (target.kind === 'merge-tracks') return <MergeTracksDialog key={key} ids={target.id.split(',').filter(Boolean)} onClose={close} />;
   if (target.kind === 'add-album-to-playlist') return <AddAlbumToPlaylistDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'new-track') return <NewTrackDialog key={key} albumId={target.id} onClose={close} />;

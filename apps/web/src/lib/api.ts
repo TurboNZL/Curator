@@ -44,6 +44,8 @@ export interface ImportPreview {
   title: string; artist: string; thumbnail: string | null;
   /** every cover candidate, best first */
   thumbnails?: string[];
+  /** when the album came out, if an exact match was found online */
+  releaseDate?: string | null;
   entries: { id: string; title: string; rawTitle: string; url: string; duration: number | null }[];
 }
 
@@ -66,6 +68,7 @@ export class Api {
 
   health() { return fetch(this.url('/api/health')).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
   status() { return this.req<ServerStatus>('/api/status'); }
+  releaseDates(albums: { id: string; album: string; artist: string }[]) { return this.req<{ results: { id: string; answer: DateAnswerRes | null }[] }>('/api/dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albums }) }); }
   serverHealth() { return this.req<ServerHealth>('/api/admin/health'); }
   storageInfo() { return this.req<StorageInfo>('/api/admin/storage'); }
   moveStorage(kind: StorageEntry['kind'], target: string) { return this.req<{ ok: true }>('/api/admin/storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, target }) }); }
@@ -129,6 +132,7 @@ export interface SpotifyImportTrack { uri: string; id: string; title: string; ar
 export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyImportTrack[]; source: 'embed' | 'api' | 'oembed' | 'file'; note?: string }
 export interface MatchTrackReq { id: string; title: string; artist: string; album?: string; durationMs?: number | null; spotifyUrl?: string | null }
 export interface MatchCandidate { url: string; title: string; channel: string; seconds: number | null; score: number; method: 'odesli' | 'search' }
+export interface DateAnswerRes { date: string; source: 'spotify' | 'itunes' | 'musicbrainz' }
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
 
 export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }
