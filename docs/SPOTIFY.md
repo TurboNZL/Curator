@@ -1,4 +1,4 @@
-# Spotify: feasibility (researched 2026-10-10, nothing built)
+# Spotify: feasibility (researched 2026-10-10) and what is built
 
 The question: could Curator (1) play tracks that are not on the server through Spotify, (2) control Spotify, and (3) use Spotify for recommendations? Short answer: **(2) and a limited (1) are feasible for one Premium user; (3) is not, with Spotify's own API.** Sources were web searches; Spotify's developer site itself could not be fetched from the sandbox, so each point below is marked with how well it is confirmed. Re-read the linked pages before building anything.
 
@@ -35,3 +35,28 @@ The question: could Curator (1) play tracks that are not on the server through S
 ## Suggested next step
 
 Run Soloist on the Pi with `--ws 127.0.0.1:PORT`, and try one `play` command by hand from `soloist ctl` or a WebSocket client. If that works, a first version (play a Spotify URI for a file-less track, show state) is a small server module plus one more device kind in the Connect list.
+
+
+## Update 2026-10-11: what is built (import side only), and what the research changed
+
+**Built, all modular in `packages/server/src/spotify.ts` and `match.ts`, tested against fake Spotify/YouTube servers; none of it has run against the real services (the sandbox cannot reach them):**
+
+| Piece | What it does | Needs |
+|---|---|---|
+| oEmbed (`open.spotify.com/oembed`) | title + cover of a track/album link, no key | nothing |
+| Public embed page (`/embed/playlist/<id>`) | the track list of any **public** playlist (title, artists, duration; **no album names**) | nothing; unofficial, can break |
+| Own sign-in (Authorization Code + **PKCE**, no secret) | full details (albums, durations) of **your own** playlists | a Spotify developer app (Premium owner), its client id |
+| Account data file (`Playlist1.json`, `YourLibrary.json`) | every playlist and your liked songs, read in the browser | the "Account data" download from spotify.com/account/privacy |
+| Typed list / history | `Artist - Title` lines; album names also come from imported streaming history | nothing |
+| song.link (Odesli) | YouTube Music link from a Spotify link, ~10 requests/min | nothing |
+| yt-dlp `ytsearch` | scored YouTube search for tracks with no link | yt-dlp on the server |
+
+Sign-in works from any machine: the page opens Spotify's authorize URL, and you paste back the address Spotify redirects to (even if that page fails to load); the server also answers `/api/spotify/callback` directly when the redirect URI points at it (`http://127.0.0.1:47813/api/spotify/callback` by default, which Spotify allows over http for loopback only).
+
+**Research that changed the plan (Feb 2026 Development Mode changes; confirmed by several third-party reports, the official guide page itself could not be fetched):**
+- In Development Mode, **playlist contents are only returned for playlists you own or collaborate on** (so "any public playlist" cannot go through the API; it uses the embed page instead, and "my playlists" uses sign-in).
+- The playlist list endpoint is now `/items` (was `/tracks`); the code tries `/items`, then `/tracks`.
+- Several browse endpoints, track-by-id lookups and "many albums at once" were removed or reduced; search results are capped (reported as 10). So the album tracklist cannot be trusted to come from Spotify: **the album is completed from YouTube Music instead** (Library health > "Albums waiting for a YouTube album link").
+- Reports say the owner of a Development Mode app must keep Premium, max 5 users, 1 client id per developer.
+
+**Not built, needs a decision (see the open questions in CLAUDE.md):** playing tracks that are not on the server through Spotify, controlling Spotify, and recommendations. Spotify's recommendation endpoints stay closed to new apps, so recommendations would come from your own votes plus ListenBrainz/Last.fm.
