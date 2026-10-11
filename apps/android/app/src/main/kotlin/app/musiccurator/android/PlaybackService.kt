@@ -162,9 +162,12 @@ class PlaybackService : MediaLibraryService() {
                     val at = list.indexOfFirst { it.id == parts[1] }
                     if (at >= 0) return@background MediaSession.MediaItemsWithStartPosition(list.map { trackItem(it, context) }, at, startPositionMs)
                 }
+                // "t/<id>/<context>" ids come from the Android Auto browse tree and are resolved from the library; any other item is one
+                // the page (NativeAudio) queued, already carrying its stream URL, and must pass through untouched (dropping them left the player silent)
                 val resolved = mediaItems.mapNotNull { m ->
                     val p = m.mediaId.split('/', limit = 3)
-                    if (p.size >= 2 && p[0] == "t") lib.track(p[1])?.let { trackItem(it, p.getOrElse(2) { "" }) } else null
+                    if (p.size >= 2 && p[0] == "t") lib.track(p[1])?.let { trackItem(it, p.getOrElse(2) { "" }) }
+                    else if (m.localConfiguration != null) m else null
                 }
                 MediaSession.MediaItemsWithStartPosition(resolved, startIndex.coerceIn(0, (resolved.size - 1).coerceAtLeast(0)), startPositionMs)
             }
