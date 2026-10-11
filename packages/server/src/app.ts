@@ -6,6 +6,7 @@ import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
+import { analyzeAudio } from './audioinfo.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
@@ -116,6 +117,16 @@ export function createApp(
   });
 
   // Re-download audio for tracks that have a source URL but no file (e.g. after losing the old uploads folder).
+  // ---- audio check: what a file really is (bit rate, codec, highest frequency with sound), for the "fake 320" check in Health ----
+  app.post('/api/audio/analyze', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { hash?: unknown };
+    const hash = typeof body.hash === 'string' ? body.hash : '';
+    if (!/^[0-9a-f]{64}$/.test(hash)) return c.json({ error: 'bad hash' }, 400);
+    const path = store.hasFile(hash) && filePath(config.dataDir, hash);
+    if (!path || !existsSync(path)) return c.json({ error: 'no such file' }, 404);
+    return c.json(await analyzeAudio(path, { ffmpegDir: config.ffmpegDir }));
+  });
+
   app.post('/api/acquire', async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { trackIds?: unknown };
     const ids = Array.isArray(body.trackIds) ? body.trackIds.filter((x): x is string => typeof x === 'string') : undefined;
