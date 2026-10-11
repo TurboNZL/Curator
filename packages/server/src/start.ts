@@ -12,14 +12,14 @@ export interface Running { config: Config; store: Store; port: number; close(): 
  */
 export function startServer(config: Config): Promise<Running> {
   const store = new Store(config.dataDir);
-  const soloist = new Soloist(config.dataDir);
+  const soloist = new Soloist(config.dataDir, { ffmpegDir: config.ffmpegDir });
   const app = createApp(config, store, undefined, undefined, undefined, undefined, undefined, undefined, undefined, soloist);
   soloist.autoStart();
   return new Promise((resolve, reject) => {
     const server = serve({ fetch: app.fetch, port: config.port, hostname: config.host }, (info) => {
       resolve({
         config, store, port: info.port,
-        close: () => new Promise<void>((done) => { void soloist.stop(); server.close(() => { store.close(); done(); }); (server as unknown as { closeAllConnections?: () => void }).closeAllConnections?.(); }),
+        close: () => new Promise<void>((done) => { void soloist.stop(); soloist.beam.close(); server.close(() => { store.close(); done(); }); (server as unknown as { closeAllConnections?: () => void }).closeAllConnections?.(); }),
       });
     });
     server.on('error', (e) => { store.close(); reject(e); });

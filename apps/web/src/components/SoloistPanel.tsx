@@ -3,6 +3,7 @@ import { Download, Loader2, Play, Square, Trash2 } from 'lucide-react';
 import type { SoloistInfo } from '../lib/api.ts';
 import { api, useStore } from '../lib/store.ts';
 import { desktop } from '../lib/settings.ts';
+import { forgetBeamInfo } from '../lib/beam.ts';
 import { Field } from './forms.tsx';
 
 const STATE: Record<SoloistInfo['state'], string> = { stopped: 'Stopped', starting: 'Starting…', running: 'Running', expired: 'Updating (the build expired)…', installing: 'Installing…', error: 'Problem' };
@@ -16,6 +17,7 @@ export function SoloistPanel() {
   const configured = useStore((s) => !!s.settings.token);
   const updateSettings = useStore((s) => s.updateSettings);
   const chosen = useStore((s) => s.settings.spotifyDeviceId);
+  const spotifyBeam = useStore((s) => s.settings.spotifyBeam);
   const [info, setInfo] = useState<SoloistInfo | null>(null);
   const [name, setName] = useState('Curator');
   const [key, setKey] = useState('');
@@ -67,7 +69,16 @@ export function SoloistPanel() {
             : <div className="rounded-theme bg-warn/15 p-3 text-xs text-warn" role="alert">{info.audio.hint}</div>}
           <Field label="Output (optional)"><input className="input font-mono" value={out ?? info.outputDevice} onChange={(e) => setOut(e.target.value)} placeholder="the system default; or a PipeWire output name or id" /></Field>
           <button className="btn" disabled={working || (out ?? info.outputDevice) === info.outputDevice} onClick={() => void act('Saving…', async () => { const i = await api().soloistConfig({ outputDevice: (out ?? '').trim() }); setOut(null); return i; })}>Save output</button></li>
-        <li className="space-y-1.5"><div className="font-medium">4. Run</div>
+        <li className="space-y-1.5"><div className="font-medium">4. Where the sound goes</div>
+          <label className="flex items-start gap-2"><input type="checkbox" className="mt-0.5" checked={info.beam.enabled} disabled={working}
+            onChange={(e) => void act('Saving…', async () => { const i = await api().soloistConfig({ beam: e.target.checked }); forgetBeamInfo(); return i; })} />
+            <span>Send the sound to the apps <span className="text-muted">(instead of this machine’s speakers). The server captures Soloist’s output and streams it live; the Android app, the browser and the desktop app play that stream. Needs ffmpeg and <code>pactl</code> on the server. The sound is a few seconds behind the screen, and only works while the app has the server’s Spotify device chosen.</span></span></label>
+          {info.beam.enabled && info.beam.sinkMessage && <div className="rounded-theme bg-bad/15 p-2 text-xs text-bad">{info.beam.sinkMessage}</div>}
+          {info.beam.enabled && info.beam.error && <div className="rounded-theme bg-bad/15 p-2 text-xs text-bad">{info.beam.error}</div>}
+          {info.beam.enabled && <p className="text-xs text-muted">{info.beam.running ? `Streaming now to ${info.beam.listeners} listener${info.beam.listeners === 1 ? '' : 's'}.` : 'The stream starts when a device plays Spotify.'}</p>}
+          {info.beam.enabled && <label className="flex items-center gap-2 text-muted"><input type="checkbox" checked={spotifyBeam} onChange={(e) => updateSettings({ spotifyBeam: e.target.checked })} />Hear it on this device</label>}
+        </li>
+        <li className="space-y-1.5"><div className="font-medium">5. Run</div>
           <div className="flex flex-wrap items-center gap-2">
             {info.running ? <button className="btn" disabled={working} onClick={() => void act('Stopping…', () => api().soloistStop())}><Square size={14} />Stop</button>
               : <button className="btn btn-accent" disabled={working || !info.installed || !info.hasKey} onClick={() => void act('Starting…', () => api().soloistStart())}><Play size={14} />Start</button>}

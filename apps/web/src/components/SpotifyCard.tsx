@@ -1,5 +1,6 @@
 import { useStore } from '../lib/store.ts';
 import { startSpotifySdk, stopSpotifySdk, useSpotifySdk } from '../lib/spotifySdk.ts';
+import { isAndroidApp } from '../lib/native.ts';
 import { SoloistPanel } from './SoloistPanel.tsx';
 import { Section } from './Section.tsx';
 import { SpotifyAccountPanel } from './SpotifyAccountPanel.tsx';
@@ -9,8 +10,10 @@ const SDK_STATE = { off: 'Off', checking: 'Checking…', loading: 'Starting…',
 /** Spotify's own player running in this page: this app becomes a Spotify device (needs Widevine, a secure page and Premium). */
 function InAppPlayer({ streaming }: { streaming: boolean }) {
   const { settings, updateSettings } = useStore();
+
   const sdk = useSpotifySdk();
   const on = settings.spotifySdk;
+  if (isAndroidApp()) return null; // no Widevine in the app's WebView: Soloist on the server plays Spotify there (the panel below)
   const toggle = (v: boolean) => { updateSettings({ spotifySdk: v }); if (v) void startSpotifySdk(); else stopSpotifySdk(); };
   return (
     <div className="space-y-1.5 rounded-theme border border-line p-3">
@@ -29,6 +32,7 @@ function Options({ streaming }: { streaming: boolean }) {
   return (
     <div className="space-y-3">
       <InAppPlayer streaming={streaming} />
+      {isAndroidApp() && <p className="text-xs text-muted">The Android app cannot play Spotify itself (it has no Widevine, Spotify’s protected-audio component). Spotify tracks play through Soloist on your server, or through the Spotify app on this phone: pick either in the device list.</p>}
       <label className="flex items-start gap-2"><input type="checkbox" className="mt-0.5" checked={settings.spotifyAuto} onChange={(e) => updateSettings({ spotifyAuto: e.target.checked })} /><span>Play tracks that have no audio file through Spotify <span className="text-muted">(they need a Spotify link; Spotify plays them, so the equaliser, offline copies and the phone notification do not apply)</span></span></label>
       <p className="text-xs text-muted">Which Spotify device plays is chosen in the device list (the cast button in the player bar): your Spotify devices are listed there next to your Curator devices.{settings.spotifyDeviceName ? ` This device plays Spotify on “${settings.spotifyDeviceName}”.` : ' None chosen yet.'}</p>
       {settings.spotifyDeviceId && <button className="btn btn-ghost" onClick={() => updateSettings({ spotifyDeviceId: '', spotifyDeviceName: '' })}>Do not use Spotify on this device</button>}

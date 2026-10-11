@@ -17,9 +17,9 @@ run()  { if [ "$DRY" = 1 ]; then printf '    [dry run] %s\n' "$*"; else "$@"; fi
 command -v apt-get >/dev/null 2>&1 || die "this script is for Debian, Raspberry Pi OS and Ubuntu (apt). On another system install PipeWire with its package manager, then run: loginctl enable-linger $USER_NAME"
 id "$USER_NAME" >/dev/null 2>&1 || { [ "$DRY" = 1 ] || die "the user $USER_NAME does not exist (run install-pi.sh first, or pass --user)"; }
 
-say "1/4 Installing PipeWire"
+say "1/4 Installing PipeWire (and ffmpeg, which \"Send the sound to the apps\" uses)"
 run apt-get update -qq
-run apt-get install -y pipewire pipewire-pulse wireplumber pulseaudio-utils alsa-utils
+run apt-get install -y pipewire pipewire-pulse wireplumber pulseaudio-utils alsa-utils ffmpeg
 
 say "2/4 Letting $USER_NAME use the sound card"
 run usermod -aG audio "$USER_NAME"
