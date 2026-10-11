@@ -41,6 +41,7 @@ class PlaybackService : MediaLibraryService() {
     private lateinit var library: ServerLibrary
     private var cache: SimpleCache? = null
     private var fx: AudioFx? = null
+    private var focus: FocusKeeper? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -52,9 +53,10 @@ class PlaybackService : MediaLibraryService() {
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(sources))
-            .setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(), true)
+            .setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(), false) // audio focus is FocusKeeper's: Play must also work during a call
             .setHandleAudioBecomingNoisy(true)
             .build()
+        focus = FocusKeeper(this, player)
         // Next and Previous are always offered (notification, lock screen, headset, car). When the app's player has nothing after the current
         // track (its window is only a dozen tracks, and a track only the page can play ends it) the page, which owns the queue, decides what is next.
         val offered = object : ForwardingPlayer(player) {
@@ -87,6 +89,7 @@ class PlaybackService : MediaLibraryService() {
         session = null
         AudioFx.current = null
         fx?.release()
+        focus?.release()
         cache?.release()
         io.shutdown()
         super.onDestroy()
