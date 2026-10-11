@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDownToLine, Info, ListEnd, ListStart, MoreHorizontal, Pencil, Play } from 'lucide-react';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -25,11 +26,23 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const ids = tracks.map((t) => t.id);
   const menu = useMenu();
   const itemsFor = useTrackMenuItems();
+  // ?track=<id> (from "Go to track") scrolls that row into view and flashes it
+  const focus = useSearchParams()[0].get('track');
+  const present = focus ? tracks.some((t) => t.id === focus) : false;
+  useEffect(() => {
+    if (!focus || !present) return;
+    const row = document.querySelector<HTMLElement>(`[data-track-id="${CSS.escape(focus)}"]`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    row.classList.add('bt-row-flash');
+    const t = window.setTimeout(() => row.classList.remove('bt-row-flash'), 2600);
+    return () => window.clearTimeout(t);
+  }, [focus, present]);
 
   return (
     <div className="divide-y divide-line/60 [container-type:inline-size]">
       {tracks.map((t, i) => (
-        <div key={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
+        <div key={t.id} data-track-id={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
           onContextMenu={menu.onContextMenu(itemsFor(t, () => play(t.id, ids, { type: source, id: sourceId })), `Actions for ${t.title}`, t.id)}>
           <button className="relative w-6 shrink-0 text-center text-sm text-muted disabled:cursor-not-allowed" disabled={!t.file}
             onClick={() => play(t.id, ids, { type: source, id: sourceId })} title={t.file ? 'Play' : 'No audio file yet'}>

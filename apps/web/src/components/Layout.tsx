@@ -1,3 +1,4 @@
+import { WindowFrame } from './WindowFrame.tsx';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { BarChart3, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -140,6 +141,7 @@ export function Layout() {
   }, [toggle]);
   return (
     <div className="flex h-full flex-col">
+      <WindowFrame />
       <div className="bt-scrim" aria-hidden />
       <div className="flex min-h-0 flex-1">
         <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">

@@ -17,11 +17,12 @@ export function TracksPage() {
   const lib = useLibrary();
   const edit = useEditor((s) => s.open);
   const play = usePlayer((s) => s.play);
-  const [q, setQ] = useState('');
+  const [params] = useSearchParams();
+  // /tracks?track=<id> (Go to track, for a single) starts with its title typed in, so it is the one on screen
+  const [q, setQ] = useState(() => { const t = params.get('track'); return (t && lib.trackById.get(t)?.title) || ''; });
   const [sort, setSort] = useState<SortKey>('rating');
   const [dir, setDir] = useState<SortDir>('desc');
   // a link such as /tracks?era=<id> or ?artist=<id> starts with that filter already on
-  const [params] = useSearchParams();
   const [chips, setChips] = useState<Chip[]>(() => (['artist', 'era', 'album', 'genre'] as FilterKey[]).flatMap((k) => {
     const v = params.get(k);
     if (!v) return [];

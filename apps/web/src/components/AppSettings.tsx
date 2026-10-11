@@ -55,7 +55,7 @@ export function AppUpdatesCard() {
 }
 
 const DISCORD_LABEL: Record<DiscordInfo['status'], string> = {
-  off: 'Off', 'no-id': 'Needs an application ID', connecting: 'Waiting for Discord to be running…', connected: 'Connected: your song shows on your profile',
+  off: 'Off', 'no-id': 'Not set up: this build has no Discord application (see below)', connecting: 'Waiting for Discord to be running…', connected: 'Connected: your song shows on your profile',
 };
 
 /** Discord Rich Presence for the desktop app. */
@@ -74,13 +74,20 @@ export function DiscordCard() {
   const valid = /^\d{15,25}$/.test(id.trim());
   return (
     <Section title="Discord">
-      <p className="text-sm text-muted">Show the song you are playing on your Discord profile ("Listening to …", with a progress bar). Create an application at <code>discord.com/developers/applications</code>: its name is what appears after "Listening to", and an image named <code>logo</code> under Rich Presence › Art Assets is the picture. Paste its Application ID below. Discord's desktop app has to be running.</p>
+      <p className="text-sm text-muted">Show the song you are playing on your Discord profile ("Listening to …", with a progress bar). Discord's desktop app has to be running on this computer.</p>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={info.discordEnabled} onChange={(e) => save({ discordEnabled: e.target.checked })} />Show what I'm playing on Discord</label>
-      <div className="flex flex-wrap items-center gap-2">
-        <input className="input w-72 font-mono" inputMode="numeric" placeholder="Application ID (18 digits)" value={id} onChange={(e) => setId(e.target.value)} />
-        <button className="btn" disabled={!valid || id.trim() === info.discordClientId} onClick={() => save({ discordClientId: id.trim() })}>Save</button>
-      </div>
-      <div className="text-xs text-muted">Status: {DISCORD_LABEL[info.status]}{id && !valid && ' · the ID is only digits'}</div>
+      <div className="text-xs text-muted">Status: {DISCORD_LABEL[info.status]}</div>
+      <details className="text-sm">
+        <summary className="cursor-pointer text-muted">{info.builtIn ? 'Use my own Discord application instead (optional)' : 'This build has no Discord application built in: use your own'}</summary>
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-muted">Discord only lets a program show a status under the name of a Discord application, so one is always needed behind the scenes. {info.builtIn ? 'The app brings its own; this is only for a different name or picture.' : 'Create one at discord.com/developers/applications (its name is what appears after "Listening to"; an image named logo under Rich Presence › Art Assets is the picture) and paste its Application ID.'}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="input w-72 max-w-full font-mono" inputMode="numeric" placeholder="Application ID (18 digits)" value={id} onChange={(e) => setId(e.target.value)} />
+            <button className="btn" disabled={!valid || id.trim() === info.discordClientId} onClick={() => save({ discordClientId: id.trim() })}>Save</button>
+          </div>
+          {id && !valid && <div className="text-xs text-warn">The ID is only digits.</div>}
+        </div>
+      </details>
     </Section>
   );
 }

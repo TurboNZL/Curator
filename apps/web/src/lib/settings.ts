@@ -37,6 +37,11 @@ const KEY = 'curator.settings';
 /** What the Electron desktop app (apps/electron) puts on `window`. Absent in a browser. */
 export interface CuratorDesktop {
   token: string; version: string; dataDir: string; platform: string; port: number;
+  /** the window's title bar is drawn by the page (a setting of the app, applied at start) */
+  customFrame?: boolean;
+  windowControl?(action: 'minimize' | 'maximize' | 'close'): void;
+  setCustomFrame?(on: boolean): Promise<void>;
+  onWindowState?(cb: (maximized: boolean) => void): () => void;
   chooseLibraryFolder(): Promise<string | null>;
   showLibraryFolder(): Promise<void>;
   /** Discord Rich Presence (the app's main process talks to the local Discord client) */
@@ -47,7 +52,7 @@ export interface CuratorDesktop {
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
   updates: import('./native.ts').NativeUpdates;
 }
-export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; status: 'off' | 'no-id' | 'connecting' | 'connected' };
+export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; builtIn?: boolean; status: 'off' | 'no-id' | 'connecting' | 'connected' };
 export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
 
 export function loadSettings(): DeviceSettings {

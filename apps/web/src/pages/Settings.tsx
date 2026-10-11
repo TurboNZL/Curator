@@ -80,6 +80,7 @@ export function SettingsPage() {
         <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
           <button className="btn" onClick={() => void desktop()!.showLibraryFolder()}>Show folder</button>
           <button className="btn" onClick={() => void desktop()!.chooseLibraryFolder()}>Change folder…</button></div>
+        {desktop()!.setCustomFrame && <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 shrink-0" checked={!!desktop()!.customFrame} onChange={(e) => void desktop()!.setCustomFrame!(e.target.checked)} /><span>Window decorations from the theme <span className="text-muted">(draws the title bar, minimise, maximise and close in the current UI style instead of the system's. Off by default; restarts the app.)</span></span></label>}
         <GraphicsLine />
         <p className="text-xs text-muted">Version {desktop()!.version}. Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first.</p>
       </Section>}

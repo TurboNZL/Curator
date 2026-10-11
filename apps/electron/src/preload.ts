@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
  * What the web client may know about the desktop app. `token` lets a fresh install connect to its own server without typing
  * anything; the other calls open the folder dialogs, which only the main process can do.
  */
-const info = ipcRenderer.sendSync('curator:info') as { token: string; version: string; dataDir: string; platform: string; port: number };
+const info = ipcRenderer.sendSync('curator:info') as { token: string; version: string; dataDir: string; platform: string; port: number; customFrame: boolean };
 
 contextBridge.exposeInMainWorld('curatorDesktop', {
   ...info,
@@ -21,5 +21,8 @@ contextBridge.exposeInMainWorld('curatorDesktop', {
     onState: (cb: (s: unknown) => void) => { const h = (_e: unknown, s: unknown) => cb(s); ipcRenderer.on('curator:update', h); return () => { ipcRenderer.removeListener('curator:update', h); }; },
   },
   getGraphics: () => ipcRenderer.invoke('curator:graphics') as Promise<unknown>,
+  windowControl: (action: 'minimize' | 'maximize' | 'close') => ipcRenderer.send('curator:window', action),
+  setCustomFrame: (on: boolean) => ipcRenderer.invoke('curator:set-frame', on) as Promise<void>,
+  onWindowState: (cb: (maximized: boolean) => void) => { const h = (_e: unknown, m: boolean) => cb(m); ipcRenderer.on('curator:window-state', h); return () => { ipcRenderer.removeListener('curator:window-state', h); }; },
   showLibraryFolder: () => ipcRenderer.invoke('curator:show-folder') as Promise<void>,
 });

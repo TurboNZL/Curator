@@ -6,6 +6,7 @@
   "author": "Music Curator",
   "homepage": "https://github.com/TurboNZL/Curator",
   "main": "dist/main.mjs",
+  "desktopName": "music-curator.desktop",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -51,7 +52,8 @@
       "icon": "build/icon.png",
       "executableName": "music-curator",
       "maintainer": "Music Curator <noreply@musiccurator.app>",
-      "synopsis": "Personal music library and ranking"
+      "synopsis": "Personal music library and ranking",
+      "desktop": { "entry": { "StartupWMClass": "music-curator" } }
     },
     "deb": {
       "packageName": "music-curator",

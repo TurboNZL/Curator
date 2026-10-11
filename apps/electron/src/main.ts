@@ -1,9 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, type MenuItemConstructorOptions } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
 import { startServer, type Running } from '../../../packages/server/src/start.ts';
-import { findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
+import { BUILT_IN_DISCORD_CLIENT_ID, findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
 import { DiscordPresence, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
 import { describeGraphics, type Graphics } from './graphics.ts';
@@ -18,6 +18,9 @@ let server: Running | null = null;
 let win: BrowserWindow | null = null;
 const discord = new DiscordPresence();
 const updates = new Updates(app.isPackaged, (state) => win?.webContents.send('curator:update', state));
+
+// the desktop file's name is the window's identity on Wayland (its app id): without this the launcher's icon and the window do not match
+if (process.platform === 'linux') app.setDesktopName('music-curator.desktop');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
@@ -63,12 +66,18 @@ async function boot(): Promise<void> {
 }
 
 function openWindow() {
+  const custom = loadDesktopConfig(userData()).customFrame;
   win = new BrowserWindow({
+    frame: !custom, autoHideMenuBar: true,
     width: 1360, height: 860, minWidth: 420, minHeight: 560, backgroundColor: '#0b0b10', show: false, title: 'Music Curator',
     icon: join(here, '../build/icon.png'),
     webPreferences: { preload: join(here, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false, spellcheck: false },
   });
+  win.removeMenu();
   win.once('ready-to-show', () => win?.show());
+  win.on('maximize', () => win?.webContents.send('curator:window-state', true));
+  win.on('unmaximize', () => win?.webContents.send('curator:window-state', false));
+  shortcuts(win);
   const origin = `http://127.0.0.1:${server!.port}`;
   // anything that is not this app opens in the user's browser instead of inside the app
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) void shell.openExternal(url); return { action: 'deny' }; });
@@ -93,11 +102,11 @@ function chooseFolder(): Promise<string | null> {
 }
 
 ipcMain.on('curator:info', (e) => {
-  e.returnValue = { token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, port: server?.port ?? 0 };
+  e.returnValue = { customFrame: loadDesktopConfig(userData()).customFrame, token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, port: server?.port ?? 0 };
 });
 ipcMain.handle('curator:graphics', () => graphics());
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
-const discordInfo = () => ({ ...loadDiscordConfig(userData()), status: discord.status });
+const discordInfo = () => ({ ...loadDiscordConfig(userData()), builtIn: !!BUILT_IN_DISCORD_CLIENT_ID, status: discord.status });
 ipcMain.on('curator:presence', (_e, p: Presence | null) => {
   if (p && (typeof p.title !== 'string' || typeof p.artist !== 'string')) return;
   discord.update(p ? { title: p.title, artist: p.artist, album: String(p.album ?? ''), duration: Number(p.duration) || 0, position: Number(p.position) || 0, playing: !!p.playing } : null);
@@ -114,22 +123,37 @@ ipcMain.handle('curator:update-set-token', (_e, t: unknown) => { const v = typeo
 ipcMain.handle('curator:update-state', () => updates.state);
 ipcMain.handle('curator:update-check', () => updates.check());
 ipcMain.on('curator:update-install', () => updates.install());
+ipcMain.on('curator:window', (e, action: string) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  if (!w) return;
+  if (action === 'minimize') w.minimize();
+  else if (action === 'maximize') { if (w.isMaximized()) w.unmaximize(); else w.maximize(); }
+  else if (action === 'close') w.close();
+});
+ipcMain.handle('curator:set-frame', async (_e, on: unknown) => {
+  saveDesktopConfig(userData(), { customFrame: on === true });
+  const r = await dialog.showMessageBox({ type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0, message: 'Window style changed', detail: 'The new window style applies after the app restarts.' });
+  if (r.response === 0) { app.relaunch(); app.quit(); }
+});
 ipcMain.handle('curator:show-folder', () => { if (server) void shell.openPath(server.config.dataDir); });
 
-function menu() {
-  const mac = process.platform === 'darwin';
-  const template: MenuItemConstructorOptions[] = [
-    ...(mac ? [{ role: 'appMenu' } as MenuItemConstructorOptions] : []),
-    { label: 'File', submenu: [
-      { label: 'Library folder…', click: () => void chooseFolder() },
-      { label: 'Show library folder', click: () => server && void shell.openPath(server.config.dataDir) },
-      { type: 'separator' }, mac ? { role: 'close' } : { role: 'quit' },
-    ] },
-    { role: 'editMenu' },
-    { label: 'View', submenu: [{ role: 'reload' }, { role: 'forceReload' }, { type: 'separator' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' }, { role: 'toggleDevTools' }] },
-    { role: 'windowMenu' },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+/** There is no menu bar (everything it held is in Settings); the shortcuts people expect from it still work. */
+function shortcuts(w: BrowserWindow) {
+  w.webContents.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown') return;
+    const mod = input.control || input.meta;
+    const wc = w.webContents;
+    const key = input.key.toLowerCase();
+    const stop = () => e.preventDefault();
+    if (mod && key === 'r') { stop(); if (input.shift) wc.reloadIgnoringCache(); else wc.reload(); }
+    else if (key === 'f5') { stop(); wc.reload(); }
+    else if (mod && input.shift && key === 'i') { stop(); wc.toggleDevTools(); }
+    else if (key === 'f12') { stop(); wc.toggleDevTools(); }
+    else if (key === 'f11') { stop(); w.setFullScreen(!w.isFullScreen()); }
+    else if (mod && (key === '=' || key === '+')) { stop(); wc.setZoomLevel(wc.getZoomLevel() + 0.5); }
+    else if (mod && key === '-') { stop(); wc.setZoomLevel(wc.getZoomLevel() - 0.5); }
+    else if (mod && key === '0') { stop(); wc.setZoomLevel(0); }
+  });
 }
 
 let closing = false;
@@ -143,7 +167,7 @@ app.on('activate', () => { if (!win && server) openWindow(); });
 
 void app.whenReady().then(async () => {
   try { await boot(); } catch (e) { dialog.showErrorBox('Music Curator cannot start', (e as Error).message); app.exit(1); return; }
-  menu();
+  Menu.setApplicationMenu(null);
   openWindow();
   const dc = loadDiscordConfig(userData());
   discord.configure(dc.discordClientId, dc.discordEnabled);
