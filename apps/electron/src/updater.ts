@@ -1,10 +1,8 @@
 import { autoUpdater } from 'electron-updater';
+import { describeError } from './updateErrors.ts';
 
-export type UpdateState = {
-  status: 'idle' | 'disabled' | 'checking' | 'none' | 'downloading' | 'ready' | 'error';
-  /** the new version, once one is found */
-  version?: string; percent?: number; message?: string;
-};
+export type { UpdateState } from './updateErrors.ts';
+import type { UpdateState } from './updateErrors.ts';
 
 /**
  * Self-update from the project's GitHub releases (electron-updater): checks shortly after start and every 6 hours, downloads in the
@@ -38,7 +36,7 @@ export class Updates {
     autoUpdater.on('update-available', (i) => this.set({ status: 'downloading', version: i.version, percent: 0 }));
     autoUpdater.on('download-progress', (p) => this.set({ status: 'downloading', version: this.state.version, percent: Math.round(p.percent) }));
     autoUpdater.on('update-downloaded', (i) => this.set({ status: 'ready', version: i.version }));
-    autoUpdater.on('error', (e) => this.set({ status: 'error', message: e?.message ?? String(e) }));
+    autoUpdater.on('error', (e) => this.set(describeError(e?.message ?? String(e))));
     setTimeout(() => void this.check(), 15_000);
     setInterval(() => void this.check(), 6 * 3600_000).unref();
   }
@@ -46,7 +44,7 @@ export class Updates {
   async check(): Promise<UpdateState> {
     if (!this.packaged) return this.state;
     if (this.state.status === 'downloading' || this.state.status === 'ready') return this.state;
-    try { await autoUpdater.checkForUpdates(); } catch (e) { this.set({ status: 'error', message: (e as Error).message }); }
+    try { await autoUpdater.checkForUpdates(); } catch (e) { this.set(describeError((e as Error).message)); }
     return this.state;
   }
 
