@@ -3,7 +3,7 @@ import type { Library } from './library.ts';
 import { qualityOf } from './audioCheck.ts';
 
 export type HealthKind = 'album-source' | 'track' | 'album' | 'artist' | 'genre' | 'role' | 'release' | 'noteCategory';
-export interface HealthItem { kind: HealthKind; id: string; label: string; detail?: string }
+export interface HealthItem { kind: HealthKind; id: string; label: string; detail?: string; /** items that belong together (duplicates of one song) share a group */ group?: string }
 export interface HealthCheck {
   id: string; title: string; why: string; items: HealthItem[];
   /** only for checks that are safe to fix in one click */
@@ -16,9 +16,13 @@ export interface HealthCheck {
   matchLinks?: boolean;
   /** a paste box per album: the YouTube album link that completes it */
   albumLinks?: boolean;
+  /** items come in groups of the same thing, each group can be merged into one */
+  mergeGroups?: boolean;
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+/** a title without its "(feat. X)" / "[with Y]" credit, so "Solar Eclipse" and "Solar Eclipse (feat. Don Toliver)" are the same song */
+export const songKey = (title: string) => norm(title.replace(/[([]\s*(?:feat\.?|ft\.?|featuring|with)\b[^)\]]*[)\]]/gi, ' '));
 
 /** Data-quality checks across the whole library (replaces the old "cleanup tasks"). Pure, so it is testable. */
 export function computeHealth(lib: Library): HealthCheck[] {
@@ -38,7 +42,7 @@ export function computeHealth(lib: Library): HealthCheck[] {
   for (const a of lib.albums) a.credits.forEach((c) => c.role.forEach((r) => usedRoles.add(r.toLowerCase())));
 
   const dupes = new Map<string, typeof lib.tracks>();
-  for (const x of lib.tracks) { const k = `${norm(x.title)}|${x.artistId}`; dupes.set(k, [...(dupes.get(k) ?? []), x]); }
+  for (const x of lib.tracks) { const k = `${songKey(x.title)}|${x.artistId}`; dupes.set(k, [...(dupes.get(k) ?? []), x]); }
 
   const lowQuality = lib.tracks.filter((x) => x.bitrate && parseInt(x.bitrate) > 0 && parseInt(x.bitrate) < 192);
 
@@ -73,8 +77,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.allGenres.length).map((x) => t(x)) },
     { id: 'low-quality', title: 'Low bitrate tracks (under 192 kbps)', why: 'Worth replacing when a better source exists.',
       items: lowQuality.map((x) => t(x, x.bitrate ?? undefined)) },
-    { id: 'duplicates', title: 'Possible duplicate tracks', why: 'Same title and artist more than once. Delete the extra, keep the one with the votes.',
-      items: [...dupes.values()].filter((g) => g.length > 1).flatMap((g) => g.map((x) => t(x, `${x.comparisons} comparisons${x.file ? ', has audio' : ''}`))) },
+    { id: 'duplicates', title: 'Possible duplicate tracks', why: 'Same song and artist more than once, such as a single and the same song on its album. “Merge” folds them into one track: it keeps every Spotify link, the votes, plays and memories, and everything that used the others uses the survivor.', mergeGroups: true,
+      items: [...dupes.entries()].filter(([, g]) => g.length > 1).flatMap(([key, g]) => g.map((x) => ({ ...t(x, `${x.albumTitle ?? 'single'} · ${x.comparisons} comparisons${x.file ? ', has audio' : ''}`), group: key }))) },
     { id: 'album-no-cover', title: 'Albums without a cover', why: 'Open the album and choose an image.',
       items: lib.albums.filter((a) => !a.cover).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },
     { id: 'album-empty', title: 'Albums with no tracks', why: 'Probably left over from deleting tracks.',

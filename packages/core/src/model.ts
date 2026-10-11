@@ -63,6 +63,8 @@ export interface TrackData {
   file: string | null;
   initialRating: number | null;
   spotifyUrl: string | null;
+  /** other Spotify links of the same song (a single that later came out on an album has a second one); `spotifyUrl` is the one played */
+  spotifyUrls?: string[];
   geniusUrl: string | null;
   youtubeMusicUrl: string | null;
   bitrate: string | null;

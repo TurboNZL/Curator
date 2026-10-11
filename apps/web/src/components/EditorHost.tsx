@@ -1,3 +1,5 @@
+import { MergeTracksDialog } from './MergeTracksDialog.tsx';
+import { SpotifyLinks } from './SpotifyLinks.tsx';
 import { X } from 'lucide-react';
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
@@ -130,7 +132,8 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       {(!albumSel || !t.syncWithAlbumCredits) && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
-      <Field label="Spotify URL"><input className="input" value={t.spotifyUrl ?? ''} onChange={(e) => set('spotifyUrl', e.target.value || null)} /></Field>
+      <Field label="Spotify URLs" hint="The first one is the one played through Spotify. Add more when the same song is also another Spotify track (a single that later came out on an album has its own link).">
+        <SpotifyLinks primary={t.spotifyUrl ?? null} others={t.spotifyUrls ?? []} onChange={(f) => setT((p) => ({ ...p!, ...f }))} /></Field>
       <Field label="Genius URL"><input className="input" value={t.geniusUrl ?? ''} onChange={(e) => set('geniusUrl', e.target.value || null)} /></Field>
       <Field label={follows ? 'Credits (from the album)' : 'Credits'}>{follows
         ? <CreditsEditor readOnly value={albumCredits} onChange={() => undefined} />
@@ -443,6 +446,7 @@ export function EditorHost() {
   if (target.kind === 'new-playlist') return <PlaylistDialog key="new-playlist" onClose={close} />;
   if (target.kind === 'playlist') return <PlaylistDialog key={key} playlistId={target.id} onClose={close} />;
   if (target.kind === 'add-to-playlist') return <AddToPlaylistDialog key={key} trackId={target.id} onClose={close} />;
+  if (target.kind === 'merge-tracks') return <MergeTracksDialog key={key} ids={target.id.split(',').filter(Boolean)} onClose={close} />;
   if (target.kind === 'add-album-to-playlist') return <AddAlbumToPlaylistDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'new-track') return <NewTrackDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'add-to-album') return <AddToAlbumDialog key={key} trackId={target.id} onClose={close} />;
