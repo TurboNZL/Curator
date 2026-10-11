@@ -230,3 +230,21 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 [data-ui="aqua"] .bt-wf-btn { --wf-bg: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-hover: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-border: 1px solid #8a6310; --wf-shadow: inset 0 1px 1px rgb(255 255 255 / 0.6); }
 [data-ui="aqua"] .bt-wf-btn[aria-label="Maximise"], [data-ui="aqua"] .bt-wf-btn[aria-label="Restore"] { --wf-bg: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-hover: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-border: 1px solid #1a6a17; }
 [data-ui="aqua"] .bt-wf-close { --wf-bg: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-close-hover: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-border: 1px solid #8e1e19; }
+
+/* the guides in Settings (components/GuidesTab.tsx): plain readable typography under the theme's colours */
+.guide { font-size: 0.92rem; line-height: 1.65; }
+.guide h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 0.75rem; }
+.guide h2 { font-size: 1.2rem; font-weight: 700; margin: 1.6rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid hsl(var(--line)); }
+.guide h3 { font-size: 1.02rem; font-weight: 600; margin: 1.2rem 0 0.35rem; }
+.guide h4 { font-weight: 600; margin: 1rem 0 0.25rem; }
+.guide p, .guide ul, .guide ol, .guide table, .guide pre, .guide blockquote { margin: 0.6rem 0; }
+.guide ul { list-style: disc; padding-left: 1.4rem; } .guide ol { list-style: decimal; padding-left: 1.5rem; } .guide li { margin: 0.2rem 0; } .guide li > ul, .guide li > ol { margin: 0.2rem 0; }
+.guide code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84em; background: hsl(var(--raised)); padding: 0.1rem 0.3rem; border-radius: 0.3rem; overflow-wrap: anywhere; }
+.guide pre { background: hsl(var(--raised)); border: 1px solid hsl(var(--line)); border-radius: 0.5rem; padding: 0.7rem 0.85rem; overflow-x: auto; }
+.guide pre code { background: none; padding: 0; font-size: 0.82rem; overflow-wrap: normal; white-space: pre; }
+.guide a { color: hsl(var(--accent)); text-decoration: underline; text-underline-offset: 2px; }
+.guide blockquote { border-left: 3px solid hsl(var(--accent)); padding: 0.1rem 0.9rem; color: hsl(var(--muted)); }
+.guide hr { border: 0; border-top: 1px solid hsl(var(--line)); margin: 1.2rem 0; }
+.guide table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.86rem; }
+.guide th, .guide td { border: 1px solid hsl(var(--line)); padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
+.guide th { background: hsl(var(--raised)); font-weight: 600; }

@@ -1,7 +1,13 @@
 # Updating the Pi
 
-One command, run as your normal login user on the Pi (the one with `sudo`, e.g. `pi-admin`):
+**Easiest:** open the app → **Settings → Library & server → Update server**. It does everything below and restarts the server.
 
+**From a terminal**, as your normal login user on the Pi (the one with `sudo`, e.g. `pi-admin`):
+
+```
+sudo -u curator -H /home/curator/music-curator/scripts/update.sh
+```
+A server set up before `scripts/install-pi.sh` existed, with Node from nvm, uses the older form that loads nvm first:
 ```
 sudo -u curator -H bash -c 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && bash ~/music-curator/scripts/update.sh'
 ```
@@ -32,11 +38,12 @@ Once the server runs as the systemd service from [DEPLOY_PI.md](DEPLOY_PI.md), S
   curator ALL=(root) NOPASSWD: /usr/bin/systemctl stop curator, /usr/bin/systemctl start curator, /usr/bin/systemctl is-active --quiet curator
   ```
   (check the path with `command -v systemctl`).
-- **After a Node upgrade,** edit `NODE_BIN` at the top of `scripts/update.sh` (it points at `/home/curator/.nvm/versions/node/v22.23.3/bin`).
+- **Node:** the script uses the `node` on the `PATH` (the installer puts it in `/usr/local/bin`), or the newest nvm install of the `curator` user. Set `CURATOR_NODE_BIN=/path/to/node/bin` to force one.
 - **If a step fails after the service was stopped,** it stays stopped. Fix the cause and run the command again; the script is safe to re-run.
 - **Your data is not touched.** The library, files and token live in `CURATOR_DATA_DIR` (on the external drive), not in the checkout.
 - **The first start after this release converts old data by itself.** Every track and album that still has the old single-artist field gets a "Lead artist" credit instead; the web client does this once after it has synced, and the changes sync back to the server like any other edit.
-- Once in a while, update yt-dlp too: `sudo yt-dlp -U` (YouTube breaks old versions regularly).
+- yt-dlp: a server set up with `scripts/install-pi.sh` updates it weekly by itself (`systemctl list-timers curator-ytdlp-update.timer`). Otherwise run `sudo yt-dlp -U` now and then; YouTube breaks old versions regularly (a `403 Forbidden` on downloads means it is too old).
+- **Desktop and Android apps** update themselves from the project's GitHub releases. A release is created the moment a change is merged, and its installers are attached a few minutes later; a check in between used to say "Cannot find latest-linux.yml". The app now treats that as "not ready yet" and tries again later.
 
 ## Check it worked
 

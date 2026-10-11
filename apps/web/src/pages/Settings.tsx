@@ -15,6 +15,7 @@ import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.ts
 import { Section } from '../components/Section.tsx';
 import { SpotifyCard } from '../components/SpotifyCard.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
+import { GuidesTab } from '../components/GuidesTab.tsx';
 import { ServerUpdateCard } from '../components/ServerUpdate.tsx';
 import { ConnectionTokens, ServerHealthCard } from '../components/ServerHealthCard.tsx';
 import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
@@ -42,7 +43,7 @@ export function SettingsPage() {
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
   const [params, setParams] = useSearchParams();
-  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
+  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'look';
 
   return (
@@ -85,6 +86,8 @@ export function SettingsPage() {
 
       <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
       </>}
+
+      {tab === 'guides' && <GuidesTab />}
 
       {tab === 'app' && <>
       {desktop() && <Section title="Desktop app">

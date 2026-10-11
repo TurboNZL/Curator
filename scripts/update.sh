@@ -6,7 +6,12 @@ set -euo pipefail
 
 LIVE=0; [ "${1:-}" = "--live" ] && LIVE=1
 SERVICE="${CURATOR_SERVICE:-curator}"
-NODE_BIN="/home/curator/.nvm/versions/node/v22.23.3/bin"
+# Node: the one on PATH (the installer puts it in /usr/local/bin), else an nvm install of the service user. CURATOR_NODE_BIN overrides.
+NODE_BIN="${CURATOR_NODE_BIN:-}"
+if [ -z "$NODE_BIN" ]; then
+  if command -v node >/dev/null 2>&1; then NODE_BIN="$(dirname "$(command -v node)")"
+  else NODE_BIN="$(ls -d /home/curator/.nvm/versions/node/*/bin 2>/dev/null | sort -V | tail -1)"; fi
+fi
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # pnpm is installed globally under the same nvm node, so it must be on PATH too.
