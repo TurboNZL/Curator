@@ -80,3 +80,22 @@ describe('zip reading', () => {
   });
   it('rejects something that is not a zip', async () => { await expect(readZip(new ArrayBuffer(50))).rejects.toThrow(/not a zip/); });
 });
+
+import { writeZip, crc32 } from '../src/lib/zipWrite.ts';
+describe('zip writing', () => {
+  it('has the standard CRC-32', () => { expect(crc32(new TextEncoder().encode('123456789'))).toBe(0xcbf43926); });
+  it('round-trips through the reader', async () => {
+    const z = writeZip([{ name: 'a/Streaming_History_Audio_2026_0.json', data: '[{"x":"é"}]' }, { name: 'b.json', data: '{}' }]);
+    const entries = await readZip(z.buffer.slice(z.byteOffset, z.byteOffset + z.length) as ArrayBuffer);
+    expect(entries.map((e) => e.name)).toEqual(['a/Streaming_History_Audio_2026_0.json', 'b.json']);
+    expect(await entries[0].text()).toBe('[{"x":"é"}]');
+  });
+  it('is a valid zip for unzip', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os'); const { join } = await import('node:path');
+    const dir = mkdtempSync(join(tmpdir(), 'zw-')); writeFileSync(join(dir, 'x.zip'), writeZip([{ name: 'h.json', data: '[1]' }]));
+    let out = ''; try { out = execFileSync('python3', ['-c', 'import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); print(z.testzip(), z.read("h.json").decode())', join(dir, 'x.zip')]).toString(); } catch (e) { out = String(e); }
+    expect(out.trim()).toBe('None [1]');
+  });
+});
