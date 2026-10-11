@@ -1,11 +1,20 @@
 package app.musiccurator.android
 
+import android.app.PendingIntent
+import android.content.Intent
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
@@ -16,6 +25,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import java.io.File
 import java.util.concurrent.Executors
 
 /**
@@ -27,15 +37,32 @@ class PlaybackService : MediaLibraryService() {
     private var session: MediaLibrarySession? = null
     private val io = Executors.newSingleThreadExecutor()
     private lateinit var library: ServerLibrary
+    private var cache: SimpleCache? = null
+    private var fx: AudioFx? = null
 
     override fun onCreate() {
         super.onCreate()
         library = ServerLibrary(ServerPrefs(this))
+        // Everything played is kept on the phone (512 MB, oldest dropped first): replaying a track, or seeking back in it, does not download it again
+        val simpleCache = SimpleCache(File(cacheDir, "audio"), LeastRecentlyUsedCacheEvictor(512L * 1024 * 1024), StandaloneDatabaseProvider(this))
+        cache = simpleCache
+        val sources = CacheDataSource.Factory().setCache(simpleCache).setUpstreamDataSourceFactory(DefaultDataSource.Factory(this))
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         val player = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(sources))
             .setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(), true)
             .setHandleAudioBecomingNoisy(true)
             .build()
-        session = MediaLibrarySession.Builder(this, player, Callback()).build()
+        val effects = AudioFx(ServerPrefs(this))
+        fx = effects
+        AudioFx.current = effects
+        player.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) { effects.attach(audioSessionId) }
+        })
+        effects.attach(player.audioSessionId)
+        // tapping the notification opens the app
+        val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        session = MediaLibrarySession.Builder(this, player, Callback()).setSessionActivity(open).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
@@ -43,6 +70,9 @@ class PlaybackService : MediaLibraryService() {
     override fun onDestroy() {
         session?.run { player.release(); release() }
         session = null
+        AudioFx.current = null
+        fx?.release()
+        cache?.release()
         io.shutdown()
         super.onDestroy()
     }

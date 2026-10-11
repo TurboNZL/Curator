@@ -31,6 +31,7 @@ import app.musiccurator.android.update.AppUpdater
  */
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
+    private var audioEmit: ((String) -> Unit)? = null
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private val chooser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data))
@@ -67,7 +68,10 @@ class MainActivity : AppCompatActivity() {
             allowContentAccess = false
         }
         web.setBackgroundColor(0xFF0B0B10.toInt())
-        web.addJavascriptInterface(CuratorBridge(this), "CuratorAndroid")
+        NativeAudio.init(this)
+        audioEmit = { json -> web.post { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('curator-audio',{detail:$json}))", null) } }
+        NativeAudio.emit = audioEmit
+        web.addJavascriptInterface(CuratorBridge(this, web), "CuratorAndroid")
 
         val loader = WebViewAssetLoader.Builder().setDomain(HOST).setHttpAllowed(true).addPathHandler("/", SpaAssets(this)).build()
         web.webViewClient = object : WebViewClient() {
@@ -110,6 +114,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); web.saveState(outState) }
 
     override fun onDestroy() {
+        if (NativeAudio.emit === audioEmit) NativeAudio.emit = null // a newer activity may already have taken over
         AppUpdater.listener = null
         web.destroy()
         super.onDestroy()
@@ -149,10 +154,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private companion object { /**
+    private companion object {
+        /**
          * The page is served from http://localhost (answered by the asset loader, never sent anywhere). Chromium treats localhost as a
          * secure context (crypto.subtle, IndexedDB, media session all work) but, unlike an https page, it applies no mixed-content rules,
          * so a plain-http home server's images and audio load directly through Chromium's network stack: as fast as in a browser.
          */
-        const val HOST = "localhost" }
+        const val HOST = "localhost"
+    }
 }

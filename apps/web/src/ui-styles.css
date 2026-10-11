@@ -964,10 +964,13 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 [data-ui="lgux"] .bt-titlebar { color: hsl(var(--accent-fg)); border-radius: calc(var(--win-r) - 4px) calc(var(--win-r) - 4px) 0 0; text-shadow: var(--tb-text-shadow); }
 [data-ui="lgux"] .bt-menu, [data-ui="lgux"] .bt-menu svg { color: hsl(var(--fg)); }
 [data-ui="lgux"] .bt-titlebar svg { display: none; }
-[data-ui="lgux"] .bt-tab[aria-current="page"] { color: hsl(var(--accent)); box-shadow: inset 0 -4px 0 hsl(var(--accent)); border-radius: 12px 12px 0 0; }
-/* cover tiles: thick white "sticker" borders with a candy drop shadow */
-[data-ui="lgux"] .bt-cover { border: 3px solid #fff; box-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))), 0 8px 16px color-mix(in srgb, hsl(var(--accent)) 20%, transparent); }
-[data-ui="lgux"] ::selection { background: hsl(var(--accent)); color: hsl(var(--accent-fg)); }
+[data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -2px 0 hsl(var(--accent)); }
+/* Material ink ripple (lib/ripple.ts) and the squircle of UX 5.0's app icons for the candy logo */
+[data-ui="lgux"] :is(.btn, .bt-nav, .bt-tab, .bt-toplink):not(.absolute):not(.fixed) { position: relative; overflow: hidden; }
+.bt-ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.22; pointer-events: none; transform: scale(0); animation: bt-ripple 480ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes bt-ripple { to { transform: scale(1); opacity: 0; } }
+[data-ui="lgux"] .bt-brand img, [data-ui="lgux"] .bt-top > .bt-topin > img { border-radius: 22%; }
+@media (prefers-reduced-motion: reduce) { .bt-ripple { animation-duration: 1ms; } }
 
 /* ================== Fortnite, by chapter ==================
  * What each era looks like was read off screenshots of the settings and lobby screens, plus the patch notes: the lobby kept its slanted

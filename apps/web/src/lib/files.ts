@@ -112,7 +112,8 @@ export async function flushUploads(a: Api): Promise<void> {
 /** Where to read an image from outside React (the media session): this device's copy as an object URL (`local`, revoke it), else the server's link. */
 export async function imageSource(hash: string): Promise<{ url: string; local: boolean }> {
   const blob = await (await localDb()).get('blobs', hash);
-  return blob ? { url: URL.createObjectURL(blob), local: true } : { url: api().fileUrl(hash), local: false };
+  if (blob) return { url: URL.createObjectURL(blob), local: true };
+  return { url: api().fileUrl(hash), local: false };
 }
 
 /** A displayable URL for a file hash: this device's copy if it has one, else the server's. */
@@ -167,21 +168,31 @@ export async function removeAudio(hashes: string[]): Promise<void> {
   useStore.setState({ audioCache: next });
 }
 
-/** URL to play `hash` from: the local copy when kept offline, otherwise streamed from the server. Caller revokes blob: URLs. */
-export async function audioSource(hash: string): Promise<{ url: string; local: boolean }> {
+/** This device's own copy of an audio file (kept offline, or chosen here and not uploaded yet) as an object URL; null if there is none. Never uses the network. */
+export async function localAudio(hash: string): Promise<string | null> {
   const entry = useStore.getState().audioCache[hash];
+  const db = await localDb();
   if (entry) {
     const next = { ...useStore.getState().audioCache, [hash]: { ...entry, at: Date.now() } }; // recency for eviction
     useStore.setState({ audioCache: next });
     void setMeta('audioCache', next);
-    const blob = await (await localDb()).get('blobs', hash);
-    if (blob) return { url: URL.createObjectURL(blob), local: true };
+    const blob = await db.get('blobs', hash);
+    if (blob) return URL.createObjectURL(blob);
   }
-  // chosen on this device and not uploaded yet: play the pending copy
   if ((await getMeta<string[]>('pendingUploads', [])).includes(hash)) {
-    const blob = await (await localDb()).get('blobs', hash);
-    if (blob) return { url: URL.createObjectURL(blob), local: true };
+    const blob = await db.get('blobs', hash);
+    if (blob) return URL.createObjectURL(blob);
   }
+  return null;
+}
+
+/** The address the Android app's own player streams `hash` from (it adds the token; the app caches what it plays). */
+export const streamUrl = (hash: string) => api().fileUrl(hash);
+
+/** URL to play `hash` from: the local copy when kept offline, otherwise streamed from the server. Caller revokes blob: URLs. */
+export async function audioSource(hash: string): Promise<{ url: string; local: boolean }> {
+  const own = await localAudio(hash);
+  if (own) return { url: own, local: true };
   return { url: api().fileUrl(hash), local: false };
 }
 
