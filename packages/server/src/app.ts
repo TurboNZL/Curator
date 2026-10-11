@@ -197,8 +197,8 @@ export function createApp(
   // ---- Soloist (soloist.ts): Spotify's own headless Connect client, installed and run by this server so Curator plays Spotify tracks itself ----
   app.get('/api/soloist', async (c) => c.json(await soloist.status()));
   app.post('/api/soloist/config', async (c) => {
-    const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown };
-    try { soloist.configure({ deviceName: typeof b.deviceName === 'string' ? b.deviceName : undefined, apiKey: typeof b.apiKey === 'string' ? b.apiKey : undefined, autoStart: typeof b.autoStart === 'boolean' ? b.autoStart : undefined }); return c.json(await soloist.status()); }
+    const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown; outputDevice?: unknown };
+    try { soloist.configure({ deviceName: typeof b.deviceName === 'string' ? b.deviceName : undefined, apiKey: typeof b.apiKey === 'string' ? b.apiKey : undefined, autoStart: typeof b.autoStart === 'boolean' ? b.autoStart : undefined, outputDevice: typeof b.outputDevice === 'string' ? b.outputDevice : undefined }); return c.json(await soloist.status()); }
     catch (e) { return c.json({ error: (e as Error).message }, 400); }
   });
   app.post('/api/soloist/install', async (c) => { try { await soloist.install(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 502); } });

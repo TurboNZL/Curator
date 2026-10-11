@@ -18,6 +18,7 @@ export function SoloistPanel() {
   const [info, setInfo] = useState<SoloistInfo | null>(null);
   const [name, setName] = useState('Curator');
   const [key, setKey] = useState('');
+  const [out, setOut] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
@@ -60,7 +61,12 @@ export function SoloistPanel() {
             <Field label="Device name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Curator" /></Field>
             <Field label={info.hasKey ? 'API key (saved; type to replace)' : 'API key'}><input className="input font-mono" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder={info.hasKey ? '••••••••' : 'paste the key'} /></Field></div>
           <button className="btn" disabled={working || (!key.trim() && name.trim() === info.deviceName)} onClick={() => void act('Saving…', async () => { const i = await api().soloistConfig({ deviceName: name.trim(), apiKey: key.trim() || undefined }); setKey(''); return i; })}>Save</button></li>
-        <li className="space-y-1.5"><div className="font-medium">3. Run</div>
+        <li className="space-y-1.5"><div className="font-medium">3. Sound</div>
+          {info.audio.ok ? <p className="text-xs text-good">Found {info.audio.server === 'pipewire' ? 'PipeWire' : 'PulseAudio'} for the account that runs the server.</p>
+            : <div className="rounded-theme bg-warn/15 p-3 text-xs text-warn" role="alert">{info.audio.hint}</div>}
+          <Field label="Output (optional)"><input className="input font-mono" value={out ?? info.outputDevice} onChange={(e) => setOut(e.target.value)} placeholder="the system default; or a PipeWire output name or id" /></Field>
+          <button className="btn" disabled={working || (out ?? info.outputDevice) === info.outputDevice} onClick={() => void act('Saving…', async () => { const i = await api().soloistConfig({ outputDevice: (out ?? '').trim() }); setOut(null); return i; })}>Save output</button></li>
+        <li className="space-y-1.5"><div className="font-medium">4. Run</div>
           <div className="flex flex-wrap items-center gap-2">
             {info.running ? <button className="btn" disabled={working} onClick={() => void act('Stopping…', () => api().soloistStop())}><Square size={14} />Stop</button>
               : <button className="btn btn-accent" disabled={working || !info.installed || !info.hasKey} onClick={() => void act('Starting…', () => api().soloistStart())}><Play size={14} />Start</button>}

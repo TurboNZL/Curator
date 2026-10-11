@@ -14,15 +14,15 @@ class FakeChild extends EventEmitter {
   stdout = new EventEmitter(); stderr = new EventEmitter(); killed: string[] = [];
   kill(sig: string) { this.killed.push(sig); queueMicrotask(() => this.emit('close', null)); return true; }
 }
-function rig(over: { code?: number } = {}) {
-  const children: { child: FakeChild; args: string[] }[] = [];
+function rig(over: { code?: number; sockets?: string[] } = {}) {
+  const children: { child: FakeChild; args: string[]; env?: NodeJS.ProcessEnv }[] = [];
   let downloads = 0;
   const s = new Soloist(dir, {
-    platform: 'linux', arch: 'arm64', restartDelayMs: 5,
+    platform: 'linux', arch: 'arm64', restartDelayMs: 5, uid: 998, env: { PATH: '/usr/bin' }, exists: (p) => (over.sockets ?? []).includes(p),
     fetchImpl: (async (url: string) => { downloads++; expect(url).toBe('https://soloist-builds.spotifycdn.com/soloist_release_arm64.tar.gz'); return new Response(new Uint8Array([1, 2, 3])); }) as unknown as typeof fetch,
     untar: async (_a, into) => { writeFileSync(join(into, 'soloist'), '#!/bin/sh\n'); },
     version: async () => 'soloist 1.2.3 (built 2026-10-01)',
-    spawnImpl: ((_bin: string, args: string[]) => { const child = new FakeChild(); children.push({ child, args }); return child; }) as never,
+    spawnImpl: ((_bin: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => { const child = new FakeChild(); children.push({ child, args, env: opts?.env }); return child; }) as never,
   });
   return { s, children, downloads: () => downloads, over };
 }
@@ -70,6 +70,24 @@ describe('Soloist module', () => {
     expect(st.running).toBe(true); expect(st.state).toBe('running'); expect(st.log.join(' ')).not.toContain('sekret-key');
     await s.stop();
     expect((await s.status()).running).toBe(false);
+  });
+  it('hands Soloist the sound session of the account that runs the server', async () => {
+    const { s, children } = rig({ sockets: ['/run/user/998/pipewire-0', '/run/user/998/pulse/native'] });
+    await s.install(); s.configure({ apiKey: 'k', outputDevice: 'alsa_output.usb-dac' }); s.start();
+    expect(children[0].env).toMatchObject({ XDG_RUNTIME_DIR: '/run/user/998', PULSE_SERVER: 'unix:/run/user/998/pulse/native', PATH: '/usr/bin' });
+    expect(children[0].args.slice(-2)).toEqual(['--pipewire-device', 'alsa_output.usb-dac']);
+    expect((await s.status()).audio).toMatchObject({ ok: true, server: 'pipewire', runtimeDir: '/run/user/998' });
+  });
+  it('says what is missing when there is no sound server, instead of playing silently', async () => {
+    const { s, children } = rig();
+    await s.install(); s.configure({ apiKey: 'k' }); s.start();
+    const st = await s.status();
+    expect(st.audio.ok).toBe(false); expect(st.audio.hint).toMatch(/setup-pi-audio\.sh/);
+    expect(st.log.join(' ')).toMatch(/no sound output/i);
+    expect(children[0].args).not.toContain('--pipewire-device');
+    children[0].child.emit('close', 1);
+    expect((await s.status()).message).toMatch(/setup-pi-audio\.sh/);
+    await s.stop();
   });
   it('an expired build (exit 10) is replaced and started again', async () => {
     const { s, children, downloads } = rig();

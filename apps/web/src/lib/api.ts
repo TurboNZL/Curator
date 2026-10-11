@@ -70,7 +70,7 @@ export class Api {
   status() { return this.req<ServerStatus>('/api/status'); }
   releaseDates(albums: { id: string; album: string; artist: string }[]) { return this.req<{ results: { id: string; answer: DateAnswerRes | null }[] }>('/api/dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albums }) }); }
   soloist() { return this.req<SoloistInfo>('/api/soloist'); }
-  soloistConfig(c: { deviceName?: string; apiKey?: string; autoStart?: boolean }) { return this.req<SoloistInfo>('/api/soloist/config', { method: 'POST', body: JSON.stringify(c) }); }
+  soloistConfig(c: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string }) { return this.req<SoloistInfo>('/api/soloist/config', { method: 'POST', body: JSON.stringify(c) }); }
   soloistInstall() { return this.req<SoloistInfo>('/api/soloist/install', { method: 'POST' }); }
   soloistStart() { return this.req<SoloistInfo>('/api/soloist/start', { method: 'POST' }); }
   soloistStop() { return this.req<SoloistInfo>('/api/soloist/stop', { method: 'POST' }); }
@@ -142,7 +142,8 @@ export interface DateAnswerRes { date: string; source: 'spotify' | 'itunes' | 'm
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
 
 export interface SoloistInfo {
-  supported: boolean; reason?: string; installed: boolean; version: string | null; configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean;
+  supported: boolean; reason?: string; installed: boolean; version: string | null; configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean; outputDevice: string;
+  audio: { ok: boolean; server: 'pipewire' | 'pulseaudio' | null; runtimeDir: string | null; hint: string | null };
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;
 }
 export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }

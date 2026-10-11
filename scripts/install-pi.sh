@@ -188,5 +188,6 @@ if [ "$DRY" = 1 ]; then note "[dry run] wait for http://127.0.0.1:$PORT/api/heal
   note ""
   note "Update later with:  sudo -u $USER_NAME -H $APP_DIR/scripts/update.sh      (or the Update server button in Settings)"
   note "Logs:               journalctl -u curator -f"
+  note "Spotify Soloist:    needs a sound server first:  sudo $APP_DIR/scripts/setup-pi-audio.sh --user $USER_NAME"
   note "Next steps:         docs/GETTING_STARTED.md"
 fi
