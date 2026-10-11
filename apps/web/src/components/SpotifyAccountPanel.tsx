@@ -4,7 +4,7 @@ import { api, useStore } from '../lib/store.ts';
 import { refreshSpotifyStatus } from '../lib/spotifyPlayer.ts';
 import { Field } from './forms.tsx';
 
-type Status = { clientId: string; redirectUri: string; signedIn: boolean; configured: boolean };
+type Status = { clientId: string; redirectUri: string; signedIn: boolean; streaming?: boolean; configured: boolean };
 
 /**
  * Connecting Curator's server to a Spotify account (Authorization Code with PKCE; the server holds the token). Used by Settings and by the

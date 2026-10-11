@@ -96,7 +96,8 @@ export class Api {
   importCover(urls: string | string[]) { return this.req<{ hash: string; url: string }>('/api/import/cover', { method: 'POST', body: JSON.stringify(Array.isArray(urls) ? { urls } : { url: urls }) }); }
   analyzeAudio(hash: string) { return this.req<{ codec: string; kbps: number; sampleRate: number; durationSec: number; cutoffHz: number; looksLike: number; verdict: 'ok' | 'transcode' | 'unknown' }>('/api/audio/analyze', { method: 'POST', body: JSON.stringify({ hash }) }); }
   // ---- Spotify (server/src/spotify.ts) and YouTube matching (match.ts) ----
-  spotifyStatus() { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean }>('/api/spotify/status'); }
+  spotifyStatus() { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; streaming?: boolean; configured: boolean }>('/api/spotify/status'); }
+  spotifySdkToken() { return this.req<{ token: string; expiresInMs: number }>('/api/spotify/sdk-token'); }
   spotifyConfig(clientId: string, redirectUri?: string) { return this.req<{ clientId: string; redirectUri: string; signedIn: boolean; configured: boolean }>('/api/spotify/config', { method: 'POST', body: JSON.stringify({ clientId, redirectUri }) }); }
   spotifyAuthUrl() { return this.req<{ url: string }>('/api/spotify/auth-url'); }
   spotifyExchange(url: string) { return this.req<{ signedIn: boolean }>('/api/spotify/exchange', { method: 'POST', body: JSON.stringify({ url }) }); }

@@ -7,6 +7,7 @@ import './ui-styles.css';
 import './fortnite-fonts.css';
 import { applyAppearance } from './lib/appearance.ts';
 import { startConnect } from './lib/connect.ts';
+import { startSpotifySdkIfWanted } from './lib/spotifySdk.ts';
 import { startPresence } from './lib/discordPresence.ts';
 import { useStore } from './lib/store.ts';
 import { startRipple } from './lib/ripple.ts';
@@ -16,6 +17,7 @@ import { syncNativeServer } from './lib/native.ts';
 // before the first paint, so a saved theme does not flash the default one
 applyAppearance(useStore.getState().settings);
 startConnect();
+startSpotifySdkIfWanted();
 startHaptics();
 startRipple();
 startPresence();

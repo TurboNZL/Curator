@@ -103,7 +103,7 @@ export interface SpotifyAuthState {
   token?: { access: string; refresh: string; expiresAt: number; scope: string };
 }
 
-const SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read user-read-playback-state user-modify-playback-state user-read-currently-playing';
+const SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read user-read-playback-state user-modify-playback-state user-read-currently-playing streaming user-read-email user-read-private';
 export const DEFAULT_REDIRECT = 'http://127.0.0.1:47813/api/spotify/callback';
 const b64url = (b: Buffer) => b.toString('base64url');
 
@@ -119,7 +119,7 @@ export class SpotifyAccount {
   private load(): SpotifyAuthState { try { return JSON.parse(readFileSync(this.file, 'utf8')) as SpotifyAuthState; } catch { return {}; } }
   private save(s: SpotifyAuthState) { mkdirSync(dirname(this.file), { recursive: true }); writeFileSync(this.file, JSON.stringify(s, null, 2), { mode: 0o600 }); }
 
-  status() { const s = this.load(); return { clientId: this.envClient || s.clientId || '', redirectUri: s.redirectUri || DEFAULT_REDIRECT, signedIn: !!s.token, configured: !!(this.envClient || s.clientId) }; }
+  status() { const s = this.load(); return { clientId: this.envClient || s.clientId || '', redirectUri: s.redirectUri || DEFAULT_REDIRECT, signedIn: !!s.token, streaming: !!s.token?.scope.split(' ').includes('streaming'), configured: !!(this.envClient || s.clientId) }; }
   configure(clientId: string, redirectUri?: string) {
     if (!/^[0-9a-f]{32}$/i.test(clientId.trim())) throw new SpotifyError(400, 'A Spotify client id is 32 letters and digits (from your app on developer.spotify.com/dashboard)');
     const s = this.load(); s.clientId = clientId.trim(); if (redirectUri) s.redirectUri = redirectUri.trim(); this.save(s);
@@ -160,6 +160,17 @@ export class SpotifyAccount {
     if (!s.token) throw new SpotifyError(401, 'Not signed in to Spotify');
     if (this.now() >= s.token.expiresAt) { if (!s.token.refresh) throw new SpotifyError(401, 'The Spotify sign-in expired; sign in again'); await this.token({ grant_type: 'refresh_token', refresh_token: s.token.refresh }); }
     return this.load().token!.access;
+  }
+  /**
+   * A short-lived access token for Spotify's Web Playback SDK, which runs in the page and plays the audio there. The SDK has to hold the
+   * token itself; the refresh token never leaves the server. Needs the `streaming` permission (added to the sign-in later than the rest,
+   * so an older sign-in has to be repeated once).
+   */
+  async sdkToken(): Promise<{ token: string; expiresInMs: number }> {
+    const access = await this.access();
+    const t = this.load().token!;
+    if (!t.scope.split(' ').includes('streaming')) throw new SpotifyError(403, 'Playing inside the app needs one more Spotify permission: sign out of Spotify in Settings and sign in again');
+    return { token: access, expiresInMs: Math.max(0, t.expiresAt - this.now()) };
   }
   private async get<T>(path: string): Promise<T> {
     const url = path.startsWith('http') ? path : `https://api.spotify.com/v1${path}`;
