@@ -19,6 +19,27 @@ export interface ServerUpdate {
   status: 'idle' | 'running' | 'done' | 'error'; log: string[]; restarting: boolean;
 }
 
+/** What GET /api/admin/health returns (packages/server/src/health.ts): a cheap look at the machine the server runs on. */
+export interface ServerHealth {
+  snapshot: {
+    at: number; host: string; platform: string; arch: string; node: string; uptimeS: number; processUptimeS: number;
+    cpu: { cores: number; load1: number; load5: number; load15: number };
+    memory: { totalBytes: number; availableBytes: number; rssBytes: number };
+    swap: { totalBytes: number; usedBytes: number } | null;
+    tempC: number | null;
+    throttle: { underVoltage: boolean; frequencyCapped: boolean; throttled: boolean; underVoltageEver: boolean } | null;
+    disks: { label: string; path: string; freeBytes: number; totalBytes: number; system: boolean }[];
+    probe: { writeMs: number; readMs: number } | null;
+    db: { bytes: number; walBytes: number };
+  };
+  warnings: { level: 'warn' | 'bad'; id: string; message: string }[];
+}
+export interface StorageEntry { kind: 'files' | 'tmp' | 'cache'; label: string; hint: string; link: string; path: string; moved: boolean; freeBytes: number; totalBytes: number; system: boolean }
+export interface StorageInfo {
+  entries: StorageEntry[]; dataDir: string;
+  job: { status: 'idle' | 'running' | 'done' | 'error'; kind?: StorageEntry['kind']; message?: string; progress?: { phase: string; copiedBytes: number; totalBytes: number; files: number } };
+}
+
 export interface ImportPreview {
   title: string; artist: string; thumbnail: string | null;
   /** every cover candidate, best first */
@@ -45,6 +66,10 @@ export class Api {
 
   health() { return fetch(this.url('/api/health')).then((r) => (r.ok ? r.json() : Promise.reject(new ApiError(r.status, 'No server')))); }
   status() { return this.req<ServerStatus>('/api/status'); }
+  serverHealth() { return this.req<ServerHealth>('/api/admin/health'); }
+  storageInfo() { return this.req<StorageInfo>('/api/admin/storage'); }
+  moveStorage(kind: StorageEntry['kind'], target: string) { return this.req<{ ok: true }>('/api/admin/storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, target }) }); }
+  tunnelToken() { return this.req<{ found: boolean; token?: string; source?: string }>('/api/admin/tunnel-token'); }
   updateInfo() { return this.req<ServerUpdate>('/api/admin/update'); }
   startUpdate() { return this.req<{ ok: true }>('/api/admin/update', { method: 'POST' }); }
   pull(since: number, limit = 1000) { return this.req<PullResponse>(`/api/sync/pull?since=${since}&limit=${limit}`); }

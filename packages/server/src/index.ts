@@ -1,8 +1,11 @@
 import { networkInterfaces } from 'node:os';
+import { join } from 'node:path';
 import { loadConfig } from './config.ts';
 import { startServer } from './start.ts';
 
 const config = loadConfig();
+// scratch space of every child process (ffmpeg, yt-dlp) goes next to the library, not onto the SD card
+process.env.TMPDIR ??= join(config.dataDir, 'tmp');
 const running = await startServer(config);
 const ips = Object.values(networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i!.address);
 console.log(`Music Curator server
