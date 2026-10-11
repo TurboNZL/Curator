@@ -154,8 +154,13 @@ class PlaybackService : MediaLibraryService() {
             }
 
         // Android Auto asks to play one track: queue the whole album / playlist from it, like the app does
-        override fun onSetMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo, mediaItems: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
-            background {
+        override fun onSetMediaItems(mediaSession: MediaSession, controller: MediaSession.ControllerInfo, mediaItems: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            // The page's own queue (NativeAudio) carries stream URLs already: hand it straight to the player. Fetching the library first
+            // (the whole /api/sync/pull) made every play wait ~10 s for nothing. Only Android Auto's "t/<id>/<context>" ids need the library.
+            if (mediaItems.none { it.mediaId.startsWith("t/") } && mediaItems.all { it.localConfiguration != null }) {
+                return Futures.immediateFuture(MediaSession.MediaItemsWithStartPosition(mediaItems, startIndex, startPositionMs))
+            }
+            return background {
                 val lib = library.get()
                 val first = mediaItems.firstOrNull()
                 val parts = first?.mediaId?.split('/', limit = 3)
@@ -174,5 +179,6 @@ class PlaybackService : MediaLibraryService() {
                 }
                 MediaSession.MediaItemsWithStartPosition(resolved, startIndex.coerceIn(0, (resolved.size - 1).coerceAtLeast(0)), startPositionMs)
             }
+        }
     }
 }
