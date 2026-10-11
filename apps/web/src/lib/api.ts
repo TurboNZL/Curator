@@ -70,7 +70,7 @@ export class Api {
   status() { return this.req<ServerStatus>('/api/status'); }
   releaseDates(albums: { id: string; album: string; artist: string }[]) { return this.req<{ results: { id: string; answer: DateAnswerRes | null }[] }>('/api/dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ albums }) }); }
   soloist() { return this.req<SoloistInfo>('/api/soloist'); }
-  soloistConfig(c: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string }) { return this.req<SoloistInfo>('/api/soloist/config', { method: 'POST', body: JSON.stringify(c) }); }
+  soloistConfig(c: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string; beam?: boolean }) { return this.req<SoloistInfo>('/api/soloist/config', { method: 'POST', body: JSON.stringify(c) }); }
   soloistInstall() { return this.req<SoloistInfo>('/api/soloist/install', { method: 'POST' }); }
   soloistStart() { return this.req<SoloistInfo>('/api/soloist/start', { method: 'POST' }); }
   soloistStop() { return this.req<SoloistInfo>('/api/soloist/stop', { method: 'POST' }); }
@@ -132,6 +132,8 @@ export class Api {
   connectState(device: string, name: string, state: PlaybackSnapshot | null) { return this.req<{ ok: true }>('/api/connect/state', { method: 'POST', body: JSON.stringify({ device, name, state }) }); }
   connectCommand(from: string, to: string, command: Command) { return this.req<{ ok: true }>('/api/connect/command', { method: 'POST', body: JSON.stringify({ from, to, command }) }); }
   /** `<audio src>` / `<img src>` cannot send headers, hence ?token= */
+  /** the live stream of the server's Soloist (server/src/beam.ts); plays like internet radio */
+  beamUrl() { return this.url(`/api/soloist/stream?token=${encodeURIComponent(this.s.token)}`); }
   fileUrl(hash: string) { return this.url(`/api/files/${hash}?token=${encodeURIComponent(this.s.token)}`); }
 }
 
@@ -145,6 +147,7 @@ export interface MatchResultRes { id: string; candidates: MatchCandidate[]; erro
 export interface SoloistInfo {
   supported: boolean; reason?: string; installed: boolean; version: string | null; configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean; outputDevice: string;
   audio: { ok: boolean; server: 'pipewire' | 'pulseaudio' | null; runtimeDir: string | null; hint: string | null };
+  beam: { enabled: boolean; sink: 'ready' | 'missing' | 'error' | 'unchecked'; sinkMessage: string | null; streamPath: string; listeners: number; running: boolean; error: string | null; bytes: number };
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error'; message: string | null; log: string[]; downloadsUrl: string;
 }
 export interface SpotifyDeviceInfo { id: string; name: string; type: string; active: boolean; volume: number | null }

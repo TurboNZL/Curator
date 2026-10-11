@@ -89,6 +89,37 @@ describe('Soloist module', () => {
     expect((await s.status()).message).toMatch(/setup-pi-audio\.sh/);
     await s.stop();
   });
+  it('with beaming on, creates the virtual output first and points Soloist at it instead of the speakers', async () => {
+    const pactl: string[][] = [];
+    const children: { args: string[]; env?: NodeJS.ProcessEnv }[] = [];
+    const s = new Soloist(dir, {
+      platform: 'linux', arch: 'arm64', uid: 998, env: {}, exists: (p) => p === '/run/user/998/pipewire-0',
+      untar: async (_a, into) => { writeFileSync(join(into, 'soloist'), '#!/bin/sh\n'); }, version: async () => 'v',
+      fetchImpl: (async () => new Response(new Uint8Array([1]))) as unknown as typeof fetch,
+      pactl: async (a) => { pactl.push(a); return a[0] === 'list' ? '0\talsa_output.x\tmodule-alsa-card.c\ts16le 2ch 44100Hz\tRUNNING\n' : '19'; },
+      spawnImpl: ((_b: string, args: string[], o: { env?: NodeJS.ProcessEnv }) => { children.push({ args, env: o.env }); return new FakeChild(); }) as never,
+    });
+    await s.install(); s.configure({ apiKey: 'k', beam: true, outputDevice: 'ignored-while-beaming' });
+    s.start();
+    expect(children).toHaveLength(0); // not before the sink exists
+    await new Promise((r) => setTimeout(r, 20));
+    expect(pactl.map((a) => a.join(' '))).toEqual(['list short sinks', 'load-module module-null-sink sink_name=curator_spotify sink_properties=device.description=Curator-Spotify']);
+    expect(children).toHaveLength(1);
+    expect(children[0].args.slice(-2)).toEqual(['--pipewire-device', 'curator_spotify']);
+    expect(children[0].env).toMatchObject({ PULSE_SINK: 'curator_spotify', XDG_RUNTIME_DIR: '/run/user/998' });
+    const st = await s.status();
+    expect(st.beam).toMatchObject({ enabled: true, sink: 'ready', streamPath: '/api/soloist/stream' });
+    await s.stop();
+  });
+  it('does not create the virtual output twice, and reports a missing pactl', async () => {
+    const calls: string[] = [];
+    const s = new Soloist(dir, { platform: 'linux', arch: 'arm64', pactl: async (a) => { calls.push(a[0]); return a[0] === 'list' ? '3\tcurator_spotify\tmodule-null-sink.c\ts16le\tIDLE' : ''; } });
+    await s.ensureSink(); expect(calls).toEqual(['list']);
+    const none = new Soloist(dir, { platform: 'linux', arch: 'arm64', pactl: async () => { throw new Error('pactl is not installed on this machine'); } });
+    await expect(none.ensureSink()).rejects.toThrow();
+    expect((await none.status()).beam).toMatchObject({ sink: 'error' });
+    expect((await none.status()).beam.sinkMessage).toMatch(/pulseaudio-utils/);
+  });
   it('inside the desktop app the missing-sound hint talks about the computer, not the Pi', async () => {
     const s = new Soloist(dir, { platform: 'linux', arch: 'x64', uid: 1000, env: {}, exists: () => false, desktop: true });
     const a = (await s.status()).audio;

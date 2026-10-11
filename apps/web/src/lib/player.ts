@@ -4,6 +4,7 @@ import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, s
 import { moveTrack } from './defaults.ts';
 import { audioSource, imageSource, localAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
+import { BEAM_ID, beamFailed, setBeamVolume } from './beam.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
 import { resumeEq, setEq } from './eq.ts';
@@ -264,6 +265,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
   }
 
   function onNative(e: NativeEvent) {
+    // the live stream of the server's Soloist (lib/beam.ts) shares the app's player: its events are not about the queue
+    if ('id' in e && e.id === BEAM_ID) { if (e.t === 'error') beamFailed(e.message); return; }
     if (e.t === 'state') {
       if (!native) {
         // a page that was recreated while the app kept playing: show what is playing
@@ -370,7 +373,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
-    setVolume(v) { el().volume = v; if (spotifyEngine.active()) void spotifyEngine.volume(v); nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
+    setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active()) void spotifyEngine.volume(v); nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
     toggleShuffle() { set({ shuffle: !get().shuffle }); },
 
     enqueue(trackId, where = 'last') {

@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { arch as osArch, platform as osPlatform } from 'node:os';
 import { join } from 'node:path';
+import { Beam, SINK, type BeamDeps, type BeamStatus } from './beam.ts';
 
 /**
  * Spotify Soloist as a module of this server: Spotify's own headless Spotify Connect client for Linux. Installed from Spotify's own download
@@ -23,7 +24,7 @@ export function archiveName(arch: string = osArch()): string | null {
   return a ? `soloist_release_${a}.tar.gz` : null;
 }
 
-export interface SoloistConfig { deviceName: string; apiKey: string; autoStart: boolean; outputDevice: string }
+export interface SoloistConfig { deviceName: string; apiKey: string; autoStart: boolean; outputDevice: string; /** send Soloist's sound to a virtual output that the apps listen to (beam.ts) instead of the speakers */ beam: boolean }
 /** Whether Soloist can reach a sound server (PipeWire or PulseAudio) from the account this server runs as, and what to do if not. */
 export interface AudioCheck { ok: boolean; server: 'pipewire' | 'pulseaudio' | null; runtimeDir: string | null; hint: string | null }
 export interface SoloistStatus {
@@ -31,6 +32,8 @@ export interface SoloistStatus {
   installed: boolean; version: string | null;
   configured: boolean; deviceName: string; hasKey: boolean; autoStart: boolean; outputDevice: string;
   audio: AudioCheck;
+  /** beaming Soloist's sound to the apps (beam.ts) */
+  beam: { enabled: boolean; sink: 'ready' | 'missing' | 'error' | 'unchecked'; sinkMessage: string | null; streamPath: string } & BeamStatus;
   running: boolean; state: 'stopped' | 'starting' | 'running' | 'expired' | 'installing' | 'error';
   message: string | null; log: string[];
   downloadsUrl: string;
@@ -47,11 +50,13 @@ export interface SoloistDeps {
   version?: (bin: string) => Promise<string | null>;
   /** test seams for the audio check */
   uid?: number; env?: NodeJS.ProcessEnv; exists?: (path: string) => boolean; desktop?: boolean;
+  /** where ffmpeg and pactl live when they are not on PATH, and test seams for the beam */
+  ffmpegDir?: string; beamDeps?: BeamDeps; pactl?: (args: string[]) => Promise<string>;
 }
 
-const run = (cmd: string, args: string[], spawnImpl: Spawn = spawn): Promise<string> => new Promise((resolve, reject) => {
+const run = (cmd: string, args: string[], spawnImpl: Spawn = spawn, env?: NodeJS.ProcessEnv): Promise<string> => new Promise((resolve, reject) => {
   let out = '';
-  const child = spawnImpl(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawnImpl(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...(env ? { env } : {}) });
   const timer = setTimeout(() => { child.kill(); reject(new Error(`${cmd} took too long`)); }, 60_000);
   child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
   child.stderr?.on('data', (d: Buffer) => { out += d.toString(); });
@@ -71,23 +76,30 @@ export class Soloist {
   private busy = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(dataDir: string, deps: SoloistDeps = {}) { this.dir = join(dataDir, 'soloist'); this.d = deps; }
+  /** the live stream of Soloist's sound (see beam.ts) */
+  readonly beam: Beam;
+  private sink: { state: 'ready' | 'missing' | 'error' | 'unchecked'; message: string | null } = { state: 'unchecked', message: null };
+
+  constructor(dataDir: string, deps: SoloistDeps = {}) {
+    this.dir = join(dataDir, 'soloist'); this.d = deps;
+    this.beam = new Beam({ ffmpegDir: deps.ffmpegDir, env: () => this.soloistEnv(), ...deps.beamDeps });
+  }
 
   private get platform() { return this.d.platform ?? osPlatform(); }
   private get bin() { return join(this.dir, 'soloist'); }
   private get cfgPath() { return join(this.dir, 'config.json'); }
 
   config(): SoloistConfig {
-    try { const c = JSON.parse(readFileSync(this.cfgPath, 'utf8')) as Partial<SoloistConfig>; return { deviceName: c.deviceName ?? 'Curator', apiKey: c.apiKey ?? '', autoStart: c.autoStart ?? true, outputDevice: c.outputDevice ?? '' }; }
-    catch { return { deviceName: 'Curator', apiKey: '', autoStart: true, outputDevice: '' }; }
+    try { const c = JSON.parse(readFileSync(this.cfgPath, 'utf8')) as Partial<SoloistConfig>; return { deviceName: c.deviceName ?? 'Curator', apiKey: c.apiKey ?? '', autoStart: c.autoStart ?? true, outputDevice: c.outputDevice ?? '', beam: c.beam ?? false }; }
+    catch { return { deviceName: 'Curator', apiKey: '', autoStart: true, outputDevice: '', beam: false }; }
   }
   /** Saves the device name and, when one is given, the key. An empty key leaves the stored one alone. */
-  configure(o: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string }) {
+  configure(o: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string; beam?: boolean }) {
     const cur = this.config();
     const name = (o.deviceName ?? cur.deviceName).trim().slice(0, 60);
     if (!name) throw new Error('Give the device a name.');
     mkdirSync(this.dir, { recursive: true });
-    const next: SoloistConfig = { deviceName: name, apiKey: o.apiKey?.trim() ? o.apiKey.trim() : cur.apiKey, autoStart: o.autoStart ?? cur.autoStart, outputDevice: (o.outputDevice ?? cur.outputDevice).trim().slice(0, 200) };
+    const next: SoloistConfig = { deviceName: name, apiKey: o.apiKey?.trim() ? o.apiKey.trim() : cur.apiKey, autoStart: o.autoStart ?? cur.autoStart, outputDevice: (o.outputDevice ?? cur.outputDevice).trim().slice(0, 200), beam: o.beam ?? cur.beam };
     writeFileSync(this.cfgPath, JSON.stringify(next), { mode: 0o600 });
     try { chmodSync(this.cfgPath, 0o600); } catch { /* a filesystem without modes */ }
   }
@@ -133,6 +145,7 @@ export class Soloist {
     return {
       supported: sup.ok, reason: sup.reason, installed, version: installed && sup.ok ? await (this.d.version ?? this.readVersion.bind(this))(this.bin).catch(() => null) : null,
       configured: !!c.apiKey, deviceName: c.deviceName, hasKey: !!c.apiKey, autoStart: c.autoStart, outputDevice: c.outputDevice, audio: this.audio(),
+      beam: { enabled: c.beam, sink: this.sink.state, sinkMessage: this.sink.message, streamPath: '/api/soloist/stream', ...this.beam.status() },
       running: !!this.child, state: this.state, message: this.message, log: this.log.slice(-12), downloadsUrl: 'https://developer.spotify.com/documentation/soloist/reference/downloads-and-updates',
     };
   }
@@ -174,11 +187,36 @@ export class Soloist {
     if (!existsSync(this.bin)) throw new Error('Soloist is not installed yet.');
     const c = this.config();
     if (!c.apiKey) throw new Error('Paste your Soloist API key first.');
-    if (this.child) return;
+    if (this.child || this.launching) return;
     this.wanted = true; this.state = 'starting'; this.message = null;
     mkdirSync(join(this.dir, 'cache'), { recursive: true });
-    const args = ['--device-name', c.deviceName, '--api-key', c.apiKey, '--cache-dir', join(this.dir, 'cache'), ...(c.outputDevice ? ['--pipewire-device', c.outputDevice] : [])];
-    const child = (this.d.spawnImpl ?? spawn)(this.bin, args, { stdio: ['ignore', 'pipe', 'pipe'], env: this.soloistEnv() });
+    if (!c.beam) { this.spawnChild(c); return; }
+    // beaming: the virtual output has to exist before Soloist starts, because Soloist is pointed at it
+    this.launching = true;
+    void this.ensureSink().then(() => { this.launching = false; if (this.wanted && !this.child) this.spawnChild(this.config()); }, () => { this.launching = false; });
+  }
+
+  private launching = false;
+  private async pactl(args: string[]): Promise<string> { return this.d.pactl ? this.d.pactl(args) : run(this.d.ffmpegDir ? join(this.d.ffmpegDir, 'pactl') : 'pactl', args, this.d.spawnImpl, this.soloistEnv()); }
+  /** Make sure the null sink Soloist plays into exists (created once per sound-server session). Beaming only works when it does. */
+  async ensureSink(): Promise<void> {
+    try {
+      const sinks = await this.pactl(['list', 'short', 'sinks']);
+      if (!sinks.split('\n').some((l) => l.split('\t')[1] === SINK)) await this.pactl(['load-module', 'module-null-sink', `sink_name=${SINK}`, 'sink_properties=device.description=Curator-Spotify']);
+      this.sink = { state: 'ready', message: null };
+    } catch (e) {
+      const m = (e as Error).message;
+      this.sink = { state: 'error', message: /not installed/.test(m) ? 'pactl is missing: install pulseaudio-utils (sudo apt install pulseaudio-utils).' : `Could not create the virtual output: ${m}` };
+      this.state = 'error'; this.message = this.sink.message; this.wanted = false;
+      throw e;
+    }
+  }
+
+  private spawnChild(c: SoloistConfig): void {
+    const out = c.beam ? SINK : c.outputDevice;
+    const args = ['--device-name', c.deviceName, '--api-key', c.apiKey, '--cache-dir', join(this.dir, 'cache'), ...(out ? ['--pipewire-device', out] : [])];
+    const env = this.soloistEnv(); if (c.beam) env.PULSE_SINK = SINK;
+    const child = (this.d.spawnImpl ?? spawn)(this.bin, args, { stdio: ['ignore', 'pipe', 'pipe'], env });
     if (!this.audio().ok) { this.log.push('Warning: no PipeWire or PulseAudio session found for this account; Soloist will have no sound output.'); }
     this.child = child;
     const keep = (d: Buffer) => {

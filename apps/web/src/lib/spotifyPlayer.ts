@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { api, useStore } from './store.ts';
 import type { SpotifyPlayerInfo } from './api.ts';
 import { spotifyTrackId } from './spotify.ts';
+import { setBeamErrorListener, startBeam, stopBeam } from './beam.ts';
 
 /**
  * Plays tracks that have a Spotify link but no audio file by telling a Spotify Connect device (Soloist on the Pi, the phone's Spotify app,
@@ -50,6 +51,7 @@ let lastProgress = 0, lastDuration = 0, lastAt = 0, playingNow = false, startedA
 
 const device = () => useStore.getState().settings.spotifyDeviceId;
 const fail = (e: unknown) => useSpotifyLink.setState({ error: (e as Error).message });
+setBeamErrorListener((m) => useSpotifyLink.setState({ error: m }));
 
 async function poll() {
   if (!uri) return;
@@ -86,15 +88,16 @@ export const spotifyEngine = {
     try {
       await api().spotifyPlay([trackUri], device(), positionMs);
       if (!start) await api().spotifyCommand('pause', device());
+      else void startBeam(); // the server's Soloist beams its sound: hear it on this device
       useSpotifyLink.setState({ error: null });
     } catch (e) { uri = null; fail(e); throw e; }
     stopPolling(); timer = setInterval(() => void poll(), 2500); startTicking();
     setTimeout(() => void poll(), 800);
   },
-  async pause() { playingNow = false; try { await api().spotifyCommand('pause', device()); } catch (e) { fail(e); } },
-  async resume() { playingNow = true; lastAt = Date.now(); try { await api().spotifyCommand('resume', device()); } catch (e) { fail(e); } },
+  async pause() { playingNow = false; stopBeam(); try { await api().spotifyCommand('pause', device()); } catch (e) { fail(e); } },
+  async resume() { playingNow = true; lastAt = Date.now(); try { await api().spotifyCommand('resume', device()); void startBeam(); } catch (e) { fail(e); } },
   async seek(ms: number) { lastProgress = ms; lastAt = Date.now(); try { await api().spotifyCommand('seek', device(), ms); } catch (e) { fail(e); } },
   async volume(v: number) { try { await api().spotifyCommand('volume', device(), Math.round(v * 100)); } catch { /* some devices have fixed volume */ } },
   /** leave Spotify alone from now on (another engine takes over); pauses it if Curator started it */
-  async release(pause = true) { const was = uri; uri = null; stopPolling(); clearInterval(tick); if (was && pause) { try { await api().spotifyCommand('pause', device()); } catch { /* already stopped */ } } },
+  async release(pause = true) { const was = uri; uri = null; stopBeam(); stopPolling(); clearInterval(tick); if (was && pause) { try { await api().spotifyCommand('pause', device()); } catch { /* already stopped */ } } },
 };

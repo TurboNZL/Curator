@@ -43,7 +43,7 @@ export function createApp(
   spotify = new SpotifyAccount(config.dataDir, { env: process.env }),
   matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   mover = new StorageMover(config.dataDir),
-  soloist = new Soloist(config.dataDir),
+  soloist = new Soloist(config.dataDir, { ffmpegDir: config.ffmpegDir }),
 ) {
   const app = new Hono();
 
@@ -197,9 +197,30 @@ export function createApp(
   // ---- Soloist (soloist.ts): Spotify's own headless Connect client, installed and run by this server so Curator plays Spotify tracks itself ----
   app.get('/api/soloist', async (c) => c.json(await soloist.status()));
   app.post('/api/soloist/config', async (c) => {
-    const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown; outputDevice?: unknown };
-    try { soloist.configure({ deviceName: typeof b.deviceName === 'string' ? b.deviceName : undefined, apiKey: typeof b.apiKey === 'string' ? b.apiKey : undefined, autoStart: typeof b.autoStart === 'boolean' ? b.autoStart : undefined, outputDevice: typeof b.outputDevice === 'string' ? b.outputDevice : undefined }); return c.json(await soloist.status()); }
+    const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown; outputDevice?: unknown; beam?: unknown };
+    const before = soloist.config();
+    try { soloist.configure({ deviceName: typeof b.deviceName === 'string' ? b.deviceName : undefined, apiKey: typeof b.apiKey === 'string' ? b.apiKey : undefined, autoStart: typeof b.autoStart === 'boolean' ? b.autoStart : undefined, beam: typeof b.beam === 'boolean' ? b.beam : undefined, outputDevice: typeof b.outputDevice === 'string' ? b.outputDevice : undefined }); const now = soloist.config();
+      // Soloist is started pointed at its output, so a change of output (speakers or the stream) needs a restart to take effect
+      if ((now.beam !== before.beam || now.outputDevice !== before.outputDevice) && (await soloist.status()).running) { await soloist.stop(); try { soloist.start(); } catch { /* shown in the status */ } }
+      return c.json(await soloist.status()); }
     catch (e) { return c.json({ error: (e as Error).message }, 400); }
+  });
+  // the live stream of Soloist's sound (beam.ts): the apps play it like internet radio
+  app.get('/api/soloist/stream', (c) => {
+    if (!soloist.config().beam) return c.json({ error: 'Beaming is off: turn on "Send the sound to the apps" in Settings > Spotify > Soloist.' }, 404);
+    let stop = () => {};
+    const body = new ReadableStream<Uint8Array>({
+      start(ctrl) {
+        const h = soloist.beam.listen((chunk) => {
+          // a client that cannot keep up is dropped instead of filling the server's memory
+          if ((ctrl.desiredSize ?? 0) < -4_000_000) { stop(); try { ctrl.close(); } catch { /* gone */ } return; }
+          try { ctrl.enqueue(new Uint8Array(chunk)); } catch { /* the client has gone */ }
+        }, () => { try { ctrl.close(); } catch { /* already closed */ } });
+        stop = h.stop;
+      },
+      cancel() { stop(); },
+    });
+    return new Response(body, { headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', 'Accept-Ranges': 'none' } });
   });
   app.post('/api/soloist/install', async (c) => { try { await soloist.install(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 502); } });
   app.post('/api/soloist/start', async (c) => { try { soloist.start(); return c.json(await soloist.status()); } catch (e) { return c.json({ error: (e as Error).message }, 400); } });
