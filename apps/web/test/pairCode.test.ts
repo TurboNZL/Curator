@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { decodePairCode, encodePairCode, pairFromSearch, pairLink } from '../src/lib/pairCode.ts';
 
 describe('pairing code', () => {
-  it('round-trips, also with non-ASCII and the optional tunnel token', () => {
-    const p = { url: 'https://music.example.com', token: 'tok/+=é', tunnel: 'eyJhIjoiYiJ9' };
+  it('round-trips, also with non-ASCII', () => {
+    const p = { url: 'https://music.example.com', token: 'tok/+=é' };
     expect(decodePairCode(encodePairCode(p))).toEqual(p);
     expect(decodePairCode(encodePairCode({ url: '', token: 'x' }))).toEqual({ url: '', token: 'x' });
   });

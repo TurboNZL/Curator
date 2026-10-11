@@ -104,7 +104,7 @@ An SD card dies from writes, not from age. What writes on this server and where 
 - **Scratch space** (`TMPDIR`) of ffmpeg and yt-dlp is `<data>/tmp`, set by the server.
 - **The system's own writing** (not Curator's): keep logs in memory with `sudo mkdir -p /etc/systemd/journald.conf.d && printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=50M\n' | sudo tee /etc/systemd/journald.conf.d/volatile.conf` (you lose logs at reboot), add `noatime` to the root line in `/etc/fstab`, and do not enable swap on the card (`sudo dphys-swapfile swapoff; sudo systemctl disable dphys-swapfile`).
 - **Server health** (Settings): free space on every disk the server uses, CPU temperature and load, memory and swap, whether the power supply dipped (`vcgencmd get_throttled`), how fast the disk answers a 4 KB synced write, and the database size. It reads a few kernel files and writes 4 KB every 30 seconds at most, only while the page is open. Warnings are plain sentences; nothing is stored.
-- **Copy the access token or the Cloudflare tunnel token** from the Server card (Settings → Library & server). The tunnel token is read from `CURATOR_TUNNEL_TOKEN`, from `<data folder>/tunnel-token`, or from the cloudflared systemd service when the server may read it; otherwise the button says where to put it.
+- **Copy the access token** from the Server card (Settings → Library & server), or use **Pair a device** to make a code or link that sets up another device (server address, access token and, if the server sits behind Cloudflare Access, the service token's client ID and secret).
 
 ## 6. Backups
 - **Files** (`files/`) are immutable and content-addressed, so a plain `rsync -a /mnt/curator/data/files/ <backup>/files/` is incremental and safe while running.

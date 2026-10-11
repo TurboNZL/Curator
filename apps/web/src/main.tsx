@@ -34,7 +34,7 @@ startPresence();
 {
   const p = pairFromSearch(location.search);
   if (new URLSearchParams(location.search).has('pair')) {
-    if (p && confirm(`Connect this device to ${p.url || location.origin}?`)) useStore.getState().updateSettings({ serverUrl: p.url === location.origin ? '' : p.url, token: p.token, ...(p.tunnel ? { tunnelToken: p.tunnel } : {}), ...(p.access ? { cfAccessId: p.access.id, cfAccessSecret: p.access.secret } : {}) });
+    if (p && confirm(`Connect this device to ${p.url || location.origin}?`)) useStore.getState().updateSettings({ serverUrl: p.url === location.origin ? '' : p.url, token: p.token, ...(p.access ? { cfAccessId: p.access.id, cfAccessSecret: p.access.secret } : {}) });
     history.replaceState(null, '', location.pathname + location.hash);
   }
 }

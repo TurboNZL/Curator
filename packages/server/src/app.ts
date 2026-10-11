@@ -19,7 +19,6 @@ import { streamSSE } from 'hono/streaming';
 import { ConnectHub, parseCommand, parseSnapshot } from './connect.ts';
 import { checkTools } from './tools.ts';
 import { assessHealth, collectHealth } from './health.ts';
-import { findTunnelToken } from './tunnel.ts';
 import { StorageError, StorageMover, describeStorage, isKind } from './storage.ts';
 import { BackupError, databaseSnapshot, filesArchive, importFiles, readDatabaseRecords, readStream, saveUpload } from './backup.ts';
 import { Readable } from 'node:stream';
@@ -88,8 +87,6 @@ export function createApp(
     return c.json({ ok: true }, 202);
   });
 
-  // The Cloudflare tunnel token this server was set up with, for copying (read on request, never part of /api/status)
-  app.get('/api/admin/tunnel-token', (c) => c.json(findTunnelToken(config.dataDir)));
 
   // ---- Update server (update.ts): only offered when this is a service install of a git checkout ----
   app.get('/api/admin/update', (c) => c.json({ available: updater.available, restarts: updater.restarts, ...updater.state() }));

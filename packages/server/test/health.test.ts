@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assessHealth, collectHealth, diskProbe, parseMeminfo, parseThrottled, type HealthSnapshot } from '../src/health.ts';
 import { StorageMover, checkTarget, describeStorage, moveStorage, StorageError } from '../src/storage.ts';
-import { findTunnelToken, tokenFromText } from '../src/tunnel.ts';
 import { withCacheDir } from '../src/config.ts';
 
 let dir: string;
@@ -56,24 +55,6 @@ describe('what deserves a warning', () => {
   it('says so when the library is on the SD card, and when the disk is slow', () => {
     const w = assessHealth(snap({ disks: [{ label: 'Library files', path: '/home/curator/data/files', freeBytes: 20e9, totalBytes: 30e9, device: 1, system: true }], probe: { writeMs: 900, readMs: 2 } }));
     expect(w.map((x) => x.id).sort()).toEqual(['sd-card', 'slow-disk']);
-  });
-});
-
-describe('tunnel token', () => {
-  const token = 'eyJhIjoiMTIzNDU2Nzg5MDEyMzQ1Njc4OTAiLCJ0IjoiYWJjZGVmMDEtMjM0NS02Nzg5LWFiY2QtZWYwMTIzNDU2NzgiLCJzIjoic2VjcmV0c2VjcmV0c2VjcmV0c2VjcmV0In0=';
-  it('is read from a cloudflared service file', () => {
-    expect(tokenFromText(`ExecStart=/usr/bin/cloudflared --no-autoupdate tunnel run --token ${token}`)).toBe(token);
-    expect(tokenFromText(`Environment="TUNNEL_TOKEN=${token}"`)).toBe(token);
-    expect(tokenFromText('ExecStart=/usr/bin/node')).toBeNull();
-  });
-  it('is found in the environment, the data folder or an installed service, in that order', () => {
-    mkdirSync(join(dir, 'units'));
-    expect(findTunnelToken(join(dir, 'data'), {}, [join(dir, 'units')])).toEqual({ found: false });
-    writeFileSync(join(dir, 'units', 'cloudflared.service'), `ExecStart=cloudflared tunnel run --token ${token}`);
-    expect(findTunnelToken(join(dir, 'data'), {}, [join(dir, 'units')])).toMatchObject({ found: true, token });
-    writeFileSync(join(dir, 'data', 'tunnel-token'), 'B'.repeat(80));
-    expect(findTunnelToken(join(dir, 'data'), {}, [join(dir, 'units')]).token).toBe('B'.repeat(80));
-    expect(findTunnelToken(join(dir, 'data'), { CURATOR_TUNNEL_TOKEN: 'C'.repeat(80) }, []).token).toBe('C'.repeat(80));
   });
 });
 
