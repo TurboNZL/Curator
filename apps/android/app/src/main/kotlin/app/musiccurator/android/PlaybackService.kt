@@ -7,7 +7,9 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Player
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.cache.CacheDataSource
@@ -53,6 +55,17 @@ class PlaybackService : MediaLibraryService() {
             .setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(), true)
             .setHandleAudioBecomingNoisy(true)
             .build()
+        // Next and Previous are always offered (notification, lock screen, headset, car). When the app's player has nothing after the current
+        // track (its window is only a dozen tracks, and a track only the page can play ends it) the page, which owns the queue, decides what is next.
+        val offered = object : ForwardingPlayer(player) {
+            private val always = setOf(Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+            override fun getAvailableCommands(): Player.Commands = super.getAvailableCommands().buildUpon().apply { always.forEach { add(it) } }.build()
+            override fun isCommandAvailable(command: Int): Boolean = command in always || super.isCommandAvailable(command)
+            override fun seekToNext() { if (hasNextMediaItem()) super.seekToNext() else NativeAudio.requestNext() }
+            override fun seekToNextMediaItem() = seekToNext()
+            override fun seekToPrevious() { if (currentPosition > 3000 || hasPreviousMediaItem()) super.seekToPrevious() else NativeAudio.requestPrevious() }
+            override fun seekToPreviousMediaItem() = seekToPrevious()
+        }
         val effects = AudioFx(ServerPrefs(this))
         fx = effects
         AudioFx.current = effects
@@ -62,7 +75,9 @@ class PlaybackService : MediaLibraryService() {
         effects.attach(player.audioSessionId)
         // tapping the notification opens the app
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        session = MediaLibrarySession.Builder(this, player, Callback()).setSessionActivity(open).build()
+        // the notification's small icon: the default is Media3's generic play-in-a-circle, which One UI shows as is
+        setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build().also { it.setSmallIcon(R.drawable.ic_stat_curator) })
+        session = MediaLibrarySession.Builder(this, offered, Callback()).setSessionActivity(open).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session

@@ -35,6 +35,12 @@ object NativeAudio {
 
     /** set by the activity while a page is showing; null otherwise (events are then dropped) */
     @Volatile var emit: ((String) -> Unit)? = null
+        set(value) {
+            field = value
+            // a track change that happened while no page was listening (the screen off, the app in the background) is delivered when one is
+            if (value != null) { pendingTransition?.let { value(it) }; pendingTransition = null }
+        }
+    private var pendingTransition: String? = null
     /** the latest state, so a page that was recreated can pick up where the player is */
     @Volatile var lastState: String = "{}"
 
@@ -125,7 +131,15 @@ object NativeAudio {
 
     // ---- player → page
 
-    private fun send(json: String) { emit?.invoke(json) }
+    private fun send(json: String) {
+        val e = emit
+        if (e != null) e(json)
+        else if (json.startsWith("{\"t\":\"index\"") || json.startsWith("{\"t\":\"next\"")) pendingTransition = json
+    }
+
+    /** The notification, a headset or the car asked for the next track and the app's player has none left in its window: the page knows the rest of the queue. */
+    fun requestNext() = send(JSONObject().put("t", "next").toString())
+    fun requestPrevious() = send(JSONObject().put("t", "prev").toString())
 
     private fun id(c: MediaController): String = c.currentMediaItem?.mediaId ?: ""
 

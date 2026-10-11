@@ -21,6 +21,8 @@ export type NativeEvent =
   | { t: 'state'; id: string; playing: boolean; pos: number; dur: number; buffering: boolean }
   | { t: 'index'; id: string; ids: string[]; reason: 'auto' | 'seek' | 'playlist' | 'repeat' }
   | { t: 'ended'; id: string }
+  /** the notification, a headset or the car pressed Next/Previous and the app's player has no neighbour left: the page decides */
+  | { t: 'next' } | { t: 'prev' }
   | { t: 'error'; id?: string; code?: string; message: string };
 
 export const nativeAudio = {

@@ -233,6 +233,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
       set({ playing: e.playing, time: e.pos / 1000, duration: e.dur / 1000 });
     } else if (e.t === 'index') {
       if (native || !get().queue.currentId) { native = true; followNative(e.id, e.ids, e.reason); }
+    } else if (e.t === 'next') {
+      if (get().queue.currentId) get().next();
+    } else if (e.t === 'prev') {
+      if (get().queue.currentId) get().prev();
     } else if (e.t === 'ended') {
       if (!native) return;
       logPlay(false);
