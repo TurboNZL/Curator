@@ -58,13 +58,14 @@ export function AlbumPage() {
               <Layers size={18} className="shrink-0 text-muted" /><span className="min-w-0 flex-1"><span className="block font-medium">All tracks</span><span className="block text-xs text-muted">{plural(album.trackIds.length, 'track')}</span></span></button>)}
           {releases.map((r) => {
             const on = view.kind === 'release' && view.id === r.id;
+            const reuse = r.title === album.title; // a release called after its album has no name of its own to show
             const isDefault = album.defaultReleaseId ? album.defaultReleaseId === r.id : releases.length > 0 && r.id === [...releases].sort((a, b) => b.trackIds.length - a.trackIds.length)[0].id;
             return (
               <div key={r.id} data-selected={on || undefined} className="card bt-sel group flex items-center gap-2 py-2 pl-2 pr-1">
                 <button role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3 text-left text-sm" onClick={() => choose({ kind: 'release', id: r.id })}>
                   <Cover hash={r.cover || album.cover} seed={r.title} className="h-11 w-11 shrink-0" />
-                  <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
-                    <span className="block text-xs text-muted">{r.releaseDate ?? 'undated'} · {plural(r.trackIds.length, 'track')}</span></span>
+                  <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 font-medium"><span className="truncate">{reuse ? (r.releaseDate ?? 'Undated') : r.title}</span>{isDefault && <span className="chip shrink-0">default</span>}</span>
+                    <span className="block text-xs text-muted">{reuse ? plural(r.trackIds.length, 'track') : `${r.releaseDate ?? 'undated'} · ${plural(r.trackIds.length, 'track')}`}</span></span>
                 </button>
                 <button className="-my-2 flex shrink-0 items-center self-stretch px-2.5 text-muted hover:text-fg" aria-label={`Edit ${r.title}`} title="Edit release" onClick={() => edit({ kind: 'release', id: r.id })}><Pencil size={14} /></button>
                 <button className="-my-2 flex shrink-0 items-center self-stretch px-2.5 text-muted hover:text-fg" aria-label={`Add ${r.title} to an album playlist`} title="Add this release to an album playlist" onClick={() => edit({ kind: 'add-album-to-playlist', id: r.id })}><ListPlus size={14} /></button>
@@ -85,7 +86,7 @@ export function AlbumPage() {
             <span className="text-muted"> · {plural(tracks.length, 'track')}{album.rating != null && ` · avg ${album.rating.toFixed(1)}`}</span>
             {album.eraIds.map((e) => lib.eraById.get(e) && <span key={e}> · <Link to={`/eras/${e}`} className="text-muted hover:text-fg hover:underline">{lib.eraById.get(e)!.name}</Link></span>)}
           </div>
-          <div className="flex flex-wrap gap-1.5">{album.genres.map((g) => <span key={g} className="chip">{g}</span>)}</div>
+          <div className="flex flex-wrap gap-1.5">{album.genres.map((g) => <Link key={g} to={`/tracks?genre=${encodeURIComponent(g)}`} className="chip hover:brightness-125" title={`Tracks in ${g}`}>{g}</Link>)}</div>
           <div className="flex flex-wrap gap-2 pt-2">
             <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'album', id: album.id })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'album', id: album.id }); }}><Shuffle size={16} />Shuffle</button>

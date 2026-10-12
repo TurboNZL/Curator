@@ -93,6 +93,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.geniusUrl).map((x) => t(x)) },
     { id: 'release-no-date', title: 'Releases without a date', why: 'Find them automatically: from another dated release of the same album, or from Spotify, iTunes and MusicBrainz. Or open a release and set the date yourself.', autoDates: true,
       items: lib.releases.filter((r) => !r.releaseDate).map((r) => ({ kind: 'release' as const, id: r.id, label: `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? 'unknown album'}` })) },
+    { id: 'single-no-date', title: 'Singles without a date', why: 'A single carries its own release date (an album track takes it from its album). Open the single and fill in the date.',
+      items: lib.singles.filter((x) => !x.releaseDate).map((x) => t(x, 'single')) },
     { id: 'album-no-genre', title: 'Albums without a genre', why: 'Tracks that follow the album take their genres from it.',
       items: lib.albums.filter((a) => !a.genres.length).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },
     { id: 'no-genre', title: 'Tracks without a genre', why: 'They will not show up in genre filters or the genre stats.',

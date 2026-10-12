@@ -1,6 +1,6 @@
 import { WindowFrame } from './WindowFrame.tsx';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate, useNavigationType } from 'react-router-dom';
-import { BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
@@ -68,7 +68,7 @@ const TOOLBAR_LABEL: Record<string, string> = { '/': 'Journal' };
 const MOBILE_HIDDEN = ['/discover', '/singles', '/eras', '/playlists', '/stats', '/queue', '/notes', '/health', '/settings'];
 
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
-  { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
+  { label: 'Import from YouTube', icon: Download, target: { kind: 'import', id: '' } },
   { label: 'Import from Spotify', icon: ListMusic, target: { kind: 'import-spotify', id: '' } },
   { label: 'Find YouTube Music albums', icon: Search, target: { kind: 'match-links', id: '' } },
   { label: 'Add audio files', icon: FileAudio, target: { kind: 'upload', id: '' } },
@@ -119,6 +119,12 @@ function MoreMenu() {
 
 export function Layout() {
   const nav = useNavigate();
+  // the router keeps its position in the history entry; Back is only possible above the first one, Forward after going back (tracked as the furthest position reached)
+  const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+  const furthest = useRef(0);
+  const typeNow = useNavigationType();
+  furthest.current = typeNow === 'POP' ? Math.max(furthest.current, histIdx) : histIdx; // a new page drops everything that was ahead
+  const canBack = histIdx > 0, canForward = histIdx < furthest.current;
   const { pathname } = useLocation();
   const navType = useNavigationType();
   const location = useLocation();
@@ -179,6 +185,10 @@ export function Layout() {
               {toolbar && <nav className="bt-toplinks hidden min-w-0 items-center gap-6 overflow-x-auto md:flex" aria-label="Pages">
                 {topNav.map(({ to, label, ...rest }) => <NavLink key={to} to={to} end={'end' in rest} className="bt-toplink whitespace-nowrap">{TOOLBAR_LABEL[to] ?? label}</NavLink>)}
               </nav>}
+              <div className="flex shrink-0 items-center">
+                <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Back" title="Back" disabled={!canBack} onClick={() => nav(-1)}><ArrowLeft size={17} /></button>
+                <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Forward" title="Forward" disabled={!canForward} onClick={() => nav(1)}><ArrowRight size={17} /></button>
+              </div>
               <div className="bt-search relative flex-1">
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
               <input className="input pl-9" placeholder="Search tracks, albums, artists" value={q} onChange={(e) => setQ(e.target.value)} />
