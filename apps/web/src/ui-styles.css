@@ -977,16 +977,16 @@ html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
   --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-tr: 9999px; --rng-thumb: hsl(var(--accent)); --rng-ts: 0 0 0 6px hsl(var(--accent) / 0.25);
   /* LG Optimus UI 3.0 (Android 4.x) drew Holo's controls in its own colours: the Holo geometry above, the Marshmallow pinks, thin rose frames
      on translucent white widgets, a dark status bar with a rose rule and a solid rose primary button */
-  --mm-frame: color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
-  --mm-soft: color-mix(in srgb, hsl(var(--accent)) 14%, hsl(var(--surface)));
+  --mm-frame: color-mix(in srgb, hsl(var(--pink, 347 68% 60%)) 45%, hsl(var(--bg)));
+  --mm-soft: color-mix(in srgb, hsl(var(--pink, 347 68% 60%)) 14%, hsl(var(--surface)));
   --mm-glass: color-mix(in srgb, hsl(var(--surface)) 72%, transparent);
-  --btn-bg: var(--mm-soft); --btn-fg: hsl(var(--fg)); --btn-border: 1px solid var(--mm-frame);
-  --btn-hover-bg: color-mix(in srgb, hsl(var(--accent)) 24%, hsl(var(--surface))); --btn-hover-border: hsl(var(--accent));
+  --btn-bg: color-mix(in srgb, hsl(var(--fg)) 9%, hsl(var(--surface))); --btn-fg: hsl(var(--fg)); --btn-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 16%, transparent);
+  --btn-hover-bg: color-mix(in srgb, hsl(var(--accent)) 20%, hsl(var(--surface))); --btn-hover-border: hsl(var(--accent));
   --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 78%, black); --btn-accent-border-color: color-mix(in srgb, hsl(var(--accent)) 78%, black);
   --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 88%, white);
   --card-bg: var(--mm-glass); --card-border: 1px solid var(--mm-frame);
-  --win-bg: color-mix(in srgb, hsl(var(--surface)) 96%, transparent); --win-border: 1px solid var(--mm-frame); --win-shadow: 0 8px 24px color-mix(in srgb, hsl(var(--accent)) 25%, transparent);
-  --menu-bg: color-mix(in srgb, hsl(var(--surface)) 97%, transparent); --menu-border: 1px solid var(--mm-frame); --pop-shadow: 0 4px 14px color-mix(in srgb, hsl(var(--accent)) 24%, transparent);
+  --win-bg: color-mix(in srgb, hsl(var(--surface)) 96%, transparent); --win-border: 1px solid var(--mm-frame); --win-shadow: 0 8px 24px color-mix(in srgb, hsl(var(--pink, 347 68% 60%)) 25%, transparent);
+  --menu-bg: color-mix(in srgb, hsl(var(--surface)) 97%, transparent); --menu-border: 1px solid var(--mm-frame); --pop-shadow: 0 4px 14px color-mix(in srgb, hsl(var(--pink, 347 68% 60%)) 24%, transparent);
   --menu-hi-bg: color-mix(in srgb, hsl(var(--accent)) 22%, transparent); --menu-hi-fg: hsl(var(--fg));
   --bar-border: 1px solid var(--mm-frame);
   --side-bg: color-mix(in srgb, hsl(var(--surface)) 55%, transparent); --side-shadow: none;

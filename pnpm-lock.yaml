@@ -68,6 +68,9 @@ importers:
       '@fontsource/fredoka':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/jersey-10':
         specifier: ^5.3.0
         version: 5.3.0
@@ -75,6 +78,9 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/jersey-20':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/lato':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/manrope':
@@ -87,6 +93,9 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/nunito':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/nunito-sans':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/open-sans':
@@ -113,6 +122,9 @@ importers:
       '@fontsource/silkscreen':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/source-sans-3':
+        specifier: ^5.3.1
+        version: 5.3.1
       '@fontsource/tiny5':
         specifier: ^5.3.0
         version: 5.3.0
@@ -123,6 +135,9 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/vt323':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/work-sans':
         specifier: ^5.3.0
         version: 5.3.0
       clsx:
@@ -761,6 +776,9 @@ packages:
   '@fontsource/fredoka@5.3.0':
     resolution: {integrity: sha512-s2IhjQ50wDnKkkaKmjhtL0rxQg6ITsVusiipM3m7zUwVZZbbCKsscNDkngwp28xVzfIt7neWrkgU1qKqyTycQg==}
 
+  '@fontsource/inter@5.3.0':
+    resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
+
   '@fontsource/jersey-10@5.3.0':
     resolution: {integrity: sha512-1dOTUg3JXm/Ls6j4BEPLRF5DHGadCGQy/sIHS7L0SWauB2rEd2W6614Xufxoc+TVXtrt8kVR6IWh3RFkXmy/Cw==}
 
@@ -770,6 +788,9 @@ packages:
   '@fontsource/jersey-20@5.3.0':
     resolution: {integrity: sha512-x2fZogWG1C471cRTay9Fb1GsWGsXToRRNaYWXpUNkM6JOVMFE1dpPX3qWGmq0EF5omIg0OHL80V4+pl3NBqCdQ==}
 
+  '@fontsource/lato@5.3.0':
+    resolution: {integrity: sha512-0WhF/4rhrw+ErIyneKvhHn2YAl+xf8GDtllgOgOzDmeaSlLQtjpChXaQOpWhG2BchQW0WJy2zLV12Hdg0ndOMw==}
+
   '@fontsource/manrope@5.3.0':
     resolution: {integrity: sha512-obJ1Dv3+uCA6HlHgW8u4BGYxJR9In2HW7gjJhlflEvkrj1X1iSEwu0fToL+JYGC/FEKFfIz1sBuPduvcL2gIAA==}
 
@@ -778,6 +799,9 @@ packages:
 
   '@fontsource/noto-sans@5.3.0':
     resolution: {integrity: sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw==}
+
+  '@fontsource/nunito-sans@5.3.0':
+    resolution: {integrity: sha512-CctNhebQ2YYJUwVMCAkHexQg7yedfz9s8JzaETALyc9QIQuDFRlNTWXux9H5PsNLgptPkrzRDomAdLJt1sDFpQ==}
 
   '@fontsource/nunito@5.3.0':
     resolution: {integrity: sha512-vw9TaTQJ/zpEpKrsODuPmOvaVjXgdda6B+xXA4YqjrdeJ62MLgVoDerdRXFQHyBnSCt2yQ2nHKCHPP/Pv7Xq4Q==}
@@ -806,6 +830,9 @@ packages:
   '@fontsource/silkscreen@5.3.0':
     resolution: {integrity: sha512-M1NQ3LQH0LFNvyFPd/piHEGMImPPtpLglNnLC6Vdcq9kL0jNIOtTQmksAWCc4enbDnw1OnIpZtjNEfRqYm/QmA==}
 
+  '@fontsource/source-sans-3@5.3.1':
+    resolution: {integrity: sha512-O3YxvbotUOgYI2Zx0bBcEMNjnwitRf9P2+9pd54sMoux1NHrdXnMwZusw2P78lFhEzOPN4glOEQmX0ASaS68uA==}
+
   '@fontsource/tiny5@5.3.0':
     resolution: {integrity: sha512-29H01ByMRs6uiLeOoBnZLedf0dR3pF5A53cIBzhp1/Y6Bu5D0t5selTb4TWs3ENoc/OK71rOed5xAdvBywe4aQ==}
 
@@ -817,6 +844,9 @@ packages:
 
   '@fontsource/vt323@5.3.0':
     resolution: {integrity: sha512-3w33Rg/0+R1587HQfz4t7Q7e0GGeCqr3wmzIwqdGInUnrGEwMA5eX39GP4Z9wpTQnwfhVOhYuxuRwRUeIcicbw==}
+
+  '@fontsource/work-sans@5.3.0':
+    resolution: {integrity: sha512-3cKV28+bEiLGdyOl0VgEGCFWE1XdZJu/K+nH4Jt76XC3T//XrRtm2EF7jA61GSMIy8sYp6ZFTE01nD3lLaBV9A==}
 
   '@hono/node-server@1.19.17':
     resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
@@ -3349,17 +3379,23 @@ snapshots:
 
   '@fontsource/fredoka@5.3.0': {}
 
+  '@fontsource/inter@5.3.0': {}
+
   '@fontsource/jersey-10@5.3.0': {}
 
   '@fontsource/jersey-15@5.3.0': {}
 
   '@fontsource/jersey-20@5.3.0': {}
 
+  '@fontsource/lato@5.3.0': {}
+
   '@fontsource/manrope@5.3.0': {}
 
   '@fontsource/micro-5@5.3.0': {}
 
   '@fontsource/noto-sans@5.3.0': {}
+
+  '@fontsource/nunito-sans@5.3.0': {}
 
   '@fontsource/nunito@5.3.0': {}
 
@@ -3379,6 +3415,8 @@ snapshots:
 
   '@fontsource/silkscreen@5.3.0': {}
 
+  '@fontsource/source-sans-3@5.3.1': {}
+
   '@fontsource/tiny5@5.3.0': {}
 
   '@fontsource/ubuntu@5.3.0': {}
@@ -3386,6 +3424,8 @@ snapshots:
   '@fontsource/urbanist@5.3.0': {}
 
   '@fontsource/vt323@5.3.0': {}
+
+  '@fontsource/work-sans@5.3.0': {}
 
   '@hono/node-server@1.19.17(hono@4.13.13)':
     dependencies:

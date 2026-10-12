@@ -232,10 +232,10 @@ export const THEME_DEFS: ThemeDef[] = [
   dark({ id: "inventory", label: "Bedrock", bg: hex("#484a4b"), primary: hex("#3c8527"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#c1c2c5"), motif: "peaks",
     ov: { card: "#3d3f40", secondary: "#58585a", muted: "#3d3f40", accent: "#5a5b5c", border: "#323435", input: "#1e1e1f" } }),
   // LG Optimus "Marshmallow" theme: pastel pink, cream and rose, read off a screenshot of its home screen (LG published no palette)
-  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f1e5df"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#4f3a3f"), mutedFg: hx("#917178"), motif: "hills",
-    ov: { card: "#fbf4f2", secondary: "#f4dcdd", muted: "#efdcd8", accent: "#dc5a76", border: "#e3b3b9", input: "#d99aa5" } }),
-  dark({ id: "lg-marshmallow-dark", label: "Marshmallow Night", bg: hex("#2b1224"), primary: hex("#ff6fb0"), onPrimary: "0 0% 100%", fg: hx("#ffe9f3"), mutedFg: hx("#d79ab8"), motif: "dots",
-    ov: { card: "#3b1b31", secondary: "#4a2540", muted: "#40213a", accent: "#6b2d56", border: "#5a2a49", input: "#b45c8c" } }),
+  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f1e5df"), primary: hex("#0b8fc0"), onPrimary: "0 0% 100%", fg: hx("#4f3a3f"), mutedFg: hx("#917178"), motif: "hills",
+    ov: { card: "#fbf4f2", secondary: "#f4dcdd", muted: "#efdcd8", accent: "#0b8fc0", border: "#e3b3b9", input: "#d99aa5" } }),
+  dark({ id: "lg-marshmallow-dark", label: "Marshmallow Night", bg: hex("#2b1224"), primary: hex("#33b5e5"), onPrimary: "0 0% 6%", fg: hx("#ffe9f3"), mutedFg: hx("#d79ab8"), motif: "dots",
+    ov: { card: "#3b1b31", secondary: "#4a2540", muted: "#40213a", accent: "#33b5e5", border: "#5a2a49", input: "#b45c8c" } }),
   // Fortnite: Epic does not publish its UI colours; these are read off screenshots of each era's settings and lobby screens.
   // Ch 1: muted slate blue with WHITE type, a dark navy top bar, pale lavender buttons with dark labels, cream "selected" and a soft yellow edge
   dark({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#41589a"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#ffffff"), mutedFg: hx("#c7d3f2"), motif: "waves",
@@ -262,14 +262,14 @@ export const THEME_DEFS: ThemeDef[] = [
     ov: { card: "#0f0f0f", secondary: "#272727", muted: "#272727", accent: "#3f3f3f", border: "#303030", input: "#121212" } }),
   dark({ id: "discord", label: "Discord", bg: hex("#313338"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#f2f3f5"), mutedFg: hx("#949ba4"), motif: "dots",
     ov: { card: "#2b2d31", secondary: "#383a40", muted: "#2b2d31", accent: "#404249", border: "#1e1f22", input: "#1e1f22" } }),
+  dark({ id: "discord-onyx", label: "Discord Onyx", bg: hex("#000000"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#f2f3f5"), mutedFg: hx("#80848e"), motif: "dots",
+    ov: { card: "#0a0a0b", secondary: "#1e1e20", muted: "#0a0a0b", accent: "#1e1e20", border: "#17171a", input: "#000000" } }),
   light({ id: "discord-light", label: "Discord Light", bg: hex("#ffffff"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#313338"), mutedFg: hx("#5c5e66"), motif: "dots",
     ov: { card: "#f2f3f5", secondary: "#e3e5e8", muted: "#f2f3f5", accent: "#d7d9dd", border: "#e3e5e8", input: "#e3e5e8" } }),
   light({ id: "oneui", label: "One UI", bg: hex("#f2f2f4"), primary: hex("#3e91ff"), onPrimary: "0 0% 100%", fg: hx("#1a1a1c"), mutedFg: hx("#6b6b72"), motif: "waves",
     ov: { card: "#ffffff", secondary: "#e8e8ec", muted: "#ececf0", accent: "#dcdce2", border: "#e0e0e6", input: "#e8e8ec" } }),
   dark({ id: "oneui-dark", label: "One UI Dark", bg: hex("#000000"), primary: hex("#3e91ff"), onPrimary: "0 0% 100%", fg: hx("#f4f4f6"), mutedFg: hx("#a0a0a8"), motif: "waves",
     ov: { card: "#1c1c1f", secondary: "#2a2a2e", muted: "#242427", accent: "#38383d", border: "#2a2a2e", input: "#2a2a2e" } }),
-  dark({ id: "oneui-lilac", label: "One UI Lilac", bg: hex("#5a4d98"), primary: hex("#ffffff"), onPrimary: hx("#3a2f6e"), fg: hx("#ffffff"), mutedFg: hx("#e2daf6"), motif: "waves",
-    ov: { card: "#6c5eaa", secondary: "#7c6dba", muted: "#6c5eaa", accent: "#8b7cc9", border: "#8f80cc", input: "#7c6dba" } }),
   dark({ id: "ado", label: "Ado", bg: hex("#04060f"), primary: hex("#2f6bff"), onPrimary: "0 0% 100%", fg: hx("#f2f5ff"), mutedFg: hx("#8b97c4"), motif: "rays",
     ov: { card: "#0a1024", secondary: "#101a3a", muted: "#0d1530", accent: "#16255a", border: "#1d2d6e", input: "#101a3a" } }),
   light({ id: "ios", label: "iOS", bg: hex("#f2f2f7"), primary: hex("#007aff"), onPrimary: "0 0% 100%", fg: hx("#000000"), mutedFg: hx("#8e8e93"), motif: "hills",
@@ -295,7 +295,7 @@ export const PLATFORM_THEME_IDS: ThemeId[] = [
   "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "zinc", "material", "material-dark", "ios", "ios-dark", "yaru", "yaru-dark",
 ];
 /** Palettes of the game and device inspired styles, shown in their own group in Settings. */
-export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory", "spotify", "ytmusic", "discord", "discord-light", "oneui", "oneui-dark", "oneui-lilac", "ado"];
+export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory", "spotify", "ytmusic", "discord", "discord-onyx", "discord-light", "oneui", "oneui-dark", "ado"];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 
 export const DEFAULT_THEME: ThemeId = "default";
