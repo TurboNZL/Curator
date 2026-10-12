@@ -63,10 +63,10 @@
 [data-layout="topbar"] .bt-toplinks { gap: 0.25rem; }
 
 /* ---- dock ---- */
-/* Bottom dock: the phone's tab bar, floating and centred on a desktop window */
+/* Bottom dock: on a wide window every page has its own button and the bar fills the bottom edge (no "More"); only Liquid Glass draws it as a floating pill, and that is the theme's own rule */
 @media (min-width: 768px) {
-  [data-layout="dock"] .bt-tabbar { width: min(44rem, calc(100% - 2rem)); margin: 0.25rem auto 0.75rem; border-radius: 9999px; border: 1px solid hsl(var(--line)); overflow: hidden; }
-  [data-layout="dock"] .bt-tabbar .bt-tab { padding-block: 0.55rem; font-size: 11px; }
+  [data-layout="dock"] .bt-tabbar { margin: 0; overflow-x: auto; }
+  [data-layout="dock"] .bt-tabbar .bt-tab { padding-block: 0.5rem; font-size: 11px; min-width: 4.25rem; }
   [data-layout="dock"] .bt-content { max-width: 80rem; }
 }
 

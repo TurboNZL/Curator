@@ -9,6 +9,8 @@ export interface DesktopConfig {
   port: number;
   /** draw the window's title bar in the page, in the chosen theme, instead of the system's (off by default; needs a restart) */
   customFrame: boolean;
+  /** the server module is installed: this app runs its own library server. Unset = the edition's default (on in the full edition, off in the app edition). */
+  serverModule?: boolean;
   /** how Chromium starts its graphics (gpuModes.ts): "auto" tries them in turn, or a mode id */
   gpuMode: string;
   /** where Automatic is in its search, and whether it has settled */
@@ -29,6 +31,7 @@ export function loadDesktopConfig(userData: string, env: NodeJS.ProcessEnv = pro
     dataDir: env.CURATOR_DATA_DIR || (typeof saved.dataDir === 'string' && saved.dataDir ? saved.dataDir : join(userData, 'library')),
     port: Number.isInteger(port) && port >= 1 && port <= 65535 ? port : DESKTOP_PORT,
     customFrame: saved.customFrame === true,
+    serverModule: typeof saved.serverModule === 'boolean' ? saved.serverModule : undefined,
     gpuMode: typeof saved.gpuMode === 'string' ? saved.gpuMode : 'auto',
     gpuAuto: { step: Number(saved.gpuAuto?.step) || 0, done: saved.gpuAuto?.done === true },
   };

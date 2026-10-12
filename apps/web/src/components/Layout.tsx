@@ -121,7 +121,7 @@ function AddMenu() {
 function MoreMenu({ dock }: { dock: boolean }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative flex flex-1">
+    <div className={cn('relative flex flex-1', dock && 'md:hidden')}>
       <button type="button" className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] text-muted" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}><MoreHorizontal size={20} />More</button>
       {open && <>
         <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
@@ -215,7 +215,7 @@ export function Layout() {
               {!hasPlayer && <VolumeButton />}
               <DevicesMenu />
               <AddMenu />
-              {(toolbar || dock) && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}
+              {toolbar && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}
             </div>
           </form>
           <div className={cn('bt-content mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className="bt-page"><Outlet /></div></div>
@@ -226,8 +226,9 @@ export function Layout() {
       <NowPlaying />
       <nav ref={tabRef} className={cn('bt-tabbar bt-shell relative flex', !dock && 'md:hidden')}>
         <span className="bt-ind" aria-hidden />
-        {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to) || (dock && n.to === '/settings')).map(({ to, label, icon: Icon, ...rest }) => (
-          <NavLink key={to} to={to} end={'end' in rest} className="bt-tab flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]">
+        {NAV.filter((n) => dock || !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
+          // the dock lists every page on a wide window; on a phone only the usual tabs plus Settings (the rest sit under More)
+          <NavLink key={to} to={to} end={'end' in rest} className={cn('bt-tab flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]', dock && MOBILE_HIDDEN.includes(to) && to !== '/settings' && 'max-md:hidden')}>
             <Icon size={20} />{label}
           </NavLink>
         ))}

@@ -2,6 +2,17 @@
 
 The desktop app is Curator in its own window **with its own server inside it**, so a fresh install works with nothing to set up or connect.
 
+## Which download
+Every release has three editions of the desktop software. Pick one; you can add or remove the server part later.
+
+| Edition | File name starts with | What it is |
+|---|---|---|
+| **Full** | `music-curator-` | The window and a library server in one app. The simplest choice. |
+| **App only** | `music-curator-app-` | Just the window. Connect it to a server (yours at home, or one run by a *Server* download). In **Settings → This app** you can install the **server module** into it later, and remove it again. |
+| **Server only** | `music-curator-server-` | No window: Windows gets a tray app with a setup wizard; Linux gets a service ([server on Linux](DEPLOY_PI.md)). |
+
+The Linux `.deb` (Debian, Ubuntu, Kubuntu) and the `.AppImage` (any distribution) each come in all three editions.
+
 ## Install
 Download the installer for your system from the newest [release](https://github.com/TurboNZL/Curator/releases/latest). Names look like `music-curator-<version>-<os>-<arch>.<ext>`:
 - **Windows:** `…-windows-x64-setup.exe`.
@@ -12,6 +23,9 @@ Download the installer for your system from the newest [release](https://github.
 - It lives in a folder; **Settings → This app** shows where and lets you change it (the app restarts, and starts empty in the new folder unless you copy the old folder's contents over first). Put it on a big drive: audio you keep offline is stored there too.
 - To use a home server instead, enter its address and token in **Settings → Server**. Then this app syncs with that server, and the built-in one only serves the window. The two libraries are separate, so choose one as home (use **Backup** to move a library).
 - Music in: **Add → Add audio files**, or **Import from YouTube** (needs yt-dlp and ffmpeg on the computer: `winget install yt-dlp ffmpeg` on Windows, `sudo apt install ffmpeg yt-dlp` on Debian-based Linux).
+
+## The server module
+In the full edition the server module is installed. In the app-only edition it is not, until you press **Settings → This app → Install the server module…**; **Remove the server module…** stops it again, and asks whether to keep or delete the library files. The window's own working copy is kept in both cases.
 
 ## Updates
 - The app checks for a new version when it starts and every few hours (**Settings → This app → Check for updates**).
