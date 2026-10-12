@@ -54,8 +54,12 @@ html[data-ui="blocky"] { font-size: 16px; -webkit-font-smoothing: none; font-smo
 [data-ui="blocky"] .bt-cover { box-shadow: 0 0 0 2px var(--mc-edge); border-radius: 0; }
 [data-ui="blocky"] ::selection { background: var(--mc-green); color: #fff; }
 /* the two-part switch: a green "I" half and a light knob when on, a light knob and a grey "O" half when off */
-[data-ui="blocky"] input[type="checkbox"] { width: 2.7rem; height: 1.35rem; background: linear-gradient(90deg, #d0d1d4 0 50%, #6b6c6e 50% 100%); box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.3); }
-[data-ui="blocky"] input[type="checkbox"]:checked { background: linear-gradient(90deg, #3c8527 0 50%, #d0d1d4 50% 100%); }
+[data-ui="blocky"] input[type="checkbox"] { width: 2.7rem; height: 1.35rem; position: relative; overflow: hidden; background: #6b6c6e; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.3); transition: background-color 0.18s steps(3, end); }
+[data-ui="blocky"] input[type="checkbox"]:checked { background: #3c8527; }
+/* the light half is a thumb that slides across with a bounce (overshoots, then settles), and squashes while it moves */
+[data-ui="blocky"] input[type="checkbox"]::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 50%; background: #d0d1d4; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.18); transform: translateX(0); transition: transform 0.42s cubic-bezier(0.3, 1.9, 0.5, 1); }
+[data-ui="blocky"] input[type="checkbox"]:checked::before { transform: translateX(100%); }
+@media (prefers-reduced-motion: reduce) { [data-ui="blocky"] input[type="checkbox"]::before { transition: none; } }
 [data-ui="blocky"] input[type="checkbox"]::after, [data-ui="blocky"] input[type="checkbox"]:checked::after { -webkit-mask: none; mask: none; background: none; transform: none; inset: 0; display: grid; place-items: center; font-size: 0.7rem; font-weight: 700; line-height: 1; }
 [data-ui="blocky"] input[type="checkbox"]::after { content: "O"; color: #1e1e1f; padding-left: 50%; }
 [data-ui="blocky"] input[type="checkbox"]:checked::after { content: "I"; color: #fff; padding-left: 0; padding-right: 50%; }
@@ -98,11 +102,29 @@ html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneu
 [data-ui="oneui"] .bt-player.bt-shell { margin: 0 10px 10px; border-radius: 30px; }
 [data-ui="oneui"] .bt-nav { font-weight: 500; padding-inline: 1rem; }
 [data-ui="oneui"] .bt-nav[aria-current="page"] svg, [data-ui="oneui"] .bt-nav[aria-current="page"] { color: hsl(var(--bg)); }
-[data-ui="oneui"] .btn-accent { color: hsl(var(--accent-fg)); }
+[data-ui="oneui"] .btn-accent { color: var(--btn-accent-fg); }
 [data-ui="oneui"] .bt-cover { border-radius: 24px; }
 [data-ui="oneui"] .bt-cover[data-kind="artist"] { border-radius: 9999px; }
 [data-ui="oneui"] main h1 { font-size: 2rem; font-weight: 600; }
 [data-ui="oneui"] .bt-range { border-radius: 9999px; overflow: hidden; }
+/* quick-panel tiles: every button is a frosted translucent pill with a fine light edge; the active/primary one is a solid white pill (dark mode) */
+[data-ui="oneui"] {
+  --btn-bg: color-mix(in srgb, hsl(var(--fg)) 13%, transparent); --btn-hover-bg: color-mix(in srgb, hsl(var(--fg)) 20%, transparent);
+  --btn-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+:is(html, div)[data-ui="oneui"] .btn { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); min-height: 2.5rem; padding-inline: 1.15rem; transition: background-color var(--dur), transform var(--dur) var(--ease), box-shadow var(--dur); }
+[data-ui="oneui"] .btn:active { transform: scale(0.94); }
+:is(html, div)[data-ui="oneui"] .btn.btn-ghost { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+:is(html, div)[data-ui="oneui"] .btn.btn-ghost:hover { background: var(--ghost-hover-bg); }
+/* icon-only buttons are circles */
+[data-ui="oneui"] .btn.\!p-2 { width: 2.5rem; height: 2.5rem; padding: 0 !important; justify-content: center; border-radius: 9999px; }
+html[data-mode="dark"] [data-ui="oneui"], html[data-mode="dark"][data-ui="oneui"] { --btn-accent-bg: #fff; --btn-accent-fg: #17171a; --btn-accent-hover-bg: #e8e8ee; }
+html[data-mode="dark"][data-ui="oneui"] .btn-accent, html[data-mode="dark"] [data-ui="oneui"] .btn-accent { box-shadow: 0 2px 10px rgb(0 0 0 / 0.25); }
+[data-ui="oneui"] .btn-accent { font-weight: 600; }
+/* panels: big squircles with the same glass edge as the tiles */
+[data-ui="oneui"] .card { border-radius: 30px; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12); }
+/* sliders: thick pills; the filled part is white with the track as a dark glass groove */
+[data-ui="oneui"] .bt-range { height: 1.6rem; border-radius: 9999px; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06); }
 
 /* ================== Spotify ==================
  * The desktop app's 2024-26 layout (read off a screenshot): a black canvas, the library and the main view as separate rounded dark panels
