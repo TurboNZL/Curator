@@ -60,9 +60,11 @@ export function EloQuestions() {
               <span className="text-xs font-medium uppercase tracking-wide text-muted">vs</span>
               <PreviewCard t={t} preview={preview} accent badge="Challenger" />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="btn btn-accent flex-1" onClick={() => answer('yes')}><Check size={14} />Clears the line</button>
-              <button className="btn flex-1" onClick={() => answer('no')}><X size={14} />Falls short</button>
+            {/* the same three columns as the cards above: the line (left) wins when the challenger falls short, the challenger (right) wins when it clears the line */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <button className="btn w-full" onClick={() => answer('no')}><X size={14} />Falls short</button>
+              <span className="invisible text-xs" aria-hidden>vs</span>
+              <button className="btn btn-accent w-full" onClick={() => answer('yes')}><Check size={14} />Clears the line</button>
             </div>
           </div>); })()}
         {q.kind === 'love' && (() => { const [t] = tracks; return (

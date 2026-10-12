@@ -229,8 +229,8 @@ export const THEME_DEFS: ThemeDef[] = [
   dark({ id: "cyber", label: "Night City", bg: hex("#0a0a10"), primary: hex("#fcee0a"), onPrimary: "0 0% 0%", fg: hx("#f2f2f2"), mutedFg: hx("#8c8c99"), motif: "grid",
     ov: { card: "#12121a", secondary: "#1c1c26", muted: "#1c1c26", accent: "#2b2b10", border: "#4a4a1c", input: "#181822" } }),
   // Minecraft Bedrock's dark settings screens (read off screenshots): slate panels, near-black outlines, grass-green switches and sliders
-  dark({ id: "inventory", label: "Bedrock", bg: hex("#313233"), primary: hex("#3c8527"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#b1b2b5"), motif: "peaks",
-    ov: { card: "#48494a", secondary: "#58585a", muted: "#48494a", accent: "#5a5b5c", border: "#1e1e1f", input: "#1e1e1f" } }),
+  dark({ id: "inventory", label: "Bedrock", bg: hex("#484a4b"), primary: hex("#3c8527"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#c1c2c5"), motif: "peaks",
+    ov: { card: "#3d3f40", secondary: "#58585a", muted: "#3d3f40", accent: "#5a5b5c", border: "#323435", input: "#1e1e1f" } }),
   // LG Optimus "Marshmallow" theme: pastel pink, cream and rose, read off a screenshot of its home screen (LG published no palette)
   light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f7dde2"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#5a3a43"), mutedFg: hx("#9a6f7a"), motif: "dots",
     ov: { card: "#fdf3f4", secondary: "#f8d0d8", muted: "#f3d5db", accent: "#dc5a76", border: "#e8a6b3", input: "#e69aaa" } }),
@@ -258,8 +258,8 @@ export const THEME_DEFS: ThemeDef[] = [
   // Apps and devices
   dark({ id: "spotify", label: "Spotify", bg: hex("#000000"), primary: hex("#1ed760"), onPrimary: "0 0% 0%", fg: hx("#ffffff"), mutedFg: hx("#b3b3b3"), motif: "waves",
     ov: { card: "#121212", secondary: "#1f1f1f", muted: "#1f1f1f", accent: "#2a2a2a", border: "#2a2a2a", input: "#242424" } }),
-  dark({ id: "ytmusic", label: "YouTube Music", bg: hex("#030303"), primary: hex("#ff0033"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#aaaaaa"), motif: "rays",
-    ov: { card: "#0f0f0f", secondary: "#212121", muted: "#212121", accent: "#303030", border: "#303030", input: "#181818" } }),
+  dark({ id: "ytmusic", label: "YouTube Music", bg: hex("#0f0f0f"), primary: hex("#ff0033"), onPrimary: "0 0% 100%", fg: hx("#f1f1f1"), mutedFg: hx("#aaaaaa"), motif: "rays",
+    ov: { card: "#0f0f0f", secondary: "#272727", muted: "#272727", accent: "#3f3f3f", border: "#303030", input: "#121212" } }),
   dark({ id: "discord", label: "Discord", bg: hex("#313338"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#f2f3f5"), mutedFg: hx("#949ba4"), motif: "dots",
     ov: { card: "#2b2d31", secondary: "#383a40", muted: "#2b2d31", accent: "#404249", border: "#1e1f22", input: "#1e1f22" } }),
   light({ id: "discord-light", label: "Discord Light", bg: hex("#ffffff"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#313338"), mutedFg: hx("#5c5e66"), motif: "dots",

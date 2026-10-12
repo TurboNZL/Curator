@@ -18,13 +18,14 @@ export interface GpuMode {
 const BASE: [string, string?][] = [['ignore-gpu-blocklist'], ['enable-gpu-rasterization']];
 
 export const GPU_MODES: GpuMode[] = [
-  { id: 'default', label: 'Standard', hint: 'Ask Chromium for the GPU even where its block list says no.', switches: BASE },
+  { id: 'egl', label: 'OpenGL ES over EGL (modern, keeps Wayland)', hint: 'ANGLE on the driver\'s EGL/GLES: what Chromium uses on Wayland, since Wayland cannot do Vulkan.', switches: [...BASE, ['use-gl', 'angle'], ['use-angle', 'gles']] },
+  { id: 'gl-egl', label: 'OpenGL over EGL', hint: 'ANGLE\'s desktop-OpenGL back end through EGL.', switches: [...BASE, ['use-gl', 'angle'], ['use-angle', 'gl-egl']] },
+  { id: 'egl-nosandbox', label: 'OpenGL ES over EGL, no GPU sandbox', hint: 'For NVIDIA\'s proprietary driver when the GPU process cannot start.', switches: [...BASE, ['use-gl', 'angle'], ['use-angle', 'gles'], ['disable-gpu-sandbox']] },
+  { id: 'default', label: 'Standard', hint: 'Ask Chromium for the GPU even where its block list says no and let it choose the back end.', switches: BASE },
+  { id: 'vulkan', label: 'Vulkan (X11 only)', hint: 'The newest back end. Chromium cannot use it on Wayland, so this starts the app through X11.', switches: [...BASE, ['ozone-platform', 'x11'], ['use-angle', 'vulkan']], features: ['Vulkan'] },
   { id: 'x11', label: 'X11 (XWayland)', hint: 'Use X11 instead of Wayland: fixes GPU start-up failures on many Wayland sessions.', switches: [...BASE, ['ozone-platform', 'x11']] },
-  { id: 'nosandbox', label: 'No GPU sandbox', hint: 'For NVIDIA\'s proprietary driver ("Can\'t initialize nvrm channel").', switches: [...BASE, ['disable-gpu-sandbox']] },
-  { id: 'x11-nosandbox', label: 'X11 and no GPU sandbox', hint: 'Both of the above.', switches: [...BASE, ['ozone-platform', 'x11'], ['disable-gpu-sandbox']] },
-  { id: 'angle-gl', label: 'OpenGL (ANGLE)', hint: 'Force ANGLE\'s OpenGL back end.', switches: [...BASE, ['use-angle', 'gl'], ['ozone-platform', 'x11']] },
-  { id: 'angle-egl', label: 'ANGLE over EGL', hint: 'ANGLE\'s OpenGL-over-EGL back end with the GPU sandbox off. Keeps whatever session you are in (Wayland or X11).', switches: [...BASE, ['use-gl', 'angle'], ['use-angle', 'gl-egl'], ['disable-gpu-sandbox']] },
-  { id: 'wayland', label: 'Wayland (native)', hint: 'Force native Wayland. This is Chromium\'s own choice on a Wayland session already; use it to be sure.', switches: [...BASE, ['ozone-platform', 'wayland']] },
+  { id: 'x11-nosandbox', label: 'X11 and no GPU sandbox', hint: 'X11 with the GPU sandbox off.', switches: [...BASE, ['ozone-platform', 'x11'], ['disable-gpu-sandbox']] },
+  { id: 'wayland', label: 'Wayland (native)', hint: 'Force native Wayland.', switches: [...BASE, ['ozone-platform', 'wayland']] },
   { id: 'software', label: 'Software (no GPU)', hint: 'Turn the GPU off. Slower, but never crashes.', switches: [], software: true },
 ];
 
@@ -34,8 +35,8 @@ export const GPU_MODES: GpuMode[] = [
  */
 export const autoOrder = (sessionType?: string): string[] =>
   (sessionType ?? '').toLowerCase() === 'wayland'
-    ? ['default', 'nosandbox', 'angle-egl', 'x11', 'x11-nosandbox']
-    : ['default', 'nosandbox', 'angle-egl', 'angle-gl'];
+    ? ['egl', 'gl-egl', 'egl-nosandbox', 'default', 'x11', 'x11-nosandbox']
+    : ['default', 'egl', 'gl-egl', 'egl-nosandbox', 'vulkan'];
 
 export interface GpuChoice { mode: string; auto: { step: number; done: boolean } }
 
@@ -44,7 +45,7 @@ export function activeMode(c: Partial<GpuChoice> | undefined, sessionType?: stri
   const order = autoOrder(sessionType);
   const mode = c?.mode ?? 'auto';
   const id = mode === 'auto' ? order[Math.min(Math.max(c?.auto?.step ?? 0, 0), order.length - 1)] : mode;
-  return GPU_MODES.find((m) => m.id === id) ?? GPU_MODES[0];
+  return GPU_MODES.find((m) => m.id === id) ?? GPU_MODES.find((m) => m.id === 'default')!;
 }
 
 /**

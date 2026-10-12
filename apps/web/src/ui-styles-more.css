@@ -1,3 +1,6 @@
+/* "Minecraft" (FontStruct, by Pwnage_Block, 2011), CC BY-SA 3.0: https://fontstruct.com/fontstructions/show/432966 . A fan-made lookalike of the game's own typeface, bundled for the Minecraft style. */
+@font-face { font-family: "Minecraft"; src: url("./assets/minecraft.woff2") format("woff2"); font-display: swap; }
+
 /* More UI styles: Minecraft (Bedrock), Samsung One UI, Spotify, YouTube Music, Discord, Ado, Yaru, and the Marshmallow app icons.
  * Same rules as ui-styles.css: styles set variables and a few hooks, never colours of their own (the colour theme provides those). */
 
@@ -7,7 +10,7 @@
  * switches (a green "I" half or a grey "O" half beside a light knob) and sliders with a green fill and a light square knob. */
 [data-ui="blocky"] {
   --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
-  --font: "Pixelify Sans", "VT323", ui-monospace, monospace; --title-font: var(--font);
+  --font: "Minecraft", "Pixelify Sans", ui-monospace, monospace; --title-font: var(--font);
   --dur: 0ms; --ease: steps(1);
   --mc-light: #d0d1d4; --mc-edge: #1e1e1f; --mc-low: #58585a; --mc-green: #3c8527;
   --btn-bg: var(--mc-light); --btn-fg: #1e1e1f; --btn-weight: 500; --btn-border: 2px solid var(--mc-edge); --btn-shadow: inset 0 -4px 0 #8c8d90;
@@ -23,8 +26,8 @@
   --close-fg: #1e1e1f; --close-hover-bg: #c4c6c9; --close-hover-fg: #000; --close-r: 0;
   --bar-border: 2px solid var(--mc-edge);
   --menu-bg: hsl(var(--surface)); --menu-border: 2px solid var(--mc-edge); --pop-shadow: 4px 4px 0 rgb(0 0 0 / 0.45); --menu-anim: none; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: #fff;
-  --side-bg: #313233; --side-shadow: none; --top-bg: #e6e8eb; --top-shadow: inset 0 -3px 0 #b3b5b8; --player-bg: #313233; --player-shadow: inset 0 3px 0 #1e1e1f;
-  --nav-hover-bg: #3d3e3f; --nav-active-bg: #48494a; --nav-active-fg: #fff; --nav-active-shadow: inset 0 -3px 0 #3c8527;
+  --side-bg: #323435; --side-shadow: none; --top-bg: #e6e8eb; --top-shadow: inset 0 -3px 0 #b3b5b8; --player-bg: #323435; --player-shadow: inset 0 3px 0 #1e1e1f;
+  --nav-hover-bg: #3d3f40; --nav-active-bg: #484a4b; --nav-active-fg: #fff; --nav-active-shadow: inset 0 0 0 2px #1e1e1f;
   --row-hover: rgb(255 255 255 / 0.07); --row-current: rgb(60 133 39 / 0.35);
   --panel-tb-fg: #fff; --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
   --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid var(--mc-edge); --chk-bg: #8c8d90; --chk-hover-border: #fff; --chk-focus: 0 0 0 2px #fff;
@@ -32,7 +35,8 @@
   --rng-appearance: none; --rng-h: 8px; --rng-r: 0; --rng-track: #8c8d90; --rng-fill: var(--mc-green); --rng-border: 2px solid var(--mc-edge);
   --rng-tw: 1rem; --rng-th: 1.5rem; --rng-tr: 0; --rng-thumb: var(--mc-light); --rng-tb: 2px solid var(--mc-edge); --rng-ts: inset 0 -3px 0 #8c8d90;
 }
-html[data-ui="blocky"] { font-size: 17px; }
+html[data-ui="blocky"] { font-size: 16px; -webkit-font-smoothing: none; font-smooth: never; text-rendering: optimizeSpeed; }
+[data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title, b, strong, .font-semibold, .font-bold) { -webkit-text-stroke: 0.4px currentColor; }
 [data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title) { font-weight: 700; letter-spacing: 0.02em; }
 [data-ui="blocky"] main h1 { text-transform: uppercase; }
 [data-ui="blocky"] .btn-ghost { background: transparent; color: hsl(var(--fg)); box-shadow: none; border-color: transparent; }
@@ -108,7 +112,7 @@ html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneu
  * a white round play button. Pair it with the Spotify colours. Circular is Spotify's own face; Figtree stands in for it. */
 [data-ui="spotify"] {
   --radius: 8px; --ctl-r: 9999px; --card-r: 8px; --win-r: 12px; --menu-r: 4px; --nav-r: 6px; --chip-r: 9999px; --in-r: 9999px;
-  --font: "Figtree", "Circular Std", "Helvetica Neue", Helvetica, Arial, sans-serif; --title-font: var(--font);
+  --font: "Albert Sans", "Circular Std", "Spotify Mix", "Helvetica Neue", Helvetica, Arial, sans-serif; --title-font: var(--font);
   --dur: 150ms; --ease: ease-out;
   --btn-bg: transparent; --btn-fg: hsl(var(--fg)); --btn-weight: 700; --btn-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 45%, transparent); --btn-shadow: none;
   --btn-hover-bg: transparent; --btn-hover-border: hsl(var(--fg)); --btn-active-transform: scale(0.97);
@@ -154,7 +158,7 @@ html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneu
  * rounded 12 px thumbnails, a rounded grey highlight (#272727) on the current page, a white "subscribe"-style primary pill and a red progress
  * bar. Read off a YouTube screenshot; Roboto is YouTube's face. */
 [data-ui="ytmusic"] {
-  --radius: 12px; --ctl-r: 9999px; --card-r: 12px; --win-r: 16px; --menu-r: 12px; --nav-r: 10px; --chip-r: 9999px; --in-r: 9999px;
+  --radius: 12px; --ctl-r: 18px; --card-r: 12px; --win-r: 16px; --menu-r: 12px; --nav-r: 10px; --chip-r: 8px; --in-r: 9999px;
   --font: "Roboto", "YouTube Sans", Arial, sans-serif; --title-font: var(--font);
   --dur: 120ms; --ease: ease-out;
   --btn-bg: color-mix(in srgb, hsl(var(--fg)) 10%, transparent); --btn-fg: hsl(var(--fg)); --btn-weight: 500; --btn-border: 0 solid transparent; --btn-shadow: none;
@@ -343,3 +347,9 @@ html[data-ui="yaru"] ::selection { background: color-mix(in srgb, hsl(var(--acce
 [data-ui="yaru"] .card.overflow-hidden .bt-row + .bt-row, [data-ui="yaru"] .card.overflow-hidden > div + div { border-top: 1px solid color-mix(in srgb, hsl(var(--fg)) 8%, transparent); }
 [data-ui="yaru"] .chip { background: color-mix(in srgb, hsl(var(--fg)) 8%, transparent); }
 
+
+/* The Liquid Glass player floats at a fixed offset that assumes the 14rem side bar: other layouts have no such bar */
+@media (min-width: 768px) {
+  :is(html, div)[data-ui="liquid"][data-layout="topbar"] .bt-player.bt-shell, :is(html, div)[data-ui="liquid"][data-layout="dock"] .bt-player.bt-shell { left: 12px; }
+  :is(html, div)[data-ui="liquid"][data-layout="rail"] .bt-player.bt-shell { left: calc(4.5rem + 24px); }
+}

@@ -36,9 +36,10 @@ if (process.platform === 'linux') {
   // that really cannot do it still falls back by itself, graphics() below reports what happened, and "Automatic" then tries the next way
   // to start the graphics: X11 instead of Wayland, no GPU sandbox, ANGLE's OpenGL; see gpuModes.ts)
   app.commandLine.appendSwitch('enable-features', ['MediaSessionService', 'HardwareMediaKeyHandling', ...(gpuStart.features ?? [])].join(','));
-  // Chromium on Wayland cannot use Vulkan ("--ozone-platform=wayland is not compatible with Vulkan"), and --ignore-gpu-blocklist lets it try on NVIDIA:
-  // the GPU process then fails and painting falls back to software. Vulkan is not what the app needs, so it is off in every mode.
-  app.commandLine.appendSwitch('disable-features', 'Vulkan');
+  // Chromium on Wayland cannot use Vulkan ("--ozone-platform=wayland is not compatible with Vulkan"); with --ignore-gpu-blocklist it still tried on NVIDIA,
+  // the GPU process failed and painting fell back to software. The modes name their ANGLE back end (OpenGL ES over EGL on Wayland); Vulkan stays
+  // off except in the one mode that asks for it (which runs through X11).
+  if (!gpuStart.features?.includes('Vulkan')) app.commandLine.appendSwitch('disable-features', 'Vulkan');
   if (gpuStart.software) app.disableHardwareAcceleration();
   else for (const [name, value] of gpuStart.switches) app.commandLine.appendSwitch(name, value);
 }
