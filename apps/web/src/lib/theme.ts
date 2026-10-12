@@ -232,8 +232,8 @@ export const THEME_DEFS: ThemeDef[] = [
   dark({ id: "inventory", label: "Bedrock", bg: hex("#484a4b"), primary: hex("#3c8527"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#c1c2c5"), motif: "peaks",
     ov: { card: "#3d3f40", secondary: "#58585a", muted: "#3d3f40", accent: "#5a5b5c", border: "#323435", input: "#1e1e1f" } }),
   // LG Optimus "Marshmallow" theme: pastel pink, cream and rose, read off a screenshot of its home screen (LG published no palette)
-  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f7dde2"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#5a3a43"), mutedFg: hx("#9a6f7a"), motif: "dots",
-    ov: { card: "#fdf3f4", secondary: "#f8d0d8", muted: "#f3d5db", accent: "#dc5a76", border: "#e8a6b3", input: "#e69aaa" } }),
+  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f1e5df"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#4f3a3f"), mutedFg: hx("#917178"), motif: "hills",
+    ov: { card: "#fbf4f2", secondary: "#f4dcdd", muted: "#efdcd8", accent: "#dc5a76", border: "#e3b3b9", input: "#d99aa5" } }),
   dark({ id: "lg-marshmallow-dark", label: "Marshmallow Night", bg: hex("#2b1224"), primary: hex("#ff6fb0"), onPrimary: "0 0% 100%", fg: hx("#ffe9f3"), mutedFg: hx("#d79ab8"), motif: "dots",
     ov: { card: "#3b1b31", secondary: "#4a2540", muted: "#40213a", accent: "#6b2d56", border: "#5a2a49", input: "#b45c8c" } }),
   // Fortnite: Epic does not publish its UI colours; these are read off screenshots of each era's settings and lobby screens.

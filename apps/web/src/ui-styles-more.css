@@ -277,18 +277,28 @@ html[data-ui="ado"] { font-size: 17px; }
  * The theme's app icons were glossy, rounded and soft like marshmallows. Every navigation icon sits on a candy-coloured squishy tile (a
  * gloss highlight on the top half, a soft inner shade below, a drop shadow) and squashes when pressed. Colours cycle through the candy set. */
 [data-ui="lgux"] { --candy-1: #ff7aa8; --candy-2: #ffa24d; --candy-3: #ffd23f; --candy-4: #5fd08b; --candy-5: #4cc9e8; --candy-6: #6f8cff; --candy-7: #b67cff; }
+/* every icon is its own shape and colour, like the app icons of the home screen (a circle, a folder tab, an envelope's rounded rectangle, a leaf...) */
 [data-ui="lgux"] :is(.bt-nav, .bt-tab) > svg {
-  --c: var(--candy-1); box-sizing: content-box; width: 18px; height: 18px; padding: 6px; border-radius: 12px; color: #fff; stroke-width: 2.3;
+  --c: var(--candy-1); --shape: 12px; box-sizing: content-box; width: 18px; height: 18px; padding: 6px; border-radius: var(--shape); color: #fff; stroke-width: 2.3;
   background: linear-gradient(180deg, rgb(255 255 255 / 0.62) 0 46%, rgb(255 255 255 / 0) 47%), radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.35), transparent 60%), var(--c);
   box-shadow: inset 0 -4px 6px rgb(0 0 0 / 0.2), inset 0 1px 1px rgb(255 255 255 / 0.7), 0 3px 5px color-mix(in srgb, var(--c) 55%, transparent);
   filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.18)); transition: transform 180ms cubic-bezier(0.34, 1.7, 0.5, 1);
 }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+2) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+2) > svg { --c: var(--candy-2); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+3) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+3) > svg { --c: var(--candy-3); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+4) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+4) > svg { --c: var(--candy-4); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+5) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+5) > svg { --c: var(--candy-5); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+6) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+6) > svg { --c: var(--candy-6); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+7) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+7) > svg { --c: var(--candy-7); }
+[data-ui="lgux"] :is(a[href="/"], a[href="/albums"], a[href="/singles"], a[href="/eras"], a[href="/artists"], a[href="/tracks"], a[href="/vote"], a[href="/playlists"], a[href="/queue"], a[href="/notes"], a[href="/discover"], a[href="/stats"], a[href="/health"], a[href="/settings"]) > svg { --shape: 12px; }
+[data-ui="lgux"] a[href="/"] > svg { --c: var(--candy-1); --shape: 50% 50% 10px 10px / 62% 62% 10px 10px; }          /* an arch: the Home screen */
+[data-ui="lgux"] a[href="/albums"] > svg { --c: var(--candy-2); --shape: 50%; }                                    /* a disc */
+[data-ui="lgux"] a[href="/singles"] > svg { --c: var(--candy-3); --shape: 50%; padding: 4px; width: 22px; height: 22px; } /* a smaller, rounder disc */
+[data-ui="lgux"] a[href="/eras"] > svg { --c: var(--candy-4); --shape: 6px 20px 6px 20px; }                        /* a leaf */
+[data-ui="lgux"] a[href="/artists"] > svg { --c: var(--candy-5); --shape: 50% 50% 50% 8px; }                      /* a speech bubble */
+[data-ui="lgux"] a[href="/tracks"] > svg { --c: var(--candy-6); --shape: 20px 20px 20px 5px; }                    /* a rounder bubble */
+[data-ui="lgux"] a[href="/vote"] > svg { --c: var(--candy-7); --shape: 8px 8px 50% 50%; }                          /* a shield */
+[data-ui="lgux"] a[href="/playlists"] > svg { --c: var(--candy-1); --shape: 8px; padding: 6px 8px; width: 16px; }  /* a wide card */
+[data-ui="lgux"] a[href="/queue"] > svg { --c: var(--candy-2); --shape: 18px 6px 18px 6px; }                      /* the other leaf */
+[data-ui="lgux"] a[href="/notes"] > svg { --c: var(--candy-3); --shape: 4px 16px 4px 4px; }                       /* a folded page */
+[data-ui="lgux"] a[href="/discover"] > svg { --c: var(--candy-4); --shape: 50%; }
+[data-ui="lgux"] a[href="/stats"] > svg { --c: var(--candy-5); --shape: 14px 14px 4px 4px; }                       /* a bar */
+[data-ui="lgux"] a[href="/health"] > svg { --c: var(--candy-6); --shape: 50% 50% 50% 50% / 62% 62% 38% 38%; }     /* an egg */
+[data-ui="lgux"] a[href="/settings"] > svg { --c: var(--candy-7); --shape: 32%; }                                  /* a soft cog-ish squircle */
 [data-ui="lgux"] :is(.bt-nav, .bt-tab):active > svg { transform: scale(1.1, 0.86); }
 [data-ui="lgux"] :is(.bt-nav, .bt-tab):hover > svg { transform: translateY(-1px) scale(1.05); }
 [data-ui="lgux"] .bt-nav { gap: 0.75rem; padding-block: 0.4rem; }
