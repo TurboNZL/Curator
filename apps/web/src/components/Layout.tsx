@@ -185,7 +185,7 @@ export function Layout() {
               {toolbar && <nav className="bt-toplinks hidden min-w-0 items-center gap-6 overflow-x-auto md:flex" aria-label="Pages">
                 {topNav.map(({ to, label, ...rest }) => <NavLink key={to} to={to} end={'end' in rest} className="bt-toplink whitespace-nowrap">{TOOLBAR_LABEL[to] ?? label}</NavLink>)}
               </nav>}
-              <div className="flex shrink-0 items-center">
+              <div className="hidden shrink-0 items-center min-[480px]:flex">
                 <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Back" title="Back" disabled={!canBack} onClick={() => nav(-1)}><ArrowLeft size={17} /></button>
                 <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Forward" title="Forward" disabled={!canForward} onClick={() => nav(1)}><ArrowRight size={17} /></button>
               </div>
