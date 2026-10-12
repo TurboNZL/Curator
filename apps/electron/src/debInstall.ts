@@ -26,3 +26,26 @@ export function describePkexec(code: number | null, stderr = ''): PkexecResult {
   const tail = stderr.trim().split('\n').slice(-3).join(' ').slice(0, 300);
   return { ok: false, cancelled: false, message: `The installer failed (exit code ${code ?? 'none'})${tail ? `: ${tail}` : ''}. You can install it from a terminal instead:` };
 }
+
+/** What a terminal window runs when there is no graphical password prompt: the same install with sudo, then a pause so the output can be read. */
+export const terminalInstallScript = (file: string) =>
+  `echo 'Installing the Music Curator update. Your password is asked by sudo below.'; echo; ` +
+  `sudo sh -c ${shQuote(debInstallScript(file))}; code=$?; echo; ` +
+  `if [ $code -eq 0 ]; then echo 'Done. Music Curator will restart.'; else echo "The install failed (code $code)."; fi; ` +
+  `printf 'Press Enter to close this window… '; read _; exit $code`;
+
+/** Terminal emulators to try, in order, each with the arguments that run a shell script and keep the process alive until the window closes. */
+export const TERMINALS: { bin: string; args: (script: string) => string[] }[] = [
+  { bin: 'x-terminal-emulator', args: (s) => ['-e', 'sh', '-c', s] },
+  { bin: 'gnome-terminal', args: (s) => ['--wait', '--', 'sh', '-c', s] },
+  { bin: 'kgx', args: (s) => ['--', 'sh', '-c', s] },
+  { bin: 'konsole', args: (s) => ['--nofork', '-e', 'sh', '-c', s] },
+  { bin: 'xfce4-terminal', args: (s) => ['--disable-server', '-x', 'sh', '-c', s] },
+  { bin: 'mate-terminal', args: (s) => ['--disable-factory', '-x', 'sh', '-c', s] },
+  { bin: 'kitty', args: (s) => ['sh', '-c', s] },
+  { bin: 'alacritty', args: (s) => ['-e', 'sh', '-c', s] },
+  { bin: 'xterm', args: (s) => ['-e', 'sh', '-c', s] },
+];
+
+/** True when `installed` (from `dpkg-query -W -f='${Version}'`) is the version the update was meant to install. */
+export const installedMatches = (installed: string, wanted: string) => installed.trim() === wanted.trim();
