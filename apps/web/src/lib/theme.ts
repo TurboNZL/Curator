@@ -256,6 +256,10 @@ export const THEME_DEFS: ThemeDef[] = [
   dark({ id: "material-dark", label: "Material You Dark", bg: hex("#141218"), primary: hex("#d0bcff"), onPrimary: hx("#381e72"), fg: hx("#e6e0e9"), mutedFg: hx("#cac4d0"), motif: "dots",
     ov: { card: "#211f26", secondary: "#4a4458", muted: "#2b2930", accent: "#4a4458", border: "#49454f", input: "#938f99" } }),
   // Apps and devices
+  light({ id: "genius", label: "Genius", bg: hex("#ffffff"), primary: hex("#ffff64"), onPrimary: "0 0% 0%", fg: hx("#000000"), mutedFg: hx("#6b6b6b"), motif: "dots",
+    ov: { card: "#ffffff", secondary: "#f5f5f5", muted: "#f5f5f5", accent: "#ffff64", border: "#e0e0e0", input: "#000000" } }),
+  dark({ id: "genius-dark", label: "Genius Night", bg: hex("#0a0a0a"), primary: hex("#ffff64"), onPrimary: "0 0% 0%", fg: hx("#ffffff"), mutedFg: hx("#a0a0a0"), motif: "dots",
+    ov: { card: "#141414", secondary: "#1e1e1e", muted: "#1e1e1e", accent: "#2a2a2a", border: "#2c2c2c", input: "#ffffff" } }),
   dark({ id: "spotify", label: "Spotify", bg: hex("#000000"), primary: hex("#1ed760"), onPrimary: "0 0% 0%", fg: hx("#ffffff"), mutedFg: hx("#b3b3b3"), motif: "waves",
     ov: { card: "#121212", secondary: "#1f1f1f", muted: "#1f1f1f", accent: "#2a2a2a", border: "#2a2a2a", input: "#242424" } }),
   dark({ id: "ytmusic", label: "YouTube Music", bg: hex("#0f0f0f"), primary: hex("#ff0033"), onPrimary: "0 0% 100%", fg: hx("#f1f1f1"), mutedFg: hx("#aaaaaa"), motif: "rays",
@@ -295,7 +299,7 @@ export const PLATFORM_THEME_IDS: ThemeId[] = [
   "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "zinc", "material", "material-dark", "ios", "ios-dark", "yaru", "yaru-dark",
 ];
 /** Palettes of the game and device inspired styles, shown in their own group in Settings. */
-export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory", "spotify", "ytmusic", "discord", "discord-onyx", "discord-light", "oneui", "oneui-dark", "ado"];
+export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory", "spotify", "ytmusic", "discord", "discord-onyx", "discord-light", "oneui", "oneui-dark", "genius", "genius-dark", "ado"];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 
 export const DEFAULT_THEME: ThemeId = "default";

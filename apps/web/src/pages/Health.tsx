@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarCheck, CheckCircle2, ChevronDown, ClipboardPaste, Eraser, GitMerge, ImageDown, Search, X } from 'lucide-react';
 import { HealthHero } from '../components/HealthHero.tsx';
 import { AudioQualityCard, MissingAudioCard } from '../components/AudioTools.tsx';
+import { AlbumSuggestions } from '../components/AlbumSuggestions.tsx';
 import { QuickFix } from '../components/HealthQuick.tsx';
 import { BulkLinks } from '../components/BulkLinks.tsx';
 import type { LinkKind } from '../lib/bulkLinks.ts';
@@ -77,6 +78,7 @@ export function HealthPage() {
     <div className="mx-auto max-w-5xl space-y-4">
       <HealthHero lib={lib} problems={problems.length} total={checks.length} />
       <div className="grid gap-4 md:grid-cols-2"><MissingAudioCard /><AudioQualityCard /></div>
+      <AlbumSuggestions />
       {checks.map((c) => (
         <section key={c.id} className="card overflow-hidden">
           <button className="flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setOpen(open === c.id ? null : c.id)} aria-expanded={open === c.id}>

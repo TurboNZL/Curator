@@ -4,7 +4,7 @@
  */
 import type { ThemeId } from "./theme.ts";
 
-export type UiStyleId = "auto" | "oneui" | "spotify" | "ytmusic" | "discord" | "ado" | "yaru" | "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5" | "pipboy" | "persona" | "gameboy" | "zune" | "cyber" | "blocky";
+export type UiStyleId = "auto" | "oneui" | "genius" | "spotify" | "ytmusic" | "discord" | "ado" | "yaru" | "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5" | "pipboy" | "persona" | "gameboy" | "zune" | "cyber" | "blocky";
 
 export type UiStyleDef = {
   id: UiStyleId;
@@ -44,6 +44,7 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "cyber", label: "Cyberpunk 2077", description: "Near-black with caution-tape yellow and cyan glints, chamfered corners, condensed capitals and solid yellow selection bars.", font: "Barlow Condensed", matching: { light: "cyber", dark: "cyber" } },
   { id: "blocky", label: "Minecraft (Bedrock)", description: "The game\u2019s dark settings screens: slate panels with black outlines, a light header bar, light grey buttons, two-part green on/off switches, green sliders and pixel type.", font: "VT323", matching: { light: "inventory", dark: "inventory" } },
   { id: "oneui", label: "Samsung One UI", description: "Big rounded squircle panels, frosted translucent tiles, round pill controls and thick pill sliders with a white fill. It has no colours of its own beyond the Samsung blue: the lilac in screenshots is the wallpaper, so choose a picture under Wallpaper.", font: "Outfit", matching: { light: "oneui", dark: "oneui-dark" } },
+  { id: "genius", label: "Genius", description: "White pages, black type and the yellow highlighter: flat square controls with black outlines, yellow hover and selection, bold headings.", font: "Helvetica Neue", matching: { light: "genius", dark: "genius-dark" } },
   { id: "spotify", label: "Spotify", description: "Black canvas with floating rounded dark panels, bold muted navigation, green pill buttons, tiles that lighten on hover and a white round play button.", font: "Figtree", matching: { light: "spotify", dark: "spotify" } },
   { id: "ytmusic", label: "YouTube Music", description: "Flat near-black pages, pill chips and search, rounded thumbnails, a rounded grey highlight on the current page and a red progress bar.", font: "Roboto", matching: { light: "ytmusic", dark: "ytmusic" } },
   { id: "discord", label: "Discord", description: "Layered slate panels, 4 px corners, blurple buttons, a recessed dark search field, rounded hover bars and a bold channel-list sidebar.", font: "Noto Sans", matching: { light: "discord-light", dark: "discord-onyx" } },

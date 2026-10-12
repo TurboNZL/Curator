@@ -7,27 +7,67 @@ import { spawn } from 'node:child_process';
  * possible, which is why the importer shows the whole tracklist before anything is saved.
  */
 export interface MatchAlbum { id: string; title: string; artist: string; trackCount?: number | null }
-export interface AlbumCandidate { url: string; title: string; channel: string; /** tracks in the playlist when YouTube said */ count: number | null; score: number }
+export interface AlbumCandidate {
+  url: string; title: string; channel: string; /** tracks in the playlist when YouTube said */ count: number | null; score: number;
+  /** the uploader's handle (`@Drake`) when YouTube gave one */ owner?: string;
+  /** a cover picture of the playlist */ thumbnail?: string;
+  /** what makes this edition differ from the album's own title ("deluxe edition"), '' for the plain album */ edition?: string;
+}
 export interface AlbumMatchResult { id: string; candidates: AlbumCandidate[]; error?: string }
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/\(feat[^)]*\)|\[feat[^\]]*\]|\bfeat\.?\s.*$/g, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const words = (s: string) => new Set(norm(s).split(' ').filter(Boolean));
 const BAD = /\b(live|remix(es)?|karaoke|instrumental|slowed|sped up|reverb|nightcore|8d|mix|best of|greatest hits|playlist|full album|reaction)\b/i;
 
-/** 0..1: how likely a playlist is this album. Pure; tested. */
+/** Words that only say which edition of the same album a playlist is; they never count against a match. */
+const EDITION_WORDS = new Set(['deluxe', 'edition', 'expanded', 'remaster', 'remastered', 'anniversary', 'bonus', 'version', 'explicit', 'clean', 'special', 'complete', 'platinum', 'collector', 'collectors', 'extended', 'reissue', 'original', 'international', 'tracks', 'track', 'album', 'the', 'us', 'uk']);
+const isEditionWord = (w: string) => EDITION_WORDS.has(w) || /^(19|20)\d\d$/.test(w);
+
+/** What sets a playlist's title apart from the album's own: "Deluxe Edition", "2011 Remaster"... or '' for the plain album. */
+export function editionOf(albumTitle: string, candidateTitle: string): string {
+  const own = words(albumTitle);
+  const extra = norm(candidateTitle.replace(/^album\s*-\s*/i, '')).split(' ').filter((w) => w && !own.has(w));
+  return extra.some((w) => isEditionWord(w) && !/^(the|tracks?|album|us|uk)$/.test(w)) ? extra.join(' ') : '';
+}
+
+/**
+ * 0..1: how likely a playlist is this album. Only the evidence that exists counts: the score is what the playlist earned out of what
+ * could be known, so a perfect title and artist reads 100% even when YouTube gave no track count (it used to top out near 60%). Another
+ * edition of the same album (Deluxe, Remastered...) scores as the album; `editionOf` tells them apart. Pure; tested.
+ */
 export function scoreAlbum(a: MatchAlbum, c: { id: string; title: string; channel: string; count: number | null }): number {
   const tw = words(a.title), cw = words(c.title.replace(/^album\s*-\s*/i, ''));
   if (!tw.size) return 0;
   let hit = 0; for (const w of tw) if (cw.has(w)) hit++;
-  let score = 0.5 * (hit / tw.size);
-  if (cw.size > tw.size * 2 + 2) score -= 0.1; // a long title is a compilation, not the album
+  const extras = [...cw].filter((w) => !tw.has(w) && !isEditionWord(w));
+  let earned = 0.55 * (hit / tw.size), possible = 0.55;
   const aw = words(a.artist);
-  if (aw.size) { const pool = new Set([...cw, ...words(c.channel)]); let n = 0; for (const w of aw) if (pool.has(w)) n++; score += 0.25 * (n / aw.size); }
-  if (/^OLAK5uy_/.test(c.id)) score += 0.2; // YouTube Music's own album playlists
-  if (BAD.test(c.title) && !BAD.test(a.title)) score -= 0.25;
-  if (a.trackCount && c.count) { const d = Math.abs(c.count - a.trackCount); score += d === 0 ? 0.1 : d <= 2 ? 0.05 : d > 8 ? -0.1 : 0; }
+  if (aw.size) {
+    const pool = new Set([...cw, ...words(c.channel)]); let n = 0; for (const w of aw) if (pool.has(w)) n++;
+    // the artist is evidence when YouTube named the uploader, or when the title itself carries the name; with neither it says nothing
+    if (c.channel || n > 0) { earned += 0.25 * (n / aw.size); possible += 0.25; }
+  }
+  if (a.trackCount && c.count) {
+    const d = Math.abs(c.count - a.trackCount); // an edition may add songs, so being longer costs less than being shorter
+    const over = c.count >= a.trackCount;
+    earned += 0.15 * (d === 0 ? 1 : d <= 2 ? 0.75 : over && d <= 12 ? 0.5 : d > 8 ? 0 : 0.25); possible += 0.15;
+  }
+  possible += 0.05; if (/^OLAK5uy_/.test(c.id)) earned += 0.05; // YouTube Music's own album playlists
+  let score = earned / possible;
+  if (extras.length > tw.size + 3) score -= 0.15; // a long title is a compilation, not the album
+  if (BAD.test(c.title) && !BAD.test(a.title)) score -= 0.3;
   return Math.max(0, Math.min(1, score));
 }
+
+const thumbOf = (e: any): string | undefined => {
+  const t = Array.isArray(e?.thumbnails) ? [...e.thumbnails].filter((x: any) => typeof x?.url === 'string').sort((x: any, y: any) => (y.width ?? 0) - (x.width ?? 0))[0]?.url : undefined;
+  return typeof t === 'string' ? t : typeof e?.thumbnail === 'string' ? e.thumbnail : undefined;
+};
+const ownerOf = (e: any): string | undefined => {
+  const h = typeof e?.uploader_id === 'string' && e.uploader_id ? e.uploader_id : typeof e?.channel_id === 'string' ? '' : '';
+  const fromUrl = /youtube\.com\/(@[\w.-]+)/.exec(String(e?.uploader_url ?? e?.channel_url ?? ''))?.[1];
+  return fromUrl ?? (h.startsWith('@') ? h : undefined);
+};
 
 /** The id behind a search result: a playlist (`OLAK5uy_…`, `PL…`) or a YouTube Music album page (`MPREb_…`). Single videos and channels are not albums. */
 const albumIdOf = (e: any): string | undefined => {
@@ -53,7 +93,7 @@ export function parseAlbumSearch(info: unknown, a: MatchAlbum): AlbumCandidate[]
     seen.add(id);
     const title = typeof e.title === 'string' ? e.title : '';
     const c = { id, title, channel: String(e.channel ?? e.uploader ?? ''), count: typeof e.playlist_count === 'number' ? e.playlist_count : typeof e.n_entries === 'number' ? e.n_entries : null };
-    out.push({ url: urlOf(id), title: c.title, channel: c.channel, count: c.count, score: (title ? scoreAlbum(a, c) : 0.1) + Math.max(0, 0.02 - i * 0.003) });
+    out.push({ url: urlOf(id), title: c.title, channel: c.channel, count: c.count, score: (title ? scoreAlbum(a, c) : 0.1) + Math.max(0, 0.02 - i * 0.003), owner: ownerOf(e), thumbnail: thumbOf(e), edition: title ? editionOf(a.title, title) : undefined });
   });
   return out.sort((x, y) => y.score - x.score);
 }
@@ -66,11 +106,22 @@ export class Matcher {
    * Candidate albums for one album, best first. YouTube Music's album search gives links; each of the first few is opened (a flat read,
    * no audio) to learn its real title, artist and track count, which is what the score is made of. A failure is reported in `error`.
    */
-  async album(a: MatchAlbum, n = 4): Promise<AlbumMatchResult> {
+  private cache = new Map<string, { at: number; result: AlbumMatchResult }>();
+
+  async album(a: MatchAlbum, n = 6): Promise<AlbumMatchResult> {
     const q = `${a.artist} ${a.title}`.replace(/\s+/g, ' ').trim();
+    const key = `${q.toLowerCase()}|${a.trackCount ?? ''}`;
+    const hit = this.cache.get(key);
+    if (hit && Date.now() - hit.at < 10 * 60_000) return { ...hit.result, id: a.id };
+    const result = await this.search(a, q, n);
+    if (!result.error && result.candidates.length) this.cache.set(key, { at: Date.now(), result });
+    return result;
+  }
+
+  private async search(a: MatchAlbum, q: string, n: number): Promise<AlbumMatchResult> {
     try {
       const out = await this.run([`https://music.youtube.com/search?q=${encodeURIComponent(q)}#albums`, '--flat-playlist', '-J', '--no-warnings', '--playlist-end', '8']);
-      const found = parseAlbumSearch(JSON.parse(out), a).slice(0, 5);
+      const found = parseAlbumSearch(JSON.parse(out), a).slice(0, 6);
       const opened = await Promise.all(found.map((c) => (c.title ? c : this.resolve(c, a))));
       return { id: a.id, candidates: opened.sort((x, y) => y.score - x.score).slice(0, n) };
     } catch (e) { return { id: a.id, candidates: [], error: (e as Error).message }; }
@@ -83,9 +134,10 @@ export class Matcher {
       const title = typeof info?.title === 'string' ? info.title : '';
       if (!title) return c;
       const channel = String(info.channel ?? info.uploader ?? '');
-      const count = typeof info.playlist_count === 'number' ? info.playlist_count : Array.isArray(info.entries) ? info.entries.length : null;
+      const count = typeof info.playlist_count === 'number' ? info.playlist_count : typeof info.n_entries === 'number' ? info.n_entries : Array.isArray(info.entries) ? info.entries.length : null;
       const id = typeof info.id === 'string' && /^(OLAK5uy_|PL)/.test(info.id) ? info.id : c.url.split(/list=|browse\//).pop()!;
-      return { url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }) };
+      const first = Array.isArray(info.entries) ? info.entries[0] : undefined;
+      return { url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }), owner: ownerOf(info) ?? c.owner, thumbnail: thumbOf(info) ?? thumbOf(first) ?? c.thumbnail, edition: editionOf(a.title, title) };
     } catch { return c; }
   }
 
