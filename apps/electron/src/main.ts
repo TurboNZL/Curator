@@ -30,12 +30,15 @@ app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(
 // let the sound keep going when the window is hidden, and let the keyboard's media keys reach the page (MPRIS on Linux)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const gpuChoice = loadDesktopConfig(app.getPath('userData'));
-const gpuStart = activeMode(gpuChoice.gpuMode === 'auto' && gpuChoice.gpuAuto.done ? { mode: 'auto', auto: { step: gpuChoice.gpuAuto.step, done: true } } : { mode: gpuChoice.gpuMode, auto: gpuChoice.gpuAuto });
+const gpuStart = activeMode(gpuChoice.gpuMode === 'auto' && gpuChoice.gpuAuto.done ? { mode: 'auto', auto: { step: gpuChoice.gpuAuto.step, done: true } } : { mode: gpuChoice.gpuMode, auto: gpuChoice.gpuAuto }, process.env.XDG_SESSION_TYPE);
 if (process.platform === 'linux') {
   // Chromium's block list leaves GPU painting off on many Linux drivers, which shows as "not using the GPU renderer": ask for it (a driver
   // that really cannot do it still falls back by itself, graphics() below reports what happened, and "Automatic" then tries the next way
   // to start the graphics: X11 instead of Wayland, no GPU sandbox, ANGLE's OpenGL; see gpuModes.ts)
   app.commandLine.appendSwitch('enable-features', ['MediaSessionService', 'HardwareMediaKeyHandling', ...(gpuStart.features ?? [])].join(','));
+  // Chromium on Wayland cannot use Vulkan ("--ozone-platform=wayland is not compatible with Vulkan"), and --ignore-gpu-blocklist lets it try on NVIDIA:
+  // the GPU process then fails and painting falls back to software. Vulkan is not what the app needs, so it is off in every mode.
+  app.commandLine.appendSwitch('disable-features', 'Vulkan');
   if (gpuStart.software) app.disableHardwareAcceleration();
   else for (const [name, value] of gpuStart.switches) app.commandLine.appendSwitch(name, value);
 }
@@ -210,7 +213,7 @@ async function settleGraphics() {
   if (process.platform !== 'linux' || c.gpuMode !== 'auto' || c.gpuAuto.done || process.env.CURATOR_SOFTWARE_RENDERING) return;
   await new Promise((r) => setTimeout(r, 6000));
   const g = await graphics();
-  const next = nextAutoStep({ mode: 'auto', auto: c.gpuAuto }, g.hardware && g.gpuCrashes === 0);
+  const next = nextAutoStep({ mode: 'auto', auto: c.gpuAuto }, g.hardware && g.gpuCrashes === 0, process.env.XDG_SESSION_TYPE);
   console.log(`[curator] graphics (${gpuStart.id}): ${g.summary}${next.done ? ' - settled' : ' - trying the next mode'}`);
   saveDesktopConfig(userData(), { gpuAuto: { step: next.step, done: next.done } });
   if (next.relaunch) { app.relaunch(); app.exit(0); }

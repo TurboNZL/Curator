@@ -34,6 +34,8 @@ Chromium reports `gpu_compositing: enabled` even with no GPU (it composites on t
 
 **Graphics start-up (Settings → This app → Desktop app).** If Chromium does not get the GPU the app now tries other ways of starting the graphics by itself ("Automatic"): the standard flags, X11 instead of Wayland, no GPU sandbox (NVIDIA's proprietary driver), both, and ANGLE's OpenGL. A few seconds after the window opens it checks; if the GPU is still not used it remembers the next option and restarts (at most five tries, then it settles). The option that worked is kept. You can also pick one by hand there, or turn the GPU off. The list and the order are in `src/gpuModes.ts`; none of it has been tried on a real GPU from the sandbox.
 
+On a Wayland session with NVIDIA the terminal may print `'--ozone-platform=wayland' is not compatible with Vulkan` and the window is painted in software: Chromium tried Vulkan. The app now starts with `--disable-features=Vulkan` in every mode; with an older build run `music-curator --disable-features=Vulkan` to check.
+
 If it says software on a computer with a GPU: check the driver (`glxinfo -B`, `vulkaninfo --summary`), then try `CURATOR_SOFTWARE_RENDERING=1` only to confirm the GPU is the problem (it turns the GPU off on purpose). Two switches that other Electron users report helping (not tried here): `--ozone-platform=x11` when the GPU process exits at start-up under Wayland, and `--disable-gpu-sandbox` for NVIDIA's proprietary driver errors ("Can't initialize nvrm channel"). Pass them to `electron .` or to the installed app, and check the line above again.
 
 

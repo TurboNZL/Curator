@@ -28,25 +28,33 @@ export const GPU_MODES: GpuMode[] = [
   { id: 'software', label: 'Software (no GPU)', hint: 'Turn the GPU off. Slower, but never crashes.', switches: [], software: true },
 ];
 
-/** The order Automatic tries modes in (software is never tried by itself: it is only chosen by hand). */
-export const AUTO_ORDER = ['default', 'x11', 'nosandbox', 'x11-nosandbox', 'angle-gl', 'angle-egl'];
+/**
+ * The order Automatic tries modes in (software is never tried by itself: it is only chosen by hand). On a Wayland session the options that keep
+ * Wayland come first and X11 is the last resort; on X11 the X11 modes would change nothing, so they are left out.
+ */
+export const autoOrder = (sessionType?: string): string[] =>
+  (sessionType ?? '').toLowerCase() === 'wayland'
+    ? ['default', 'nosandbox', 'angle-egl', 'x11', 'x11-nosandbox']
+    : ['default', 'nosandbox', 'angle-egl', 'angle-gl'];
 
 export interface GpuChoice { mode: string; auto: { step: number; done: boolean } }
 
 /** The mode to start with: the chosen one, or in Automatic the current step of the search. Unknown ids fall back to the standard mode. */
-export function activeMode(c: Partial<GpuChoice> | undefined): GpuMode {
+export function activeMode(c: Partial<GpuChoice> | undefined, sessionType?: string): GpuMode {
+  const order = autoOrder(sessionType);
   const mode = c?.mode ?? 'auto';
-  const id = mode === 'auto' ? AUTO_ORDER[Math.min(Math.max(c?.auto?.step ?? 0, 0), AUTO_ORDER.length - 1)] : mode;
+  const id = mode === 'auto' ? order[Math.min(Math.max(c?.auto?.step ?? 0, 0), order.length - 1)] : mode;
   return GPU_MODES.find((m) => m.id === id) ?? GPU_MODES[0];
 }
 
 /**
- * After a start that did not get hardware acceleration: the next step to try, or null when the search is over (done already, or every
+ * After a start that did not get hardware acceleration: the next step to try, or none when the search is over (done already, or every
  * mode was tried). Tested by `gpuModes.test.ts`.
  */
-export function nextAutoStep(c: Partial<GpuChoice> | undefined, gotHardware: boolean): { step: number; done: boolean; relaunch: boolean } {
-  const step = Math.min(Math.max(c?.auto?.step ?? 0, 0), AUTO_ORDER.length - 1);
+export function nextAutoStep(c: Partial<GpuChoice> | undefined, gotHardware: boolean, sessionType?: string): { step: number; done: boolean; relaunch: boolean } {
+  const order = autoOrder(sessionType);
+  const step = Math.min(Math.max(c?.auto?.step ?? 0, 0), order.length - 1);
   if (gotHardware) return { step, done: true, relaunch: false };
-  if (step + 1 < AUTO_ORDER.length) return { step: step + 1, done: false, relaunch: true };
+  if (step + 1 < order.length) return { step: step + 1, done: false, relaunch: true };
   return { step: 0, done: true, relaunch: false }; // nothing worked: stop trying and go back to the standard mode
 }
