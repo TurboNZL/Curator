@@ -22,3 +22,9 @@ await build({
 await build({ ...common, entryPoints: ['src/serverEdition/setup-preload.ts'], outfile: 'dist/setup-preload.cjs', format: 'cjs', external: ['electron'] });
 const { copyFileSync } = await import('node:fs');
 copyFileSync(join(root, 'src/serverEdition/setup.html'), join(root, 'dist/setup.html'));
+
+// The headless server edition (Linux server .deb / AppImage): no Electron API, run by the Electron binary acting as plain Node (see scripts/serverWrapper.cjs).
+await build({
+  ...common, entryPoints: ['src/headless.ts'], outfile: 'dist/headless.mjs', format: 'esm', external: ['node:sqlite'],
+  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+});

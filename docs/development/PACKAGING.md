@@ -3,6 +3,9 @@
 Status: **plan, nothing below the "Done" section is built yet.** Decisions below were agreed with the owner on 2026-10-12.
 
 ## Done
+- **Three editions of the desktop software, built by `release.yml`** (all of `apps/electron`): **full** (`package.json` build; window + library server), **app** (`electron-builder.app.json`, `curatorEdition: "app"`, update channel `app`) and **server** (Windows: the tray app, `electron-builder.server.json`, channel `server`; Linux: `electron-builder.server-linux.json`, a headless build, channel `server`). Linux gets `.deb` and `.AppImage` of each. The server module is switchable inside the app (`serverModule` in `desktop.json`, IPC `curator:server-module`): full has it on, app has it off, either can install or remove it from Settings > This app.
+- **Headless server** (`src/headless.ts` bundled to `dist/headless.mjs`): `scripts/serverWrapper.cjs` (electron-builder `afterPack`) swaps the program for a launcher that runs the Electron binary as Node (`ELECTRON_RUN_AS_NODE=1`, Node 24 with `node:sqlite`), so nothing needs installing and it starts without a display. The `.deb` adds a systemd service (`build/server-postinst.sh`, user `music-curator`, data in `/var/lib/music-curator`). Checked in the sandbox: the launcher unpacked from electron-builder starts, serves `/api/health` and creates a library. The `.deb` and `.AppImage` targets themselves (fpm, appimagetool) were not run here, and nothing ran on real systemd.
+- **Not built: Android server.** The APK is the app. A server half needs the Termux integration described under Decisions, which cannot be written or tested without a device.
 - Every release asset has a lowercase name: `music-curator-<version>-<os>-<arch>.<ext>`
   - Linux: `music-curator-<version>-linux-<arch>.AppImage`, `music-curator-<version>-linux-<arch>.deb`
   - Windows app: `music-curator-<version>-windows-<arch>-setup.exe`
@@ -49,7 +52,7 @@ One program, three platforms (Windows, Linux, Android), each in **two halves** t
 
 
 ## Decisions (owner, 2026-10-12)
-- **Formats:** `.deb` is Debian-family only; `.AppImage` is its own platform. **Each of them gets three builds: full, server, app.** So Linux ships six files, Windows three, Android the app (beta).
+- **Formats:** `.deb` is Debian-family only; `.AppImage` is its own platform. **Each of them gets three builds: full, server, app.** So Linux ships six files (now built, see Done), Windows three (full, app, server), Android the app (beta).
   Names: `music-curator[-server|-app]-<v>-linux-<arch>.deb|.AppImage`, `music-curator[-server|-app]-<v>-windows-<arch>-setup.exe`, `music-curator-<v>-android-beta.apk`.
 - **Android is labelled beta** (the asset name says so; do the same in the app's About line).
 - **Mesh = one switchable primary with replicas.** Exactly one server accepts writes (the primary); replicas pull from it and can serve files and play. "Make this the primary" is a deliberate switch: the old primary first becomes a replica of the new one. Last-writer-wins sync already makes the data side safe; what is new is the role flag, the replica list, and re-pointing clients (the pairing code already carries the address).

@@ -10,6 +10,12 @@ Written from the server's actual behaviour (`packages/server`). The parts that d
 > ```
 > Mount the drive first (section 1; or use the folder your desktop already mounts). `--dry-run` shows what it would do; running it again updates. [GETTING_STARTED.md](GETTING_STARTED.md) has the plain-language version. Everything below is the same thing by hand, plus what the script does not cover. The script itself has only been checked with `bash -n` and a dry run, not on a real Pi: if a step fails it says which, and the manual sections below are the fallback.
 
+## Packaged install (no Node, no git): the server .deb or AppImage
+Each release has a headless server for Linux that brings its own runtime:
+- **Debian, Ubuntu, Raspberry Pi OS 64-bit:** `sudo apt install ./music-curator-server-<version>-linux-<arch>.deb`. It creates a `music-curator` service user, a systemd service that starts at boot, and keeps the library in `/var/lib/music-curator`. The address and token: `sudo journalctl -u music-curator-server -n 20` (token file: `/var/lib/music-curator/token`). Settings (data folder, port): `/etc/music-curator/server.env`, then `sudo systemctl restart music-curator-server`. Removing the package keeps the library.
+- **Any distribution:** the server `.AppImage`: `chmod +x` it and run it (`--data-dir /path`, `--port`, `--help`).
+Updates for these are by installing the newer file for now (an apt repository is planned). The git-based sections below are the alternative for people who want to track the source.
+
 ## 0. What you need
 - A Pi 64-bit OS (Raspberry Pi OS 64-bit / Debian 12+). The server is plain Node, so any model that runs it works; downloads and ffmpeg are the slow part on older Pis.
 - **Node 22.13 or newer.** The server uses the built-in `node:sqlite`, which needs no native compile but is still labelled experimental by Node (it prints a warning, silenced by the flag in the unit below). Debian's own `nodejs` package is too old. Install Node 22 with [nvm](https://github.com/nvm-sh/nvm) for the service user (see the nvm instructions at https://github.com/nvm-sh/nvm step 0) or from NodeSource. **check:** `node -v`.

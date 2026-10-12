@@ -57,6 +57,11 @@ const KEY = 'curator.settings';
 /** What the Electron desktop app (apps/electron) puts on `window`. Absent in a browser. */
 export interface CuratorDesktop {
   token: string; version: string; dataDir: string; platform: string; desktopEnv?: string; port: number;
+  /** "app" = the window-only edition: no library folder here, the library is on a server (Settings > Server) */
+  edition?: 'full' | 'app';
+  /** this app runs its own library server (the server module is installed) */
+  serverModule?: boolean;
+  setServerModule?(on: boolean): Promise<boolean>;
   /** the window's title bar is drawn by the page (a setting of the app, applied at start) */
   customFrame?: boolean;
   windowControl?(action: 'minimize' | 'maximize' | 'close'): void;

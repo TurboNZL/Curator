@@ -4,7 +4,6 @@ import { guessDeviceName } from '../lib/connect.ts';
 import { desktop } from '../lib/settings.ts';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { nativeUpdates } from '../lib/native.ts';
 import { RefreshCw } from 'lucide-react';
 import { Api, type ServerStatus } from '../lib/api.ts';
 import { api, useStore } from '../lib/store.ts';
@@ -50,7 +49,7 @@ export function SettingsPage() {
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
   const [params, setParams] = useSearchParams();
-  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'server', label: 'Server' }, { id: 'library', label: 'Library' }, { id: 'playback', label: 'Playback & storage' }, { id: 'spotify', label: 'Spotify' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
+  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'server', label: 'Server' }, { id: 'library', label: 'Library' }, { id: 'playback', label: 'Playback & storage' }, { id: 'spotify', label: 'Spotify' }, { id: 'guides', label: 'Guides' }, { id: 'app', label: 'This app' }];
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'look';
 
   return (
@@ -114,24 +113,29 @@ export function SettingsPage() {
 
       {tab === 'app' && <>
       <AppUpdatesCard />
-      {desktop() && <Section title="Desktop app">
-        <p className="text-sm text-muted">This app runs its own server and keeps your library in a folder. Put it on a big drive: audio you keep offline lives there too. To use your home server instead, fill in its address and token under Server.</p>
-        <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
-          <button className="btn" onClick={() => void desktop()!.showLibraryFolder()}>Show folder</button>
-          <button className="btn" onClick={() => void desktop()!.chooseLibraryFolder()}>Change folder…</button></div>
-        {desktop()!.setCustomFrame && <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 shrink-0" checked={!!desktop()!.customFrame} onChange={(e) => void desktop()!.setCustomFrame!(e.target.checked)} /><span>Window decorations from the theme <span className="text-muted">(draws the title bar, minimise, maximise and close in the current UI style instead of the system's. Off by default; restarts the app.)</span></span></label>}
-        <GraphicsLine />
-        <p className="text-xs text-muted">Version {desktop()!.version}. Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first.</p>
-      </Section>}
-      <DiscordCard />
-      </>}
-
-      {tab === 'playback' && <>
       <Section title="This device (Play on a device)">
         <p className="text-sm text-muted">Every device that uses your server appears in the player's device list, so you can play on another device or use this one as its remote. This is the name it shows.</p>
         <label className="block space-y-1 text-sm">Device name<input className="input" placeholder={guessDeviceName()} value={settings.deviceName} onChange={(e) => updateSettings({ deviceName: e.target.value })} /></label>
         <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 shrink-0" checked={settings.haptics} onChange={(e) => { updateSettings({ haptics: e.target.checked }); if (e.target.checked) haptic('confirm'); }} /><span>Haptic feedback <span className="text-muted">(a small vibration on presses, sliders and votes; phones only, and the Android app follows the system touch-feedback setting)</span></span></label>
       </Section>
+      {desktop() && <Section title="Desktop app">
+        {!desktop()!.serverModule
+          ? <><p className="text-sm text-muted">The server module is not installed: this app has no library of its own. Enter your server's address and token under Server to see your music; until then it works as a local copy in this window. Install the module to run a server on this computer (a library folder, YouTube downloads, other devices connecting to it).</p>
+            {desktop()!.setServerModule && <div><button className="btn btn-accent" onClick={() => void desktop()!.setServerModule!(true)}>Install the server module…</button></div>}</>
+          : <>
+            <p className="text-sm text-muted">This app runs its own server and keeps your library in a folder. Put it on a big drive: audio you keep offline lives there too. To use your home server instead, fill in its address and token under Server.</p>
+            <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
+              <button className="btn" onClick={() => void desktop()!.showLibraryFolder()}>Show folder</button>
+              <button className="btn" onClick={() => void desktop()!.chooseLibraryFolder()}>Change folder…</button>
+              {desktop()!.setServerModule && <button className="btn btn-ghost" onClick={() => void desktop()!.setServerModule!(false)}>Remove the server module…</button>}</div></>}
+        {desktop()!.setCustomFrame && <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 shrink-0" checked={!!desktop()!.customFrame} onChange={(e) => void desktop()!.setCustomFrame!(e.target.checked)} /><span>Window decorations from the theme <span className="text-muted">(draws the title bar, minimise, maximise and close in the current UI style instead of the system's. Off by default; restarts the app.)</span></span></label>}
+        <GraphicsLine />
+        <p className="text-xs text-muted">Version {desktop()!.version}. {!desktop()!.serverModule ? '' : "Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first."}</p>
+      </Section>}
+      <DiscordCard />
+      </>}
+
+      {tab === 'playback' && <>
       <Section title="Sound (equalizer)"><EqualizerCard /></Section>
 
       <Section title="Playback rules"><PlaybackRules /></Section>

@@ -51,6 +51,13 @@ jobs:
         run: cd apps/electron && npm pkg set version="$(echo '${{ needs.release.outputs.tag }}' | sed 's/^v//')"
       - run: pnpm --filter @curator/electron dist:publish
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Build and publish the app-only edition (Windows installer; Linux .deb and .AppImage). Its own update feed (channel app)
+        run: pnpm --filter @curator/electron dist:app:publish
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Build and publish the headless server edition (Linux .deb as a systemd service, and .AppImage)
+        if: runner.os == 'Linux'
+        run: pnpm --filter @curator/electron dist:server:linux:publish
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
 
   windows-server:
     needs: release

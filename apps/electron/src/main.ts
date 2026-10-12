@@ -3,7 +3,9 @@ import { makeRule, withAccess, type AccessRule } from './accessHeaders.ts';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
-import { startServer, type Running } from '../../../packages/server/src/start.ts';
+import { startServer } from '../../../packages/server/src/start.ts';
+import { startStaticServer } from '../../../packages/server/src/staticServer.ts';
+import { readFileSync, rmSync } from 'node:fs';
 import { BUILT_IN_DISCORD_CLIENT_ID, findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
 import { DiscordPresence, findSockets, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
@@ -16,13 +18,20 @@ import { activeMode, GPU_MODES, nextAutoStep } from './gpuModes.ts';
  * the window's storage and syncs with this server, or (Settings > Server) with another one, such as the Pi.
  */
 const here = dirname(fileURLToPath(import.meta.url));
-let server: Running | null = null;
+/** What the window talks to: the full edition's own library server, or (app edition) just the web client's files. */
+type Local = { port: number; close(): Promise<void>; config: { dataDir: string; token: string } };
+let server: Local | null = null;
+/** "full" (window + library server) or "app" (window only; the library is on a server). electron-builder writes it into package.json for the app edition. */
+const edition: 'full' | 'app' = (() => {
+  if (process.env.CURATOR_EDITION === 'app') return 'app';
+  try { return (JSON.parse(readFileSync(join(app.getAppPath(), 'package.json'), 'utf8')) as { curatorEdition?: string }).curatorEdition === 'app' ? 'app' : 'full'; } catch { return 'full'; }
+})();
 let win: BrowserWindow | null = null;
 const discord = new DiscordPresence();
 const updates = new Updates(app.isPackaged, (state) => win?.webContents.send('curator:update', state));
 
 // the desktop file's name is the window's identity on Wayland (its app id): without this the launcher's icon and the window do not match
-if (process.platform === 'linux') app.setDesktopName('music-curator.desktop');
+if (process.platform === 'linux') app.setDesktopName(edition === 'app' ? 'music-curator-app.desktop' : 'music-curator.desktop');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
@@ -59,12 +68,17 @@ async function graphics(): Promise<Graphics> {
 }
 
 const userData = () => app.getPath('userData');
+/** the server module is on when the user installed it, or by default in the full edition */
+const serverModuleOn = (saved: boolean | undefined) => saved ?? edition === 'full';
 
 async function boot(): Promise<void> {
   const desk = loadDesktopConfig(userData());
   const webDir = findWebDir(process.resourcesPath, join(here, '../../web/dist'));
   if (!webDir) throw new Error('The web client has not been built. Run `pnpm --filter @curator/web build` first.');
-  const config = loadConfig({ ...process.env, CURATOR_DATA_DIR: desk.dataDir, CURATOR_HOST: '127.0.0.1', CURATOR_PORT: String(desk.port), CURATOR_WEB_DIR: webDir });
+  // the app edition's port is one above the full edition's, so both can be installed (and the window's storage stays put when the module is added or removed)
+  const port = process.env.CURATOR_DESKTOP_PORT || edition === 'full' ? desk.port : desk.port + 1;
+  if (!serverModuleOn(desk.serverModule)) { const s = await startStaticServer(webDir, port); server = { port: s.port, close: s.close, config: { dataDir: '', token: '' } }; return; }
+  const config = loadConfig({ ...process.env, CURATOR_DATA_DIR: desk.dataDir, CURATOR_HOST: '127.0.0.1', CURATOR_PORT: String(port), CURATOR_WEB_DIR: webDir });
   try { server = await startServer(config); }
   catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
@@ -111,7 +125,7 @@ function chooseFolder(): Promise<string | null> {
 }
 
 ipcMain.on('curator:info', (e) => {
-  e.returnValue = { customFrame: loadDesktopConfig(userData()).customFrame, token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, desktopEnv: process.env.XDG_CURRENT_DESKTOP ?? '', port: server?.port ?? 0 };
+  e.returnValue = { customFrame: loadDesktopConfig(userData()).customFrame, token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', edition, serverModule: serverModuleOn(loadDesktopConfig(userData()).serverModule), platform: process.platform, desktopEnv: process.env.XDG_CURRENT_DESKTOP ?? '', port: server?.port ?? 0 };
 });
 // the Cloudflare Access service token rides on every request to the library server (see accessHeaders.ts), so audio and covers stream directly
 let accessRule: AccessRule | null = null;
@@ -135,6 +149,29 @@ ipcMain.handle('curator:gpu-set', (_e, mode: unknown) => {
   app.relaunch(); app.exit(0);
 });
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
+/** Install or remove the server module (this app's own library server). Removing keeps the library files unless the user says to delete them; both restart the app. */
+ipcMain.handle('curator:server-module', async (_e, on: unknown) => {
+  const desk = loadDesktopConfig(userData());
+  if (on === true) {
+    const r = await dialog.showMessageBox(win ?? undefined!, { type: 'question', buttons: ['Install', 'Cancel'], defaultId: 0, cancelId: 1, message: 'Install the server module?',
+      detail: `This app will run its own library server and keep your library in ${desk.dataDir} (change the folder later in Settings > This app). The app restarts.` });
+    if (r.response !== 0) return false;
+    saveDesktopConfig(userData(), { serverModule: true });
+  } else {
+    const r = await dialog.showMessageBox(win ?? undefined!, { type: 'warning', buttons: ['Remove, keep my library files', 'Remove and delete my library files', 'Cancel'], defaultId: 0, cancelId: 2,
+      message: 'Remove the server module?', detail: `The app stops running its own server and goes back to connecting to one you choose (Settings > Server). The library in ${desk.dataDir} is kept unless you choose to delete it. The app restarts.` });
+    if (r.response === 2) return false;
+    if (r.response === 1) {
+      const sure = await dialog.showMessageBox(win ?? undefined!, { type: 'warning', buttons: ['Delete the library', 'Cancel'], defaultId: 1, cancelId: 1, message: 'Delete the library files?', detail: `Everything in ${desk.dataDir} is removed for good: the database, the audio and the pictures. This cannot be undone.` });
+      if (sure.response !== 0) return false;
+      await server?.close(); closing = true; server = null;
+      rmSync(desk.dataDir, { recursive: true, force: true });
+    }
+    saveDesktopConfig(userData(), { serverModule: false });
+  }
+  app.relaunch(); app.exit(0);
+  return true;
+});
 const discordInfo = () => ({ ...loadDiscordConfig(userData()), builtIn: !!BUILT_IN_DISCORD_CLIENT_ID, status: discord.status, detail: discord.detail, sockets: findSockets() });
 ipcMain.on('curator:presence', (_e, p: Presence | null) => {
   if (p && (typeof p.title !== 'string' || typeof p.artist !== 'string')) return;

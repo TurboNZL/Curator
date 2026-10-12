@@ -19,7 +19,12 @@
     "dist:dir": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --dir",
     "dist:server": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.server.json --win",
     "dist:server:publish": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.server.json --win --publish always",
-    "start:server": "node scripts/build.mjs && electron dist/server-main.mjs"
+    "start:server": "node scripts/build.mjs && electron dist/server-main.mjs",
+    "dist:app": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.app.json",
+    "dist:app:publish": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.app.json --publish always",
+    "dist:server:linux": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.server-linux.json --linux",
+    "dist:server:linux:publish": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.server-linux.json --linux --publish always",
+    "start:headless": "node scripts/build.mjs && ELECTRON_RUN_AS_NODE=1 electron dist/headless.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
