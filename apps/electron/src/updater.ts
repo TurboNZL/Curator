@@ -20,7 +20,7 @@ export class Updates {
   private started = false;
   private debFile: string | null = null;
   private installing = false;
-  constructor(private readonly packaged: boolean, private readonly onState: (s: UpdateState) => void) {}
+  constructor(private readonly packaged: boolean, private readonly onState: (s: UpdateState) => void, private readonly channel?: string) {}
 
   /** A GitHub token with read access to the repository's contents: needed only while the repository is private. Empty clears it. */
   setToken(token: string) {
@@ -36,6 +36,7 @@ export class Updates {
     if (!this.packaged) { this.set({ status: 'disabled', message: 'Updates work in the installed app, not in a development run.' }); return; }
     // the project's releases are often marked pre-release, which the default "latest stable" lookup ignores
     autoUpdater.allowPrerelease = true;
+    if (this.channel) autoUpdater.channel = this.channel; // the server edition has its own update feed (server.yml), apart from the desktop app's latest.yml
     autoUpdater.autoDownload = true;
     // a .deb install needs root, which electron-updater asks for with a blocking pkexec call (it freezes the app and fails
     // without a polkit agent), also when quitting. Those installs are done by install() below instead; AppImage, Windows and macOS are unchanged.
