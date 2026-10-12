@@ -8,7 +8,7 @@
 
 ---
 
-> **Status snapshot (kept short on purpose; the authoritative, detailed state is `CLAUDE.md`).** `@curator/core`, `@curator/server` and a working **web client (`apps/web`) are built and on `main`**: local-first sync, library browsing, This-or-That voting with the exact rating rules, editing (credits-only artist entry), album import from YouTube, a library-health page that replaced the legacy cleanup queue, a full theme system (colour themes x UI styles, accent, wallpaper; see CLAUDE.md), offline audio caching and an installable PWA. The user has installed and run it on their Linux machine. **Not built yet:** Electron, the Android app (and therefore Android Auto), Pi deployment docs, automatic offline-cache eviction. Sections 6 and 10 below describe the *intended* end state and the legacy behaviour used as the spec; read them together with this snapshot, not as a to-do list from zero.
+> **Status snapshot (kept short on purpose; the authoritative, detailed state is `CLAUDE.md`).** The project is **feature complete**: `@curator/core`, `@curator/server`, the web client (`apps/web`), the Electron desktop app and the Android app (with Android Auto) are built and on `main`, with local-first sync, voting with the exact rating rules, full editing (credits are the artist), album import from YouTube and Spotify, library health, a theme system (colour themes × UI styles, wallpaper), offline audio, Play-on-a-device, stats and listening history, lyrics, and a Pi deployment guide. What remains is fixing what real use turns up. Unverified against the real services/devices: YouTube (import, album search, downloads), Spotify/Soloist, Cloudflare Access, the Android build on a device, Android Auto in a car. Sections 6 and 10 below describe the original intent and the legacy behaviour used as the spec; the glossary (section 4) is current.
 
 ## 1. The one-paragraph version
 
@@ -37,22 +37,24 @@ Music Curator is a **personal music library for one person** who owns their musi
 
 | Term | Meaning |
 |---|---|
-| **Artist** | A person/group. Has a name and an image. |
-| **Album** | A body of work with a primary `artistId`, album-level `credits`, `genres`, and a cover. Tracks belong to albums (a track can be in several, with an `order` in each). **Genres belong to albums**; a track shows its album's genres when `syncWithAlbumCredits` is true, otherwise its own `genres`. |
-| **Release** | A specific edition/appearance of an album (e.g. "Streaming", a deluxe edition) with its own cover, `releaseDate` and ordered `trackIds`. An album can have several; `defaultReleaseId` picks which is shown. |
-| **Track** | One song. Has `title`, primary `artistId`, `credits`, a source `file` (content hash), links (`spotifyUrl`, `geniusUrl`, `youtubeMusicUrl`), `bitrate`, `bpm`, `key`, `memories` (a manual counter of personal significance), `initialRating`, `queueRules`. |
-| **Credit** | `{artistId, role: string[]}`. Roles come from **Role Categories** (e.g. "Lead artist", "Writer"); "Lead artist" is built in and not removable. Display name logic: show the lead-artist credits; fall back to the primary artist. |
-| **Vote** | One "This or That" decision: `{trackAId, trackBId, winnerId \| null, isEqual, timestamp}`. Append-only. The source of truth for ranking. |
-| **Elo** | Per-track score starting at 1000, K=32. **Derived** by replaying votes in time order. Never stored as authoritative state. |
-| **Rating (balanced)** | Elo linearly scaled so min..max over all tracks = 0..10, floored by `initialRating`. Derived. |
-| **Initial rating ("unbalanced")** | A manual rating the user gave a track before enough votes exist. Acts as a **floor** for the balanced rating. In legacy data `0` means "unset". |
-| **Playback rule** | "When track A plays, play track B right after" (`playFirstOnShuffle`: keep B right after A when shuffling; `applyToAlbumSource`: only when playing from an album). Used for songs that must go back-to-back (intros/outros/interludes). |
-| **User queue vs active queue** | User queue = things the user explicitly queued ("play next"); active queue = the remainder of the album/playlist being played. User queue plays first. |
-| **Relational bio (group)** | A named narrative/description linking artists/albums/tracks/releases, optionally shown on each member's page (`showOnEntityPage`). Types: collective, thematic, relationship, era. Code calls them `groups`; UI calls them "Relational Bios". |
-| **Note** | A labelled text note attached to an entity (legacy table `notes`; only 2 test rows exist). |
-| **Timeline / Journal** | Free-form dated entries ("Curation Journal"). |
-| **Pending files** | Legacy: files attached to an album awaiting assignment. Empty in the user's data. |
-| **Memories** | Integer on a track, incremented/decremented from the UI, to flag sentimental tracks. 21 tracks have > 0. |
+| **Artist** | A person or group, with a name and an image. There is no "artist" field on albums or tracks: the artist is whoever has the **Lead artist** credit. |
+| **Credit** | `{artistId, role: string[]}`. Roles come from **Role Categories** ("Lead artist", "Featured artist", "Producer", "Writer", anything you add). Lead credits make the artist (several leads are allowed); a **Featured artist** credit is shown after the leads ("A feat. X") with its own link but does not make the track part of that artist's albums. |
+| **Era** | A collection of albums and singles (a phase of an artist's career). Eras overlap: an album can be in several. Notes can attach to them. |
+| **Album** | A conceptual container of tracks with `credits`, `genres`, a **cover pool** (every image it has; the default release's cover is shown unless one is picked) and an optional explicit `trackOrder`. Genres and credits flow down to tracks that have `syncWithAlbumCredits`. |
+| **Release** | A specific edition of an album with its own cover, `releaseDate` and ordered tracklist. An album can have several; `defaultReleaseId` picks the one shown first. A release's **name** comes from the reusable *release names* list (picked or created like an artist); a blank name means the release is called after the album. (Release *tags* were replaced by names; old tags stay in the data and in the `tag:` filter.) |
+| **Single** | A track on no album. It has its own cover and release date and can later be put on an album (or an album with one song can be converted to a single). |
+| **Track** | One song (the canonical recording): title, credits, genres, a source `file` (content hash), links (Spotify, several allowed; Genius; YouTube Music), `bitrate`, `memories`, `initialRating`, playback rule, and, set by the server, a `youtubeDead` mark when its YouTube link is gone. |
+| **Vote** | One decision: `{trackAId, trackBId, winnerId \| null, isEqual, timestamp}`, or a **boost** (thumbs up/down, half a win/loss against an equal opponent). Append-only; the source of truth for ranking. The home page's questions record ordinary votes. |
+| **Elo** | Per-track score starting at 1000, K=32, **derived** by replaying votes in time order. Never stored. |
+| **Rating (balanced)** | Elo scaled so min..max over all tracks = 0..10, floored by `initialRating`. Derived. |
+| **Initial rating ("unbalanced")** | A manual rating before enough votes exist; a floor for the balanced rating. |
+| **Playback rule** | "When track A plays, play track B right after" (`playFirstOnShuffle`, `applyToAlbumSource`). For songs that must go back-to-back. |
+| **User queue vs active queue** | The user queue is what you explicitly queued; the active queue is the rest of the album or list being played. The user queue plays first. |
+| **Note** | One thing, stored in the `groups` table (code and old docs also call it a *relational bio*): a title, text, your own **category** (created inline) and ties to one or more artists, albums, tracks, releases, eras or playlists. The first note on a thing starts with its name and kind as defaults. |
+| **Journal (timeline)** | Dated entries on the home page: your own plus automatic ones (new album, import, note). Filterable by text and kind. |
+| **Listening history (play log)** | Every play, from Curator's own player or imported from Spotify (`imported: 'spotify'`, matched to library tracks by link, then by title and artist). Skips are logged too. |
+| **Memories** | An integer on a track, flagging sentimental songs. |
+| **Pair code** | `CUR1-…`: server address, access token and Cloudflare Access service token in one string that sets up another device. |
 
 ## 5. The rating system in detail (must be preserved exactly)
 
@@ -173,11 +175,11 @@ Details and verification are in `CLAUDE.md`. Summary: 444 tracks / 33 albums / 3
 Status key: DONE / PARTIAL / TODO. (Detailed as-built state: `CLAUDE.md`.)
 
 1. **Web client MVP**: **DONE** (verified by driving it in Chromium against a real server and the migrated real library; the user has run it). Original criteria, kept for regression checks: loads the migrated library, plays acquired audio, votes persist and sync, a second browser sees them, both themes reviewed at desktop and phone width.
-2. **Feature parity with the legacy app (section 6)**: **MOSTLY DONE.** Ported: browse pages, playlists, relational bios, notes, journal/home, stats, settings (rules editor, roles), voting, queue, album import with review, image upload, cover-from-thumbnail. The legacy Cleanup *task queue* was deliberately replaced by the **library-health** page (in-use-aware checks; it must never offer to remove roles/genres/artists that are in use, which the legacy cleanup did). *Remaining before the legacy root app can be deleted:* confirm nothing in section 6 is missing (the per-track play history, queue reordering and column sorting gaps are now closed; the low-bitrate check already lives in `lib/health.ts`), then remove the legacy `src/`, `server/` and root Vite/Nitro config.
-3. **Electron app**: **TODO.** *Done when:* offline library on disk, optional embedded server toggle, packaged build for the user's OS (their legacy binary names suggest Windows; they have also run the web stack on Linux, so ask which).
-4. **Android app + Android Auto**: **TODO.** *Done when:* installs via sideload, plays offline, syncs, appears in Android Auto with Unknown sources enabled, browse tree and voice search work on the user's phone/car (DHU first). Needs the user's device testing.
+2. **Feature parity with the legacy app (section 6)**: **DONE** (the legacy app has been removed; the list below is how it was reached). Ported: browse pages, playlists, relational bios, notes, journal/home, stats, settings (rules editor, roles), voting, queue, album import with review, image upload, cover-from-thumbnail. The legacy Cleanup *task queue* was deliberately replaced by the **library-health** page (in-use-aware checks; it must never offer to remove roles/genres/artists that are in use, which the legacy cleanup did). *Remaining before the legacy root app can be deleted:* confirm nothing in section 6 is missing (the per-track play history, queue reordering and column sorting gaps are now closed; the low-bitrate check already lives in `lib/health.ts`), then remove the legacy `src/`, `server/` and root Vite/Nitro config.
+3. **Electron app**: **DONE** (`apps/electron`, [ELECTRON.md](ELECTRON.md)). *Done when:* offline library on disk, optional embedded server toggle, packaged build for the user's OS (their legacy binary names suggest Windows; they have also run the web stack on Linux, so ask which).
+4. **Android app + Android Auto**: **BUILT, unverified on a device** ([ANDROID.md](ANDROID.md); CI compiles it, a car test is still owed). *Done when:* installs via sideload, plays offline, syncs, appears in Android Auto with Unknown sources enabled, browse tree and voice search work on the user's phone/car (DHU first). Needs the user's device testing.
 5. **Pi deployment guide**: **WRITTEN, untested on a Pi** (`docs/DEPLOY_PI.md`). Original scope: systemd unit and/or Docker, installing yt-dlp + ffmpeg on arm64, external-drive mount/permissions (exFAT/NTFS lack unix modes; symlink caveat is already in `docs/TESTING.md`), backups of `curator.db` + `files/`, HTTPS/Tailscale (7.4), updating. Note: **service workers (PWA install/offline shell) need HTTPS or localhost**, so over plain-HTTP LAN the web app works online but is not installable; this makes the HTTPS/Tailscale decision more pressing.
-6. **Polish**: **PARTIAL.** Automatic offline-cache eviction is done (opt-in setting, LRU). Themes are done (see CLAUDE.md). Remaining: smarter pair selection for voting (optional), keyboard shortcuts, export/backup.
+6. **Polish**: **DONE.** Offline-cache eviction, themes, smarter pair selection and home-page questions, keyboard shortcuts on Rank, backup and export, lyrics and the full-screen view.
 
 ## 11. Open questions and risks (track these; resolve with evidence)
 

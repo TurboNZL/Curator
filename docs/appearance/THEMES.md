@@ -73,8 +73,8 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Name | id | Pairs with | What it is |
 |---|---|---|---|
 | Default | `default` | `light`, `default` | The app's own look. Follows the colour theme's rounding and density (Classic is tighter). |
-| GTK 4 (Adwaita) | `gtk4` | `adwaita`, `adwaita-dark` | Large rounded corners, soft flat surfaces, header-bar dialogs and springy motion in Cantarell. |
-| KDE Breeze | `breeze` | `breeze`, `breeze-dark` | Compact and tidy with thin outlines, glow-on-hover and a dark title bar in Noto Sans. |
+| GTK 4 (Adwaita) | `gtk4` | `adwaita`, `adwaita-dark` | libadwaita: a flush grey sidebar and flat header bar, 6 px grey buttons and entries, 12 px outlined cards and popovers, grey sidebar highlight, white round slider knobs, in Cantarell. |
+| KDE Breeze | `breeze` | `breeze`, `breeze-dark` | Plasma 6 Breeze: 5 px corners, a window-grey page with lighter panels, outlined buttons that take an accent frame on hover, solid accent selections and a light title bar in Noto Sans. |
 | Windows 11 | `win11` | `win11`, `win11-dark` | Fluent: rounded, light shadows, accent underline on fields and smooth slide-in motion in Segoe UI Variable. |
 | Windows 10 | `win10` | `win10`, `win10-dark` | Flat and square with crisp 2 px borders and quick transitions in Segoe UI. |
 | Windows 7 | `win7` | `win7`, `win7-dark` | Aero: glass window frames, grey gel buttons with a blue glow and a red close button in Segoe UI. |
