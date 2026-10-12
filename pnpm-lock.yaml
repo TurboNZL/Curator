@@ -50,6 +50,9 @@ importers:
       '@fontsource/barlow-condensed':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/figtree':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/fredoka':
         specifier: ^5.3.0
         version: 5.3.0
@@ -62,7 +65,19 @@ importers:
       '@fontsource/open-sans':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/outfit':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/pixelify-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/press-start-2p':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/roboto':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/ubuntu':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/vt323':
@@ -686,6 +701,9 @@ packages:
   '@fontsource/barlow-condensed@5.3.0':
     resolution: {integrity: sha512-RA7MmIx0v3eQ6Gcf74qLVLOwLB0GpPOzx+eU9iG/AmCnSJGcIWYeU8y6CEMGZ210MGwGg5CZhzLkkvyZdTTk1g==}
 
+  '@fontsource/figtree@5.3.0':
+    resolution: {integrity: sha512-/iTcTXL1eRBGhvD7NN9dnKzXzWqDLVZVEUFI9xIxAC1G/hXU8tCyYeXCAuPOuvSYPInFUP7H6KLGgygmDfy1SA==}
+
   '@fontsource/fredoka@5.3.0':
     resolution: {integrity: sha512-s2IhjQ50wDnKkkaKmjhtL0rxQg6ITsVusiipM3m7zUwVZZbbCKsscNDkngwp28xVzfIt7neWrkgU1qKqyTycQg==}
 
@@ -698,8 +716,20 @@ packages:
   '@fontsource/open-sans@5.3.0':
     resolution: {integrity: sha512-V1bdMlGNyZrJwzrdusshMOw2YR0aqYDL7kOo9dkxUEKl8dFv66A9HLckOOXl572sG/7ohhDQrCrTFGSn9LZcSw==}
 
+  '@fontsource/outfit@5.3.0':
+    resolution: {integrity: sha512-0AVHzTTVJSxWDOxPKSfMeHhZeBFDU3cmgrcOb76ZEyhGo0+xgyG3GsLF3h9+X8w0IX7G4jzjJgFQEBiWdX6VgA==}
+
+  '@fontsource/pixelify-sans@5.3.0':
+    resolution: {integrity: sha512-4RCe9nXbi7wUu5+H0FNX1sgPZ2kJ1MmY1uTkEfvQIzzqhoS8zGKJaJfdK8oreE0OU+5gM+NdurFi3H3FJRBvyw==}
+
   '@fontsource/press-start-2p@5.3.0':
     resolution: {integrity: sha512-gxWFxdeDglPhEYSwEeooomcaFK8kSQYLQwVxfnOJeYRj2sPEHXjpVtFgEaYfqzOjuAJGrIcJOipu2KY5YkbyuQ==}
+
+  '@fontsource/roboto@5.3.0':
+    resolution: {integrity: sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q==}
+
+  '@fontsource/ubuntu@5.3.0':
+    resolution: {integrity: sha512-LsjJXgE430QLs8LKfn1RIFbbdGAiZBU1gao8ASa4Z2kGNGh7lMb7Rzx09v3bLLuuK+3XA/JSLgPWTAbLD6r1fg==}
 
   '@fontsource/vt323@5.3.0':
     resolution: {integrity: sha512-3w33Rg/0+R1587HQfz4t7Q7e0GGeCqr3wmzIwqdGInUnrGEwMA5eX39GP4Z9wpTQnwfhVOhYuxuRwRUeIcicbw==}
@@ -3223,6 +3253,8 @@ snapshots:
 
   '@fontsource/barlow-condensed@5.3.0': {}
 
+  '@fontsource/figtree@5.3.0': {}
+
   '@fontsource/fredoka@5.3.0': {}
 
   '@fontsource/noto-sans@5.3.0': {}
@@ -3231,7 +3263,15 @@ snapshots:
 
   '@fontsource/open-sans@5.3.0': {}
 
+  '@fontsource/outfit@5.3.0': {}
+
+  '@fontsource/pixelify-sans@5.3.0': {}
+
   '@fontsource/press-start-2p@5.3.0': {}
+
+  '@fontsource/roboto@5.3.0': {}
+
+  '@fontsource/ubuntu@5.3.0': {}
 
   '@fontsource/vt323@5.3.0': {}
 

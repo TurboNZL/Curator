@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.tsx';
 import './index.css';
 import './ui-styles.css';
+import './ui-styles-more.css';
 import './fortnite-fonts.css';
 import { applyAppearance } from './lib/appearance.ts';
 import { startConnect } from './lib/connect.ts';

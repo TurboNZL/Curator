@@ -261,15 +261,15 @@ export function VotePage() {
                 {picked === t.id && <span className="absolute inset-0 flex items-center justify-center rounded-theme bg-accent/45 text-accent-fg"><Check className="bt-vote-check" size={44} strokeWidth={3} /></span>}
               </div>
             </div>
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:w-full sm:flex-none sm:items-center">
-              <div className="min-w-0 text-left sm:text-center"><div className={cn('line-clamp-2 min-w-0 break-words font-semibold [overflow-wrap:anywhere]', compact ? 'text-sm' : 'text-base sm:text-lg')}>{t.title}</div>
-                <div className={cn('line-clamp-2 min-w-0 break-words text-muted [overflow-wrap:anywhere]', compact ? 'text-xs' : 'text-sm')} onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} featured={t.featured} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
-              <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className={cn('flex min-w-0 flex-1 justify-center', compact ? 'flex-row items-center gap-1.5' : 'flex-col gap-1.5 sm:w-full sm:flex-none sm:items-center')}>
+              <div className={cn('min-w-0 text-left', compact ? 'flex-1' : 'sm:text-center')}><div className={cn('min-w-0 break-words font-semibold [overflow-wrap:anywhere]', compact ? 'truncate text-sm' : 'line-clamp-2 text-base sm:text-lg')}>{t.title}</div>
+                <div className={cn('min-w-0 break-words text-muted [overflow-wrap:anywhere]', compact ? 'truncate text-xs' : 'line-clamp-2 text-sm')} onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} featured={t.featured} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
+              <div className={cn('flex min-w-0 items-center gap-2 sm:justify-center', compact ? 'shrink-0' : 'flex-wrap')} onClick={(e) => e.stopPropagation()}>
                 {!compact && <Rating track={t} />}
                 <button type="button" className="btn btn-ghost !p-1.5" title="Stats" aria-label={`Stats for ${t.title}`} onClick={() => edit({ kind: 'track-details', id: t.id })}><BarChart3 size={14} /></button>
               </div>
               <div className={cn('text-xs text-muted sm:text-center max-sm:[@container(max-height:11.5rem)]:hidden', compact && 'hidden')} aria-hidden>{!t.file ? 'No audio yet' : playing === t.id ? <span className="inline-flex items-center gap-1"><Pause size={11} />Tap to stop</span> : <span className="inline-flex items-center gap-1">{ready.has(t.id) ? <><Play size={11} />Tap to preview 15 s</> : <><Loader2 size={11} className="animate-spin" />Loading preview…</>}</span>}</div>
-              <button className={cn('btn btn-accent w-full min-w-0 text-sm sm:w-auto', compact ? '!px-2 !py-0.5 text-xs' : '!px-3 !py-1.5 sm:!px-4')} onClick={(e) => { e.stopPropagation(); vote(t.id); }}>{i === 0 ? '← ' : ''}This one{i === 1 ? ' →' : ''}</button>
+              <button className={cn('btn btn-accent min-w-0 text-sm', compact ? 'shrink-0 !px-2 !py-0.5 text-xs' : 'w-full !px-3 !py-1.5 sm:w-auto sm:!px-4')} onClick={(e) => { e.stopPropagation(); vote(t.id); }}>{i === 0 ? '← ' : ''}This one{i === 1 ? ' →' : ''}</button>
             </div>
           </div>
         ))}

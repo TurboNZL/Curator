@@ -1539,53 +1539,6 @@ html[data-ui="gameboy"] { font-size: 10px; line-height: 1.7; }
 [data-ui="cyber"] .chip { background: transparent; border: 1px solid hsl(180 100% 50% / 0.6); color: hsl(180 100% 55%); }
 [data-ui="cyber"] .bt-row:hover, [data-ui="cyber"] .bt-row-current { box-shadow: inset 3px 0 0 hsl(var(--accent)); }
 
-/* ================== Block game inventory (Minecraft) ==================
- * The inventory screen: a light grey panel with a black outline and a bevel (white lit edge top-left, dark shadow bottom-right), slots
- * and buttons in mid grey with white type and a dark drop shadow, a hover that tints the button blue-violet and turns its label
- * yellow. Pixel type (VT323). Pair it with the "Inventory" colours. */
-
-[data-ui="blocky"] {
-  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
-  --font: "VT323", "Press Start 2P", ui-monospace, monospace; --title-font: var(--font);
-  --dur: 0ms; --ease: steps(1);
-  --btn-bg: #8b8b8b; --btn-fg: #fff; --btn-weight: 400; --btn-border: 2px solid #000; --btn-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --btn-hover-bg: #7b84c4; --btn-hover-border: #000; --btn-hover-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --btn-active-shadow: inset 2px 2px 0 rgb(0 0 0 / 0.5), inset -2px -2px 0 rgb(255 255 255 / 0.3); --btn-active-transform: none;
-  --btn-accent-bg: #5d9b3a; --btn-accent-fg: #fff; --btn-accent-border: 2px solid #000; --btn-accent-border-color: #000; --btn-accent-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --btn-accent-hover-bg: #6fb447; --btn-accent-hover-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45); --btn-accent-text-shadow: 2px 2px 0 #2c4a18;
-  --ghost-hover-bg: rgb(0 0 0 / 0.12);
-  --in-bg: #000; --in-border: 2px solid #a0a0a0; --in-shadow: none; --in-hover-border: #fff; --in-focus-border: #fff; --in-focus-shadow: none; --in-px: 0.75rem;
-  --card-bg: #c6c6c6; --card-border: 2px solid #000; --card-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
-  --backdrop: rgb(0 0 0 / 0.6);
-  --win-bg: #c6c6c6; --win-border: 2px solid #000; --win-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 6px 6px 0 rgb(0 0 0 / 0.5); --dialog-anim: none;
-  --tb-bg: transparent; --tb-fg: #3f3f3f; --tb-border: 0 solid transparent; --tb-pad: 0.7rem 1rem 0.2rem; --tb-size: 1.3rem; --tb-weight: 400; --tb-justify: space-between; --tb-text-shadow: none;
-  --close-fg: #3f3f3f; --close-hover-bg: #b5b5b5; --close-hover-fg: #000; --close-r: 0;
-  --bar-border: 2px solid #000;
-  --menu-bg: #c6c6c6; --menu-border: 2px solid #000; --pop-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 4px 4px 0 rgb(0 0 0 / 0.5); --menu-anim: none; --menu-hi-bg: #7b84c4; --menu-hi-fg: #ffffa0;
-  --side-bg: #c6c6c6; --side-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555; --top-bg: #c6c6c6; --top-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555; --player-bg: #c6c6c6; --player-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
-  --nav-hover-bg: rgb(255 255 255 / 0.4); --nav-active-bg: #8b8b8b; --nav-active-fg: #fff; --nav-active-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --row-hover: rgb(255 255 255 / 0.45); --row-current: rgb(93 155 58 / 0.4);
-  --panel-tb-fg: #3f3f3f; --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
-  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid #000; --chk-bg: #8b8b8b; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
-  --chk-on-bg: #5d9b3a; --chk-on-border: #5d9b3a; --chk-on-fg: #fff; --chk-radio-on-bg: #5d9b3a; --chk-dot: #fff;
-  --rng-appearance: none; --rng-h: 8px; --rng-r: 0; --rng-track: #373737; --rng-fill: #5d9b3a;
-  --rng-tw: 1rem; --rng-th: 1.3rem; --rng-tr: 0; --rng-thumb: #8b8b8b; --rng-tb: 2px solid #000; --rng-ts: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-}
-
-html[data-ui="blocky"] { font-size: 18px; }
-[data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title) { font-weight: 400; }
-[data-ui="blocky"] .btn, [data-ui="blocky"] .btn-accent { text-shadow: 2px 2px 0 #3f3f3f; }
-[data-ui="blocky"] .btn:hover:not(:disabled), [data-ui="blocky"] .btn:hover:not(:disabled) * { color: #ffffa0; }
-[data-ui="blocky"] .btn-ghost { text-shadow: none; color: #3f3f3f; }
-[data-ui="blocky"] .btn-ghost:hover:not(:disabled), [data-ui="blocky"] .btn-ghost:hover:not(:disabled) * { color: #000; }
-[data-ui="blocky"] .bt-nav { color: #3f3f3f; }
-[data-ui="blocky"] .bt-nav[aria-current="page"], [data-ui="blocky"] .bt-nav[aria-current="page"] * { color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
-[data-ui="blocky"] .text-muted, [data-ui="blocky"] .chip { color: #555; }
-[data-ui="blocky"] .chip { background: #8b8b8b; color: #fff; text-shadow: 1px 1px 0 #3f3f3f; border: 2px solid #000; box-shadow: none; }
-[data-ui="blocky"] .input { color: #fff; }
-[data-ui="blocky"] :is(img, .bt-cover) { image-rendering: pixelated; }
-[data-ui="blocky"] .bt-cover { box-shadow: 0 0 0 2px #000, 0 0 0 4px #8b8b8b; border-radius: 0; }
-
 /* instant styles: no page transition, no vote animation */
 [data-ui="pipboy"], [data-ui="gameboy"], [data-ui="blocky"] { --page-in: none; --vote-ms: 0ms; --player-in: none; --player-out: none; --player-ms: 0ms; --pop-out: none; --pop-ms: 0ms; }
 [data-ui="zune"] { --page-in: bt-fade 220ms ease-out backwards; }

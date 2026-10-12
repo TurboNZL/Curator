@@ -52,7 +52,7 @@ const KEY = 'curator.settings';
 
 /** What the Electron desktop app (apps/electron) puts on `window`. Absent in a browser. */
 export interface CuratorDesktop {
-  token: string; version: string; dataDir: string; platform: string; port: number;
+  token: string; version: string; dataDir: string; platform: string; desktopEnv?: string; port: number;
   /** the window's title bar is drawn by the page (a setting of the app, applied at start) */
   customFrame?: boolean;
   windowControl?(action: 'minimize' | 'maximize' | 'close'): void;
@@ -65,6 +65,8 @@ export interface CuratorDesktop {
   /** Discord Rich Presence (the app's main process talks to the local Discord client) */
   setPresence(p: { title: string; artist: string; album: string; duration: number; position: number; playing: boolean } | null): void;
   /** what Chromium got for painting: hardware (GPU) or software */
+  getGpu?(): Promise<unknown>;
+  setGpu?(mode: string): Promise<void>;
   getGraphics?(): Promise<{ hardware: boolean; summary: string; detail: string }>;
   getDiscord(): Promise<DiscordInfo>;
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
@@ -77,7 +79,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'default', ui: 'default', layout: 'side', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'auto', ui: 'auto', layout: 'side', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));

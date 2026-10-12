@@ -9,6 +9,10 @@ export interface DesktopConfig {
   port: number;
   /** draw the window's title bar in the page, in the chosen theme, instead of the system's (off by default; needs a restart) */
   customFrame: boolean;
+  /** how Chromium starts its graphics (gpuModes.ts): "auto" tries them in turn, or a mode id */
+  gpuMode: string;
+  /** where Automatic is in its search, and whether it has settled */
+  gpuAuto: { step: number; done: boolean };
 }
 
 /** Local port of the embedded server. One above the Raspberry Pi server's default (47813), so both can run on one computer. */
@@ -25,6 +29,8 @@ export function loadDesktopConfig(userData: string, env: NodeJS.ProcessEnv = pro
     dataDir: env.CURATOR_DATA_DIR || (typeof saved.dataDir === 'string' && saved.dataDir ? saved.dataDir : join(userData, 'library')),
     port: Number.isInteger(port) && port >= 1 && port <= 65535 ? port : DESKTOP_PORT,
     customFrame: saved.customFrame === true,
+    gpuMode: typeof saved.gpuMode === 'string' ? saved.gpuMode : 'auto',
+    gpuAuto: { step: Number(saved.gpuAuto?.step) || 0, done: saved.gpuAuto?.done === true },
   };
 }
 

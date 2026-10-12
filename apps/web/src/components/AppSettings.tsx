@@ -96,11 +96,33 @@ export function DiscordCard() {
   );
 }
 
-/** One line in Settings > Desktop app: is the window painted by the GPU, or in software? */
+/** Settings > Desktop app: is the window painted by the GPU, and how the app starts the graphics (Automatic tries the ways one after the other). */
 export function GraphicsLine() {
   const d = desktop();
   const [g, setG] = useState<{ hardware: boolean; summary: string; detail: string } | null>(null);
-  useEffect(() => { void d?.getGraphics?.().then(setG).catch(() => undefined); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [gpu, setGpu] = useState<{ mode: string; auto: { step: number; done: boolean }; running: string; modes: { id: string; label: string; hint: string }[] } | null>(null);
+  useEffect(() => { void d?.getGraphics?.().then(setG).catch(() => undefined); void d?.getGpu?.().then((x) => setGpu(x as typeof gpu)).catch(() => undefined); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!g) return null;
-  return <div className="text-sm"><span className="text-muted">Graphics: </span><span className={g.hardware ? 'text-good' : 'text-warn'}>{g.summary}</span>{g.detail && <span className="text-muted"> · {g.detail}</span>}</div>;
+  const running = gpu?.modes.find((m) => m.id === gpu.running);
+  return (
+    <div className="space-y-2 text-sm">
+      <div><span className="text-muted">Graphics: </span><span className={g.hardware ? 'text-good' : 'text-warn'}>{g.summary}</span>{g.detail && <span className="text-muted"> · {g.detail}</span>}</div>
+      {gpu && d?.setGpu && <div className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="gpu-mode" className="text-muted">Graphics start-up</label>
+          <select id="gpu-mode" className="input !w-auto" value={gpu.mode} onChange={(e) => { if (confirm('The app restarts to apply this. Continue?')) void d.setGpu!(e.target.value); }}>
+            <option value="auto">Automatic (tries the options below until the GPU works)</option>
+            {gpu.modes.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+          {gpu.mode === 'auto' && !g.hardware && gpu.auto.done && <button className="btn" onClick={() => void d.setGpu!('auto')}>Search again</button>}
+        </div>
+        <p className="text-xs text-muted">
+          {gpu.mode === 'auto'
+            ? (gpu.auto.done ? `Settled on “${running?.label ?? gpu.running}”.` : `Looking for a way to start the GPU: now trying “${running?.label ?? gpu.running}”. If it does not work the app restarts itself with the next option (at most five tries).`)
+            : (running?.hint ?? '')}
+          {!g.hardware && gpu.mode === 'auto' && gpu.auto.done ? ' None of the options gave hardware acceleration: the driver may be missing (check glxinfo -B).' : ''}
+        </p>
+      </div>}
+    </div>
+  );
 }

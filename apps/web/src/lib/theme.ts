@@ -1,3 +1,4 @@
+import { effectiveTheme } from "./deviceLook.ts";
 /**
  * Colour themes. Each one is a complete set of colours, applied to <html> as CSS variables so any theme
  * can be combined with any UI style (see uiStyle.ts). Defined the way the original handoff did (shadcn
@@ -227,8 +228,9 @@ export const THEME_DEFS: ThemeDef[] = [
     ov: { card: "#0f0f0f", secondary: "#1a1a1a", muted: "#1a1a1a", accent: "#2a2a2a", border: "#262626", input: "#1d1d1d" } }),
   dark({ id: "cyber", label: "Night City", bg: hex("#0a0a10"), primary: hex("#fcee0a"), onPrimary: "0 0% 0%", fg: hx("#f2f2f2"), mutedFg: hx("#8c8c99"), motif: "grid",
     ov: { card: "#12121a", secondary: "#1c1c26", muted: "#1c1c26", accent: "#2b2b10", border: "#4a4a1c", input: "#181822" } }),
-  light({ id: "inventory", label: "Inventory", bg: hex("#c6c6c6"), primary: hex("#5d9b3a"), onPrimary: "0 0% 100%", fg: hx("#3f3f3f"), mutedFg: hx("#666666"), motif: "peaks",
-    ov: { card: "#c6c6c6", secondary: "#b5b5b5", muted: "#b5b5b5", accent: "#d8d8d8", border: "#555555", input: "#8b8b8b" } }),
+  // Minecraft Bedrock's dark settings screens (read off screenshots): slate panels, near-black outlines, grass-green switches and sliders
+  dark({ id: "inventory", label: "Bedrock", bg: hex("#313233"), primary: hex("#3c8527"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#b1b2b5"), motif: "peaks",
+    ov: { card: "#48494a", secondary: "#58585a", muted: "#48494a", accent: "#5a5b5c", border: "#1e1e1f", input: "#1e1e1f" } }),
   // LG Optimus "Marshmallow" theme: pastel pink, cream and rose, read off a screenshot of its home screen (LG published no palette)
   light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f7dde2"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#5a3a43"), mutedFg: hx("#9a6f7a"), motif: "dots",
     ov: { card: "#fdf3f4", secondary: "#f8d0d8", muted: "#f3d5db", accent: "#dc5a76", border: "#e8a6b3", input: "#e69aaa" } }),
@@ -253,10 +255,36 @@ export const THEME_DEFS: ThemeDef[] = [
     ov: { card: "#f7f2fa", secondary: "#e8def8", muted: "#ece6f0", accent: "#e8def8", border: "#cac4d0", input: "#79747e" } }),
   dark({ id: "material-dark", label: "Material You Dark", bg: hex("#141218"), primary: hex("#d0bcff"), onPrimary: hx("#381e72"), fg: hx("#e6e0e9"), mutedFg: hx("#cac4d0"), motif: "dots",
     ov: { card: "#211f26", secondary: "#4a4458", muted: "#2b2930", accent: "#4a4458", border: "#49454f", input: "#938f99" } }),
+  // Apps and devices
+  dark({ id: "spotify", label: "Spotify", bg: hex("#000000"), primary: hex("#1ed760"), onPrimary: "0 0% 0%", fg: hx("#ffffff"), mutedFg: hx("#b3b3b3"), motif: "waves",
+    ov: { card: "#121212", secondary: "#1f1f1f", muted: "#1f1f1f", accent: "#2a2a2a", border: "#2a2a2a", input: "#242424" } }),
+  dark({ id: "ytmusic", label: "YouTube Music", bg: hex("#030303"), primary: hex("#ff0033"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#aaaaaa"), motif: "rays",
+    ov: { card: "#0f0f0f", secondary: "#212121", muted: "#212121", accent: "#303030", border: "#303030", input: "#181818" } }),
+  dark({ id: "discord", label: "Discord", bg: hex("#313338"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#f2f3f5"), mutedFg: hx("#949ba4"), motif: "dots",
+    ov: { card: "#2b2d31", secondary: "#383a40", muted: "#2b2d31", accent: "#404249", border: "#1e1f22", input: "#1e1f22" } }),
+  light({ id: "discord-light", label: "Discord Light", bg: hex("#ffffff"), primary: hex("#5865f2"), onPrimary: "0 0% 100%", fg: hx("#313338"), mutedFg: hx("#5c5e66"), motif: "dots",
+    ov: { card: "#f2f3f5", secondary: "#e3e5e8", muted: "#f2f3f5", accent: "#d7d9dd", border: "#e3e5e8", input: "#e3e5e8" } }),
+  light({ id: "oneui", label: "One UI", bg: hex("#f2f2f4"), primary: hex("#3e91ff"), onPrimary: "0 0% 100%", fg: hx("#1a1a1c"), mutedFg: hx("#6b6b72"), motif: "waves",
+    ov: { card: "#ffffff", secondary: "#e8e8ec", muted: "#ececf0", accent: "#dcdce2", border: "#e0e0e6", input: "#e8e8ec" } }),
+  dark({ id: "oneui-dark", label: "One UI Dark", bg: hex("#000000"), primary: hex("#3e91ff"), onPrimary: "0 0% 100%", fg: hx("#f4f4f6"), mutedFg: hx("#a0a0a8"), motif: "waves",
+    ov: { card: "#1c1c1f", secondary: "#2a2a2e", muted: "#242427", accent: "#38383d", border: "#2a2a2e", input: "#2a2a2e" } }),
+  dark({ id: "oneui-lilac", label: "One UI Lilac", bg: hex("#5a4d98"), primary: hex("#ffffff"), onPrimary: hx("#3a2f6e"), fg: hx("#ffffff"), mutedFg: hx("#e2daf6"), motif: "waves",
+    ov: { card: "#6c5eaa", secondary: "#7c6dba", muted: "#6c5eaa", accent: "#8b7cc9", border: "#8f80cc", input: "#7c6dba" } }),
+  dark({ id: "ado", label: "Ado", bg: hex("#04060f"), primary: hex("#2f6bff"), onPrimary: "0 0% 100%", fg: hx("#f2f5ff"), mutedFg: hx("#8b97c4"), motif: "rays",
+    ov: { card: "#0a1024", secondary: "#101a3a", muted: "#0d1530", accent: "#16255a", border: "#1d2d6e", input: "#101a3a" } }),
+  light({ id: "ios", label: "iOS", bg: hex("#f2f2f7"), primary: hex("#007aff"), onPrimary: "0 0% 100%", fg: hx("#000000"), mutedFg: hx("#8e8e93"), motif: "hills",
+    ov: { card: "#ffffff", secondary: "#e5e5ea", muted: "#e5e5ea", accent: "#d1d1d6", border: "#c6c6c8", input: "#e5e5ea" } }),
+  dark({ id: "ios-dark", label: "iOS Dark", bg: hex("#000000"), primary: hex("#0a84ff"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#8e8e93"), motif: "hills",
+    ov: { card: "#1c1c1e", secondary: "#2c2c2e", muted: "#2c2c2e", accent: "#3a3a3c", border: "#38383a", input: "#2c2c2e" } }),
+  light({ id: "yaru", label: "Yaru (Ubuntu)", bg: hex("#fafafa"), primary: hex("#e95420"), onPrimary: "0 0% 100%", fg: hx("#3d3d3d"), mutedFg: hx("#7d7d7d"), motif: "hills",
+    ov: { card: "#ffffff", secondary: "#ebebeb", muted: "#f0f0f0", accent: "#e3e3e3", border: "#dfdbd2", input: "#dcdcdc" } }),
+  dark({ id: "yaru-dark", label: "Yaru Dark (Ubuntu)", bg: hex("#333333"), primary: hex("#e95420"), onPrimary: "0 0% 100%", fg: hx("#f2f2f2"), mutedFg: hx("#b0b0b0"), motif: "hills",
+    ov: { card: "#3d3d3d", secondary: "#2b2b2b", muted: "#383838", accent: "#4a4a4a", border: "#1f1f1f", input: "#2b2b2b" } }),
 ];
 
 /** "System" follows the OS between the app's own Default (dark) and Light. */
 export const THEMES: { id: ThemeId; label: string; dark: boolean | null; note?: string }[] = [
+  { id: "auto", label: "Match this device", dark: null, note: "The palette of your device's own look, light or dark by its setting" },
   { id: "system", label: "System", dark: null, note: "Follows your device" },
   ...THEME_DEFS.map((d) => ({ id: d.id, label: d.label, dark: d.dark, note: d.note })),
 ];
@@ -264,21 +292,21 @@ export const THEMES: { id: ThemeId; label: string; dark: boolean | null; note?: 
 /** Themes that copy a platform's palette, shown in their own group in Settings. */
 export const PLATFORM_THEME_IDS: ThemeId[] = [
   "adwaita", "adwaita-dark", "breeze", "breeze-dark", "win11", "win11-dark", "win10", "win10-dark",
-  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "zinc", "material", "material-dark",
+  "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "zinc", "material", "material-dark", "ios", "ios-dark", "yaru", "yaru-dark",
 ];
 /** Palettes of the game and device inspired styles, shown in their own group in Settings. */
-export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory"];
+export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory", "spotify", "ytmusic", "discord", "discord-light", "oneui", "oneui-dark", "oneui-lilac", "ado"];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 
 export const DEFAULT_THEME: ThemeId = "default";
-export const isTheme = (id: unknown): id is ThemeId => typeof id === "string" && (id === "system" || THEME_DEFS.some((d) => d.id === id));
+export const isTheme = (id: unknown): id is ThemeId => typeof id === "string" && (id === "system" || id === "auto" || THEME_DEFS.some((d) => d.id === id));
 
 const systemPrefersDark = () =>
   typeof window !== "undefined" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches;
 
 /** Resolves "system" (and unknown ids, e.g. from a newer version) to a real theme. */
 export const resolveTheme = (id: ThemeId): ThemeDef => {
-  const real = id === "system" ? (systemPrefersDark() ? "default" : "light") : id;
+  const real = id === "system" ? (systemPrefersDark() ? "default" : "light") : effectiveTheme(id);
   return THEME_DEFS.find((d) => d.id === real) ?? THEME_DEFS[0];
 };
 

@@ -35,3 +35,21 @@
 @import '@fontsource/press-start-2p/400.css';
 @import '@fontsource/open-sans/300.css';
 @import '@fontsource/anton/400.css';
+
+/* Minecraft (Pixelify Sans), Spotify (Figtree), Samsung One UI (Outfit), Yaru (Ubuntu), YouTube Music (Roboto) */
+@import '@fontsource/pixelify-sans/400.css';
+@import '@fontsource/pixelify-sans/500.css';
+@import '@fontsource/pixelify-sans/700.css';
+@import '@fontsource/figtree/400.css';
+@import '@fontsource/figtree/500.css';
+@import '@fontsource/figtree/700.css';
+@import '@fontsource/figtree/800.css';
+@import '@fontsource/outfit/400.css';
+@import '@fontsource/outfit/500.css';
+@import '@fontsource/outfit/600.css';
+@import '@fontsource/ubuntu/400.css';
+@import '@fontsource/ubuntu/500.css';
+@import '@fontsource/ubuntu/700.css';
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/500.css';
+@import '@fontsource/roboto/700.css';

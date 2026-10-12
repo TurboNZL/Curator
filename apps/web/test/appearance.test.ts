@@ -12,7 +12,7 @@ describe('colour themes', () => {
     const ids = THEME_DEFS.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(OWN_THEME_IDS).toEqual(['default', 'classic', 'light']);
-    expect(THEMES[0].id).toBe('system');
+    expect(THEMES.slice(0, 2).map((t) => t.id)).toEqual(['auto', 'system']);
   });
 
   it('gives every other theme a full, valid set of the app\'s colour tokens', () => {

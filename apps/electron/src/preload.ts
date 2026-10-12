@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
  * What the web client may know about the desktop app. `token` lets a fresh install connect to its own server without typing
  * anything; the other calls open the folder dialogs, which only the main process can do.
  */
-const info = ipcRenderer.sendSync('curator:info') as { token: string; version: string; dataDir: string; platform: string; port: number; customFrame: boolean };
+const info = ipcRenderer.sendSync('curator:info') as { token: string; version: string; dataDir: string; platform: string; desktopEnv: string; port: number; customFrame: boolean };
 
 contextBridge.exposeInMainWorld('curatorDesktop', {
   ...info,
@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('curatorDesktop', {
     install: () => ipcRenderer.send('curator:update-install'),
     onState: (cb: (s: unknown) => void) => { const h = (_e: unknown, s: unknown) => cb(s); ipcRenderer.on('curator:update', h); return () => { ipcRenderer.removeListener('curator:update', h); }; },
   },
+  getGpu: () => ipcRenderer.invoke('curator:gpu-get') as Promise<unknown>,
+  setGpu: (mode: string) => ipcRenderer.invoke('curator:gpu-set', mode) as Promise<void>,
   getGraphics: () => ipcRenderer.invoke('curator:graphics') as Promise<unknown>,
   windowControl: (action: 'minimize' | 'maximize' | 'close') => ipcRenderer.send('curator:window', action),
   setCustomFrame: (on: boolean) => ipcRenderer.invoke('curator:set-frame', on) as Promise<void>,
