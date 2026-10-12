@@ -1,4 +1,5 @@
 import { planMergeReleases, siblingDate } from '../lib/releaseOps.ts';
+import { DateLookup } from './DateLookup.tsx';
 import { FindDatesDialog } from './FindDatesDialog.tsx';
 import { MergeTracksDialog } from './MergeTracksDialog.tsx';
 import { SpotifyLinks } from './SpotifyLinks.tsx';
@@ -143,7 +144,8 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       {!albumSel && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
       <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
         <ImagePicker hash={t.cover ?? null} onChange={(h) => set('cover', h)} seed={t.title || 'track'} /></Field>
-      {!albumSel && <Field label="Release date" hint="When the single came out. A track on an album uses its album's release date."><input type="date" className="input" value={t.releaseDate ?? ''} onChange={(e) => set('releaseDate', e.target.value || null)} /></Field>}
+      {!albumSel && <Field label="Release date" hint="When the single came out. A track on an album uses its album's release date."><input type="date" className="input" value={t.releaseDate ?? ''} onChange={(e) => set('releaseDate', e.target.value || null)} />
+        <DateLookup title={t.title} artist={lib.artistById.get(credits.find((c) => c.artistId && (c.role ?? []).some((r) => r.toLowerCase() === LEAD_ROLE.toLowerCase()))?.artistId ?? credits.find((c) => c.artistId)?.artistId ?? '')?.name ?? ''} onFound={(d) => set('releaseDate', d)} /></Field>}
       <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>

@@ -262,8 +262,8 @@ export function VotePage() {
               </div>
             </div>
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:w-full sm:flex-none sm:items-center">
-              <div className="min-w-0 text-left sm:text-center"><div className={cn('truncate font-semibold', compact ? 'text-sm' : 'text-base sm:text-lg')}>{t.title}</div>
-                <div className={cn('truncate text-muted', compact ? 'text-xs' : 'text-sm')} onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} featured={t.featured} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
+              <div className="min-w-0 text-left sm:text-center"><div className={cn('line-clamp-2 min-w-0 break-words font-semibold [overflow-wrap:anywhere]', compact ? 'text-sm' : 'text-base sm:text-lg')}>{t.title}</div>
+                <div className={cn('line-clamp-2 min-w-0 break-words text-muted [overflow-wrap:anywhere]', compact ? 'text-xs' : 'text-sm')} onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} featured={t.featured} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
               <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-center" onClick={(e) => e.stopPropagation()}>
                 {!compact && <Rating track={t} />}
                 <button type="button" className="btn btn-ghost !p-1.5" title="Stats" aria-label={`Stats for ${t.title}`} onClick={() => edit({ kind: 'track-details', id: t.id })}><BarChart3 size={14} /></button>
