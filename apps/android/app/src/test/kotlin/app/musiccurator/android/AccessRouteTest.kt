@@ -29,4 +29,12 @@ class AccessRouteTest {
         assertEquals("range, cf-access-client-id", AccessRoute.preflightHeaders("range, cf-access-client-id")["Access-Control-Allow-Headers"])
         assertEquals("*", AccessRoute.preflightHeaders(null)["Access-Control-Allow-Origin"])
     }
+
+    @Test fun answerHeadersNeverCarryTwoAllowOrigins() {
+        val out = AccessRoute.answerHeaders(mapOf("access-control-allow-origin" to "*", "Access-Control-Expose-Headers" to "X", "Transfer-Encoding" to "chunked", "Content-Type" to "application/json"))
+        assertEquals(1, out.keys.count { it.equals("Access-Control-Allow-Origin", ignoreCase = true) })
+        assertEquals(1, out.keys.count { it.equals("Access-Control-Expose-Headers", ignoreCase = true) })
+        assertEquals("application/json", out["Content-Type"])
+        assertEquals(false, out.keys.any { it.equals("Transfer-Encoding", ignoreCase = true) })
+    }
 }

@@ -1,4 +1,6 @@
-# Running the server on a Raspberry Pi
+# Running the server on a Raspberry Pi (or any Linux machine)
+
+A Raspberry Pi is one way to host the server, not a requirement: the desktop app brings its own server, and a Windows PC can host one ([WINDOWS_SERVER.md](WINDOWS_SERVER.md)). Use this guide if you want a small always-on Linux box.
 
 Written from the server's actual behaviour (`packages/server`). The parts that depend on your Pi (model, OS, drive) are marked **check**. Report anything that does not match and this file gets fixed.
 
@@ -10,7 +12,7 @@ Written from the server's actual behaviour (`packages/server`). The parts that d
 
 ## 0. What you need
 - A Pi 64-bit OS (Raspberry Pi OS 64-bit / Debian 12+). The server is plain Node, so any model that runs it works; downloads and ffmpeg are the slow part on older Pis.
-- **Node 22.13 or newer.** The server uses the built-in `node:sqlite`, which needs no native compile but is still labelled experimental by Node (it prints a warning, silenced by the flag in the unit below). Debian's own `nodejs` package is too old. Install Node 22 with [nvm](https://github.com/nvm-sh/nvm) for the service user (see `docs/TESTING.md` step 0) or from NodeSource. **check:** `node -v`.
+- **Node 22.13 or newer.** The server uses the built-in `node:sqlite`, which needs no native compile but is still labelled experimental by Node (it prints a warning, silenced by the flag in the unit below). Debian's own `nodejs` package is too old. Install Node 22 with [nvm](https://github.com/nvm-sh/nvm) for the service user (see the nvm instructions at https://github.com/nvm-sh/nvm step 0) or from NodeSource. **check:** `node -v`.
 - `ffmpeg` (`sudo apt install ffmpeg`) and **yt-dlp** (section 4) for audio downloads.
 - An external drive, ideally formatted **ext4**. exFAT/NTFS have no unix permissions or symlinks, so the token file cannot be locked down (the server tolerates this) and `pnpm install` must not run on that drive.
 
@@ -35,7 +37,7 @@ pnpm --filter @curator/web build      # the server serves apps/web/dist at /
 ```
 Install pnpm with `npm install -g pnpm` (needs Node first). `--ignore-scripts` keeps the install from running dependency scripts, none of which the server or web client need (it used to be required because the removed legacy app's postinstall failed).
 
-Import your old library once (optional, idempotent), exactly as in `docs/TESTING.md` step 2, with `CURATOR_DATA_DIR=/mnt/curator/data`.
+Import your old library once (optional, idempotent), exactly as in the nvm instructions at https://github.com/nvm-sh/nvm step 2, with `CURATOR_DATA_DIR=/mnt/curator/data`.
 
 ## 3. systemd service
 `/etc/systemd/system/curator.service` (adjust the `node` path: `which node` as the curator user; with nvm it is under `~/.nvm/versions/node/v22.x/bin/node`):
@@ -53,7 +55,7 @@ Environment=CURATOR_DATA_DIR=/mnt/curator/data
 # Environment=CURATOR_PORT=47813
 # Environment=CURATOR_HOST=127.0.0.1      # only if everything goes through Tailscale/a reverse proxy (section 5)
 # Environment=CURATOR_YTDLP=/usr/local/bin/yt-dlp
-# Environment=CURATOR_YTDLP_COOKIES=/etc/curator/youtube-cookies.txt   # only if YouTube asks for proof you are not a bot: docs/YTDLP_COOKIES.md
+# Environment=CURATOR_YTDLP_COOKIES=/etc/curator/youtube-cookies.txt   # only if YouTube asks for proof you are not a bot: docs/guides/YTDLP_COOKIES.md
 # Environment="CURATOR_YTDLP_ARGS=--js-runtimes node"                   # extra yt-dlp arguments, split on spaces
 ExecStart=/usr/bin/node --experimental-strip-types --disable-warning=ExperimentalWarning src/index.ts
 Restart=on-failure
@@ -98,13 +100,13 @@ Open that URL on your phone (also on Tailscale). With this in place you can set 
 
 ## 5b. Keeping the SD card healthy, and watching the Pi
 An SD card dies from writes, not from age. What writes on this server and where it goes:
-- **The library (`CURATOR_DATA_DIR`)**: database, audio, pictures, temporary downloads, the yt-dlp cache and Soloist's files all live under it. Put it on the external drive (section 1) and none of that touches the card. Settings → Library & server → **Server health** warns when it is on the system disk.
+- **The library (`CURATOR_DATA_DIR`)**: database, audio, pictures, temporary downloads, the yt-dlp cache and Soloist's files all live under it. Put it on the external drive (section 1) and none of that touches the card. Settings → Server → **Server health** warns when it is on the system disk.
 - **Already installed on the card?** Settings → **Server health → Storage locations** moves the library files, the temporary folder and the yt-dlp cache to another drive while the server runs (it copies and checks every file before switching, and leaves a link where the folder was). The database stays in the data folder: point `CURATOR_DATA_DIR` at the drive for that (stop the service, copy `curator.db*`, change the unit).
 - **yt-dlp's cache** used to go to `~/.cache` (the card). The server now passes `--cache-dir <data>/cache` itself, unless you set your own `--cache-dir` in `CURATOR_YTDLP_ARGS`.
 - **Scratch space** (`TMPDIR`) of ffmpeg and yt-dlp is `<data>/tmp`, set by the server.
 - **The system's own writing** (not Curator's): keep logs in memory with `sudo mkdir -p /etc/systemd/journald.conf.d && printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=50M\n' | sudo tee /etc/systemd/journald.conf.d/volatile.conf` (you lose logs at reboot), add `noatime` to the root line in `/etc/fstab`, and do not enable swap on the card (`sudo dphys-swapfile swapoff; sudo systemctl disable dphys-swapfile`).
 - **Server health** (Settings): free space on every disk the server uses, CPU temperature and load, memory and swap, whether the power supply dipped (`vcgencmd get_throttled`), how fast the disk answers a 4 KB synced write, and the database size. It reads a few kernel files and writes 4 KB every 30 seconds at most, only while the page is open. Warnings are plain sentences; nothing is stored.
-- **Copy the access token** from the Server card (Settings → Library & server), or use **Pair a device** to make a code or link that sets up another device (server address, access token and, if the server sits behind Cloudflare Access, the service token's client ID and secret).
+- **Copy the access token** from the Server card (Settings → Server), or use **Pair a device** to make a code or link that sets up another device (server address, access token and, if the server sits behind Cloudflare Access, the service token's client ID and secret).
 
 ## 6. Backups
 - **Files** (`files/`) are immutable and content-addressed, so a plain `rsync -a /mnt/curator/data/files/ <backup>/files/` is incremental and safe while running.

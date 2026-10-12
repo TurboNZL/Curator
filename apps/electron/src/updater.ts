@@ -3,7 +3,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { app } from 'electron';
-import { debInstallScript, describePkexec, hasNoNewPrivs, NO_NEW_PRIVS_MESSAGE, installedMatches, manualInstallCommand, TERMINALS, terminalInstallScript } from './debInstall.ts';
+import { debInstallScript, describePkexec, hasNoNewPrivs, NO_NEW_PRIVS_MESSAGE, outsideTree, installedMatches, manualInstallCommand, TERMINALS, terminalInstallScript } from './debInstall.ts';
 import { describeError } from './updateErrors.ts';
 
 export type { UpdateState } from './updateErrors.ts';
@@ -76,7 +76,17 @@ export class Updates {
     // sudo and pkexec both fail in a process started with no_new_privs, and so does anything it launches (a terminal window): do not even try
     let status = '';
     try { status = readFileSync('/proc/self/status', 'utf8'); } catch { /* not Linux or unreadable: try the normal way */ }
-    if (hasNoNewPrivs(status)) { this.set({ status: 'ready', version, message: NO_NEW_PRIVS_MESSAGE, command: manualInstallCommand(file) }); return; }
+    const sealed = hasNoNewPrivs(status);
+    if (sealed) {
+      // the terminal has to be started by the user's systemd manager, outside this process tree, or its sudo is refused too
+      this.installing = true;
+      this.set({ status: 'ready', version, installing: true, message: 'A terminal window will ask for your password…' });
+      const ran = await this.installInTerminal(file, true);
+      if (ran && this.installedVersion() === version) { this.installing = false; app.relaunch(); app.exit(0); return; }
+      this.installing = false;
+      this.set({ status: 'ready', version, message: NO_NEW_PRIVS_MESSAGE, command: manualInstallCommand(file) });
+      return;
+    }
     this.installing = true;
     this.set({ status: 'ready', version, installing: true, message: 'Waiting for your password…' });
     const result = await new Promise<ReturnType<typeof describePkexec>>((resolve) => {
@@ -106,12 +116,13 @@ export class Updates {
   }
 
   /** Runs the install in the first terminal emulator that exists; resolves true when one opened and has closed again. */
-  private async installInTerminal(file: string): Promise<boolean> {
+  private async installInTerminal(file: string, outside = false): Promise<boolean> {
     const script = terminalInstallScript(file);
     for (const t of TERMINALS) {
       const opened = await new Promise<boolean>((resolve) => {
         let started = false;
-        const child = spawn(t.bin, t.args(script), { stdio: 'ignore' });
+        const run = outside ? outsideTree(t.bin, t.args(script)) : { bin: t.bin, args: t.args(script) };
+        const child = spawn(run.bin, run.args, { stdio: 'ignore' });
         child.on('spawn', () => { started = true; });
         child.on('error', () => resolve(false));
         child.on('close', () => resolve(started));

@@ -21,7 +21,7 @@ The same library server the Raspberry Pi runs, as a Windows program that lives i
 
 The tray menu has: open Curator, copy the address, copy the access token, show the library folder, setup, update, start with Windows, quit.
 
-Connect a phone or another computer: open the server's address (for example `http://192.168.1.20:47813`) in its browser, or enter it in the Android app under **Settings → Library & server**, with the access token. Easiest: in Curator, **Settings → Library & server → Pair a device** makes a link or code that sets a device up in one go.
+Connect a phone or another computer: open the server's address (for example `http://192.168.1.20:47813`) in its browser, or enter it in the Android app under **Settings → Server**, with the access token. Easiest: in Curator, **Settings → Server → Pair a device** makes a link or code that sets a device up in one go.
 
 ## Spotify, in plain words
 
@@ -42,10 +42,3 @@ By default only devices on your home network can connect. A Cloudflare Tunnel le
 5. Finish the wizard (**Apply and restart**). After a minute the wizard and the tray say the tunnel is connected, and `https://music.yourdomain.com` opens your server.
 
 The access token still protects everything: the tunnel only makes the server reachable. Do not put Cloudflare Access in front of the whole address unless you also give the apps its service token (Curator's Settings has the fields; see the guides there).
-
-## For developers
-
-- Code: `apps/electron/src/serverEdition/` (`main.ts` tray + wizard IPC, `setup.html` the wizard, `serverConfig.ts`, `tools.ts` downloads, `tunnel.ts` the `cloudflared` runner). It runs the same `startServer` as the Pi and the desktop app, with the web client served from the same process.
-- Run it: `pnpm --filter @curator/electron start:server` (after `pnpm --filter @curator/web build`). Settings live in `server-edition.json` in the app's user-data folder.
-- Build the installer on Windows: `pnpm --filter @curator/electron dist:server`. `electron-builder.server.json` gives it its own app id, name and update feed (`server.yml`), apart from the desktop app's `latest.yml`. The release workflow builds it on `windows-latest`.
-- Tested: the settings, address listing, folder planning, tool table and `cloudflared` output parsing (`test/serverEdition.test.ts`) and the wizard page in Chromium with a stub bridge. **Not run on a real Windows machine** (no Windows or Electron binary in the sandbox): the tray, the folder junctions, the downloads and the tunnel are untested there.

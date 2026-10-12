@@ -50,7 +50,7 @@ export function SpotifyAccountPanel({ children, onStatus }: { children?: (s: Sta
   const load = () => guard('Checking…', async () => { const s = await api().spotifyStatus(); setAcct(s); setClientId(s.clientId); setRedirect(s.redirectUri); onStatus?.(s); void refreshSpotifyStatus(); });
   useEffect(() => { if (configured) void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!configured) return <p className="text-sm text-muted">Spotify goes through your server. Connect one in Settings › Library &amp; server first.</p>;
+  if (!configured) return <p className="text-sm text-muted">Spotify goes through your server. Connect one in Settings › Server first.</p>;
   if (!acct) return <div className="text-sm text-muted">{error ?? 'Checking…'}</div>;
   return (
     <div className="space-y-3 text-sm">

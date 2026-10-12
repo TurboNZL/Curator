@@ -221,7 +221,7 @@ export function AppearancePreview() {
 export function AppearanceLayout() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /><LayoutSection /><ThemeUpdates /></div>
+      <div className="min-w-0 space-y-5"><LayoutSection /><ColourThemeSection /><UiStyleSection /><ThemeUpdates /></div>
       <AppearancePreview />
     </div>
   );

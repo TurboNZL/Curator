@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { debInstallScript, describePkexec, hasNoNewPrivs, manualInstallCommand, shQuote } from '../src/debInstall.ts';
+import { debInstallScript, describePkexec, hasNoNewPrivs, outsideTree, manualInstallCommand, shQuote } from '../src/debInstall.ts';
 
 describe('installing a .deb update', () => {
   it('quotes the path for the shell, even with quotes and spaces in it', () => {
@@ -36,5 +36,13 @@ describe('hasNoNewPrivs', () => {
     expect(hasNoNewPrivs('Name:\tx\nNoNewPrivs:\t1\nSeccomp:\t0\n')).toBe(true);
     expect(hasNoNewPrivs('Name:\tx\nNoNewPrivs:\t0\n')).toBe(false);
     expect(hasNoNewPrivs('')).toBe(false);
+  });
+});
+
+describe('outsideTree', () => {
+  it('asks the user manager to start the terminal and passes the session variables', () => {
+    const r = outsideTree('konsole', ['-e', 'sh', '-c', 'x'], { WAYLAND_DISPLAY: 'wayland-0', DISPLAY: ':0' });
+    expect(r.bin).toBe('systemd-run');
+    expect(r.args).toEqual(['--user', '--collect', '--wait', '--quiet', '--setenv=DISPLAY', '--setenv=WAYLAND_DISPLAY', '--', 'konsole', '-e', 'sh', '-c', 'x']);
   });
 });

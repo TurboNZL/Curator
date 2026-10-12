@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ListMusic, Pin, PinOff, X } from 'lucide-react';
+import { ListMusic, Pin, PinOff, Shuffle, X } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { usePopups } from '../lib/popups.ts';
@@ -15,6 +15,11 @@ export function MiniQueue({ anchor }: { anchor: HTMLElement | null }) {
   const { closeQueue, setPinned } = usePopups.getState();
   const q = usePlayer((s) => s.queue);
   const dequeue = usePlayer((s) => s.dequeue);
+  const { shuffleQueued, shuffleRest } = usePlayer.getState();
+  const head = (label: string, count: number, onShuffle: () => void) => (
+    <div className="flex items-center px-3 pt-2"><span className="mr-auto text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</span>
+      {count > 1 && <button type="button" className="btn btn-ghost !p-1" title={`Shuffle: ${label.toLowerCase()}`} aria-label={`Shuffle ${label.toLowerCase()}`} onClick={onShuffle}><Shuffle size={13} /></button>}</div>
+  );
   const row = (id: string, i: number, queued: boolean) => {
     const t = lib.trackById.get(id);
     if (!t) return null;
@@ -37,9 +42,9 @@ export function MiniQueue({ anchor }: { anchor: HTMLElement | null }) {
       <div className="max-h-[55vh] overflow-y-auto py-1">
         {current && <><div className="px-3 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Now playing</div>
           <div className="mx-1 rounded-theme bg-accent/10">{row(current.id, -1, false)}</div></>}
-        {q.user.length > 0 && <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Queued by you</div>}
+        {q.user.length > 0 && head('Queued by you', q.user.length, shuffleQueued)}
         {q.user.map((id, i) => row(id, i, true))}
-        {q.active.length > 0 && <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Next from the album or list</div>}
+        {q.active.length > 0 && head('Next from the album or list', q.active.length, shuffleRest)}
         {q.active.slice(0, 30).map((id, i) => row(id, i, false))}
         {q.active.length > 30 && <div className="px-3 py-1 text-xs text-muted">and {q.active.length - 30} more</div>}
         {!q.user.length && !q.active.length && <p className="px-3 py-3 text-sm text-muted">Nothing is queued after this track.</p>}

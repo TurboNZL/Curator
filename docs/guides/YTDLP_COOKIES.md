@@ -29,7 +29,7 @@ YouTube rotates the cookies of an open browser session, which makes an exported 
 
 Do not use `--cookies-from-browser` together with `--cookies` for this: it would export your normal session, not the private one.
 
-### 2. Put the file on the Pi
+### 2. Put the file on the server
 
 ```
 scp cookies.txt pi-admin@PI_ADDRESS:/tmp/

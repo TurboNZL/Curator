@@ -93,7 +93,7 @@ function openWindow() {
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(origin)) { e.preventDefault(); if (/^https?:/.test(url)) void shell.openExternal(url); } });
   win.on('closed', () => { win = null; });
   // the GPU process starts lazily: look a moment after the page is up, and say it in the terminal if the app is painting in software
-  win.webContents.once('did-finish-load', () => setTimeout(() => void graphics().then((g) => console.log(`[curator] graphics: ${g.summary}${g.hardware ? '' : '. If your computer has a GPU, see docs/ELECTRON.md (Graphics).'}`)), 2500));
+  win.webContents.once('did-finish-load', () => setTimeout(() => void graphics().then((g) => console.log(`[curator] graphics: ${g.summary}${g.hardware ? '' : '. If your computer has a GPU, see docs/development/ELECTRON.md (Graphics).'}`)), 2500));
   void win.loadURL(origin);
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { trackPath } from '../lib/trackPath.ts';
-import { Cast, Info, Maximize2, ListMusic, Loader2, Pause, Play, Shuffle, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { Cast, Info, Maximize2, ListMusic, Loader2, Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
@@ -69,7 +69,6 @@ export function PlayerBar() {
         </div>
         <div className="flex shrink-0 flex-col items-center gap-1 md:flex-1">
           <div className="flex items-center gap-2">
-            <button className={cn('btn-ghost btn !p-2 max-sm:hidden', p.shuffle && 'text-accent', v.remote && 'invisible')} title="Shuffle" onClick={p.toggleShuffle}><Shuffle size={16} /></button>
             <button className="btn-ghost btn !p-2" title="Previous" onClick={v.prev}><SkipBack size={18} /></button>
             <button className="btn btn-accent !rounded-full !p-2.5" title={v.loading ? 'Loading…' : v.playing ? 'Pause' : 'Play'} aria-busy={v.loading || undefined} onClick={v.toggle}>{v.loading ? <Loader2 size={18} className="animate-spin" /> : v.playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button>
             <button className="btn-ghost btn !p-2" title="Next" onClick={v.next}><SkipForward size={18} /></button>

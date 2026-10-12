@@ -46,7 +46,7 @@ as_user() { if [ "$DRY" = 1 ]; then printf '    [dry run] as %s: %s\n' "$USER_NA
 
 if [ "$DRY" = 0 ] && [ "$(id -u)" -ne 0 ]; then die "run this as root: sudo ./scripts/install-pi.sh (or put sudo before bash in the one-line command)"; fi
 [ "$(uname -s)" = "Linux" ] || die "this installer is for Linux (a Raspberry Pi, or a Debian/Ubuntu machine)."
-command -v apt-get >/dev/null 2>&1 || [ "$DRY" = 1 ] || die "this installer uses apt (Raspberry Pi OS, Debian, Ubuntu). On another system follow docs/DEPLOY_PI.md by hand."
+command -v apt-get >/dev/null 2>&1 || [ "$DRY" = 1 ] || die "this installer uses apt (Raspberry Pi OS, Debian, Ubuntu). On another system follow docs/guides/DEPLOY_PI.md by hand."
 
 case "$(uname -m)" in
   aarch64|arm64) NODE_ARCH="arm64";  YTDLP_FILE="yt-dlp_linux_aarch64" ;;
@@ -189,5 +189,5 @@ if [ "$DRY" = 1 ]; then note "[dry run] wait for http://127.0.0.1:$PORT/api/heal
   note "Update later with:  sudo -u $USER_NAME -H $APP_DIR/scripts/update.sh      (or the Update server button in Settings)"
   note "Logs:               journalctl -u curator -f"
   note "Spotify Soloist:    needs a sound server first:  sudo $APP_DIR/scripts/setup-pi-audio.sh --user $USER_NAME"
-  note "Next steps:         docs/GETTING_STARTED.md"
+  note "Next steps:         docs/guides/GETTING_STARTED.md"
 fi
