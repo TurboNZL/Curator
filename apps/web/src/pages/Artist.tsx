@@ -15,6 +15,7 @@ import { TrackTable } from '../components/TrackTable.tsx';
 import { DetailLayout } from '../components/DetailLayout.tsx';
 import { SingleGrid } from '../components/SingleCard.tsx';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
+import { akaLine } from '../lib/autofill.ts';
 import { useMenu } from '../components/Menu.tsx';
 import { useAlbumMenuItems, useArtistMenuItems } from '../components/entityMenus.tsx';
 
@@ -50,6 +51,7 @@ export function ArtistPage() {
       <div className="flex items-center gap-5" onContextMenu={menu.onContextMenu(artistItems(artist.id), `Actions for ${artist.name}`, 'artist')}>
         <Cover kind="artist" hash={artist.image} seed={artist.name} className="w-32 shrink-0 sm:w-40" />
         <div><div className="text-xs uppercase tracking-wider text-muted">Artist</div><h1 className="text-3xl font-bold">{artist.name}</h1>
+          {akaLine(artist.aliases) && <div className="text-sm text-muted" title={artist.aliases!.join(', ')}>{akaLine(artist.aliases)}</div>}
           <div className="text-sm text-muted">{albums.length} album{albums.length === 1 ? "" : "s"}{singles.length > 0 && ` · ${singles.length} single${singles.length === 1 ? "" : "s"}`} · {tracks.length} tracks</div>
           <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>

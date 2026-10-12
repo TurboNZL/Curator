@@ -4,6 +4,7 @@ import { FindDatesDialog } from './FindDatesDialog.tsx';
 import { MergeTracksDialog } from './MergeTracksDialog.tsx';
 import { SpotifyLinks } from './SpotifyLinks.tsx';
 import { X } from 'lucide-react';
+import { makePrimary } from '../lib/autofill.ts';
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -224,9 +225,32 @@ function ArtistEditor({ id, onClose }: { id: string; onClose: () => void }) {
         put('artists', { ...a, name: a.name.trim() || artist.name }, id); onClose();
       }}>Save</button></div></>}>
       <ImagePicker kind="artist" hash={a.image ?? null} onChange={(h) => setA({ ...a, image: h })} seed={artist.name} />
-      <Field label="Name"><input className="input" value={a.name ?? ''} onChange={(e) => setA({ ...a, name: e.target.value })} /></Field>
+      <Field label="Name" hint="The name shown everywhere (the primary alias)."><input className="input" value={a.name ?? ''} onChange={(e) => setA({ ...a, name: e.target.value })} /></Field>
+      <AliasEditor name={a.name ?? ''} aliases={a.aliases ?? []} onChange={(name, aliases) => setA({ ...a, name, aliases })} />
     </Modal>
   );
+}
+
+/** Other names an artist goes by. Imports recognise them; one of them can become the displayed name. */
+export function AliasEditor({ name, aliases, onChange }: { name: string; aliases: string[]; onChange: (name: string, aliases: string[]) => void }) {
+  const [draft, setDraft] = useState('');
+  const add = () => {
+    const v = draft.trim();
+    if (!v || v.toLowerCase() === name.trim().toLowerCase() || aliases.some((x) => x.toLowerCase() === v.toLowerCase())) { setDraft(''); return; }
+    onChange(name, [...aliases, v]); setDraft('');
+  };
+  return (
+    <Field label="Also known as" hint="Stage names, old names, other spellings. When you import something by one of these names it is matched to this artist. Make one primary to show it instead.">
+      <div className="space-y-1.5">
+        {aliases.map((al) => (
+          <div key={al} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-1.5 text-sm">
+            <span className="min-w-0 flex-1 truncate">{al}</span>
+            <button type="button" className="btn btn-ghost !px-2 !py-0.5 text-xs" onClick={() => { const m = makePrimary(name, aliases, al); onChange(m.name, m.aliases); }}>Make primary</button>
+            <button type="button" aria-label={`Remove ${al}`} className="text-muted hover:text-bad" onClick={() => onChange(name, aliases.filter((x) => x !== al))}><X size={14} /></button>
+          </div>))}
+        <div className="flex gap-2"><input className="input" placeholder="Add another name…" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} /><button type="button" className="btn shrink-0" disabled={!draft.trim()} onClick={add}>Add</button></div>
+      </div>
+    </Field>);
 }
 
 function NewAlbumDialog({ onClose }: { onClose: () => void }) {

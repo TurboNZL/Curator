@@ -9,7 +9,12 @@
 export interface Credit { artistId: string; role: string[] }
 export interface FileRef { hash: string | null }
 
-export interface ArtistData { name: string; image: string | null }
+export interface ArtistData {
+  /** the displayed name (the primary alias) */
+  name: string; image: string | null;
+  /** other names the artist goes by (stage names, spellings, real name); used to recognise them when importing */
+  aliases?: string[];
+}
 /** An era groups albums and singles (Era > Album > Release > Track). Relational bios can be attached to it. */
 export interface EraData {
   name: string; description: string | null; cover: string | null;

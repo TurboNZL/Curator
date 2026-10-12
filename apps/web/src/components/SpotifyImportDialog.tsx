@@ -86,7 +86,8 @@ export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
     if (!plan || !list) return;
     setBusy('Importing…'); setError(null);
     try {
-      const artistIds = new Map(lib.artists.map((a) => [norm(a.name), a.id]));
+      const artistIds = new Map<string, string>();
+      for (const a of lib.artists) for (const n of [a.name, ...(a.aliases ?? [])]) if (!artistIds.has(norm(n))) artistIds.set(norm(n), a.id);
       const artist = (n: string) => { const k = norm(n); let id = artistIds.get(k); if (!id) { id = put('artists', { name: n.trim(), image: null } satisfies ArtistData); artistIds.set(k, id); } return id; };
       const trackIdOf = new Map<string, string>();
       for (const t of plan.tracks) if (t.existingTrackId) {

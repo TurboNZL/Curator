@@ -10,7 +10,7 @@ import { Api, type ServerStatus } from '../lib/api.ts';
 import { api, useStore } from '../lib/store.ts';
 import { cn, fmtBytes } from '../lib/cn.ts';
 import { cacheBytes, removeAudio } from '../lib/files.ts';
-import { DefaultImages, PlaybackRules, Vocabulary } from '../components/SettingsExtras.tsx';
+import { AliasesManager, DefaultImages, PlaybackRules, ReleaseNamesManager, Vocabulary } from '../components/SettingsExtras.tsx';
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
 import { SpotifyCard } from '../components/SpotifyCard.tsx';
@@ -98,6 +98,10 @@ export function SettingsPage() {
       <Section title="Backup: export and import"><BackupCard /></Section>
 
       <Section title="Genres and roles"><Vocabulary /></Section>
+
+      <Section title="Release names"><ReleaseNamesManager /></Section>
+
+      <Section title="Artist aliases"><AliasesManager /></Section>
 
       <Section title="Default images"><p className="text-sm text-muted">Shown for albums and artists that have no image of their own. Synced with your library.</p><DefaultImages /></Section>
       </>}

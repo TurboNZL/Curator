@@ -27,7 +27,7 @@ export function Select({ value, onChange, options, placeholder = 'Choose…', cl
   const withSearch = searchable ?? (!!creatable || options.length > 12);
   const CREATE = '\u0000create';
   const shown = useMemo(() => {
-    const found = q ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : options;
+    const found = q ? options.filter((o) => `${o.label} ${o.hint?.startsWith('aka ') ? o.hint : ''}`.toLowerCase().includes(q.toLowerCase())) : options;
     const typed = q.trim();
     const exact = options.some((o) => o.label.toLowerCase() === typed.toLowerCase());
     return creatable && typed && !exact ? [{ value: CREATE, label: creatable.label(typed), icon: <Plus size={14} className="shrink-0 text-accent" /> } as SelectOption, ...found] : found;
