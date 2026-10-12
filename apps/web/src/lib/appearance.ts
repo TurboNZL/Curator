@@ -1,9 +1,11 @@
 import { githubSource, start, type Appearance, type TurboThemes } from 'turbothemes';
 import type { DeviceSettings } from './settings.ts';
+import { isLayout } from './layout.ts';
+import layoutsCss from '../layouts.css?inline';
 
 /**
- * Colours, UI styles, layouts, wallpaper and the scripted extras all live in the turbothemes package (and its themes repository);
- * this file only starts the engine with what is specific to this app and hands the device settings to it.
+ * Colours, UI styles, wallpaper and the scripted extras live in the turbothemes package (and its themes repository); layouts are this app's own
+ * (lib/layout.ts, layouts.css). This file only starts the engine with what is specific to this app and hands the device settings to it.
  */
 let engine: TurboThemes | null = null;
 
@@ -20,12 +22,18 @@ function ensure(s: DeviceSettings): TurboThemes {
     autoUpdate: s.themeUpdates,
     source: sourceFor(s),
   });
+  // the layouts' CSS goes after the themes' stylesheet (the engine appended it to <head>), as it always came after the styles
+  const el = document.createElement('style');
+  el.id = 'curator-layouts';
+  el.textContent = layoutsCss;
+  document.head.appendChild(el);
   return engine;
 }
 
 /** Applies the whole look from the device settings. */
 export function applyAppearance(s: DeviceSettings) {
   ensure(s).apply(s as Appearance);
+  document.documentElement.dataset.layout = isLayout(s.layout) ? s.layout : 'side'; // layouts are this app's, not the themes'
 }
 
 /** The running engine (start-up, update checks). Only valid after applyAppearance ran once. */

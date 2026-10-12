@@ -4,8 +4,9 @@ import { Section } from './Section.tsx';
 import { Check, Eye, ImageIcon, ImageOff, Search, Upload, Wand2 } from 'lucide-react';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
-import { clearCustomWallpaper, deviceLook, effectiveUi, getCustomImage, isUiStyle, listLayouts, listStyles, listThemes, resolveTheme, saveCustomWallpaper, themeStyle, themeWallpaper } from 'turbothemes';
+import { clearCustomWallpaper, deviceLook, effectiveUi, getCustomImage, isUiStyle, listStyles, listThemes, resolveTheme, saveCustomWallpaper, themeStyle, themeWallpaper } from 'turbothemes';
 import { useCatalog } from '../lib/useCatalog.ts';
+import { LAYOUTS } from '../lib/layout.ts';
 import { ThemeUpdates } from './ThemeUpdates.tsx';
 
 type ThemeId = string;
@@ -172,8 +173,6 @@ export function UiStyleSection() {
 
 /** Layouts: where the pages are listed. Independent of the colours and the UI style, so any look can have any of them. */
 export function LayoutSection() {
-  useCatalog();
-  const LAYOUTS = listLayouts();
   const { settings, updateSettings } = useStore();
   const cur = LAYOUTS.find((l) => l.id === settings.layout) ?? LAYOUTS[0];
   return (
