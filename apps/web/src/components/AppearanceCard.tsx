@@ -121,6 +121,7 @@ export function UiStyleSection() {
   const { settings, updateSettings } = useStore();
   const ui = currentUi(settings.ui);
   const def = resolveTheme(settings.theme);
+  const hoverUi = usePreview((s) => s.ui);
   const setHoverUi = usePreview((s) => s.setUi);
   const setHoverTheme = usePreview((s) => s.setTheme);
   // the platform's own palette for a UI style, in the light or dark variant matching the current theme
@@ -132,19 +133,20 @@ export function UiStyleSection() {
       {matching && matching !== settings.theme && (
         <button type="button" className="btn text-xs" onClick={() => updateSettings({ theme: matching })} onMouseEnter={() => setHoverTheme(matching)} onMouseLeave={() => setHoverTheme(null)}>
           <Wand2 size={14} />Use matching colours ({label(matching)})</button>)}
-      <div role="radiogroup" aria-label="UI style" className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2" onMouseLeave={() => setHoverUi(null)}>
+      <div role="radiogroup" aria-label="UI style" className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5" onMouseLeave={() => setHoverUi(null)}>
         {UI_STYLES.map((s) => {
           const selected = ui === s.id;
           return (
             <button key={s.id} type="button" role="radio" aria-checked={selected} title={s.description} onClick={() => updateSettings({ ui: s.id })}
               onMouseEnter={() => setHoverUi(s.id)} onFocus={() => setHoverUi(s.id)} onBlur={() => setHoverUi(null)}
-              className={cn('rounded-theme border bg-raised/40 px-3 py-2 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
-              <span className="flex items-center justify-between gap-2"><span className="text-sm font-medium">{s.label}</span>{selected && <Check size={14} className="text-accent" />}</span>
-              <span className="mt-0.5 block text-[11px] leading-snug text-muted">{s.description}</span>
+              className={cn('rounded-theme border bg-raised/40 px-2.5 py-1.5 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+              <span className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-xs font-medium">{s.label}</span>{selected && <Check size={12} className="shrink-0 text-accent" />}</span>
             </button>
           );
         })}
       </div>
+      <p className="min-h-[2.5rem] rounded-theme bg-raised/50 px-3 py-2 text-xs leading-snug text-muted" aria-live="polite">
+        <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === (hoverUi ?? ui))?.label}: </span>{UI_STYLES.find((x) => x.id === (hoverUi ?? ui))?.description}</p>
       {ui === 'liquid' && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <span className="font-medium">Glass</span>
