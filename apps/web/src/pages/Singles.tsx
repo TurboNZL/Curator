@@ -4,7 +4,7 @@ import { matchesAll, splitTyped, trackSubject, type Chip } from '../lib/filters.
 import { TRACK_SORTS, sortTracks } from '../lib/trackSort.ts';
 import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
-import { FileAudio, Play, Plus, Shuffle } from 'lucide-react';
+import { Download, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -31,6 +31,7 @@ export function SinglesPage() {
         <h1 className="mr-auto text-2xl font-bold">Singles <span className="text-base font-normal text-muted">{singles.length}</span></h1>
         <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'search', id: null })}><Play size={15} fill="currentColor" />Play</button>
         <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
+        <button className="btn" onClick={() => edit({ kind: 'import', id: 'single' })}><Download size={15} />Import from YouTube</button>
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New single</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
       </div>

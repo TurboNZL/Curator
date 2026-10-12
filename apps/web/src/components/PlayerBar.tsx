@@ -58,7 +58,7 @@ export function PlayerBar() {
             </button>
             <div className="min-w-0">
               <div className="bt-ptitle truncate text-sm font-medium"><Link to={trackPath(track)} className="hover:underline" title="Go to this track in your library">{track.title}</Link></div>
-              <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
+              <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} featured={track.featured} className="hover:underline" /></div>
               {!v.remote && p.engine === 'spotify' && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {spotifyDevice || 'Spotify'}</div>}
               {v.remote && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {v.remote.name}</div>}
             </div>

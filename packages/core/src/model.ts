@@ -39,12 +39,15 @@ export interface AlbumData {
   /** explicit track order (ids); wins over the release tracklist. Set when the user reorders or adds tracks by hand. */
   trackOrder?: string[];
 }
+/** A reusable name for releases ("Deluxe", "Vinyl", "2026 remaster"), picked or created like an artist's name. */
+export interface ReleaseNameData { name: string }
 export interface ReleaseData {
   albumId: string;
+  /** the release's name; blank means it is called after the album (the library derives the shown title) */
   title: string;
   cover: string | null;
   releaseDate: string | null;
-  /** the user's own labels for this edition ("vinyl", "clean", "deluxe", "2026 remaster"); optional */
+  /** @deprecated release names replaced tags; old values stay in the data and in the tag: filter, but nothing edits them */
   tags?: string[];
   /** ordered */
   trackIds: string[];

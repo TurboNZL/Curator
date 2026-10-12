@@ -579,7 +579,7 @@ html[data-ui="liquid"][data-mode="light"]:not([data-wallpaper="on"]) body {
 
 /* the navigation layer floats above the content, inset from the edges, with corners concentric to each other */
 :is(html, div)[data-ui="liquid"] .bt-side.bt-shell { margin: 12px 0 12px 12px; border-radius: 30px; padding: 12px; animation: lg-bar-in 420ms var(--ease) both; }
-:is(html, div)[data-ui="liquid"] .bt-player.bt-shell { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; overflow: hidden; }
+:is(html, div)[data-ui="liquid"] .bt-player.bt-shell { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; border-radius: 30px; overflow: hidden; }
 :is(html, div)[data-ui="liquid"] .bt-player.bt-shell > div:last-child { padding-block: 0.4rem; }
 :is(html, div)[data-ui="liquid"] .bt-tabbar.bt-shell { position: fixed; z-index: 31; left: 12px; right: 12px; bottom: 12px; border-radius: 9999px; padding: 4px 6px; }
 :is(html, div)[data-ui="liquid"] .bt-tab { position: relative; z-index: 1; border-radius: 9999px; transition: color var(--dur) var(--ease); }
@@ -1288,3 +1288,6 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
 [data-ui="toolbar"] .bt-player .btn-accent { background: hsl(var(--fg)); color: hsl(var(--bg)); }
 [data-ui="toolbar"] .bt-player .btn-accent:hover { background: color-mix(in srgb, hsl(var(--fg)) 84%, hsl(var(--bg))); }
 [data-ui="toolbar"] .bt-times { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+/* Liquid Glass: the round artist pictures use the side bar's corner radius (30 px, scaled down on small thumbnails) instead of a circle */
+:is(html, div)[data-ui="liquid"] .bt-cover[data-kind="artist"] { border-radius: min(30px, 28%) !important; }

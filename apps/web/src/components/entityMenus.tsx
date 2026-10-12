@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
-import { BarChart3, Disc, Download, FileAudio, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Shuffle, User, Layers, Search } from 'lucide-react';
+import { GitMerge, BarChart3, Disc, Download, FileAudio, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Shuffle, User, Layers, Search } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { useLibrary, type Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -31,21 +31,29 @@ function useTrackListActions() {
 
 type Album = Library['albums'][number];
 
+/** Make a one-song album a single right now (no questions). Returns the track id, or null when the album is not eligible. */
+export function convertToSingleNow(lib: Library, album: Album): string | null {
+  const plan = planConvertToSingle(lib, album);
+  if (!plan) return null;
+  const { patch, remove } = useStore.getState();
+  patch('tracks', plan.trackId, plan.trackPatch);
+  for (const e of eraPatches(lib, 'album', plan.removeAlbumId, [])) patch('eras', e.id, e.patch); // the album leaves its eras...
+  for (const e of eraPatches(lib, 'track', plan.trackId, plan.eraIds)) patch('eras', e.id, e.patch); // ...and the single joins them
+  for (const r of plan.removeReleaseIds) remove('releases', r);
+  remove('albums', plan.removeAlbumId);
+  return plan.trackId;
+}
+
 /** Turns an album that is really one song into a single (after asking). Returns false when the album is not eligible. */
 export function useConvertToSingle() {
   const lib = useLibrary();
-  const { patch, remove } = useStore.getState();
   const nav = useNavigate();
   return (album: Album) => {
     const plan = planConvertToSingle(lib, album);
     if (!plan) return false;
     const t = lib.trackById.get(plan.trackId)!;
     if (!confirm(`Turn “${album.title}” into a single?\n\n“${t.title}” keeps its cover, credits and genres and leaves the album. The album and its ${plan.removeReleaseIds.length} release${plan.removeReleaseIds.length === 1 ? '' : 's'} are deleted (other releases' covers are lost).`)) return true;
-    patch('tracks', plan.trackId, plan.trackPatch);
-    for (const e of eraPatches(lib, 'album', plan.removeAlbumId, [])) patch('eras', e.id, e.patch); // the album leaves its eras...
-    for (const e of eraPatches(lib, 'track', plan.trackId, plan.eraIds)) patch('eras', e.id, e.patch); // ...and the single joins them
-    for (const r of plan.removeReleaseIds) remove('releases', r);
-    remove('albums', plan.removeAlbumId);
+    convertToSingleNow(lib, album);
     nav('/singles');
     return true;
   };
@@ -65,8 +73,9 @@ export function useAlbumMenuItems() {
     { label: 'Add to an album playlist…', icon: <ListPlus size={15} />, run: () => edit({ kind: 'add-album-to-playlist', id: album.id }) },
     { label: 'Add audio files…', icon: <FileAudio size={15} />, run: () => edit({ kind: 'upload', id: album.id }) },
     { label: 'New release…', icon: <Plus size={15} />, run: () => edit({ kind: 'new-release', id: album.id }) },
-    { label: 'Find YouTube links…', icon: <Search size={15} />, run: () => edit({ kind: 'match-links', id: album.id }) },
+    { label: 'Find its YouTube Music album…', icon: <Search size={15} />, run: () => edit({ kind: 'match-links', id: album.id }) },
     { label: 'Import a release from YouTube…', icon: <Download size={15} />, run: () => edit({ kind: 'import-into-album', id: album.id }) },
+    ...(lib.releases.filter((r) => r.albumId === album.id).length === 1 ? [{ label: 'Add to another album…', icon: <GitMerge size={15} />, run: () => edit({ kind: 'merge-album', id: album.id }) }] : []),
     ...(planConvertToSingle(lib, album) ? [{ label: 'Convert to a single…', icon: <Disc size={15} />, run: () => convert(album) }] : []),
     { separator: true },
     ...album.leads.map((l) => ({ label: `Go to ${l.name}`, icon: <User size={15} />, to: `/artists/${l.id}` })),

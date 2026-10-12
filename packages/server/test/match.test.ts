@@ -1,59 +1,53 @@
 import { describe, expect, it } from 'vitest';
-import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Matcher, odesli, parseSearch, scoreCandidate } from '../src/match.ts';
+import { Matcher, parseAlbumSearch, scoreAlbum } from '../src/match.ts';
 
-const t = { id: '1', title: 'Get It Together', artist: 'Drake', durationMs: 250337, spotifyUrl: 'https://open.spotify.com/track/7y6c07pgjZvtHI9kuMVqk1' };
+const a = { id: 'al1', title: 'Take Care', artist: 'Drake', trackCount: 19 };
 
-describe('scoring', () => {
-  it('prefers the real song, the Topic channel and the right length', () => {
-    const real = scoreCandidate(t, { title: 'Get It Together', channel: 'Drake - Topic', seconds: 250 });
-    const live = scoreCandidate(t, { title: 'Drake - Get It Together (Live)', channel: 'Some Fan', seconds: 250 });
-    const other = scoreCandidate(t, { title: 'Totally different', channel: 'Drake', seconds: 250 });
-    const wrongLength = scoreCandidate(t, { title: 'Get It Together', channel: 'Drake - Topic', seconds: 60 });
-    expect(real).toBeGreaterThan(0.9);
+describe('album scoring', () => {
+  it('prefers the official album playlist with the right track count over a compilation or a live set', () => {
+    const real = scoreAlbum(a, { id: 'OLAK5uy_abc', title: 'Album - Take Care', channel: 'Drake', count: 19 });
+    const live = scoreAlbum(a, { id: 'PLxyz', title: 'Drake - Take Care (Live) full album', channel: 'Fan', count: 19 });
+    const best = scoreAlbum(a, { id: 'PLbest', title: 'Drake best of playlist 2024 hits and more songs', channel: 'Fan', count: 60 });
+    const other = scoreAlbum(a, { id: 'OLAK5uy_def', title: 'Album - Views', channel: 'Drake', count: 20 });
+    expect(real).toBeGreaterThan(0.85);
     expect(real).toBeGreaterThan(live);
-    expect(live).toBeGreaterThan(other);
-    expect(real).toBeGreaterThan(wrongLength);
+    expect(real).toBeGreaterThan(best);
+    expect(real).toBeGreaterThan(other);
   });
-  it('ignores featuring tags and accents', () => {
-    expect(scoreCandidate({ id: 'x', title: 'Café (feat. Someone)', artist: 'Ärtist' }, { title: 'Cafe', channel: 'Artist - Topic', seconds: null })).toBeGreaterThan(0.8);
-  });
-  it('ranks search results', () => {
-    const c = parseSearch({ entries: [{ id: 'bad', title: 'Drake - Get It Together (Slowed)', channel: 'x', duration: 300 }, { id: 'good', title: 'Get It Together', channel: 'Drake - Topic', duration: 250 }] }, t);
-    expect(c[0].url).toBe('https://music.youtube.com/watch?v=good');
+  it('ignores accents and featuring tags', () => {
+    expect(scoreAlbum({ id: 'x', title: 'Café (feat. Someone)', artist: 'Ärtist' }, { id: 'OLAK5uy_q', title: 'Album - Cafe', channel: 'Artist', count: null })).toBeGreaterThan(0.8);
   });
 });
 
-describe('song.link', () => {
-  const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status });
-  it('returns the YouTube Music link', async () => {
-    const f = (async () => json({ entityUniqueId: 'S', entitiesByUniqueId: { S: { title: 'Get It Together', artistName: 'Drake' } }, linksByPlatform: { youtube: { url: 'https://youtube.com/watch?v=a' }, youtubeMusic: { url: 'https://music.youtube.com/watch?v=b' } } })) as unknown as typeof fetch;
-    expect(await odesli(t.spotifyUrl, f)).toMatchObject({ url: 'https://music.youtube.com/watch?v=b', method: 'odesli' });
-  });
-  it('is quiet when unknown, loud when rate limited', async () => {
-    expect(await odesli(t.spotifyUrl, (async () => json({}, 404)) as unknown as typeof fetch)).toBeNull();
-    await expect(odesli(t.spotifyUrl, (async () => json({}, 429)) as unknown as typeof fetch)).rejects.toThrow(/rate/);
+describe('search results', () => {
+  it('turns playlist results into YouTube Music album links, best first, and drops plain videos', () => {
+    const c = parseAlbumSearch({ entries: [
+      { id: 'dQw4w9WgXcQ', title: 'Take Care video', channel: 'x' },
+      { id: 'PLbad', title: 'Drake mix 2024', channel: 'Fan', playlist_count: 90 },
+      { id: 'OLAK5uy_good', title: 'Album - Take Care', channel: 'Drake', playlist_count: 19 },
+    ] }, a);
+    expect(c.map((x) => x.url)).toEqual(['https://music.youtube.com/playlist?list=OLAK5uy_good', 'https://music.youtube.com/playlist?list=PLbad']);
+    expect(c[0].count).toBe(19);
   });
 });
 
 describe('Matcher with a fake yt-dlp', () => {
   const dir = mkdtempSync(join(tmpdir(), 'match-'));
   const fake = join(dir, 'yt-dlp');
-  writeFileSync(fake, `#!/bin/sh\necho '{"entries":[{"id":"zzz","title":"Get It Together","channel":"Drake - Topic","duration":251}]}'\n`); chmodSync(fake, 0o755);
-  it('tries song.link first and stops when it has an answer', async () => {
-    const f = (async () => new Response(JSON.stringify({ linksByPlatform: { youtubeMusic: { url: 'https://music.youtube.com/watch?v=od' } } }))) as unknown as typeof fetch;
-    const r = await new Matcher({ ytdlp: fake, fetchImpl: f }).match(t, ['odesli', 'search']);
-    expect(r.candidates.map((c) => c.method)).toEqual(['odesli']);
-  });
-  it('falls back to search when song.link has nothing', async () => {
-    const f = (async () => new Response('{}', { status: 404 })) as unknown as typeof fetch;
-    const r = await new Matcher({ ytdlp: fake, fetchImpl: f }).match(t, ['odesli', 'search']);
-    expect(r.candidates[0]).toMatchObject({ url: 'https://music.youtube.com/watch?v=zzz', method: 'search' });
+  writeFileSync(fake, `#!/bin/sh\necho "$@" > "${dir}/argv.log"\necho '{"entries":[{"id":"OLAK5uy_zzz","title":"Album - Take Care","channel":"Drake","playlist_count":19}]}'\n`); chmodSync(fake, 0o755);
+  it('searches YouTube\'s playlist results for "artist album"', async () => {
+    const r = await new Matcher({ ytdlp: fake }).album(a);
+    expect(r.candidates[0]).toMatchObject({ url: 'https://music.youtube.com/playlist?list=OLAK5uy_zzz' });
+    const argv = readFileSync(join(dir, 'argv.log'), 'utf8');
+    expect(argv).toContain('search_query=Drake%20Take%20Care');
+    expect(argv).toContain('sp=EgIQAw%253D%253D');
+    expect(argv).toContain('--flat-playlist');
   });
   it('reports a missing yt-dlp instead of throwing', async () => {
-    const r = await new Matcher({ ytdlp: join(dir, 'missing') }).match({ ...t, spotifyUrl: null }, ['search']);
+    const r = await new Matcher({ ytdlp: join(dir, 'missing') }).album(a);
     expect(r.candidates).toEqual([]);
     expect(r.error).toMatch(/not installed/);
   });

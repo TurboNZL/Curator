@@ -45,6 +45,8 @@ export function HomePage() {
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [shown, setShown] = useState(15);
+  const [jq, setJq] = useState('');
+  const [jtype, setJtype] = useState('all');
   const listens = useMemo(() => buildListens(lib), [lib]);
 
   const rated = lib.tracks.filter((t) => t.effectiveRating > 0.001);
@@ -52,7 +54,10 @@ export function HomePage() {
   // "complete" = enough votes to trust the rating, or a manual rating
   const done = lib.tracks.filter((t) => t.comparisons >= 3 || (t.initialRating ?? 0) > 0).length;
   const pct = lib.tracks.length ? Math.round((done / lib.tracks.length) * 100) : 0;
-  const entries = [...lib.timeline].sort((a, b) => b.timestamp - a.timestamp);
+  const allEntries = [...lib.timeline].sort((a, b) => b.timestamp - a.timestamp);
+  const jTypes = [...new Set(allEntries.map((e) => e.type))];
+  const needle = jq.trim().toLowerCase();
+  const entries = allEntries.filter((e) => (jtype === 'all' || e.type === jtype) && (!needle || `${e.title} ${e.description ?? ''}`.toLowerCase().includes(needle)));
 
   // pick up where you left off: the last thing played here that can be played again, with the rest of its album after it
   const last = useMemo(() => {
@@ -128,7 +133,11 @@ export function HomePage() {
           <input className="input" placeholder="Write a journal entry title…" value={title} onChange={(e) => setTitle(e.target.value)} />
           {title && <><textarea className="input" rows={2} placeholder="Details (optional)" value={text} onChange={(e) => setText(e.target.value)} /><button className="btn btn-accent">Add entry</button></>}
         </form>
-        {!entries.length && <p className="text-sm text-muted">Nothing here yet. Adding albums and writing entries will fill the timeline.</p>}
+        {allEntries.length > 0 && <div className="flex flex-wrap items-center gap-2">
+          <input className="input !w-64 max-w-full" placeholder="Filter the journal…" aria-label="Filter the journal" value={jq} onChange={(e) => { setJq(e.target.value); setShown(15); }} />
+          <select className="input !w-auto" aria-label="Entry type" value={jtype} onChange={(e) => { setJtype(e.target.value); setShown(15); }}><option value="all">All kinds</option>{jTypes.map((t) => <option key={t} value={t}>{t}</option>)}</select>
+          {(jq || jtype !== 'all') && <span className="text-xs text-muted">{entries.length} of {allEntries.length}</span>}</div>}
+        {!entries.length && <p className="text-sm text-muted">{allEntries.length ? 'No entries match.' : 'Nothing here yet. Adding albums and writing entries will fill the timeline.'}</p>}
         <div className="space-y-2">{entries.slice(0, shown).map((e) => (
           <div key={e.id} className="card group flex gap-3 p-4">
             <div className={cn('w-1 shrink-0 rounded-full', e.type === 'entry' ? 'bg-accent' : 'bg-muted')} />

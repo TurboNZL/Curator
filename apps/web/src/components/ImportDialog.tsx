@@ -15,7 +15,7 @@ import { ArtistSelect, Field, Modal, TagInput } from './forms.tsx';
 interface Row { id: string; title: string; url: string; on: boolean }
 
 /** Import an album from a YouTube / YouTube Music link: look up, review and edit, then create it and queue the audio. */
-export function ImportDialog({ onClose }: { onClose: () => void }) {
+export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => void; /** opened from the Singles page: start in "as a single" */ singleFirst?: boolean }) {
   const lib = useLibrary();
   const { put, syncNow } = useStore();
   const configured = useStore((s) => !!s.settings.token);
@@ -36,7 +36,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [download, setDownload] = useState(true);
   /** import each chosen track as a single (no album) with its own cover and release date, instead of making an album */
-  const [asSingle, setAsSingle] = useState(false);
+  const [asSingle, setAsSingle] = useState(singleFirst);
   /** set after an import whose cover could not be fetched, so the user hears about it before the dialog closes */
   const [done, setDone] = useState<{ to: string; what: string; coverError: string } | null>(null);
 

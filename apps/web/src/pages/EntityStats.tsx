@@ -74,7 +74,7 @@ export function EntityStatsPage() {
           <div className="text-xs uppercase tracking-wider text-muted">{KIND_LABEL[kind]} stats</div>
           <h1 className="text-3xl font-bold leading-tight">{title}</h1>
           <div className="text-sm text-muted">
-            {track && <><ArtistLinks leads={track.leads} />{track.albumTitle && <> · {track.albumTitle}</>}</>}
+            {track && <><ArtistLinks leads={track.leads} featured={track.featured} />{track.albumTitle && <> · {track.albumTitle}</>}</>}
             {album && <><ArtistLinks leads={album.leads} /> · {plural(album.trackIds.length, 'track')}</>}
             {(artist || era || playlist) && plural(ids.length, 'track')}
           </div>

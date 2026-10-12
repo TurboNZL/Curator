@@ -7,7 +7,7 @@ import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
 import { analyzeAudio } from './audioinfo.ts';
-import { Matcher, type MatchTrack } from './match.ts';
+import { Matcher, type MatchAlbum } from './match.ts';
 import { similarArtists } from './recommend.ts';
 import { lookupAlbumDate } from './dates.ts';
 import { Soloist } from './soloist.ts';
@@ -170,15 +170,14 @@ export function createApp(
       active: jobs.filter((j) => j.state === 'running').map(({ trackId, stage, percent }) => ({ trackId, stage: stage ?? 'downloading', percent: percent ?? 0 })) });
   });
 
-  // ---- find the YouTube page of tracks that have none (match.ts): a few tracks per request, the page asks again for the next batch ----
-  app.post('/api/match', async (c) => {
-    const b = (await c.req.json().catch(() => ({}))) as { tracks?: unknown; methods?: unknown };
-    const methods = (Array.isArray(b.methods) ? b.methods : ['odesli', 'search']).filter((m): m is 'odesli' | 'search' => m === 'odesli' || m === 'search');
-    const tracks = (Array.isArray(b.tracks) ? b.tracks : []).slice(0, 12).flatMap((t: any): MatchTrack[] => typeof t?.id === 'string' && typeof t.title === 'string'
-      ? [{ id: t.id, title: t.title.slice(0, 200), artist: String(t.artist ?? '').slice(0, 200), album: typeof t.album === 'string' ? t.album : undefined, durationMs: typeof t.durationMs === 'number' ? t.durationMs : null, spotifyUrl: typeof t.spotifyUrl === 'string' ? t.spotifyUrl : null }] : []);
-    if (!tracks.length || !methods.length) return c.json({ error: 'nothing to match' }, 400);
+  // ---- find the YouTube Music album of albums that have no link (match.ts): a few albums per request, the page asks again for the next batch ----
+  app.post('/api/match-album', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { albums?: unknown };
+    const albums = (Array.isArray(b.albums) ? b.albums : []).slice(0, 6).flatMap((a: any): MatchAlbum[] => typeof a?.id === 'string' && typeof a.title === 'string'
+      ? [{ id: a.id, title: a.title.slice(0, 200), artist: String(a.artist ?? '').slice(0, 200), trackCount: typeof a.trackCount === 'number' ? a.trackCount : null }] : []);
+    if (!albums.length) return c.json({ error: 'nothing to match' }, 400);
     const out = [];
-    for (let i = 0; i < tracks.length; i += 3) out.push(...(await Promise.all(tracks.slice(i, i + 3).map((t) => matcher.match(t, methods)))));
+    for (let i = 0; i < albums.length; i += 3) out.push(...(await Promise.all(albums.slice(i, i + 3).map((a) => matcher.album(a)))));
     return c.json({ results: out });
   });
 

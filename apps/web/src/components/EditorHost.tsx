@@ -1,4 +1,4 @@
-import { allReleaseTags, planMergeReleases, siblingDate } from '../lib/releaseOps.ts';
+import { planMergeReleases, siblingDate } from '../lib/releaseOps.ts';
 import { FindDatesDialog } from './FindDatesDialog.tsx';
 import { MergeTracksDialog } from './MergeTracksDialog.tsx';
 import { SpotifyLinks } from './SpotifyLinks.tsx';
@@ -14,6 +14,7 @@ import { useStore } from '../lib/store.ts';
 import { ImportIntoAlbumDialog } from './ImportIntoAlbumDialog.tsx';
 import { SpotifyImportDialog } from './SpotifyImportDialog.tsx';
 import { MatchLinksDialog } from './MatchLinksDialog.tsx';
+import { MergeAlbumDialog } from './MergeAlbumDialog.tsx';
 import { TrackDetails } from './TrackDetails.tsx';
 import { ImportDialog } from './ImportDialog.tsx';
 import { logJournal } from '../lib/journal.ts';
@@ -305,6 +306,9 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
 }
 
 /** Create or edit a note: a titled write-up tied to at least one thing. `initial` pre-links an entity ("album:xyz") when started from its page. */
+/** a category that does not exist yet: made when the note is saved, so cancelling leaves nothing behind */
+const NEW_CATEGORY = 'new:';
+
 function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, remove } = useStore();
@@ -313,7 +317,12 @@ function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: s
     if (existing) return { ...existing };
     const [t, i] = (initial ?? '').split(':');
     const pre: GroupMemberData[] = t && i ? [{ entityType: t as GroupMemberData['entityType'], entityId: i, showOnEntityPage: true }] : [];
-    return { name: '', description: '', label: null, categoryId: null, members: pre };
+    // the first note on a thing starts out named after it and filed under its kind ("Era", "Artist", ...); both can be changed
+    const first = !!(t && i) && !lib.groups.some((n) => n.members.some((m) => m.entityType === t && m.entityId === i));
+    const label = first ? resolveEntity(lib, t as GroupMemberData['entityType'], i)?.label : undefined;
+    const kind = t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+    const cat = first && kind ? lib.noteCategories.find((c) => c.name.toLowerCase() === kind.toLowerCase())?.id ?? `${NEW_CATEGORY}${kind}` : null;
+    return { name: label ?? '', description: '', label: null, categoryId: cat, members: pre };
   });
   if (noteId && !existing) return null;
   const add = (e: { type: GroupMemberData['entityType']; id: string }) =>
@@ -332,14 +341,15 @@ function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: s
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-accent" disabled={!ok} onClick={() => {
           const { type: _old, ...rest } = g;
+          if (rest.categoryId?.startsWith(NEW_CATEGORY)) rest.categoryId = put('noteCategories', { name: rest.categoryId.slice(NEW_CATEGORY.length) });
           const id = put('groups', { ...rest, name: g.name.trim(), label: null, description: g.description?.trim() || null, createdAt: g.createdAt ?? Date.now() }, noteId);
           if (!noteId) logJournal('bio', `New note: ${g.name.trim()}`, '', id);
-          pruneCategories(g.categoryId ?? null);
+          pruneCategories(g.categoryId?.startsWith(NEW_CATEGORY) ? null : g.categoryId ?? null);
           onClose();
         }}>Save</button></div></>}>
       <Field label="Title"><input autoFocus className="input" value={g.name} onChange={(e) => setG({ ...g, name: e.target.value })} /></Field>
       <Field label="Category" hint="Your own: type a name that does not exist yet to create it."><Select value={g.categoryId ?? ''} placeholder="No category" searchable
-        options={[{ value: '', label: 'No category' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} onChange={(v) => setG({ ...g, categoryId: v || null })}
+        options={[{ value: '', label: 'No category' }, ...(g.categoryId?.startsWith(NEW_CATEGORY) ? [{ value: g.categoryId, label: `${g.categoryId.slice(NEW_CATEGORY.length)} (new)` }] : []), ...categories.map((c) => ({ value: c.id, label: c.name }))]} onChange={(v) => setG({ ...g, categoryId: v || null })}
         creatable={{ label: (n) => `Create category: “${n}”`, create: (n) => put('noteCategories', { name: n }) }} /></Field>
       <Field label="Text"><textarea className="input" rows={5} value={g.description ?? ''} onChange={(e) => setG({ ...g, description: e.target.value })} /></Field>
       <div className="space-y-2"><div className="text-sm text-muted">Tied to ({g.members.length}), and whether the note shows on that page</div>
@@ -385,26 +395,31 @@ function MergeReleaseInto({ releaseId, onDone }: { releaseId: string; onDone: ()
 function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; albumId?: string; onClose: () => void }) {
   const lib = useLibrary();
   const { put, patch, remove } = useStore();
-  const existing = releaseId ? lib.releases.find((r) => r.id === releaseId) : undefined;
+  // the stored record, not the derived one: a release without a name is stored with a blank title (it is shown under the album's name)
+  const existing = releaseId ? useStore.getState().rows.releases.get(releaseId)?.data as ReleaseData | undefined : undefined;
   const album = lib.albumById.get(existing?.albumId ?? albumId ?? '');
   const [added, setAdded] = useState<string[]>([]);
-  const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: album.title, cover: null, releaseDate: siblingDate(lib.releases.filter((x) => x.albumId === album.id), album.defaultReleaseId), trackIds: [...album.trackIds] } : null);
+  const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: '', cover: null, releaseDate: siblingDate(lib.releases.filter((x) => x.albumId === album.id), album.defaultReleaseId), trackIds: [...album.trackIds] } : null);
   if (!r || !album) return null;
   const live = r.trackIds.filter((id) => lib.trackById.has(id));
   const save = () => {
     if (added.length) { const raw = useStore.getState().rows.albums.get(album.id)?.data as AlbumData | undefined; patch('albums', album.id, { covers: [...new Set([...(raw?.covers ?? []), ...added])] }); }
-    put('releases', { ...r, trackIds: live }, releaseId); onClose();
+    const name = r.title.trim();
+    if (name && !lib.releaseNames.some((n) => n.name.toLowerCase() === name.toLowerCase())) put('releaseNames', { name }); // a new name joins the reusable list
+    put('releases', { ...r, title: name, trackIds: live }, releaseId); onClose();
   };
   return (
     <Modal title={releaseId ? 'Edit release' : `New release of ${album.title}`} onClose={onClose} footer={<>
-      {releaseId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete release “${r.title}”?`)) { remove('releases', releaseId); onClose(); } }}>Delete</button>}
-      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!r.title.trim()} onClick={save}>Save</button></div></>}>
+      {releaseId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete release “${r.title || album.title}”?`)) { remove('releases', releaseId); onClose(); } }}>Delete</button>}
+      <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" onClick={save}>Save</button></div></>}>
       <Field label="Cover" hint="Any image of the album can be used, including ones uploaded to the album itself. A new upload joins the album's pool.">
-        <CoverPool seed={r.title} pool={[...album.coverPool, ...added.filter((h) => !album.coverPool.includes(h))]} value={r.cover} inheritHash={album.cover} inheritLabel="Use the album's cover"
+        <CoverPool seed={r.title || album.title} pool={[...album.coverPool, ...added.filter((h) => !album.coverPool.includes(h))]} value={r.cover} inheritHash={album.cover} inheritLabel="Use the album's cover"
           onChange={(h) => setR({ ...r, cover: h })} onAdd={(h) => { setAdded((x) => [...x, h]); setR({ ...r, cover: h }); }} /></Field>
-      <Field label="Title"><input autoFocus className="input" value={r.title} onChange={(e) => setR({ ...r, title: e.target.value })} /></Field>
+      <Field label="Release name" hint="Pick a name you have used before or type a new one. Leave it blank to call the release after the album.">
+        <Select value={r.title} onChange={(v) => setR({ ...r, title: v })} searchable placeholder={`Same as the album (${album.title})`}
+          options={[{ value: '', label: `Same as the album (${album.title})` }, ...[...lib.releaseNames].sort((a, b) => a.name.localeCompare(b.name)).map((n) => ({ value: n.name, label: n.name }))]}
+          creatable={{ label: (n) => `Create name: “${n}”`, create: (n) => n }} /></Field>
       <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} /></Field>
-      <Field label="Tags" hint="Optional labels of your own for this edition: vinyl, clean, deluxe, 2026 remaster… Filter albums with tag:."><TagInput placeholder="Add a tag, press Enter" value={r.tags ?? []} onChange={(tags) => setR({ ...r, tags })} suggestions={allReleaseTags(lib.releases)} /></Field>
       <div className="space-y-1"><div className="text-sm text-muted">Tracklist ({live.length})</div>
         {live.map((id, i) => (
           <div key={id} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-1.5 text-sm"><span className="w-5 text-right text-xs text-muted">{i + 1}</span><span className="min-w-0 flex-1 truncate">{lib.trackById.get(id)!.title}</span>
@@ -471,9 +486,10 @@ export function EditorFor({ target, close }: { target: EditTarget; close: () => 
   if (target.kind === 'track-details') return <TrackDetails key={key} id={target.id} onClose={close} />;
   if (target.kind === 'release') return <ReleaseDialog key={key} releaseId={target.id} onClose={close} />;
   if (target.kind === 'new-release') return <ReleaseDialog key={key} albumId={target.id} onClose={close} />;
-  if (target.kind === 'import') return <ImportDialog key="import" onClose={close} />;
+  if (target.kind === 'import') return <ImportDialog key={`import-${target.id}`} singleFirst={target.id === 'single'} onClose={close} />;
   if (target.kind === 'import-into-album') return <ImportIntoAlbumDialog key={key} albumId={target.id} initialUrl={target.url} onClose={close} />;
   if (target.kind === 'import-spotify') return <SpotifyImportDialog key="import-spotify" onClose={close} />;
+  if (target.kind === 'merge-album') return <MergeAlbumDialog key={key} albumId={target.id} onClose={close} />;
   if (target.kind === 'match-links') return <MatchLinksDialog key={`match-links-${target.id}`} albumId={target.id} onClose={close} />;
   if (target.kind === 'note') return <NoteDialog key={key} noteId={target.id} onClose={close} />;
   if (target.kind === 'new-note') return <NoteDialog key={key} initial={target.id} onClose={close} />;

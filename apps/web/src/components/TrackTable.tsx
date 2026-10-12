@@ -11,6 +11,7 @@ import { Rating } from './Rating.tsx';
 import { useMenu } from './Menu.tsx';
 import { useTrackMenuItems } from './TrackMenu.tsx';
 import { ArtistLinks } from './ArtistLinks.tsx';
+import { fmtDate } from './SingleCard.tsx';
 import type { SourceType } from '@curator/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
@@ -56,12 +57,14 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
           <div className="min-w-0 flex-1">
             <div className={cn('truncate text-sm font-medium', !t.file && 'text-fg/70')}>{t.title}</div>
             <div className="truncate text-xs text-muted">
-              <ArtistLinks leads={t.leads} />
+              <ArtistLinks leads={t.leads} featured={t.featured} />
               {showAlbum && t.albumTitle && <> · <Link to={`/albums/${t.albumId}`} className="hover:text-fg hover:underline">{t.albumTitle}</Link></>}
+              {!t.albumId && t.releaseDate && <> · {fmtDate(t.releaseDate)}</>}
             </div>
           </div>
           <div className="hidden w-40 justify-end gap-1 overflow-hidden [@container(min-width:36rem)]:flex">{t.allGenres.slice(0, 2).map((g) => <span key={g} className="chip">{g}</span>)}</div>
           <span className="w-4 text-muted" title={t.file && cache[t.file] ? 'Saved on this device' : ''}>{t.file && cache[t.file] && <ArrowDownToLine size={13} />}</span>
+          <div className="hidden w-24 text-right text-xs tabular-nums text-muted [@container(min-width:56rem)]:block" title="Release date">{t.releaseDate ? fmtDate(t.releaseDate) : ''}</div>
           <div className="hidden w-14 text-right text-xs tabular-nums text-muted [@container(min-width:46rem)]:block">{t.bitrate ?? ''}</div>
           <div className="hidden w-28 justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@container(min-width:42rem)]:flex">
             <button className="p-1 text-muted hover:text-fg" title="Details" onClick={() => edit({ kind: 'track-details', id: t.id })}><Info size={15} /></button>

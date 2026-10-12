@@ -85,7 +85,7 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.file).map((x) => t(x, isDead(x) ? 'dead YouTube link' : x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
     { id: 'no-source', title: 'Tracks with no audio and no YouTube link', why: 'Nothing to download from. Add a link in the track editor.',
       items: lib.tracks.filter((x) => !x.file && !x.youtubeMusicUrl).map((x) => t(x)) },
-    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio. Let the server look for them, paste links by album, or add one in the track editor.', bulk: 'youtubeMusicUrl', matchLinks: true,
+    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio. Let the server find the YouTube Music album, paste links by album, or add one in the track editor.', bulk: 'youtubeMusicUrl', matchLinks: true,
       items: lib.tracks.filter((x) => !x.youtubeMusicUrl).map((x) => t(x, x.file ? 'has audio' : 'no audio')) },
     { id: 'no-spotify', title: 'Tracks without a Spotify link', why: 'Optional, but handy for opening the track elsewhere.', bulk: 'spotifyUrl',
       items: lib.tracks.filter((x) => !x.spotifyUrl).map((x) => t(x)) },
