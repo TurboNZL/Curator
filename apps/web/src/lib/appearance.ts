@@ -1,30 +1,38 @@
-import type { DeviceSettings } from "./settings.ts";
-import { applyTheme } from "./theme.ts";
-import { isUiStyle } from "./uiStyle.ts";
-import { effectiveUi } from "./deviceLook.ts";
-import { isLayout } from "./layout.ts";
-import { applyWallpaper } from "./wallpaper.ts";
-import { syncLiquidGlass } from "./liquidGlass.ts";
+import { githubSource, start, type Appearance, type TurboThemes } from 'turbothemes';
+import type { DeviceSettings } from './settings.ts';
 
-/** Applies the whole look (colour theme, accent, UI style, wallpaper) from the device settings. */
-export function applyAppearance(s: DeviceSettings) {
-  applyTheme(s.theme);
-  const root = document.documentElement;
-  const ui = effectiveUi(s.ui);
-  root.dataset.ui = isUiStyle(ui) ? ui : "default";
-  root.dataset.layout = isLayout(s.layout) ? s.layout : "side";
-  root.dataset.glass = s.glass === "clear" ? "clear" : "regular";
-  syncLiquidGlass(root.dataset.ui === "liquid");
-  applyWallpaper(s.theme, { enabled: s.wallpaper, darkness: s.wallpaperDarkness, custom: s.wallpaperCustom });
-}
+/**
+ * Colours, UI styles, layouts, wallpaper and the scripted extras all live in the turbothemes package (and its themes repository);
+ * this file only starts the engine with what is specific to this app and hands the device settings to it.
+ */
+let engine: TurboThemes | null = null;
 
-let watching = false;
+const sourceFor = (s: Pick<DeviceSettings, 'themesToken'>) => githubSource({ token: s.themesToken || undefined });
 
-/** "System" follows the OS, so re-apply when its light/dark preference changes. */
-export function watchSystemTheme(get: () => DeviceSettings) {
-  if (watching || typeof window === "undefined" || !window.matchMedia) return;
-  watching = true;
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (get().theme === "system" || get().theme === "auto") applyAppearance(get());
+function ensure(s: DeviceSettings): TurboThemes {
+  if (engine) return engine;
+  const host = window as unknown as { curatorDesktop?: { desktopEnv?: string }; CuratorAndroid?: unknown };
+  engine = start({
+    storagePrefix: 'curator', // keeps the keys it always had: curator.wallpaperImage
+    fonts: 'none', // the fonts are bundled (src/fonts.css), so styles work offline
+    lens: () => !host.CuratorAndroid, // the Android app gets frosted glass without refraction
+    host: { desktopEnv: host.curatorDesktop?.desktopEnv },
+    autoUpdate: s.themeUpdates,
+    source: sourceFor(s),
   });
+  return engine;
 }
+
+/** Applies the whole look from the device settings. */
+export function applyAppearance(s: DeviceSettings) {
+  ensure(s).apply(s as Appearance);
+}
+
+/** The running engine (start-up, update checks). Only valid after applyAppearance ran once. */
+export function themeEngine(s: DeviceSettings): TurboThemes {
+  const e = ensure(s);
+  e.setSource(s.themeUpdates ? sourceFor(s) : false);
+  return e;
+}
+
+export { watchSystemTheme } from 'turbothemes';

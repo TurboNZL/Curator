@@ -1,18 +1,7 @@
 import type { Config } from 'tailwindcss';
-
-const c = (v: string) => `hsl(var(--${v}) / <alpha-value>)`;
+import turbothemes from 'turbothemes/tailwind';
 
 export default {
+  presets: [turbothemes], // the colour names (bg, surface, accent ...), rounded-theme and font-sans come from the themes
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  theme: {
-    extend: {
-      colors: {
-        bg: c('bg'), surface: c('surface'), raised: c('raised'), line: c('line'), hover: c('hover'),
-        fg: c('fg'), muted: c('muted'), accent: c('accent'), 'accent-fg': c('accent-fg'),
-        good: c('good'), warn: c('warn'), bad: c('bad'), top: c('top'),
-      },
-      borderRadius: { theme: 'var(--radius)' },
-      fontFamily: { sans: 'var(--font)' },
-    },
-  },
 } satisfies Config;

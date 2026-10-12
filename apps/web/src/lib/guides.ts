@@ -12,8 +12,7 @@ const TITLE: Record<string, [string, Guide['group']]> = {
   DEPLOY_PI: ['Home server on a Raspberry Pi', 'Run it'], UPDATING: ['Updating', 'Run it'], YTDLP_COOKIES: ['YouTube cookies', 'Run it'], TESTING: ['Trying it with your library', 'Run it'],
   ELECTRON: ['Desktop app', 'Apps'], ANDROID: ['Android app', 'Apps'], CONNECT: ['Play on a device', 'Apps'], DISCORD: ['Discord status', 'Apps'], SPOTIFY: ['Spotify and Soloist', 'Apps'],
   PROJECT_BRIEF: ['Project brief', 'More'],
-  'appearance/README': ['Appearance: overview', 'More'], 'appearance/THEMES': ['Appearance: themes and styles', 'More'], 'appearance/DESIGN_LANGUAGE': ['Appearance: design language', 'More'],
-  'appearance/LIQUID_GLASS': ['Appearance: Liquid Glass', 'More'], 'appearance/TOOLBAR': ['Appearance: the first version', 'More'],
+  APPEARANCE: ['Appearance and themes', 'More'],
 };
 const ORDER = Object.keys(TITLE);
 
