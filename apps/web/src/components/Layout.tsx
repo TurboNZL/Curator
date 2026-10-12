@@ -2,6 +2,7 @@ import { WindowFrame } from './WindowFrame.tsx';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate, useNavigationType } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { effectiveUi } from '../lib/deviceLook.ts';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
 import { useStore } from '../lib/store.ts';
@@ -51,6 +52,21 @@ function useIndicator<T extends HTMLElement>(key: string) {
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };
   }, [key]);
   return ref;
+}
+
+/** The gradients the Marshmallow style strokes its navigation icons with (a glossy candy look): light lip, bright body, deeper base. Only drawn for that style. */
+const CANDY = ['#ff7aa8', '#ffa24d', '#ffd23f', '#5fd08b', '#4cc9e8', '#6f8cff', '#b67cff'];
+const shade = (hex: string, to: number) => { const n = parseInt(hex.slice(1), 16), m = (c: number) => Math.round(c + (to < 0 ? c * to : (255 - c) * to)); return `rgb(${m((n >> 16) & 255)} ${m((n >> 8) & 255)} ${m(n & 255)})`; };
+function CandyDefs() {
+  return (
+    <svg width="0" height="0" aria-hidden focusable="false" style={{ position: 'absolute' }}>
+      <defs>{CANDY.map((c, i) => (
+        <linearGradient key={c} id={`mm-g${i + 1}`} gradientUnits="userSpaceOnUse" x1="0" y1="1" x2="0" y2="23">
+          <stop offset="0" stopColor={shade(c, 0.7)} /><stop offset="0.34" stopColor={shade(c, 0.25)} /><stop offset="0.52" stopColor={c} /><stop offset="1" stopColor={shade(c, -0.28)} />
+        </linearGradient>))}
+      </defs>
+    </svg>
+  );
 }
 
 function SyncDot() {
@@ -166,6 +182,7 @@ export function Layout() {
   return (
     <div className="flex h-full flex-col">
       <WindowFrame />
+      {effectiveUi(ui) === 'lgux' && <CandyDefs />}
       <div className="bt-scrim" aria-hidden />
       <div className="flex min-h-0 flex-1">
         {!noSide && <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
@@ -196,7 +213,7 @@ export function Layout() {
               </div>
               <DevicesMenu />
               <AddMenu />
-              {toolbar && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}
+              {(toolbar || dock) && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}
             </div>
           </form>
           <div className={cn('bt-content mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className="bt-page"><Outlet /></div></div>

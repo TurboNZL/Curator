@@ -115,6 +115,8 @@ export function GraphicsLine() {
             {gpu.modes.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
           {gpu.mode === 'auto' && !g.hardware && gpu.auto.done && <button className="btn" onClick={() => void d.setGpu!('auto')}>Search again</button>}
+          {d.openGpuPage && <button className="btn" onClick={() => d.openGpuPage!()}>Open Chromium's GPU report</button>}
+          {d.gpuReport && <button className="btn" onClick={() => void d.gpuReport!().then((t) => navigator.clipboard?.writeText(t))}>Copy graphics report</button>}
         </div>
         <p className="text-xs text-muted">
           {gpu.mode === 'auto'

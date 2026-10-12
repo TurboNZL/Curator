@@ -30,12 +30,16 @@ app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(
 // let the sound keep going when the window is hidden, and let the keyboard's media keys reach the page (MPRIS on Linux)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const gpuChoice = loadDesktopConfig(app.getPath('userData'));
-const gpuStart = activeMode(gpuChoice.gpuMode === 'auto' && gpuChoice.gpuAuto.done ? { mode: 'auto', auto: { step: gpuChoice.gpuAuto.step, done: true } } : { mode: gpuChoice.gpuMode, auto: gpuChoice.gpuAuto });
+const gpuStart = activeMode(gpuChoice.gpuMode === 'auto' && gpuChoice.gpuAuto.done ? { mode: 'auto', auto: { step: gpuChoice.gpuAuto.step, done: true } } : { mode: gpuChoice.gpuMode, auto: gpuChoice.gpuAuto }, process.env.XDG_SESSION_TYPE);
 if (process.platform === 'linux') {
   // Chromium's block list leaves GPU painting off on many Linux drivers, which shows as "not using the GPU renderer": ask for it (a driver
   // that really cannot do it still falls back by itself, graphics() below reports what happened, and "Automatic" then tries the next way
   // to start the graphics: X11 instead of Wayland, no GPU sandbox, ANGLE's OpenGL; see gpuModes.ts)
   app.commandLine.appendSwitch('enable-features', ['MediaSessionService', 'HardwareMediaKeyHandling', ...(gpuStart.features ?? [])].join(','));
+  // Chromium on Wayland cannot use Vulkan ("--ozone-platform=wayland is not compatible with Vulkan"); with --ignore-gpu-blocklist it still tried on NVIDIA,
+  // the GPU process failed and painting fell back to software. The modes name their ANGLE back end (OpenGL ES over EGL on Wayland); Vulkan stays
+  // off except in the one mode that asks for it (which runs through X11).
+  if (!gpuStart.features?.includes('Vulkan')) app.commandLine.appendSwitch('disable-features', 'Vulkan');
   if (gpuStart.software) app.disableHardwareAcceleration();
   else for (const [name, value] of gpuStart.switches) app.commandLine.appendSwitch(name, value);
 }
@@ -119,6 +123,12 @@ ipcMain.on('curator:access', (_e, serverUrl: unknown, id: unknown, secret: unkno
 });
 ipcMain.handle('curator:graphics', () => graphics());
 ipcMain.handle('curator:gpu-get', () => { const c = loadDesktopConfig(userData()); return { mode: c.gpuMode, auto: c.gpuAuto, running: gpuStart.id, modes: GPU_MODES.map(({ id, label, hint }) => ({ id, label, hint })) }; });
+ipcMain.handle('curator:gpu-report', async () => {
+  const g = await graphics();
+  const info = await app.getGPUInfo('complete').catch(() => null);
+  return JSON.stringify({ summary: g.summary, detail: g.detail, features: g.features, gpuCrashes: g.gpuCrashes, mode: gpuStart.id, electron: process.versions.electron, chrome: process.versions.chrome, session: { type: process.env.XDG_SESSION_TYPE, desktop: process.env.XDG_CURRENT_DESKTOP, display: process.env.DISPLAY, wayland: process.env.WAYLAND_DISPLAY }, gpuInfo: info }, null, 2);
+});
+ipcMain.on('curator:gpu-page', () => { const w = new BrowserWindow({ width: 1000, height: 800, title: 'Chromium GPU report' }); void w.loadURL('chrome://gpu'); });
 ipcMain.handle('curator:gpu-set', (_e, mode: unknown) => {
   const id = typeof mode === 'string' && (mode === 'auto' || GPU_MODES.some((m) => m.id === mode)) ? mode : 'auto';
   saveDesktopConfig(userData(), { gpuMode: id, gpuAuto: { step: 0, done: false } });
@@ -204,7 +214,7 @@ async function settleGraphics() {
   if (process.platform !== 'linux' || c.gpuMode !== 'auto' || c.gpuAuto.done || process.env.CURATOR_SOFTWARE_RENDERING) return;
   await new Promise((r) => setTimeout(r, 6000));
   const g = await graphics();
-  const next = nextAutoStep({ mode: 'auto', auto: c.gpuAuto }, g.hardware && g.gpuCrashes === 0);
+  const next = nextAutoStep({ mode: 'auto', auto: c.gpuAuto }, g.hardware && g.gpuCrashes === 0, process.env.XDG_SESSION_TYPE);
   console.log(`[curator] graphics (${gpuStart.id}): ${g.summary}${next.done ? ' - settled' : ' - trying the next mode'}`);
   saveDesktopConfig(userData(), { gpuAuto: { step: next.step, done: next.done } });
   if (next.relaunch) { app.relaunch(); app.exit(0); }

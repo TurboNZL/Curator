@@ -138,3 +138,5 @@ Real YouTube import, album search and downloads (the sandbox that built this had
 ## License
 
 Music Curator is released under the [MIT License](LICENSE). Third-party pieces keep their own licenses: the npm packages and bundled fonts (for example the `@fontsource` families, SIL OFL) under theirs, and Spotify Soloist and yt-dlp are **not** part of this repository: Soloist is downloaded from Spotify's own server under Spotify's terms, yt-dlp from its own project.
+
+Third-party fonts bundled with the web client are under their own licences (the @fontsource packages are OFL or Apache; the Minecraft style uses "Minecraft" by Pwnage_Block, [CC BY-SA 3.0](https://fontstruct.com/fontstructions/show/432966), in `apps/web/src/assets/`).

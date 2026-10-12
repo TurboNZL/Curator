@@ -1,3 +1,6 @@
+/* "Minecraft" (FontStruct, by Pwnage_Block, 2011), CC BY-SA 3.0: https://fontstruct.com/fontstructions/show/432966 . A fan-made lookalike of the game's own typeface, bundled for the Minecraft style. */
+@font-face { font-family: "Minecraft"; src: url("./assets/minecraft.woff2") format("woff2"); font-display: swap; }
+
 /* More UI styles: Minecraft (Bedrock), Samsung One UI, Spotify, YouTube Music, Discord, Ado, Yaru, and the Marshmallow app icons.
  * Same rules as ui-styles.css: styles set variables and a few hooks, never colours of their own (the colour theme provides those). */
 
@@ -7,7 +10,7 @@
  * switches (a green "I" half or a grey "O" half beside a light knob) and sliders with a green fill and a light square knob. */
 [data-ui="blocky"] {
   --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
-  --font: "Pixelify Sans", "VT323", ui-monospace, monospace; --title-font: var(--font);
+  --font: "Minecraft", "Pixelify Sans", ui-monospace, monospace; --title-font: var(--font);
   --dur: 0ms; --ease: steps(1);
   --mc-light: #d0d1d4; --mc-edge: #1e1e1f; --mc-low: #58585a; --mc-green: #3c8527;
   --btn-bg: var(--mc-light); --btn-fg: #1e1e1f; --btn-weight: 500; --btn-border: 2px solid var(--mc-edge); --btn-shadow: inset 0 -4px 0 #8c8d90;
@@ -23,8 +26,8 @@
   --close-fg: #1e1e1f; --close-hover-bg: #c4c6c9; --close-hover-fg: #000; --close-r: 0;
   --bar-border: 2px solid var(--mc-edge);
   --menu-bg: hsl(var(--surface)); --menu-border: 2px solid var(--mc-edge); --pop-shadow: 4px 4px 0 rgb(0 0 0 / 0.45); --menu-anim: none; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: #fff;
-  --side-bg: #313233; --side-shadow: none; --top-bg: #e6e8eb; --top-shadow: inset 0 -3px 0 #b3b5b8; --player-bg: #313233; --player-shadow: inset 0 3px 0 #1e1e1f;
-  --nav-hover-bg: #3d3e3f; --nav-active-bg: #48494a; --nav-active-fg: #fff; --nav-active-shadow: inset 0 -3px 0 #3c8527;
+  --side-bg: #323435; --side-shadow: none; --top-bg: #e6e8eb; --top-shadow: inset 0 -3px 0 #b3b5b8; --player-bg: #323435; --player-shadow: inset 0 3px 0 #1e1e1f;
+  --nav-hover-bg: #3d3f40; --nav-active-bg: #484a4b; --nav-active-fg: #fff; --nav-active-shadow: inset 0 0 0 2px #1e1e1f;
   --row-hover: rgb(255 255 255 / 0.07); --row-current: rgb(60 133 39 / 0.35);
   --panel-tb-fg: #fff; --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
   --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid var(--mc-edge); --chk-bg: #8c8d90; --chk-hover-border: #fff; --chk-focus: 0 0 0 2px #fff;
@@ -32,7 +35,8 @@
   --rng-appearance: none; --rng-h: 8px; --rng-r: 0; --rng-track: #8c8d90; --rng-fill: var(--mc-green); --rng-border: 2px solid var(--mc-edge);
   --rng-tw: 1rem; --rng-th: 1.5rem; --rng-tr: 0; --rng-thumb: var(--mc-light); --rng-tb: 2px solid var(--mc-edge); --rng-ts: inset 0 -3px 0 #8c8d90;
 }
-html[data-ui="blocky"] { font-size: 17px; }
+html[data-ui="blocky"] { font-size: 16px; -webkit-font-smoothing: none; font-smooth: never; text-rendering: optimizeSpeed; }
+[data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title, b, strong, .font-semibold, .font-bold) { -webkit-text-stroke: 0.4px currentColor; }
 [data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title) { font-weight: 700; letter-spacing: 0.02em; }
 [data-ui="blocky"] main h1 { text-transform: uppercase; }
 [data-ui="blocky"] .btn-ghost { background: transparent; color: hsl(var(--fg)); box-shadow: none; border-color: transparent; }
@@ -89,8 +93,6 @@ html[data-ui="blocky"] { font-size: 17px; }
   --rng-appearance: none; --rng-h: 1.6rem; --rng-r: 9999px; --rng-border: 0 solid transparent; --rng-track: color-mix(in srgb, hsl(var(--fg)) 22%, transparent); --rng-fill: hsl(var(--fg));
   --rng-tw: 0.3rem; --rng-th: 1.6rem; --rng-tr: 9999px; --rng-thumb: transparent; --rng-tb: 0 solid transparent; --rng-ts: none;
 }
-html[data-ui="oneui"][data-theme="oneui-lilac"] { background: linear-gradient(165deg, #8f7fd0 0%, #6a82d8 38%, #c9a4d6 68%, #7a69c6 100%) fixed; }
-html[data-ui="oneui"][data-theme="oneui-lilac"] body { background: transparent; }
 html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneui"] .bt-menu, html[data-ui="oneui"] .bt-window { -webkit-backdrop-filter: blur(26px) saturate(1.3); backdrop-filter: blur(26px) saturate(1.3); }
 [data-ui="oneui"] .bt-side.bt-shell { margin: 10px 0 10px 10px; border-radius: 30px; }
 [data-ui="oneui"] .bt-player.bt-shell { margin: 0 10px 10px; border-radius: 30px; }
@@ -108,7 +110,7 @@ html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneu
  * a white round play button. Pair it with the Spotify colours. Circular is Spotify's own face; Figtree stands in for it. */
 [data-ui="spotify"] {
   --radius: 8px; --ctl-r: 9999px; --card-r: 8px; --win-r: 12px; --menu-r: 4px; --nav-r: 6px; --chip-r: 9999px; --in-r: 9999px;
-  --font: "Figtree", "Circular Std", "Helvetica Neue", Helvetica, Arial, sans-serif; --title-font: var(--font);
+  --font: "Albert Sans", "Circular Std", "Spotify Mix", "Helvetica Neue", Helvetica, Arial, sans-serif; --title-font: var(--font);
   --dur: 150ms; --ease: ease-out;
   --btn-bg: transparent; --btn-fg: hsl(var(--fg)); --btn-weight: 700; --btn-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 45%, transparent); --btn-shadow: none;
   --btn-hover-bg: transparent; --btn-hover-border: hsl(var(--fg)); --btn-active-transform: scale(0.97);
@@ -154,7 +156,7 @@ html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneu
  * rounded 12 px thumbnails, a rounded grey highlight (#272727) on the current page, a white "subscribe"-style primary pill and a red progress
  * bar. Read off a YouTube screenshot; Roboto is YouTube's face. */
 [data-ui="ytmusic"] {
-  --radius: 12px; --ctl-r: 9999px; --card-r: 12px; --win-r: 16px; --menu-r: 12px; --nav-r: 10px; --chip-r: 9999px; --in-r: 9999px;
+  --radius: 12px; --ctl-r: 18px; --card-r: 12px; --win-r: 16px; --menu-r: 12px; --nav-r: 10px; --chip-r: 8px; --in-r: 9999px;
   --font: "Roboto", "YouTube Sans", Arial, sans-serif; --title-font: var(--font);
   --dur: 120ms; --ease: ease-out;
   --btn-bg: color-mix(in srgb, hsl(var(--fg)) 10%, transparent); --btn-fg: hsl(var(--fg)); --btn-weight: 500; --btn-border: 0 solid transparent; --btn-shadow: none;
@@ -191,43 +193,52 @@ html[data-ui="oneui"] .bt-shell, html[data-ui="oneui"] .card, html[data-ui="oneu
 [data-ui="ytmusic"] main h1 { font-weight: 700; font-size: 1.75rem; }
 
 /* ================== Discord ==================
- * Layered slate panels: the page (#313338), the channel-list side bar (#2b2d31), a darker recessed search field (#1e1f22); 3-4 px corners,
- * blurple buttons, rounded hover bars on list items, a thin shadow under the header, bold small-caps style section titles. gg sans is
- * Discord's face; Noto Sans stands in for it. */
+ * Read off a screenshot of Discord's settings window in its darkest ("Onyx") theme: true-black panels, 1 px near-black rules, a selected
+ * list item as a rounded #1e1e20 bar, black fields with a thin grey outline and 8 px corners, blurple (#5865f2) buttons, radios that are a
+ * hollow ring (a blurple disc with a white dot when chosen), a grey slider track with a blurple fill and a big white knob, small muted section
+ * labels. Discord's face is gg sans; Noto Sans is the closest open one. Works with the Ash (#313338) palette too. */
 [data-ui="discord"] {
-  --radius: 8px; --ctl-r: 4px; --card-r: 8px; --win-r: 8px; --menu-r: 4px; --nav-r: 4px; --chip-r: 4px; --in-r: 4px;
+  --radius: 8px; --ctl-r: 8px; --card-r: 8px; --win-r: 12px; --menu-r: 8px; --nav-r: 8px; --chip-r: 8px; --in-r: 8px;
   --font: "Noto Sans", "gg sans", "Helvetica Neue", Helvetica, Arial, sans-serif; --title-font: var(--font);
+  --dis-edge: color-mix(in srgb, hsl(var(--fg)) 15%, hsl(var(--bg)));
   --dur: 100ms; --ease: ease-out;
-  --btn-bg: hsl(var(--secondary, var(--raised))); --btn-fg: hsl(var(--fg)); --btn-weight: 500; --btn-border: 0 solid transparent; --btn-shadow: none;
+  --btn-bg: hsl(var(--raised)); --btn-fg: hsl(var(--fg)); --btn-weight: 500; --btn-border: 0 solid transparent; --btn-shadow: none;
   --btn-hover-bg: hsl(var(--hover)); --btn-active-transform: none;
   --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-border: 0 solid transparent; --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 82%, black);
   --ghost-hover-bg: hsl(var(--hover));
-  --in-bg: hsl(var(--line)); --in-border: 0 solid transparent; --in-hover-border: transparent; --in-focus-border: transparent; --in-focus-shadow: 0 0 0 1px hsl(var(--accent)); --in-px: 0.75rem; --in-py: 0.5rem;
-  --card-bg: hsl(var(--surface)); --card-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 6%, transparent); --card-shadow: none;
-  --backdrop: rgb(0 0 0 / 0.85);
-  --win-bg: hsl(var(--bg)); --win-border: 0 solid transparent; --win-shadow: 0 0 0 1px rgb(0 0 0 / 0.2), 0 8px 16px rgb(0 0 0 / 0.24); --dialog-anim: bt-pop 160ms ease-out;
-  --tb-bg: transparent; --tb-border: 0 solid transparent; --tb-pad: 1.1rem 1.25rem 0.3rem; --tb-size: 1.25rem; --tb-weight: 700; --tb-justify: space-between;
-  --close-r: 4px; --close-hover-bg: hsl(var(--hover));
-  --bar-border: 0 solid transparent;
-  --menu-bg: hsl(var(--line)); --menu-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 6%, transparent); --pop-shadow: 0 8px 16px rgb(0 0 0 / 0.24); --menu-anim: bt-pop 90ms ease-out; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
-  --side-bg: hsl(var(--surface)); --side-shadow: none; --top-bg: hsl(var(--bg)); --top-shadow: 0 1px 0 rgb(0 0 0 / 0.2), 0 1.5px 0 rgb(0 0 0 / 0.05); --player-bg: hsl(var(--surface)); --player-shadow: 0 -1px 0 rgb(0 0 0 / 0.2);
-  --nav-hover-bg: hsl(var(--hover) / 0.6); --nav-active-bg: hsl(var(--hover)); --nav-active-fg: hsl(var(--fg));
-  --row-hover: hsl(var(--hover) / 0.5); --row-current: hsl(var(--hover));
-  --chk-size: 1.2rem; --chk-r: 3px; --chk-border: 2px solid hsl(var(--muted)); --chk-bg: transparent; --chk-hover-border: hsl(var(--fg)); --chk-focus: 0 0 0 2px hsl(var(--accent));
+  --in-bg: hsl(var(--bg)); --in-border: 1px solid var(--dis-edge); --in-hover-border: color-mix(in srgb, hsl(var(--fg)) 28%, hsl(var(--bg))); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: none; --in-px: 0.9rem; --in-py: 0.65rem;
+  --card-bg: hsl(var(--surface)); --card-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 8%, transparent); --card-shadow: none;
+  --backdrop: rgb(0 0 0 / 0.7);
+  --win-bg: hsl(var(--bg)); --win-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 10%, transparent); --win-shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 16px 48px rgb(0 0 0 / 0.5); --dialog-anim: bt-pop 160ms ease-out;
+  --tb-bg: transparent; --tb-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 7%, transparent); --tb-pad: 1.1rem 1.25rem; --tb-size: 1.1rem; --tb-weight: 500; --tb-justify: space-between;
+  --close-r: 8px; --close-hover-bg: hsl(var(--hover));
+  --bar-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 7%, transparent);
+  --menu-bg: hsl(var(--surface)); --menu-border: 1px solid var(--dis-edge); --pop-shadow: 0 8px 20px rgb(0 0 0 / 0.5); --menu-anim: bt-pop 90ms ease-out; --menu-hi-bg: hsl(var(--hover)); --menu-hi-fg: hsl(var(--fg));
+  --side-bg: hsl(var(--bg)); --side-shadow: none; --top-bg: hsl(var(--bg)); --top-shadow: none; --player-bg: hsl(var(--bg)); --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--hover)) 60%, transparent); --nav-active-bg: hsl(var(--hover)); --nav-active-fg: hsl(var(--fg));
+  --row-hover: color-mix(in srgb, hsl(var(--hover)) 55%, transparent); --row-current: hsl(var(--hover));
+  --chk-size: 1.25rem; --chk-r: 4px; --chk-border: 2px solid color-mix(in srgb, hsl(var(--fg)) 62%, transparent); --chk-bg: transparent; --chk-hover-border: hsl(var(--fg)); --chk-focus: 0 0 0 2px hsl(var(--accent));
   --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: #fff; --chk-radio-on-bg: hsl(var(--accent)); --chk-dot: #fff;
-  --rng-appearance: none; --rng-h: 6px; --rng-r: 3px; --rng-border: 0 solid transparent; --rng-track: hsl(var(--line)); --rng-fill: hsl(var(--accent));
-  --rng-tw: 10px; --rng-th: 22px; --rng-tr: 3px; --rng-thumb: #fff; --rng-tb: 1px solid rgb(0 0 0 / 0.3); --rng-ts: 0 1px 3px rgb(0 0 0 / 0.4);
+  --rng-appearance: none; --rng-h: 8px; --rng-r: 4px; --rng-border: 0 solid transparent; --rng-track: color-mix(in srgb, hsl(var(--fg)) 22%, hsl(var(--bg))); --rng-fill: hsl(var(--accent));
+  --rng-tw: 22px; --rng-th: 22px; --rng-tr: 9999px; --rng-thumb: #fff; --rng-tb: 0 solid transparent; --rng-ts: 0 2px 6px rgb(0 0 0 / 0.5);
 }
 [data-ui="discord"] .bt-shell { -webkit-backdrop-filter: none; backdrop-filter: none; }
-[data-ui="discord"] .bt-nav { font-weight: 500; color: hsl(var(--muted)); }
-[data-ui="discord"] .bt-nav:hover, [data-ui="discord"] .bt-nav[aria-current="page"] { color: hsl(var(--fg)); }
-[data-ui="discord"] .bt-brand { font-weight: 700; font-size: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgb(0 0 0 / 0.2); margin-bottom: 0.5rem; }
-[data-ui="discord"] main h2:not([class*="text-2xl"]) { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; color: hsl(var(--muted)); }
-[data-ui="discord"] .bt-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: hsl(var(--muted)); }
+[data-ui="discord"] .bt-side { border-right: 1px solid color-mix(in srgb, hsl(var(--fg)) 7%, transparent); }
+[data-ui="discord"] .bt-top { border-bottom: 1px solid color-mix(in srgb, hsl(var(--fg)) 7%, transparent); }
+[data-ui="discord"] .bt-nav { font-weight: 500; color: hsl(var(--muted)); padding-block: 0.6rem; font-size: 1rem; }
+[data-ui="discord"] .bt-nav:hover { color: hsl(var(--fg)); }
+[data-ui="discord"] .bt-nav[aria-current="page"] { color: hsl(var(--fg)); }
+[data-ui="discord"] .bt-brand { font-weight: 600; font-size: 1.05rem; padding-bottom: 0.9rem; margin-bottom: 0.4rem; border-bottom: 1px solid color-mix(in srgb, hsl(var(--fg)) 7%, transparent); }
+[data-ui="discord"] main h1 { font-size: 1.6rem; font-weight: 500; }
+[data-ui="discord"] main h2:not([class*="text-2xl"]) { font-weight: 500; }
+[data-ui="discord"] .bt-label { font-size: 0.9rem; font-weight: 500; color: hsl(var(--fg)); }
+[data-ui="discord"] .btn { padding-block: 0.6rem; padding-inline: 1.1rem; }
+[data-ui="discord"] .btn-ghost { background: transparent; }
 [data-ui="discord"] .bt-cover { border-radius: 8px; }
 [data-ui="discord"] .bt-cover[data-kind="artist"] { border-radius: 9999px; }
-[data-ui="discord"] .btn-ghost:hover:not(:disabled) { color: hsl(var(--fg)); }
+[data-ui="discord"] hr, [data-ui="discord"] .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, hsl(var(--fg)) 7%, transparent); }
 [data-ui="discord"] ::selection { background: hsl(var(--accent) / 0.6); }
+[data-ui="discord"] :is(p, li, .bt-body, .prose) a:not(.btn) { color: #00a8fc; }
 
 /* ================== Ado ==================
  * Stage black with an electric-blue signature colour and a hot red edge. Condensed italic capitals, hairline blue outlines that glow, a red
@@ -269,27 +280,46 @@ html[data-ui="ado"] { font-size: 17px; }
 [data-ui="ado"] .chip { text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid hsl(var(--line)); background: transparent; }
 [data-ui="ado"] ::selection { background: var(--ado-red); color: #fff; }
 
-/* ================== LG Marshmallow: squishy app icons ==================
- * The theme's app icons were glossy, rounded and soft like marshmallows. Every navigation icon sits on a candy-coloured squishy tile (a
- * gloss highlight on the top half, a soft inner shade below, a drop shadow) and squashes when pressed. Colours cycle through the candy set. */
-[data-ui="lgux"] { --candy-1: #ff7aa8; --candy-2: #ffa24d; --candy-3: #ffd23f; --candy-4: #5fd08b; --candy-5: #4cc9e8; --candy-6: #6f8cff; --candy-7: #b67cff; }
-[data-ui="lgux"] :is(.bt-nav, .bt-tab) > svg {
-  --c: var(--candy-1); box-sizing: content-box; width: 18px; height: 18px; padding: 6px; border-radius: 12px; color: #fff; stroke-width: 2.3;
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.62) 0 46%, rgb(255 255 255 / 0) 47%), radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.35), transparent 60%), var(--c);
-  box-shadow: inset 0 -4px 6px rgb(0 0 0 / 0.2), inset 0 1px 1px rgb(255 255 255 / 0.7), 0 3px 5px color-mix(in srgb, var(--c) 55%, transparent);
-  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.18)); transition: transform 180ms cubic-bezier(0.34, 1.7, 0.5, 1);
+/* ================== LG Marshmallow: glossy squishy icons, Holo blue, pink widgets ==================
+ * The icons are not put on tiles: each glyph is itself drawn as a glossy candy shape (a thick rounded stroke filled with a light-to-dark gradient from
+ * the shared <linearGradient>s in Layout.tsx `CandyDefs`, with a white lip and a soft shadow) and squashes when pressed. Colours cycle through the candy set.
+ * Controls follow Android Holo (blue accent on grey) and turn pink only inside the pink widgets (.card, dialogs, menus), as on the LG home screen. */
+[data-ui="lgux"] { --pink: 347 68% 60%; }
+html[data-mode="dark"][data-ui="lgux"] { --pink: 330 100% 71%; }
+[data-ui="lgux"] :is(.card, .bt-window, .bt-menu) {
+  --accent: var(--pink); --accent-fg: 0 0% 100%;
+  --btn-bg: var(--mm-soft); --btn-border: 1px solid var(--mm-frame); --btn-hover-bg: color-mix(in srgb, hsl(var(--pink)) 22%, hsl(var(--surface))); --btn-hover-border: hsl(var(--pink));
+  --btn-accent-bg: hsl(var(--pink)); --btn-accent-fg: #fff; --btn-accent-border: 1px solid color-mix(in srgb, hsl(var(--pink)) 78%, black); --btn-accent-border-color: color-mix(in srgb, hsl(var(--pink)) 78%, black); --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--pink)) 88%, white);
+  --in-focus-shadow: inset 0 -2px 0 hsl(var(--pink)), 0 1px 0 hsl(var(--pink) / 0.5);
+  --chk-on-border: hsl(var(--pink)); --chk-on-fg: hsl(var(--pink)); --chk-dot: hsl(var(--pink)); --chk-hover-border: hsl(var(--pink));
+  --rng-fill: hsl(var(--pink)); --rng-thumb: hsl(var(--pink)); --rng-ts: 0 0 0 6px hsl(var(--pink) / 0.25);
+  --row-hover: hsl(var(--pink) / 0.12); --row-current: hsl(var(--pink) / 0.2);
+  --tb-fg: hsl(var(--pink)); --tb-border: 2px solid hsl(var(--pink)); --menu-hi-bg: hsl(var(--pink) / 0.2);
 }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+2) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+2) > svg { --c: var(--candy-2); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+3) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+3) > svg { --c: var(--candy-3); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+4) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+4) > svg { --c: var(--candy-4); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+5) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+5) > svg { --c: var(--candy-5); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+6) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+6) > svg { --c: var(--candy-6); }
-[data-ui="lgux"] .bt-side a.bt-nav:nth-of-type(7n+7) > svg, [data-ui="lgux"] .bt-tabbar a.bt-tab:nth-of-type(7n+7) > svg { --c: var(--candy-7); }
-[data-ui="lgux"] :is(.bt-nav, .bt-tab):active > svg { transform: scale(1.1, 0.86); }
-[data-ui="lgux"] :is(.bt-nav, .bt-tab):hover > svg { transform: translateY(-1px) scale(1.05); }
-[data-ui="lgux"] .bt-nav { gap: 0.75rem; padding-block: 0.4rem; }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab) > svg {
+  box-sizing: content-box; width: 22px; height: 22px; padding: 0; margin: 2px; stroke: url(#mm-g1); stroke-width: 3.1; stroke-linecap: round; stroke-linejoin: round; paint-order: stroke;
+  fill: none; background: none; box-shadow: none; border-radius: 0;
+  filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.9)) drop-shadow(0 2.5px 1.5px rgb(0 0 0 / 0.28));
+  transition: transform 180ms cubic-bezier(0.34, 1.7, 0.5, 1);
+}
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/"] > svg { stroke: url(#mm-g1); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/albums"] > svg { stroke: url(#mm-g2); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/singles"] > svg { stroke: url(#mm-g3); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/eras"] > svg { stroke: url(#mm-g4); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/artists"] > svg { stroke: url(#mm-g5); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/tracks"] > svg { stroke: url(#mm-g6); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/vote"] > svg { stroke: url(#mm-g7); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/playlists"] > svg { stroke: url(#mm-g1); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/queue"] > svg { stroke: url(#mm-g2); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/notes"] > svg { stroke: url(#mm-g3); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/discover"] > svg { stroke: url(#mm-g4); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/stats"] > svg { stroke: url(#mm-g5); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/health"] > svg { stroke: url(#mm-g6); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab)[href="/settings"] > svg { stroke: url(#mm-g7); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab):active > svg { transform: scale(1.12, 0.84); }
+[data-ui="lgux"] :is(.bt-nav, .bt-tab):hover > svg { transform: translateY(-1px) scale(1.06); }
+[data-ui="lgux"] .bt-nav { gap: 0.75rem; padding-block: 0.3rem; }
 [data-ui="lgux"] .bt-tab > svg { margin-bottom: 2px; }
-[data-ui="lgux"] .bt-tab[aria-current="page"] > svg, [data-ui="lgux"] .bt-nav[aria-current="page"] > svg { box-shadow: inset 0 -4px 6px rgb(0 0 0 / 0.2), inset 0 1px 1px rgb(255 255 255 / 0.7), 0 0 0 3px color-mix(in srgb, var(--c) 40%, transparent), 0 3px 5px color-mix(in srgb, var(--c) 55%, transparent); }
 @media (prefers-reduced-motion: reduce) { [data-ui="lgux"] :is(.bt-nav, .bt-tab) > svg { transition: none; } }
 
 /* ================== Yaru (Ubuntu): libadwaita shapes, the Ubuntu typeface; the orange comes from the Yaru palette ================== */
@@ -343,3 +373,26 @@ html[data-ui="yaru"] ::selection { background: color-mix(in srgb, hsl(var(--acce
 [data-ui="yaru"] .card.overflow-hidden .bt-row + .bt-row, [data-ui="yaru"] .card.overflow-hidden > div + div { border-top: 1px solid color-mix(in srgb, hsl(var(--fg)) 8%, transparent); }
 [data-ui="yaru"] .chip { background: color-mix(in srgb, hsl(var(--fg)) 8%, transparent); }
 
+
+/* The Liquid Glass player floats at a fixed offset that assumes the 14rem side bar: other layouts have no such bar */
+@media (min-width: 768px) {
+  :is(html, div)[data-ui="liquid"][data-layout="topbar"] .bt-player.bt-shell, :is(html, div)[data-ui="liquid"][data-layout="dock"] .bt-player.bt-shell { left: 12px; }
+  :is(html, div)[data-ui="liquid"][data-layout="rail"] .bt-player.bt-shell { left: calc(4.5rem + 24px); }
+}
+
+/* Yaru, as in Ubuntu 24.04's quick settings (read off a screenshot): big rounded popovers, pill buttons in a light grey, a toggled button in a pale
+   tint of the orange, round icon buttons, a thin slider with an orange fill and a white knob. */
+[data-ui="yaru"] {
+  --radius: 14px; --ctl-r: 9999px; --card-r: 20px; --win-r: 24px; --menu-r: 20px; --nav-r: 9999px; --chip-r: 9999px; --in-r: 9999px;
+  --btn-bg: color-mix(in srgb, hsl(var(--fg)) 8%, hsl(var(--surface))); --btn-border: 0 solid transparent; --btn-weight: 400; --btn-hover-bg: color-mix(in srgb, hsl(var(--fg)) 13%, hsl(var(--surface)));
+  --btn-accent-bg: color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--surface))); --btn-accent-fg: hsl(var(--fg)); --btn-accent-border: 0 solid transparent; --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 40%, hsl(var(--surface)));
+  --in-bg: color-mix(in srgb, hsl(var(--fg)) 7%, hsl(var(--surface))); --in-border: 1px solid transparent; --in-focus-shadow: 0 0 0 2px hsl(var(--accent) / 0.85); --in-px: 1rem;
+  --win-border: 0 solid transparent; --win-shadow: 0 12px 36px rgb(0 0 0 / 0.3), 0 0 0 1px rgb(0 0 0 / 0.06);
+  --menu-border: 0 solid transparent; --pop-shadow: 0 8px 28px rgb(0 0 0 / 0.28); --menu-hi-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent); --menu-hi-fg: hsl(var(--fg));
+  --nav-active-bg: color-mix(in srgb, hsl(var(--accent)) 24%, transparent); --nav-active-fg: hsl(var(--fg)); --nav-hover-bg: color-mix(in srgb, hsl(var(--fg)) 7%, transparent);
+  --rng-h: 5px; --rng-r: 9999px; --rng-track: color-mix(in srgb, hsl(var(--fg)) 30%, hsl(var(--surface))); --rng-fill: hsl(var(--accent));
+  --rng-tw: 1.35rem; --rng-th: 1.35rem; --rng-tr: 9999px; --rng-thumb: #fff; --rng-tb: 1px solid rgb(0 0 0 / 0.18); --rng-ts: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+[data-ui="yaru"] .bt-nav { padding-inline: 1rem; }
+[data-ui="yaru"] .bt-cover { border-radius: 14px; }
+[data-ui="yaru"] .chip { background: color-mix(in srgb, hsl(var(--fg)) 8%, transparent); }
