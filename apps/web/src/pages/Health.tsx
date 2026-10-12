@@ -8,7 +8,7 @@ import { fetchCoverFromLinks } from '../lib/cover.ts';
 import { thumbnailUrls, youtubeId } from '../lib/youtube.ts';
 import { computeHealth, dupeSignature, ignoredDupes, type HealthItem } from '../lib/health.ts';
 import { updateProfile } from '../lib/profile.ts';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
@@ -29,7 +29,7 @@ function AlbumLinkRow({ item }: { item: HealthItem }) {
 }
 
 export function HealthPage() {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const edit = useEditor((s) => s.open);
   const remove = useStore((s) => s.remove);
   const [open, setOpen] = useState<string | null>(null);

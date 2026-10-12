@@ -192,29 +192,39 @@ export async function localAudio(hash: string): Promise<string | null> {
 /** The address the Android app's own player streams `hash` from (it adds the token; the app caches what it plays). */
 export const streamUrl = (hash: string) => api().fileUrl(hash);
 
-/** The next track, fetched whole in advance (one at a time), so starting it needs no network round trip. */
-let prefetched: { hash: string; blob: Promise<Blob | null> } | null = null;
+/**
+ * The next track, fetched whole in advance (one at a time) so starting it needs no network round trip. It is only ever USED when it
+ * has fully arrived: a track that is still downloading when the user presses Next is dropped and streamed instead, never waited for
+ * (waiting is what made Next feel slow on a slow link), and dropping it frees the connection for the stream.
+ */
+let prefetched: { hash: string; blob: Blob | null; abort: AbortController } | null = null;
 
 /** Start downloading `hash` for the next track unless this device already has it or it is already being fetched. */
 export function prefetchAudio(hash: string): void {
   if (prefetched?.hash === hash || useStore.getState().audioCache[hash]) return;
-  const blob = (async () => {
+  prefetched?.abort.abort();
+  const abort = new AbortController();
+  const entry: { hash: string; blob: Blob | null; abort: AbortController } = { hash, blob: null, abort };
+  prefetched = entry;
+  void (async () => {
     try {
-      const res = await api().fetchLink(api().fileUrl(hash));
-      return res.ok ? await res.blob() : null;
-    } catch { return null; }
+      const res = await api().fetchLink(api().fileUrl(hash), { signal: abort.signal });
+      if (res.ok) entry.blob = await res.blob();
+    } catch { /* aborted or offline: the track is streamed instead */ }
   })();
-  prefetched = { hash, blob };
 }
 
-/** URL to play `hash` from: the local copy when kept offline, then a finished prefetch, otherwise streamed from the server. Caller revokes blob: URLs. */
+/** Stop a prefetch that is still running (the player calls this when the user jumps somewhere else). */
+export function cancelPrefetch(): void { prefetched?.abort.abort(); prefetched = null; }
+
+/** URL to play `hash` from: the local copy when kept offline, then a FINISHED prefetch, otherwise streamed from the server. Caller revokes blob: URLs. */
 export async function audioSource(hash: string): Promise<{ url: string; local: boolean }> {
   const own = await localAudio(hash);
   if (own) return { url: own, local: true };
   if (prefetched?.hash === hash) {
     const p = prefetched; prefetched = null;
-    const blob = await Promise.race([p.blob, new Promise<null>((r) => setTimeout(() => r(null), 1500))]); // not there yet: stream it instead
-    if (blob) return { url: URL.createObjectURL(blob), local: true };
+    if (p.blob) return { url: URL.createObjectURL(p.blob), local: true };
+    p.abort.abort(); // not finished: stream instead and give the stream the whole connection
   }
   if (api().needsHeaderFetch) { try { return { url: await freshBlobUrlViaHeaders(hash), local: true }; } catch { /* fall back to the plain link */ } }
   return { url: api().fileUrl(hash), local: false };

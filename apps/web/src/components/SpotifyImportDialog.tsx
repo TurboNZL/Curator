@@ -5,7 +5,7 @@ import { FileUp, Link2, ListMusic, Loader2, User } from 'lucide-react';
 import type { ArtistData } from '@curator/core';
 import { leadCredit, newAlbumData, newTrackData } from '../lib/defaults.ts';
 import type { SpotifyImportTrack, SpotifyList } from '../lib/api.ts';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
 import { api, useStore } from '../lib/store.ts';
 import { parseAccountData, parseTextList, planImport, type ImportPlan } from '../lib/spotifyImport.ts';
@@ -38,7 +38,7 @@ function PlaylistPicker({ onPick, busy }: { onPick: (id: string) => void; busy: 
 }
 
 export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const { put, patch } = useStore();
   const configured = useStore((s) => !!s.settings.token);
   const nav = useNavigate();

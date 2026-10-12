@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Clock, ExternalLink, Pencil, Play, Shuffle, SkipForward, Star, Swords, Music2, StickyNote } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
-import { useLibrary, type Track } from '../lib/derive.ts';
+import { useLibraryLive, type Track } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
@@ -34,7 +34,7 @@ const pageOf = (kind: StatsKind, id: string, t?: Track) => kind === 'track' ? (t
  */
 export function EntityStatsPage() {
   const { kind: k, id = '' } = useParams();
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const play = usePlayer((s) => s.play);
   const edit = useEditor((s) => s.open);
   const cache = useStore((s) => s.audioCache);

@@ -100,6 +100,11 @@ function withMembers(eras: Row<EraData>[], albums: Row<AlbumData>[], tracks: Row
 
 const by = <T extends { id: string }>(xs: T[]) => new Map(xs.map((x) => [x.id, x]));
 
+/** The same library with a fresh play history: logs are the one part that changes on every play, so they are swapped in instead of rebuilding everything. */
+export function withLogs(lib: Library, rows: Record<string, Map<string, SyncRecord>>): Library {
+  return { ...lib, logs: live<PlaybackLogData>(rows.playbackLogs) };
+}
+
 export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Library {
   const artists = live<ArtistData>(rows.artists);
   const artistById = by(artists);

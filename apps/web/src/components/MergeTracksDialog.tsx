@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { GitMerge } from 'lucide-react';
 import type { TrackData } from '@curator/core';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { logJournal } from '../lib/journal.ts';
 import { planMerge, suggestKeeper } from '../lib/mergeTracks.ts';
@@ -11,7 +11,7 @@ import { Modal } from './forms.tsx';
 
 /** Merge tracks that are really one song (the single and the album version): pick the one to keep, see what happens, confirm. */
 export function MergeTracksDialog({ ids, onClose }: { ids: string[]; onClose: () => void }) {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const tracks = ids.flatMap((id) => lib.trackById.get(id) ?? []);
   const [keepId, setKeepId] = useState(() => (tracks.length ? suggestKeeper(tracks).id : ''));
   const raw = (id: string) => useStore.getState().rows.tracks.get(id)?.data as Partial<TrackData> | undefined;
