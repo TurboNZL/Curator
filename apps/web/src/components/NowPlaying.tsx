@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Maximize2, Minimize2, Moon, Pause, Play, Loader2, SkipBack, SkipForward, X, Mic2 } from 'lucide-react';
+import { Maximize2, Minimize2, Moon, Pause, Play, Loader2, SkipBack, SkipForward, X, Mic2, Minus, Plus } from 'lucide-react';
 import { useLibrary } from '../lib/derive.ts';
 import { usePlaybackView } from '../lib/connect.ts';
 import { usePopups } from '../lib/popups.ts';
@@ -15,6 +15,26 @@ import { ArtistLinks } from './ArtistLinks.tsx';
  * the database has timings), and a screensaver mode that hides everything but a slowly drifting cover and the title. Controls and the
  * mouse pointer hide after a few seconds without movement; any movement or key brings them back. Esc closes.
  */
+const OFFSET_KEY = 'curator.lyricsOffset';
+const loadOffset = () => { try { const n = Number(localStorage.getItem(OFFSET_KEY)); return Number.isFinite(n) ? Math.max(-5, Math.min(5, n)) : 0; } catch { return 0; } };
+
+/**
+ * The playback position for the lyrics. The player reports its position only a few times a second (about 4/s in the browser, 2/s in the
+ * Android app), which made lines change up to half a second late, so between reports the clock runs on its own and is re-synced to every
+ * report. Not running while paused.
+ */
+function useSmoothTime(time: number, playing: boolean): number {
+  const base = useRef({ time, at: performance.now() });
+  const [now, setNow] = useState(time);
+  useEffect(() => { base.current = { time, at: performance.now() }; setNow(time); }, [time]);
+  useEffect(() => {
+    if (!playing) return;
+    const t = window.setInterval(() => setNow(base.current.time + (performance.now() - base.current.at) / 1000), 100);
+    return () => window.clearInterval(t);
+  }, [playing]);
+  return playing ? now : time;
+}
+
 export function NowPlaying() {
   const open = usePopups((s) => s.nowOpen);
   const setNow = usePopups((s) => s.setNow);
@@ -28,17 +48,24 @@ export function NowPlaying() {
   const cover = useFileUrl(track?.cover);
   const lyrics = useLyrics(track ? { id: track.id, title: track.title, artist: track.leads[0]?.name ?? track.artistName, album: track.albumTitle } : undefined, v.duration, open && showLyrics && !saver);
   const lines = lyrics.state === 'ready' ? lyrics.synced : null;
-  const active = lines ? activeLine(lines, v.time + 0.25) : -1;
+  const [offset, setOffsetState] = useState(loadOffset);
+  const setOffset = (n: number) => { const x = Math.round(Math.max(-5, Math.min(5, n)) * 10) / 10; setOffsetState(x); try { localStorage.setItem(OFFSET_KEY, String(x)); } catch { /* private mode */ } };
+  const clock = useSmoothTime(v.time, v.playing);
+  const active = lines ? activeLine(lines, clock + 0.3 + offset) : -1;
   const listRef = useRef<HTMLDivElement>(null);
   const idleTimer = useRef<number>(0);
 
+  /** From the screensaver the Lyrics button leaves it and shows the lyrics (it used to toggle them off as well); otherwise it toggles them. */
+  const pickLyricsRef = useRef<() => void>(() => undefined);
+  const pickLyrics = () => pickLyricsRef.current();
+  pickLyricsRef.current = () => { if (saver) { setSaver(false); setShowLyrics(true); } else setShowLyrics((x) => !x); };
   const wake = () => { setIdle(false); window.clearTimeout(idleTimer.current); idleTimer.current = window.setTimeout(() => setIdle(true), 4000); };
   useEffect(() => {
     if (!open) return;
     wake();
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !document.fullscreenElement) setNow(false);
-      else if (e.key.toLowerCase() === 'l') setShowLyrics((x) => !x);
+      else if (e.key.toLowerCase() === 'l') pickLyrics();
       else if (e.key.toLowerCase() === 's') setSaver((x) => !x);
       wake();
     };
@@ -69,7 +96,7 @@ export function NowPlaying() {
       <header className={cn('relative z-10 flex items-center gap-2 p-4 transition-opacity duration-500', hidden && 'pointer-events-none opacity-0')}>
         <button className="btn !border-0 !bg-white/10 !text-white" onClick={() => setNow(false)} aria-label="Close"><X size={18} /></button>
         <div className="ml-auto flex gap-2">
-          <button className={cn('btn !border-0 !text-white', showLyrics && !saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={showLyrics} title="Lyrics (L)" onClick={() => { setSaver(false); setShowLyrics((x) => !x); }}><Mic2 size={16} />Lyrics</button>
+          <button className={cn('btn !border-0 !text-white', showLyrics && !saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={showLyrics} title="Lyrics (L)" onClick={pickLyrics}><Mic2 size={16} />Lyrics</button>
           <button className={cn('btn !border-0 !text-white', saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={saver} title="Screensaver (S)" onClick={() => setSaver((x) => !x)}><Moon size={16} />Screensaver</button>
           <button className="btn !border-0 !bg-white/10 !text-white" title="Full screen" aria-label="Full screen" onClick={toggleFull}>{full ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
         </div>
@@ -86,9 +113,15 @@ export function NowPlaying() {
             {(lyrics.state === 'none' || lyrics.state === 'error') && <p className="text-center text-white/60">{lyrics.message ?? 'No lyrics found for this track.'}</p>}
             {lyrics.state === 'ready' && lyrics.instrumental && !lines && !plain && <p className="text-center text-white/60">Instrumental.</p>}
             {lines && lines.map((l, i) => (
-              <button key={i} data-line={i} className={cn('block w-full px-2 py-1.5 text-left text-2xl font-bold leading-snug transition-all duration-300 md:text-4xl', i === active ? 'text-white' : i < active ? 'text-white/30' : 'text-white/45', !l.text && 'h-6')} onClick={() => v.seek(l.time)}>{l.text || '♪'}</button>))}
+              <button key={i} data-line={i} className={cn('block w-full px-2 py-2 text-left text-2xl font-bold leading-[1.35] [overflow-wrap:anywhere] transition-all duration-300 md:text-4xl', i === active ? 'text-white' : i < active ? 'text-white/30' : 'text-white/45', !l.text && 'opacity-60')} onClick={() => v.seek(l.time)}>{l.text || '♪'}</button>))}
             {plain && <p className="whitespace-pre-wrap px-2 text-xl font-semibold leading-relaxed text-white/85 md:text-2xl">{plain}</p>}
             {lyrics.state === 'ready' && <p className="mt-8 text-center text-xs text-white/40">Lyrics from {lyrics.source}{lines ? ' · tap a line to jump to it' : ''}</p>}
+            {lines && <div className="mt-2 flex items-center justify-center gap-2 text-xs text-white/60">
+              <span>Timing</span>
+              <button className="btn !border-0 !bg-white/10 !p-1 !text-white" aria-label="Lyrics later" title="Show lines later" onClick={() => setOffset(offset - 0.1)}><Minus size={12} /></button>
+              <span className="w-12 text-center tabular-nums">{offset > 0 ? '+' : ''}{offset.toFixed(1)} s</span>
+              <button className="btn !border-0 !bg-white/10 !p-1 !text-white" aria-label="Lyrics earlier" title="Show lines earlier" onClick={() => setOffset(offset + 0.1)}><Plus size={12} /></button>
+            </div>}
           </div>)}
       </main>
       {saver && <div className="pointer-events-none absolute bottom-6 left-6 z-10 max-w-[60vw] opacity-80"><div className="truncate text-lg font-semibold">{track.title}</div><div className="truncate text-sm text-white/70">{track.artistName}</div></div>}

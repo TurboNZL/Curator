@@ -266,3 +266,6 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 @keyframes bt-drift { 0% { transform: translate(-3vmin, -2vmin) scale(1); } 50% { transform: translate(3vmin, 2vmin) scale(1.04); } 100% { transform: translate(-3vmin, -2vmin) scale(1); } }
 .bt-drift { animation: bt-drift 60s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .bt-drift { animation: none; } }
+
+/* the full-screen player: a click on an icon must count as a click on its button (the glyph itself was not reliably the target) */
+.bt-now button svg, .bt-now button svg * { pointer-events: none; }

@@ -63,3 +63,16 @@ export function insertNewTracks(order: string[], rows: { trackId: string | null;
   }
   return out;
 }
+
+/**
+ * The album's "All tracks" order after an import. When the imported edition holds every track the album already has (a deluxe edition,
+ * or the real YouTube album completing a Spotify placeholder) the edition's own order is the album's order: slotting new tracks into the
+ * old order instead scrambled the album whenever the two orders differed. When the edition lacks some of the album's tracks, the album
+ * keeps its order and the new tracks go in after their nearest earlier neighbour (`insertNewTracks`).
+ */
+export function mergeAllTracksOrder(order: string[], rows: { trackId: string | null; newId?: string; include: boolean }[]): string[] {
+  const edition: string[] = [];
+  for (const r of rows) { const id = r.include ? (r.trackId ?? r.newId) : undefined; if (id && !edition.includes(id)) edition.push(id); }
+  if (order.every((id) => edition.includes(id))) return edition;
+  return insertNewTracks(order, rows);
+}

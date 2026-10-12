@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link } from 'react-router-dom';
-import { HeartPulse, Play, Swords, Trash2 } from 'lucide-react';
+import { HeartPulse, Play, Shuffle, Sparkles, Swords, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { usePlayer } from '../lib/player.ts';
 import { buildListens } from '../lib/listens.ts';
+import { heardTrackIds, tryNewPlaylist } from '../lib/heard.ts';
 import { computeListenStats, dayKey } from '../lib/listenStats.ts';
 import { Bars, fmtHours } from '../components/charts.tsx';
 import { healthScore } from '../components/HealthHero.tsx';
@@ -83,6 +84,10 @@ export function HomePage() {
     const cutoff = Date.now() - 30 * 86_400_000;
     return lib.tracks.filter((t) => t.file && t.effectiveRating >= 8 && (lastHeard.get(t.id) ?? 0) < cutoff).sort((a, b) => b.effectiveRating - a.effectiveRating).slice(0, 6);
   }, [listens, lib]);
+  // never-played tracks, a few per album: a premade playlist to get to know the rest of the library (they are kept out of the ranking until heard)
+  const [shuffleSeed, setShuffleSeed] = useState(0);
+  const unheardCount = useMemo(() => { const h = heardTrackIds(listens); return lib.tracks.filter((t) => !h.has(t.id) && canPlay(t)).length; }, [listens, lib]);
+  const tryNew = useMemo(() => tryNewPlaylist(lib.tracks, heardTrackIds(listens), canPlay), [listens, lib, shuffleSeed]); // eslint-disable-line react-hooks/exhaustive-deps
   const newest = useMemo(() => [...lib.albums].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 12), [lib]);
   const month = useMemo(() => computeListenStats(listens, { from: Date.now() - 30 * 86_400_000 }), [listens]);
   const days = useMemo(() => Array.from({ length: 30 }, (_, i) => { const d = new Date(Date.now() - (29 - i) * 86_400_000); return { label: i % 5 === 0 ? `${d.getDate()}/${d.getMonth() + 1}` : '', value: month.byDay.get(dayKey(d.getTime())) ?? 0 }; }), [month]);
@@ -125,6 +130,16 @@ export function HomePage() {
             : <p className="text-sm text-muted">Tracks you rated 8 or higher and have not played for a month will show up here.</p>}
         </section>
       </div>
+      {tryNew.length > 0 && <section className="card space-y-3 p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="mr-auto"><h2 className="flex items-center gap-2 font-semibold"><Sparkles size={16} className="text-accent" />Try something new</h2>
+            <p className="text-xs text-muted">{tryNew.length} tracks you have never played{unheardCount > tryNew.length ? `, picked from ${unheardCount}` : ''}. Ranking only uses tracks you have heard.</p></div>
+          <button className="btn" title="A different mix" onClick={() => setShuffleSeed((n) => n + 1)}><Shuffle size={16} />New mix</button>
+          <button className="btn btn-accent" onClick={() => play(tryNew[0].id, tryNew.map((t) => t.id), { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-1">{tryNew.slice(0, 12).map((t) => <button key={t.id} className="group w-28 shrink-0 space-y-1 text-left" title={`${t.title} · ${t.artistName}`} onContextMenu={menu.onContextMenu(trackItems(t, () => play(t.id, tryNew.map((x) => x.id), { type: 'search', id: null })), `Actions for ${t.title}`, t.id)} onClick={() => play(t.id, tryNew.map((x) => x.id), { type: 'search', id: null })}>
+          <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="w-28 transition-transform group-hover:-translate-y-0.5" /><div className="truncate text-sm font-medium">{t.title}</div><div className="truncate text-xs text-muted">{t.artistName}</div></button>)}</div>
+      </section>}
       {recentAlbums.length > 0 && <Shelf title="Recently played" to="/albums"><div className="flex gap-3 overflow-x-auto pb-2">{recentAlbums.map((a) => <AlbumTile key={a.id} album={a} onMenu={albumMenu} />)}</div></Shelf>}
       {newest.length > 0 && <Shelf title="Latest additions" to="/albums"><div className="flex gap-3 overflow-x-auto pb-2">{newest.map((a) => <AlbumTile key={a.id} album={a} onMenu={albumMenu} />)}</div></Shelf>}
       <h2 className="text-lg font-semibold">Curation journal</h2>
