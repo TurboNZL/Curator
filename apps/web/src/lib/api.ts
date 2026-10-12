@@ -162,7 +162,7 @@ export class Api {
 export interface SpotifyImportTrack { uri: string; id: string; title: string; artists: string[]; album: string; albumUri: string | null; albumArtist: string | null; durationMs: number | null; cover: string | null; releaseDate: string | null; trackNumber: number | null; isrc: string | null }
 export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyImportTrack[]; source: 'embed' | 'api' | 'oembed' | 'file'; note?: string }
 export interface MatchAlbumReq { id: string; title: string; artist: string; trackCount?: number | null }
-export interface MatchCandidate { url: string; title: string; channel: string; count: number | null; score: number }
+export interface MatchCandidate { url: string; title: string; channel: string; count: number | null; score: number; owner?: string; thumbnail?: string; edition?: string }
 export interface DateAnswerRes { date: string; source: 'spotify' | 'itunes' | 'musicbrainz' }
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
 

@@ -76,7 +76,7 @@ export function ArtistSelect({ value, onChange }: { value: string; onChange: (id
   const sorted = [...lib.artists].sort((a, b) => a.name.localeCompare(b.name));
   return (
     <Select value={value} onChange={onChange} placeholder="Search artists…" searchable
-      options={[...(!lib.artistById.has(value) && value ? [{ value, label: '(unknown artist)' }] : []), ...sorted.map((a) => ({ value: a.id, label: a.name }))]}
+      options={[...(!lib.artistById.has(value) && value ? [{ value, label: '(unknown artist)' }] : []), ...sorted.map((a) => ({ value: a.id, label: a.name, hint: a.aliases?.length ? `aka ${a.aliases.slice(0, 2).join(', ')}` : undefined }))]}
       creatable={{ label: (n) => `Create artist: “${n}”`, create: (n) => put('artists', { name: n, image: null } satisfies ArtistData) }} />
   );
 }
@@ -197,7 +197,7 @@ export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album
   const [q, setQ] = useState('');
   const n = q.trim().toLowerCase();
   const hits = n.length < 2 ? [] : [
-    ...lib.artists.filter((a) => a.name.toLowerCase().includes(n)).map((a) => ({ type: 'artist' as const, id: a.id, label: a.name })),
+    ...lib.artists.filter((a) => [a.name, ...(a.aliases ?? [])].some((x) => x.toLowerCase().includes(n))).map((a) => ({ type: 'artist' as const, id: a.id, label: a.name })),
     ...lib.eras.filter((a) => a.name.toLowerCase().includes(n)).map((a) => ({ type: 'era' as const, id: a.id, label: a.name })),
     ...lib.albums.filter((a) => a.title.toLowerCase().includes(n)).map((a) => ({ type: 'album' as const, id: a.id, label: a.title })),
     ...lib.playlists.filter((p) => p.name.toLowerCase().includes(n)).map((p) => ({ type: 'playlist' as const, id: p.id, label: p.name })),

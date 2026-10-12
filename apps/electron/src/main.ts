@@ -49,7 +49,7 @@ let gpuCrashes = 0;
 app.on('child-process-gone', (_e, d) => { if (d.type === 'GPU') { gpuCrashes++; console.warn(`[curator] the GPU process stopped (${d.reason}, code ${d.exitCode}); crash ${gpuCrashes}`); } });
 
 async function graphics(): Promise<Graphics> {
-  const info = (await app.getGPUInfo('basic').catch(() => null)) as { auxAttributes?: { glRenderer?: string; glImplementationParts?: string }; gpuDevice?: { vendorId?: number }[] } | null;
+  const info = (await app.getGPUInfo('complete').catch(() => app.getGPUInfo('basic').catch(() => null))) as { auxAttributes?: { glRenderer?: string; glImplementationParts?: string }; gpuDevice?: { vendorId?: number }[] } | null;
   return describeGraphics({
     features: app.getGPUFeatureStatus() as unknown as Record<string, string>,
     renderer: info?.auxAttributes?.glRenderer ?? '',

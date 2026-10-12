@@ -17,7 +17,7 @@ export function NewArtistDialog({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const n = name.trim();
-  const existing = n ? lib.artists.find((a) => a.name.toLowerCase() === n.toLowerCase()) : undefined;
+  const existing = n ? lib.artists.find((a) => [a.name, ...(a.aliases ?? [])].some((x) => x.toLowerCase() === n.toLowerCase())) : undefined;
   const create = () => {
     if (!n) return;
     const id = existing?.id ?? put('artists', { name: n, image } satisfies ArtistData);

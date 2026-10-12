@@ -69,7 +69,7 @@ export function EloQuestions() {
           </div>); })()}
         {q.kind === 'love' && (() => { const [t] = tracks; return (
           <div className="mx-auto max-w-[12rem]"><PreviewCard t={t} preview={preview}>
-            <div className="flex gap-2"><button className="btn btn-accent flex-1" onClick={() => answer('yes')}><ThumbsUp size={15} />Love it</button><button className="btn flex-1" onClick={() => answer('no')}><ThumbsDown size={15} />Meh</button></div>
+            <div className="flex flex-col gap-2"><button className="btn btn-accent w-full min-w-0 justify-center" onClick={() => answer('yes')}><ThumbsUp size={15} />Love it</button><button className="btn w-full min-w-0 justify-center" onClick={() => answer('no')}><ThumbsDown size={15} />Meh</button></div>
           </PreviewCard></div>); })()}
         <div className="flex flex-wrap gap-2">
           {q.kind === 'duel' && <button className="btn btn-ghost" onClick={() => answer('equal')}><Equal size={14} />Equal</button>}

@@ -27,12 +27,13 @@ export function Select({ value, onChange, options, placeholder = 'Choose…', cl
   const withSearch = searchable ?? (!!creatable || options.length > 12);
   const CREATE = '\u0000create';
   const shown = useMemo(() => {
-    const found = q ? options.filter((o) => o.label.toLowerCase().includes(q.toLowerCase())) : options;
+    const found = q ? options.filter((o) => `${o.label} ${o.hint?.startsWith('aka ') ? o.hint : ''}`.toLowerCase().includes(q.toLowerCase())) : options;
     const typed = q.trim();
     const exact = options.some((o) => o.label.toLowerCase() === typed.toLowerCase());
     return creatable && typed && !exact ? [{ value: CREATE, label: creatable.label(typed), icon: <Plus size={14} className="shrink-0 text-accent" /> } as SelectOption, ...found] : found;
   }, [options, q, creatable]);
-  const current = options.find((o) => o.value === value);
+  // a value just made with `creatable` is not in the options yet: show it as typed instead of the placeholder
+  const current = options.find((o) => o.value === value) ?? (creatable && value ? { value, label: value } as SelectOption : undefined);
 
   useLayoutEffect(() => {
     if (!mounted || !btn.current) return;

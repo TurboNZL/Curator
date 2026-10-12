@@ -167,14 +167,14 @@ export const matchesAll = (chips: Chip[], s: Subject) => chips.every((c) => chip
 export function makeChip(lib: Library, key: FilterKey, typed: string): Chip | null {
   const text = typed.trim();
   if (!text) return null;
-  const find = <T extends { id: string }>(list: T[], name: (x: T) => string) => {
-    const exact = list.filter((x) => norm(name(x)) === norm(text));
+  const find = <T extends { id: string }>(list: T[], name: (x: T) => string, others: (x: T) => string[] = () => []) => {
+    const exact = list.filter((x) => [name(x), ...others(x)].some((n) => norm(n) === norm(text)));
     const hits = exact.length ? exact : list.filter((x) => norm(name(x)).includes(norm(text)));
     return hits.length === 1 ? { value: hits[0].id, label: name(hits[0]) } : { value: text, label: text };
   };
   switch (key) {
     case 'has': { const v = HAS_VALUES.find((x) => x === norm(text)); return v ? { key, value: v, label: v } : null; }
-    case 'artist': return { key, ...find(lib.artists, (a) => a.name) };
+    case 'artist': return { key, ...find(lib.artists, (a) => a.name, (a) => a.aliases ?? []) };
     case 'album': return { key, ...find(lib.albums, (a) => a.title) };
     case 'era': return { key, ...find(lib.eras, (e) => e.name) };
     case 'tag': { const all = [...new Set(lib.releases.flatMap((r) => r.tags ?? []))]; const g = all.find((x) => norm(x) === norm(text)); return { key, value: g ?? text, label: g ?? text }; }

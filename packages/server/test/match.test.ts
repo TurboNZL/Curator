@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Matcher, parseAlbumSearch, scoreAlbum } from '../src/match.ts';
+import { editionOf, Matcher, parseAlbumSearch, scoreAlbum } from '../src/match.ts';
 
 const a = { id: 'al1', title: 'Take Care', artist: 'Drake', trackCount: 19 };
 
@@ -19,6 +19,19 @@ describe('album scoring', () => {
   });
   it('ignores accents and featuring tags', () => {
     expect(scoreAlbum({ id: 'x', title: 'Café (feat. Someone)', artist: 'Ärtist' }, { id: 'OLAK5uy_q', title: 'Album - Cafe', channel: 'Artist', count: null })).toBeGreaterThan(0.8);
+  });
+});
+
+describe('perfect matches and editions', () => {
+  it('a perfect match reads 100% even without a track count or uploader', () => {
+    expect(scoreAlbum(a, { id: 'OLAK5uy_abc', title: 'Album - Take Care', channel: 'Drake', count: null })).toBe(1);
+    expect(scoreAlbum(a, { id: 'OLAK5uy_abc', title: 'Take Care', channel: '', count: null })).toBeGreaterThan(0.85);
+  });
+  it('another edition of the album is still the album, and is labelled', () => {
+    const deluxe = scoreAlbum(a, { id: 'OLAK5uy_dlx', title: 'Album - Take Care (Deluxe Edition)', channel: 'Drake', count: 20 });
+    expect(deluxe).toBeGreaterThan(0.85);
+    expect(editionOf('Take Care', 'Album - Take Care (Deluxe Edition)')).toBe('deluxe edition');
+    expect(editionOf('Take Care', 'Album - Take Care')).toBe('');
   });
 });
 

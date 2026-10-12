@@ -145,7 +145,7 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
             <label className="flex items-center gap-2"><input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />Make this the album's default release</label>
             {pv.thumbnail && <label className="flex items-center gap-2"><input type="checkbox" checked={useCover} onChange={(e) => setUseCover(e.target.checked)} />Add its cover to the album</label>}
             {canConvert && <label className="flex items-center gap-2"><input type="checkbox" checked={toSingle} onChange={(e) => setToSingle(e.target.checked)} />Then turn it into a single <span className="text-muted">(it only has this one song)</span></label>}
-            {rawAlbum?.needsSource && <label className="flex items-center gap-2"><input type="checkbox" checked={rename} onChange={(e) => setRename(e.target.checked)} />Rename the album to “{pv.title}”</label>}
+            {rawAlbum?.needsSource && pv.title.trim().toLowerCase() !== album.title.trim().toLowerCase() && <label className="flex items-center gap-2"><input type="checkbox" checked={rename} onChange={(e) => setRename(e.target.checked)} />Rename the album to “{pv.title}”</label>}
           </div>
         </div>
         <div className="space-y-1">

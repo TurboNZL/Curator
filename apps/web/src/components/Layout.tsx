@@ -9,6 +9,7 @@ import { useStore } from '../lib/store.ts';
 import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
+import { VolumeButton } from './VolumeButton.tsx';
 import { NowPlaying } from './NowPlaying.tsx';
 import { DevicesMenu } from './Devices.tsx';
 
@@ -211,6 +212,7 @@ export function Layout() {
               <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
               <input className="input pl-9" placeholder="Search tracks, albums, artists" value={q} onChange={(e) => setQ(e.target.value)} />
               </div>
+              {!hasPlayer && <VolumeButton />}
               <DevicesMenu />
               <AddMenu />
               {(toolbar || dock) && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}

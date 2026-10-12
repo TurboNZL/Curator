@@ -6,7 +6,7 @@ describe('GPU start-up modes', () => {
     expect(activeMode(undefined, 'x11').id).toBe('default');
     expect(activeMode({ mode: 'auto', auto: { step: 1, done: false } }).id).toBe('egl');
     expect(activeMode({ mode: 'auto', auto: { step: 4, done: false } }, 'wayland').id).toBe('x11');
-    expect(activeMode(undefined, 'wayland').id).toBe('egl');
+    expect(activeMode(undefined, 'wayland').id).toBe('default'); // measured to give hardware acceleration on KDE Wayland + NVIDIA
     expect(activeMode({ mode: 'software', auto: { step: 0, done: false } }).software).toBe(true);
     expect(activeMode({ mode: 'nonsense' }).id).toBe('default');
   });

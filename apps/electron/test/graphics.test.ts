@@ -24,6 +24,10 @@ describe('describeGraphics', () => {
     expect(g.hardware).toBe(false);
     expect(g.summary).toBe('Software rendering: Chromium found no usable GPU or GL driver');
   });
+  it('trusts a real GL implementation even when the basic query has no vendor id (native Wayland on NVIDIA)', () => {
+    const g = describeGraphics(facts({ vendorIds: [], renderer: 'ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4060 Ti/PCIe/SSE2, OpenGL ES 3.2 NVIDIA 615.71.09)' }));
+    expect(g.hardware).toBe(true);
+  });
   it('recognises software GL', () => {
     for (const over of [{ renderer: 'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))' }, { renderer: 'llvmpipe (LLVM 17)' }, { glParts: '(gl=egl-angle,angle=swiftshader)' }]) {
       const g = describeGraphics(facts(over));

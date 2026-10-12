@@ -84,9 +84,16 @@ const motifSvg = (motif: Motif, def: ThemeDef): string => {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">${body}</svg>`;
 };
 
+/** Marshmallow's chrome is Holo blue but its wallpaper is pink: light pink for the light theme, deep pink for the dark one. */
+const PINK_WALLPAPER: Record<string, Pick<ThemeDef, "primary" | "bg">> = {
+  "lg-marshmallow": { primary: [338, 78, 62], bg: [340, 75, 91] },
+  "lg-marshmallow-dark": { primary: [326, 72, 54], bg: [326, 52, 14] },
+};
+const tinted = (def: ThemeDef): ThemeDef => (PINK_WALLPAPER[def.id] ? { ...def, ...PINK_WALLPAPER[def.id] } : def);
+
 /** The built-in wallpaper for a theme, as a CSS `background` value. */
 export const themeWallpaper = (id: ThemeId): string => {
-  const def = resolveTheme(id);
+  const def = tinted(resolveTheme(id));
   const [h, s] = def.primary;
   const [bh, bs, bl] = def.bg;
   const top = `hsl(${bh} ${bs}% ${def.dark ? bl + 2 : bl}%)`;

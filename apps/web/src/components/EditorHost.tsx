@@ -4,6 +4,7 @@ import { FindDatesDialog } from './FindDatesDialog.tsx';
 import { MergeTracksDialog } from './MergeTracksDialog.tsx';
 import { SpotifyLinks } from './SpotifyLinks.tsx';
 import { X } from 'lucide-react';
+import { makePrimary } from '../lib/autofill.ts';
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +24,7 @@ import { newAlbumData, newTrackData, inheritFromAlbum, appendTrack, moveTrack, r
 import { defaultChoice, defaultRelease, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
 import { albumCover, coverPicked, coverPool } from '../lib/covers.ts';
 import { CoverPool } from './CoverPool.tsx';
+import { removeCoverFromAlbum } from '../lib/coverOps.ts';
 import { saveRules } from '../lib/profile.ts';
 import { eraPatches } from '../lib/eraOps.ts';
 import { AudioPicker, CreditsEditor, FeaturedEditor, EntityPicker, EraPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
@@ -179,8 +181,6 @@ function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const credits = cleanCredits(a.credits ?? []);
   const mine = lib.releases.filter((r) => r.albumId === id);
   const pool = coverPool(a, mine);
-  /** images something still points at: releases' covers cannot be dropped from here */
-  const inUse = new Set(mine.flatMap((r) => (r.cover ? [r.cover] : [])));
   const inherited = albumCover({ ...a, coverPicked: false }, mine, defaultRelease(lib, album));
   return (
     <Modal title="Edit album" onClose={onClose} footer={<>
@@ -191,11 +191,17 @@ function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
         for (const e of eraPatches(lib, 'album', id, eraIds)) patch('eras', e.id, e.patch);
         onClose();
       }}>Save</button></div></>}>
-      <Field label="Cover" hint="Every image of this album is in one pool, including its releases' covers. The album shows its default release's cover unless you choose another.">
-        <CoverPool seed={album.title} pool={pool} value={coverPicked(a) ? a.cover ?? null : null} inheritHash={inherited} inheritLabel="Use the default release's cover"
-          onChange={(h) => setA((p) => ({ ...p!, cover: h, coverPicked: !!h }))}
-          onAdd={(h) => setA((p) => ({ ...p!, covers: (p!.covers ?? []).includes(h) ? p!.covers : [...(p!.covers ?? []), h], cover: h, coverPicked: true }))}
-          onRemove={(h) => { if (!inUse.has(h)) setA((p) => ({ ...p!, covers: (p!.covers ?? []).filter((x) => x !== h) })); }} /></Field>
+      <Field label="Cover" hint="Every image of this album is kept here, including the ones its releases replaced, until you delete it. Lock one to keep it as the cover.">
+        <CoverPool seed={album.title} pool={pool} locked={coverPicked(a) ? a.cover ?? null : null} showing={coverPicked(a) && a.cover ? a.cover : inherited}
+          autoLabel="Automatic: the album shows its default release's cover."
+          onLock={(h) => setA((p) => ({ ...p!, cover: h, coverPicked: !!h }))}
+          onAdd={(h) => setA((p) => ({ ...p!, covers: (p!.covers ?? []).includes(h) ? p!.covers : [...(p!.covers ?? []), h] }))}
+          onRemove={(h) => {
+            const users = mine.filter((r) => r.cover === h).length;
+            if (!confirm(`Delete this image for good?${users ? ` ${users} release${users > 1 ? 's use' : ' uses'} it and will go back to the album's cover.` : ''}`)) return;
+            removeCoverFromAlbum(id, h);
+            setA((p) => ({ ...p!, covers: (p!.covers ?? []).filter((x) => x !== h), ...(p!.cover === h ? { cover: null, coverPicked: false } : {}) }));
+          }} /></Field>
       <Field label="Title"><input className="input" value={a.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
       <Field label="Genres" hint="Tracks that use the album's genres follow these"><TagInput value={a.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>
       <Field label="Eras" hint="Optional. An album can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>
@@ -219,9 +225,32 @@ function ArtistEditor({ id, onClose }: { id: string; onClose: () => void }) {
         put('artists', { ...a, name: a.name.trim() || artist.name }, id); onClose();
       }}>Save</button></div></>}>
       <ImagePicker kind="artist" hash={a.image ?? null} onChange={(h) => setA({ ...a, image: h })} seed={artist.name} />
-      <Field label="Name"><input className="input" value={a.name ?? ''} onChange={(e) => setA({ ...a, name: e.target.value })} /></Field>
+      <Field label="Name" hint="The name shown everywhere (the primary alias)."><input className="input" value={a.name ?? ''} onChange={(e) => setA({ ...a, name: e.target.value })} /></Field>
+      <AliasEditor name={a.name ?? ''} aliases={a.aliases ?? []} onChange={(name, aliases) => setA({ ...a, name, aliases })} />
     </Modal>
   );
+}
+
+/** Other names an artist goes by. Imports recognise them; one of them can become the displayed name. */
+export function AliasEditor({ name, aliases, onChange }: { name: string; aliases: string[]; onChange: (name: string, aliases: string[]) => void }) {
+  const [draft, setDraft] = useState('');
+  const add = () => {
+    const v = draft.trim();
+    if (!v || v.toLowerCase() === name.trim().toLowerCase() || aliases.some((x) => x.toLowerCase() === v.toLowerCase())) { setDraft(''); return; }
+    onChange(name, [...aliases, v]); setDraft('');
+  };
+  return (
+    <Field label="Also known as" hint="Stage names, old names, other spellings. When you import something by one of these names it is matched to this artist. Make one primary to show it instead.">
+      <div className="space-y-1.5">
+        {aliases.map((al) => (
+          <div key={al} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-1.5 text-sm">
+            <span className="min-w-0 flex-1 truncate">{al}</span>
+            <button type="button" className="btn btn-ghost !px-2 !py-0.5 text-xs" onClick={() => { const m = makePrimary(name, aliases, al); onChange(m.name, m.aliases); }}>Make primary</button>
+            <button type="button" aria-label={`Remove ${al}`} className="text-muted hover:text-bad" onClick={() => onChange(name, aliases.filter((x) => x !== al))}><X size={14} /></button>
+          </div>))}
+        <div className="flex gap-2"><input className="input" placeholder="Add another name…" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} /><button type="button" className="btn shrink-0" disabled={!draft.trim()} onClick={add}>Add</button></div>
+      </div>
+    </Field>);
 }
 
 function NewAlbumDialog({ onClose }: { onClose: () => void }) {
@@ -403,6 +432,7 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
   const existing = releaseId ? useStore.getState().rows.releases.get(releaseId)?.data as ReleaseData | undefined : undefined;
   const album = lib.albumById.get(existing?.albumId ?? albumId ?? '');
   const [added, setAdded] = useState<string[]>([]);
+  const [gone, setGone] = useState<string[]>([]);
   const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: '', cover: null, releaseDate: siblingDate(lib.releases.filter((x) => x.albumId === album.id), album.defaultReleaseId), trackIds: [...album.trackIds] } : null);
   if (!r || !album) return null;
   const live = r.trackIds.filter((id) => lib.trackById.has(id));
@@ -416,9 +446,15 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
     <Modal title={releaseId ? 'Edit release' : `New release of ${album.title}`} onClose={onClose} footer={<>
       {releaseId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete release “${r.title || album.title}”?`)) { remove('releases', releaseId); onClose(); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" onClick={save}>Save</button></div></>}>
-      <Field label="Cover" hint="Any image of the album can be used, including ones uploaded to the album itself. A new upload joins the album's pool.">
-        <CoverPool seed={r.title || album.title} pool={[...album.coverPool, ...added.filter((h) => !album.coverPool.includes(h))]} value={r.cover} inheritHash={album.cover} inheritLabel="Use the album's cover"
-          onChange={(h) => setR({ ...r, cover: h })} onAdd={(h) => { setAdded((x) => [...x, h]); setR({ ...r, cover: h }); }} /></Field>
+      <Field label="Cover" hint="Any image of the album can be used. A new upload joins the album's pool. Lock one to keep it as this release's cover.">
+        <CoverPool seed={r.title || album.title} pool={[...album.coverPool.filter((h) => !gone.includes(h)), ...added.filter((h) => !album.coverPool.includes(h))]} locked={r.cover} showing={r.cover ?? album.cover}
+          autoLabel="Automatic: this release shows the album's cover."
+          onLock={(h) => setR({ ...r, cover: h })} onAdd={(h) => setAdded((x) => [...x, h])}
+          onRemove={(h) => {
+            if (!confirm('Delete this image from the album for good? Anything using it goes back to the album\'s cover.')) return;
+            removeCoverFromAlbum(album.id, h); setGone((x) => [...x, h]); setAdded((x) => x.filter((y) => y !== h));
+            if (r.cover === h) setR({ ...r, cover: null });
+          }} /></Field>
       <Field label="Release name" hint="Pick a name you have used before or type a new one. Leave it blank to call the release after the album.">
         <Select value={r.title} onChange={(v) => setR({ ...r, title: v })} searchable placeholder={`Same as the album (${album.title})`}
           options={[{ value: '', label: `Same as the album (${album.title})` }, ...[...lib.releaseNames].sort((a, b) => a.name.localeCompare(b.name)).map((n) => ({ value: n.name, label: n.name }))]}
