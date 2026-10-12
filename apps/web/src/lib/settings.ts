@@ -12,15 +12,19 @@ export interface DeviceSettings {
   /** a Cloudflare Access service token (CF-Access-Client-Id / -Secret) for a server behind Cloudflare Access; blank when none */
   cfAccessId: string;
   cfAccessSecret: string;
-  /** colour theme (see lib/theme.ts) */
+  /** colour theme: a palette id, or "auto" / "system" (the turbothemes package lists them) */
   theme: string;
-  /** UI style: shape, type and motion (see lib/uiStyle.ts) */
+  /** UI style: shape, type and motion (a style id or "auto") */
   ui: string;
-  /** where the pages are listed (lib/layout.ts); independent of the look */
-  layout: import('./layout.ts').LayoutId;
+  /** where the pages are listed; independent of the look */
+  layout: string;
+  /** look for newer themes online (the turbothemes repository) and use them without an app update */
+  themeUpdates: boolean;
+  /** a GitHub token with read access to the themes repository, if that is private; '' = none */
+  themesToken: string;
   /** Liquid Glass variant: Regular adapts to what is behind it, Clear is see-through with a dimming layer */
   glass: 'regular' | 'clear';
-  /** picture behind the page; the picture itself is kept apart (lib/wallpaper.ts) */
+  /** picture behind the page; the picture itself is kept apart (turbothemes keeps it in localStorage) */
   wallpaper: boolean;
   wallpaperDarkness: number;
   wallpaperCustom: boolean;
@@ -81,7 +85,7 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'auto', ui: 'auto', layout: 'side', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'auto', ui: 'auto', layout: 'side', themeUpdates: true, themesToken: '', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));
@@ -89,7 +93,7 @@ export function loadSettings(): DeviceSettings {
   if (s.ui === 'dyad') s.ui = 'toolbar';
   // before layouts existed, the first-version look also meant its toolbar arrangement
   if (!saved.layout && s.ui === 'toolbar') s.layout = 'toolbar';
-  if (!['side', 'toolbar', 'rail', 'topbar', 'dock'].includes(s.layout)) s.layout = 'side';
+  if (typeof s.layout !== 'string' || !s.layout) s.layout = 'side'; // an id the themes no longer have falls back to the default layout when applied
   if (s.theme === 'dyad') s.theme = 'zinc';
   // a fresh desktop app is already connected to its own server: no address or token to type
   if (!s.token && desktop()?.token) s.token = desktop()!.token;

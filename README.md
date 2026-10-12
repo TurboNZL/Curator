@@ -8,7 +8,7 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 > **Status: feature complete.** Everything planned has been built and is in daily use; what remains is fixing what real use turns up. The parts that could only be checked against fakes (real YouTube, Spotify, Cloudflare and the Android build) are listed under [what is unverified](#whats-unverified).
 
-> The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Toolbar* UI style and *Zinc* colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
+> The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Standard v1* UI style and colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
 
 ## Start here
 
@@ -64,7 +64,7 @@ Settings → Appearance has two independent choices with a live preview you can 
 - **Layout:** where the pages are listed, separate from the look so any theme can use any layout: Standard v2 (side bar), Standard v1 (library in the side bar, the rest as text links in a toolbar), Icon rail, Top tabs, Bottom dock.
 - An optional **wallpaper** (generated per theme or your own picture, with a darkness slider). Everything is per device.
 
-How it works: a colour theme is a set of CSS variables written onto `<html>` by `apps/web/src/lib/theme.ts`; a UI style is a block of variables in `apps/web/src/ui-styles.css` read by generic component rules, so adding either needs no component changes. See [docs/appearance/](docs/appearance/README.md) (the rules, every theme and style, Liquid Glass, and [TOOLBAR.md](docs/appearance/TOOLBAR.md) for the first version's look).
+How it works: none of this is in this repository any more. The colours, UI styles, layouts, wallpaper and effects live in [**turbothemes**](https://github.com/TurboNZL/turbothemes) (an npm-style package shared by all of the owner's apps), and the app only starts its engine (`apps/web/src/lib/appearance.ts`). New and changed themes are downloaded in the background (Settings → Appearance → Themes) without an app update. To change a theme, edit its folder in that repository; the rules, the list of every palette and style, and the Liquid Glass write-up are in its `docs/`. See [docs/APPEARANCE.md](docs/APPEARANCE.md).
 
 ## Running it
 
@@ -110,7 +110,7 @@ To bring an old library across: `CURATOR_DATA_DIR=… node --experimental-strip-
 
 ## Guides
 
-[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) (start here) · [docs/TESTING.md](docs/TESTING.md) (try it with your own library) · [docs/DISCORD.md](docs/DISCORD.md) · [docs/SPOTIFY.md](docs/SPOTIFY.md) · [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups) · [docs/UPDATING.md](docs/UPDATING.md) · [docs/ELECTRON.md](docs/ELECTRON.md) · [docs/ANDROID.md](docs/ANDROID.md) · [docs/CONNECT.md](docs/CONNECT.md) · [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) · [docs/appearance/](docs/appearance/README.md) · [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) · [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
+[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) (start here) · [docs/TESTING.md](docs/TESTING.md) (try it with your own library) · [docs/DISCORD.md](docs/DISCORD.md) · [docs/SPOTIFY.md](docs/SPOTIFY.md) · [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups) · [docs/UPDATING.md](docs/UPDATING.md) · [docs/ELECTRON.md](docs/ELECTRON.md) · [docs/ANDROID.md](docs/ANDROID.md) · [docs/CONNECT.md](docs/CONNECT.md) · [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) · [docs/APPEARANCE.md](docs/APPEARANCE.md) (themes: the turbothemes package) · [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) · [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
 
 ## Tests
 

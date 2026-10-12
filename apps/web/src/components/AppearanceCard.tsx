@@ -4,11 +4,13 @@ import { Section } from './Section.tsx';
 import { Check, Eye, ImageIcon, ImageOff, Search, Upload, Wand2 } from 'lucide-react';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
-import { INSPIRED_THEME_IDS, OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
-import { UI_STYLES, isUiStyle, type UiStyleId } from '../lib/uiStyle.ts';
-import { LAYOUTS } from '../lib/layout.ts';
-import { deviceLook, effectiveUi } from '../lib/deviceLook.ts';
-import { clearCustomWallpaper, getCustomImage, saveCustomWallpaper, themeWallpaper } from '../lib/wallpaper.ts';
+import { clearCustomWallpaper, deviceLook, effectiveUi, getCustomImage, isUiStyle, listLayouts, listStyles, listThemes, resolveTheme, saveCustomWallpaper, themeStyle, themeWallpaper } from 'turbothemes';
+import { useCatalog } from '../lib/useCatalog.ts';
+import { ThemeUpdates } from './ThemeUpdates.tsx';
+
+type ThemeId = string;
+type UiStyleId = string;
+type ThemeChoice = ReturnType<typeof listThemes>[number];
 
 const BARS = ['#6d28d9', '#0e7490', '#b45309'];
 
@@ -66,11 +68,11 @@ const usePreview = create<{ theme: ThemeId | null; ui: UiStyleId | null; setThem
   theme: null, ui: null, setTheme: (theme) => set({ theme }), setUi: (ui) => set({ ui }),
 }));
 
-const label = (id: ThemeId) => THEMES.find((t) => t.id === id)?.label;
+const label = (id: ThemeId) => listThemes().find((t) => t.id === id)?.label;
 const currentUi = (s: string): UiStyleId => (isUiStyle(s) ? s : 'default');
 
 /** A compact swatch: four stripes of the theme's own colours and its name. */
-function ThemeTile({ t }: { t: (typeof THEMES)[number] }) {
+function ThemeTile({ t }: { t: ThemeChoice }) {
   const { settings, updateSettings } = useStore();
   const setHover = usePreview((s) => s.setTheme);
   const selected = settings.theme === t.id;
@@ -95,12 +97,14 @@ const TILE_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(8.25rem,1fr))] gap-1.
 export function ColourThemeSection() {
   const [tone, setTone] = useState<Tone>('all');
   const setHover = usePreview((s) => s.setTheme);
-  const tonal = (t: (typeof THEMES)[number]) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
+  useCatalog();
+  const THEMES = listThemes();
+  const tonal = (t: ThemeChoice) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
   const groups = [
-    { title: 'Curator', note: 'The app\'s own looks; System follows your device.', list: THEMES.filter((t) => (t.id === 'system' || OWN_THEME_IDS.includes(t.id)) && tonal(t)) },
-    { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && !INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
-    { title: 'Games, apps & devices', note: 'Pair with the matching UI style of the same name.', list: THEMES.filter((t) => INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
-    { title: 'Platform palettes', note: 'Copied from a desktop or OS; they pair with the matching UI style.', list: THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id) && tonal(t)) },
+    { title: 'Curator', note: 'The app\'s own looks; System follows your device.', list: THEMES.filter((t) => (t.id === 'system' || t.group === 'own') && tonal(t)) },
+    { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && (t.group === 'colour' || t.group === undefined) && tonal(t)) },
+    { title: 'Games, apps & devices', note: 'Pair with the matching UI style of the same name.', list: THEMES.filter((t) => t.group === 'inspired' && tonal(t)) },
+    { title: 'Platform palettes', note: 'Copied from a desktop or OS; they pair with the matching UI style.', list: THEMES.filter((t) => t.group === 'platform' && tonal(t)) },
   ];
   return (
     <Section title="Colour theme">
@@ -121,6 +125,8 @@ export function ColourThemeSection() {
 
 /** UI styles: shape, type and motion. Every style is visible at once; hovering one previews it. */
 export function UiStyleSection() {
+  useCatalog();
+  const UI_STYLES = listStyles();
   const { settings, updateSettings } = useStore();
   const ui = currentUi(settings.ui);
   const def = resolveTheme(settings.theme);
@@ -166,6 +172,8 @@ export function UiStyleSection() {
 
 /** Layouts: where the pages are listed. Independent of the colours and the UI style, so any look can have any of them. */
 export function LayoutSection() {
+  useCatalog();
+  const LAYOUTS = listLayouts();
   const { settings, updateSettings } = useStore();
   const cur = LAYOUTS.find((l) => l.id === settings.layout) ?? LAYOUTS[0];
   return (
@@ -188,6 +196,8 @@ export function LayoutSection() {
 
 /** The framed preview that stays in view beside the two sections. */
 export function AppearancePreview() {
+  useCatalog();
+  const UI_STYLES = listStyles();
   const { settings } = useStore();
   const hoverTheme = usePreview((s) => s.theme);
   const hoverUi = usePreview((s) => s.ui);
@@ -212,7 +222,7 @@ export function AppearancePreview() {
 export function AppearanceLayout() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /><LayoutSection /></div>
+      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /><LayoutSection /><ThemeUpdates /></div>
       <AppearancePreview />
     </div>
   );

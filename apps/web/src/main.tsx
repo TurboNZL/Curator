@@ -3,15 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.tsx';
 import './index.css';
-import './ui-styles.css';
-import './ui-styles-more.css';
-import './fortnite-fonts.css';
+import './fonts.css';
 import { applyAppearance } from './lib/appearance.ts';
 import { startConnect } from './lib/connect.ts';
 import { startSpotifySdkIfWanted } from './lib/spotifySdk.ts';
 import { startPresence } from './lib/discordPresence.ts';
 import { useStore } from './lib/store.ts';
-import { startRipple } from './lib/ripple.ts';
 import { startHaptics } from './lib/haptics.ts';
 import { pairFromSearch } from './lib/pairCode.ts';
 import { syncNativeServer } from './lib/native.ts';
@@ -21,7 +18,6 @@ applyAppearance(useStore.getState().settings);
 startConnect();
 startSpotifySdkIfWanted();
 startHaptics();
-startRipple();
 startPresence();
 // the Android app's car interface needs the server address too; the app's own page is served from a private address, so a blank URL means "this origin"
 {

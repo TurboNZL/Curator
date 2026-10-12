@@ -2,7 +2,7 @@ import { WindowFrame } from './WindowFrame.tsx';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate, useNavigationType } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { effectiveUi } from '../lib/deviceLook.ts';
+import { effectiveUi } from 'turbothemes';
 import { usePlayer } from '../lib/player.ts';
 import { cn } from '../lib/cn.ts';
 import { useStore } from '../lib/store.ts';

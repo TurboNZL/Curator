@@ -1,62 +1,18 @@
+/*
+ * The app's own CSS. Everything that decides how things LOOK (colour palettes, UI styles, layouts, the generic .btn/.input/.card/...
+ * rules) is in the turbothemes package: base.css below, the themes themselves delivered by its engine (lib/appearance.ts).
+ * Shape, type and motion come from variables the style sets (--vote-ms, --ease ...).
+ * base.css comes first so an element's own utility classes still win over the generic component rules.
+ */
+@import 'turbothemes/base.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Colours are CSS variables (HSL triplets, so Tailwind can apply alpha). The three blocks below are the
- * app's own themes; every other colour theme is a set of variables written by lib/theme.ts at runtime.
- * `--accent` is overridden at runtime from the accent-colour setting.
- * Shape, type and motion come from the UI style (ui-styles.css, <html data-ui>): the generic rules in
- * the second components block read its variables, with defaults that match the look below.
- */
-:root, [data-theme='default'] {
-  --bg: 240 12% 7%; --surface: 240 10% 10%; --raised: 240 9% 14%; --line: 240 8% 20%; --hover: 240 8% 20%;
-  --fg: 240 20% 96%; --muted: 240 8% 62%;
-  --accent: 262 83% 66%; --accent-fg: 0 0% 100%;
-  --good: 152 60% 50%; --warn: 42 92% 58%; --bad: 0 78% 64%; --top: 200 95% 65%;
-  --radius: 14px; --font: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --row-y: 0.5rem; --grid-min: 11rem;
-}
-/* Every other colour theme (written at runtime by lib/theme.ts) gets the Default's shape and density; a theme block below overrides it */
-[data-theme] { --radius: 14px; --font: 'Inter', ui-sans-serif, system-ui, sans-serif; --row-y: 0.5rem; --grid-min: 11rem; }
-/* The look of the original app: flat zinc-950, tight, blue accent. */
-[data-theme='classic'] {
-  --bg: 240 6% 4%; --surface: 240 6% 7%; --raised: 240 4% 12%; --line: 240 4% 16%; --hover: 240 4% 16%;
-  --fg: 0 0% 98%; --muted: 240 5% 56%;
-  --accent: 217 91% 60%; --accent-fg: 0 0% 100%;
-  --good: 158 64% 52%; --warn: 48 96% 53%; --bad: 0 91% 71%; --top: 213 94% 68%;
-  --radius: 8px; --font: ui-sans-serif, system-ui, sans-serif;
-  --row-y: 0.3rem; --grid-min: 8.5rem;
-}
-[data-theme='light'] {
-  --bg: 40 20% 97%; --surface: 0 0% 100%; --raised: 40 15% 93%; --line: 40 10% 86%; --hover: 40 10% 86%;
-  --fg: 240 15% 12%; --muted: 240 6% 42%;
-  --accent: 262 70% 52%; --accent-fg: 0 0% 100%;
-  --good: 152 60% 34%; --warn: 38 90% 40%; --bad: 0 70% 48%; --top: 210 90% 42%;
-  --radius: 14px; --font: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --row-y: 0.5rem; --grid-min: 11rem;
-}
-
 html, body, #root { height: 100%; }
 /* never scroll sideways: a stray wide element is clipped, not an extra scroll area (the app is vertical; the Android WebView otherwise pans) */
 html, body { overflow-x: hidden; overscroll-behavior-x: none; }
-body { @apply bg-bg text-fg font-sans antialiased; margin: 0; }
-* { scrollbar-width: thin; scrollbar-color: hsl(var(--line)) transparent; }
-
-@layer components {
-  .btn { @apply whitespace-nowrap inline-flex items-center justify-center gap-2 rounded-theme px-3 py-1.5 text-sm font-medium bg-raised hover:bg-hover transition-colors disabled:opacity-40 disabled:pointer-events-none; }
-  .btn-accent { @apply bg-accent text-accent-fg hover:brightness-110; }
-  .btn-ghost { @apply bg-transparent hover:bg-raised; }
-  .input { @apply w-full rounded-theme bg-raised border border-line px-3 py-1.5 text-sm outline-none focus:border-accent placeholder:text-muted; }
-  .card { @apply rounded-theme bg-surface border border-line; }
-  .chip { @apply whitespace-nowrap inline-flex items-center rounded-full bg-raised px-2 py-0.5 text-xs text-muted; }
-}
-
-/* Classic keeps the original app's loud, tight headings */
-[data-theme='classic'] h1 { @apply font-black uppercase tracking-tight; }
-[data-theme='classic'] h2 { @apply font-black uppercase tracking-widest text-sm; }
-[data-theme='classic'] .card { border-radius: var(--radius); background: hsl(var(--surface) / 0.5); }
-
 /* The Rank page: the chosen card lifts and shows a tick, the other one steps back. The pace comes from the UI style (--vote-ms). */
 @keyframes bt-vote-win { 0% { transform: none; } 35% { transform: scale(1.035); box-shadow: 0 0 0 3px hsl(var(--accent)), 0 14px 40px hsl(var(--accent) / 0.35); } 100% { transform: scale(1.02); box-shadow: 0 0 0 3px hsl(var(--accent)), 0 10px 30px hsl(var(--accent) / 0.25); } }
 @keyframes bt-vote-lose { to { opacity: 0.25; transform: scale(0.94); filter: saturate(0.4); } }
@@ -66,189 +22,9 @@ body { @apply bg-bg text-fg font-sans antialiased; margin: 0; }
 .bt-vote-lose { animation: bt-vote-lose var(--vote-ms, 440ms) var(--ease) both; pointer-events: none; }
 .bt-vote-equal { animation: bt-vote-equal var(--vote-ms, 440ms) var(--ease) both; }
 .bt-vote-check { animation: bt-vote-check calc(var(--vote-ms, 440ms) * 0.9) var(--ease) both; }
-
-/* Wallpaper (Settings > Appearance): a fixed layer behind the page; panels turn slightly see-through */
-#bt-wallpaper { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-#bt-wallpaper .bt-wp-img, #bt-wallpaper .bt-wp-dim { position: absolute; inset: 0; }
-#bt-wallpaper .bt-wp-dim { background: #000; opacity: 0; }
-html[data-wallpaper='on'] { background: hsl(var(--bg)); }
-html[data-wallpaper='on'] body, html[data-wallpaper='on'] #root { background: transparent; }
-html[data-wallpaper='on'] :is(.card, .bt-side, .bt-player, .bt-tabbar) { background-color: hsl(var(--surface) / 0.84); backdrop-filter: blur(10px); }
-html[data-wallpaper='on'] .bt-top { background-color: hsl(var(--bg) / 0.78); }
-
-/* Native select: our own arrow so the control matches the theme instead of the OS */
-select.input { appearance: none; -webkit-appearance: none; padding-right: 2.1rem; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%23909098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 1.75 6 6.25l4.5-4.5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 0.8rem center; background-size: 0.75rem; }
-select.input option { background: hsl(var(--surface)); color: hsl(var(--fg)); }
-/* The picker inputs follow the page's light/dark */
-input[type='date'], input[type='time'], input[type='color'] { color-scheme: inherit; }
-::selection { background: hsl(var(--accent) / 0.35); }
-
-@media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-}
-
-/*
- * Generic component rules. Every look comes from variables that ui-styles.css sets per UI style (and
- * defaults, in its first block, that reproduce the original look), so a style needs no selectors of its
- * own for the common parts, and a preview inside the page picks its own style's values.
- * This block comes after the one above so equal-specificity rules here win over its @apply rules.
- */
-@layer components {
-  .btn {
-    border-radius: var(--ctl-r); background: var(--btn-bg); border: var(--btn-border); box-shadow: var(--btn-shadow);
-    font-weight: var(--btn-weight); color: var(--btn-fg); text-shadow: var(--btn-text-shadow);
-    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), filter var(--dur) var(--ease);
-  }
-  .btn:hover { background: var(--btn-hover-bg); border-color: var(--btn-hover-border); box-shadow: var(--btn-hover-shadow); }
-  .btn:active { transform: var(--btn-active-transform); box-shadow: var(--btn-active-shadow); }
-  .btn-accent { background: var(--btn-accent-bg); color: var(--btn-accent-fg); border: var(--btn-accent-border); box-shadow: var(--btn-accent-shadow); text-shadow: var(--btn-accent-text-shadow); }
-  .btn-accent:hover { background: var(--btn-accent-hover-bg); border-color: var(--btn-accent-border-color, inherit); box-shadow: var(--btn-accent-hover-shadow); }
-  .btn-ghost { background: transparent; border-color: transparent; box-shadow: none; color: inherit; text-shadow: none; }
-  .btn-ghost:hover { background: var(--ghost-hover-bg); border-color: transparent; box-shadow: none; }
-  .input { border-radius: var(--in-r, var(--ctl-r)); padding-inline: var(--in-px, 0.75rem); padding-block: var(--in-py, 0.375rem); background: var(--in-bg); border: var(--in-border); box-shadow: var(--in-shadow); transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
-  .input:hover { border-color: var(--in-hover-border); }
-  .input:focus { border-color: var(--in-focus-border); box-shadow: var(--in-focus-shadow); }
-  .card { border-radius: var(--card-r); background: var(--card-bg); border: var(--card-border); box-shadow: var(--card-shadow); }
-  .chip { border-radius: var(--chip-r); }
-
-  .bt-backdrop { background: var(--backdrop); }
-  .bt-window { border-radius: var(--win-r); background: var(--win-bg); border: var(--win-border); box-shadow: var(--win-shadow); animation: var(--dialog-anim); }
-  .bt-titlebar { background: var(--tb-bg); color: var(--tb-fg); border-bottom: var(--tb-border); padding: var(--tb-pad); justify-content: var(--tb-justify); }
-  .bt-titlebar h2 { font-family: var(--title-font); font-weight: var(--tb-weight); font-size: var(--tb-size); text-shadow: var(--tb-text-shadow); }
-  .bt-close { display: flex; align-items: center; justify-content: center; overflow: hidden; order: var(--close-order); margin: var(--close-margin); width: var(--close-size); height: var(--close-size); padding: var(--close-pad); color: var(--close-fg); background: var(--close-bg); border: var(--close-border); border-radius: var(--close-r); box-shadow: var(--close-shadow); }
-  .bt-close:hover { background: var(--close-hover-bg); color: var(--close-hover-fg); }
-  .bt-body { background: var(--body-bg); }
-  .bt-footer { border-top: var(--bar-border); }
-
-  .bt-menu { border-radius: var(--menu-r); background: var(--menu-bg); border: var(--menu-border); box-shadow: var(--pop-shadow); animation: var(--menu-anim); }
-  [role='option'] { transition: background-color var(--dur) var(--ease); }
-  [role='option']:hover:not(:disabled), [role='option'].bt-select-hi { background: var(--menu-hi-bg); color: var(--menu-hi-fg); outline: none; }
-  [role='menuitem'] { transition: background-color var(--dur) var(--ease); }
-  [role='menuitem']:hover:not(:disabled), [role='menuitem']:focus-visible { background: var(--menu-hi-bg); color: var(--menu-hi-fg); outline: none; }
-
-  .bt-side { background: var(--side-bg); border-right: var(--bar-border); box-shadow: var(--side-shadow); }
-  .bt-top { background: var(--top-bg); border-bottom: var(--bar-border); box-shadow: var(--top-shadow); }
-  .bt-player { background: var(--player-bg); border-top: var(--bar-border); box-shadow: var(--player-shadow); animation: var(--player-in); }
-  .bt-player[data-leaving] { animation: var(--player-out); pointer-events: none; }
-  .bt-popover[data-leaving] { animation: var(--pop-out); pointer-events: none; }
-  .bt-tabbar { background: var(--player-bg); border-top: var(--bar-border); }
-  .bt-nav { border-radius: var(--nav-r); color: hsl(var(--muted)); transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
-  .bt-nav:hover { background: var(--nav-hover-bg); color: hsl(var(--fg)); }
-  .bt-nav[aria-current='page'] { background: var(--nav-active-bg); color: var(--nav-active-fg); box-shadow: var(--nav-active-shadow); }
-  .bt-tab { color: hsl(var(--muted)); }
-  .bt-tab[aria-current='page'] { color: hsl(var(--accent)); }
-  .bt-row { transition: background-color var(--dur) var(--ease); }
-  .bt-row:hover { background: var(--row-hover); color: var(--row-hover-fg); }
-  .bt-row-current { background: var(--row-current); }
-  .bt-panel-title { background: var(--panel-tb-bg); color: var(--panel-tb-fg); margin: var(--panel-tb-margin); padding: var(--panel-tb-pad); font-family: var(--title-font); text-shadow: var(--tb-text-shadow); }
-
-  /* A range draws its own track only when a style asks for it (--rng-appearance: none); the fill comes from --p */
-  /* a slider is easier to grab when its box is taller than the bar it draws: the track stays thin and centred, the grab area is 24 px */
-  .bt-hit { height: 1.5rem; cursor: pointer; }
-  .bt-range { appearance: var(--rng-appearance); -webkit-appearance: var(--rng-appearance); background: transparent; }
-  .bt-range::-webkit-slider-runnable-track { height: var(--rng-h); border-radius: var(--rng-r); border: var(--rng-border); box-shadow: var(--rng-shadow); background: linear-gradient(to right, var(--rng-fill) var(--p, 0%), var(--rng-track) var(--p, 0%)); }
-  .bt-range::-moz-range-track { height: var(--rng-h); border-radius: var(--rng-r); border: var(--rng-border); box-shadow: var(--rng-shadow); background: linear-gradient(to right, var(--rng-fill) var(--p, 0%), var(--rng-track) var(--p, 0%)); }
-  .bt-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: var(--rng-tw); height: var(--rng-th); margin-top: calc((var(--rng-h) - var(--rng-th)) / 2); border-radius: var(--rng-tr); border: var(--rng-tb); background: var(--rng-thumb); box-shadow: var(--rng-ts); }
-  .bt-range::-moz-range-thumb { width: var(--rng-tw); height: var(--rng-th); border-radius: var(--rng-tr); border: var(--rng-tb); background: var(--rng-thumb); box-shadow: var(--rng-ts); }
-
-  /* an upright slider (the equaliser bands): the bar runs bottom to top and is filled from the middle (0 dB) towards the knob */
-  .bt-range-v::-webkit-slider-runnable-track { height: auto; width: var(--rng-h); background: linear-gradient(to top, var(--rng-track) 0 min(var(--p, 50%), var(--p0, 50%)), var(--rng-fill) 0 max(var(--p, 50%), var(--p0, 50%)), var(--rng-track) 0 100%); }
-  .bt-range-v::-moz-range-track { height: auto; width: var(--rng-h); background: linear-gradient(to top, var(--rng-track) 0 min(var(--p, 50%), var(--p0, 50%)), var(--rng-fill) 0 max(var(--p, 50%), var(--p0, 50%)), var(--rng-track) 0 100%); }
-  .bt-range-v::-webkit-slider-thumb { margin-top: 0; margin-left: calc((var(--rng-h) - var(--rng-tw)) / 2); }
-
-  /* Checkboxes and radios: drawn by the UI style (--chk-*) instead of the OS, so they match every theme */
-  input[type='checkbox'], input[type='radio'] {
-    appearance: none; -webkit-appearance: none; flex: none; margin: 0; cursor: pointer; position: relative; display: inline-block; vertical-align: middle;
-    width: var(--chk-size); height: var(--chk-size); border: var(--chk-border); background: var(--chk-bg); box-shadow: var(--chk-shadow); border-radius: var(--chk-r);
-    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
-  }
-  input[type='radio'] { border-radius: 9999px; }
-  input[type='checkbox']::after, input[type='radio']::after { content: ''; position: absolute; transform: scale(0); transition: transform var(--dur) var(--ease); }
-  input[type='checkbox']::after { inset: 0; background: var(--chk-on-fg); -webkit-mask: var(--chk-mask) center / var(--chk-mark) no-repeat; mask: var(--chk-mask) center / var(--chk-mark) no-repeat; }
-  input[type='radio']::after { inset: 29%; border-radius: 9999px; background: var(--chk-dot); }
-  input[type='checkbox']:hover:not(:disabled), input[type='radio']:hover:not(:disabled) { border-color: var(--chk-hover-border); }
-  input[type='checkbox']:checked { background: var(--chk-on-bg); border-color: var(--chk-on-border); }
-  input[type='radio']:checked { background: var(--chk-radio-on-bg); border-color: var(--chk-on-border); }
-  input[type='checkbox']:checked::after, input[type='radio']:checked::after { transform: scale(1); }
-  input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outline: none; box-shadow: var(--chk-focus); }
-  input[type='checkbox']:disabled, input[type='radio']:disabled { opacity: 0.45; cursor: not-allowed; }
-}
-
-/* a long button label wraps on a narrow screen instead of pushing the page sideways */
-.btn { max-width: 100%; }
-@media (max-width: 640px) { .btn { white-space: normal; text-align: center; } }
-
 /* "Go to track" flashes the row it lands on */
 @keyframes bt-row-flash { 0%, 60% { background: hsl(var(--accent) / 0.28); } 100% { background: transparent; } }
 .bt-row-flash { animation: bt-row-flash 2.6s ease-out; }
-
-/* the desktop app's themed title bar (components/WindowFrame.tsx): colours, size and shape come from the UI style's dialog variables */
-.bt-wf { display: flex; align-items: center; gap: 0.5rem; flex: none; height: 2.25rem; padding: 0 0.5rem 0 0.9rem; -webkit-app-region: drag; user-select: none;
-  background: var(--tb-bg, hsl(var(--surface))); color: var(--tb-fg, inherit); border-bottom: 1px solid hsl(var(--line)); font-size: 0.8rem; font-weight: 600; z-index: 60; }
-.bt-wf-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--title-font, inherit); text-shadow: var(--tb-text-shadow, none); }
-.bt-wf-btns { display: flex; gap: 0.25rem; align-items: center; order: var(--wf-order, 1); -webkit-app-region: no-drag; }
-/* Minimise and maximise hover with a neutral wash of the bar's own text colour; only Close turns red (or what the style's Close looks like). Never the close button's colours on the others. */
-.bt-wf-btn { display: grid; place-items: center; width: 2rem; height: 1.6rem; border-radius: var(--wf-r, 6px); background: var(--wf-bg, transparent); border: var(--wf-border, 0); color: inherit; box-shadow: var(--wf-shadow, none); transition: background 0.12s; }
-.bt-wf-btn:is(:hover, :focus-visible) { background: var(--wf-hover, color-mix(in srgb, currentColor 16%, transparent)); box-shadow: var(--wf-shadow-hover, var(--wf-shadow, none)); }
-.bt-wf-btn:active { background: var(--wf-active, color-mix(in srgb, currentColor 26%, transparent)); }
-.bt-wf-close:is(:hover, :focus-visible) { background: var(--wf-close-hover, #e5484d); color: var(--wf-close-fg, #fff); }
-.bt-wf-close:active { background: var(--wf-close-active, var(--wf-close-hover, #c93b40)); }
-/* neutral Close (the style has no red one) */
-:is([data-ui="gtk4"], [data-ui="material"], [data-ui="holo"], [data-ui="lgux"], [data-ui="winamp"]) .bt-wf-close:is(:hover, :focus-visible) { background: color-mix(in srgb, currentColor 22%, transparent); color: inherit; }
-:is([data-ui="gtk4"], [data-ui="material"], [data-ui="holo"], [data-ui="lgux"]) .bt-wf-btn { --wf-r: 9999px; width: 1.7rem; height: 1.7rem; }
-[data-ui="breeze"] { --wf-close-hover: #da4453; }
-/* Windows 10 and 11: full-height rectangles; Close is the system red */
-:is([data-ui="win10"], [data-ui="win11"]) .bt-wf { padding-right: 0; }
-:is([data-ui="win10"], [data-ui="win11"]) .bt-wf-btns { gap: 0; align-self: stretch; }
-:is([data-ui="win10"], [data-ui="win11"]) .bt-wf-btn { --wf-r: 0; width: 2.9rem; height: auto; align-self: stretch; }
-[data-ui="win11"] .bt-wf-close { --wf-r: 0 0.4rem 0 0; }
-[data-ui="win10"] { --wf-close-hover: #e81123; }
-[data-ui="win11"] { --wf-close-hover: #c42b1c; }
-/* Windows 7: small glossy caption buttons hanging from the top edge; Close is the red one */
-[data-ui="win7"] .bt-wf-btns { gap: 0; align-self: flex-start; margin-right: 0.15rem; }
-[data-ui="win7"] .bt-wf-btn { --wf-r: 0 0 4px 4px; --wf-border: 1px solid rgb(0 0 0 / 0.5); --wf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.55) 0, rgb(255 255 255 / 0.2) 49.9%, rgb(0 0 0 / 0.08) 50%, rgb(255 255 255 / 0.3) 100%);
-  --wf-hover: linear-gradient(to bottom, rgb(190 225 255 / 0.9) 0, rgb(120 190 255 / 0.55) 49.9%, rgb(40 130 230 / 0.6) 50%, rgb(130 210 255 / 0.75) 100%); --wf-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.5); --wf-shadow-hover: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 0 6px rgb(120 200 255 / 0.8);
-  width: 1.7rem; height: 1.2rem; color: #fff; border-top: 0; margin-left: -1px; }
-[data-ui="win7"] .bt-wf-close { width: 2.9rem; --wf-bg: linear-gradient(to bottom, #ecb7ab 0, #e08b7b 49.9%, #c8412a 50%, #de6e42 100%); }
-[data-ui="win7"] .bt-wf-close:is(:hover, :focus-visible) { background: linear-gradient(to bottom, #f6cdc3 0, #ef9f8e 49.9%, #de3a1c 50%, #f77f45 100%); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 0 6px rgb(255 120 90 / 0.9); }
-/* Windows XP: small square buttons with a white edge; Close is red-orange */
-[data-ui="winxp"] .bt-wf-btn { --wf-r: 3px; --wf-border: 1px solid #fff; --wf-bg: linear-gradient(135deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.12)); --wf-hover: linear-gradient(135deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.5)); --wf-shadow-hover: 0 0 4px rgb(255 255 255 / 0.9); width: 1.35rem; height: 1.35rem; color: #fff; }
-[data-ui="winxp"] .bt-wf-close { --wf-bg: linear-gradient(135deg, #e8a08a, #d4452a 55%, #b3290f); }
-[data-ui="winxp"] .bt-wf-close:is(:hover, :focus-visible) { background: linear-gradient(135deg, #f0b09a, #e4553a 55%, #c3392f); }
-/* Windows 98: raised grey squares with black glyphs; they press in */
-[data-ui="win98"] .bt-wf-btn { --wf-r: 0; --wf-bg: #c0c0c0; --wf-hover: #c0c0c0; --wf-active: #c0c0c0; --wf-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf; width: 1.15rem; height: 1rem; color: #000; }
-[data-ui="win98"] .bt-wf-btn:active { box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #fff, inset 2px 2px #808080, inset -2px -2px #dfdfdf; }
-[data-ui="win98"] .bt-wf-close:is(:hover, :focus-visible) { background: #c0c0c0; color: #000; }
-/* Winamp: small metal squares */
-[data-ui="winamp"] .bt-wf-btn { --wf-r: 0; --wf-bg: var(--wa-metal); --wf-shadow: var(--wa-up); width: 1.1rem; height: 1rem; }
-/* macOS, Aqua, Liquid Glass: three traffic lights on the left, Close first; their glyphs show while the pointer is over the group */
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) { --wf-order: -1; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf { padding-left: 0.75rem; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-title { text-align: center; margin-right: 3.6rem; }
-/* the dialogs of these styles paint yellow and green dots into their title bars (--tb-bg), because there the real buttons are drawn on top; the window frame has real buttons of its own, so it takes only the bar's colour */
-[data-ui="macos"] .bt-wf { background: color-mix(in srgb, hsl(var(--fg)) 3%, hsl(var(--surface))); }
-[data-ui="aqua"] .bt-wf { background: linear-gradient(to bottom, color-mix(in srgb, hsl(var(--bg)) 40%, white), color-mix(in srgb, hsl(var(--bg)) 85%, black)); }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns { gap: 8px; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { order: -1; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { --wf-r: 9999px; position: relative; width: 12px; height: 12px; padding: 0; color: transparent; --wf-glyph: #995700; --wf-border: 0.5px solid #e1a73e; --wf-bg: #febc2e; --wf-hover: #febc2e; --wf-active: #c49a22; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Maximise"], :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Restore"] { --wf-glyph: #006500; --wf-border: 0.5px solid #2dac2f; --wf-bg: #28c840; --wf-hover: #28c840; --wf-active: #1f9a30; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { --wf-glyph: #4d0000; --wf-border: 0.5px solid #e2463f; --wf-bg: #ff5f57; --wf-close-hover: #ff5f57; --wf-close-active: #bf4943; }
-/* Sequoia draws its own glyphs, shown while the pointer is over the group of three: x, minus, and for the green one two arrowheads (full screen) */
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn svg { display: none; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn::after { content: ""; position: absolute; inset: 0; margin: auto; width: 8px; height: 8px; background: var(--wf-glyph); opacity: 0; transition: opacity 0.08s; -webkit-mask: var(--glyph) center / contain no-repeat; mask: var(--glyph) center / contain no-repeat; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:hover .bt-wf-btn::after, :is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btns:focus-within .bt-wf-btn::after { opacity: 0.85; }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4h6' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-close { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1.3 1.3l5.4 5.4M6.7 1.3L1.3 6.7' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Maximise"] { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M.8 .8h3.6L.8 4.4zM7.2 7.2H3.6l3.6-3.6z'/%3E%3C/svg%3E"); }
-:is([data-ui="macos"], [data-ui="aqua"], [data-ui="liquid"]) .bt-wf-btn[aria-label="Restore"] { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4.2h2.8V1.4zM7 3.8H4.2v2.8z'/%3E%3C/svg%3E"); }
-/* Aqua's green button shows a plus */
-[data-ui="aqua"] .bt-wf-btn[aria-label="Maximise"], [data-ui="aqua"] .bt-wf-btn[aria-label="Restore"] { --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4h6M4 1v6' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
-[data-ui="aqua"] .bt-wf-btn { --wf-bg: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-hover: radial-gradient(circle at 50% 18%, #fff0b8 0, #f7c23c 40%, #c98c10 100%); --wf-border: 1px solid #8a6310; --wf-shadow: inset 0 1px 1px rgb(255 255 255 / 0.6); }
-[data-ui="aqua"] .bt-wf-btn[aria-label="Maximise"], [data-ui="aqua"] .bt-wf-btn[aria-label="Restore"] { --wf-bg: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-hover: radial-gradient(circle at 50% 18%, #d6ffc9 0, #55d246 40%, #1e8a1a 100%); --wf-border: 1px solid #1a6a17; }
-[data-ui="aqua"] .bt-wf-close { --wf-bg: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-close-hover: radial-gradient(circle at 50% 18%, #ffd0cc 0, #ff6b63 35%, #cf2a22 100%); --wf-border: 1px solid #8e1e19; }
-
 /* the guides in Settings (components/GuidesTab.tsx): plain readable typography under the theme's colours */
 .guide { font-size: 0.92rem; line-height: 1.65; }
 .guide h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 0.75rem; }
@@ -256,7 +32,10 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 .guide h3 { font-size: 1.02rem; font-weight: 600; margin: 1.2rem 0 0.35rem; }
 .guide h4 { font-weight: 600; margin: 1rem 0 0.25rem; }
 .guide p, .guide ul, .guide ol, .guide table, .guide pre, .guide blockquote { margin: 0.6rem 0; }
-.guide ul { list-style: disc; padding-left: 1.4rem; } .guide ol { list-style: decimal; padding-left: 1.5rem; } .guide li { margin: 0.2rem 0; } .guide li > ul, .guide li > ol { margin: 0.2rem 0; }
+.guide ul { list-style: disc; padding-left: 1.4rem; }
+.guide ol { list-style: decimal; padding-left: 1.5rem; }
+.guide li { margin: 0.2rem 0; }
+.guide li > ul, .guide li > ol { margin: 0.2rem 0; }
 .guide code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84em; background: hsl(var(--raised)); padding: 0.1rem 0.3rem; border-radius: 0.3rem; overflow-wrap: anywhere; }
 .guide pre { background: hsl(var(--raised)); border: 1px solid hsl(var(--line)); border-radius: 0.5rem; padding: 0.7rem 0.85rem; overflow-x: auto; }
 .guide pre code { background: none; padding: 0; font-size: 0.82rem; overflow-wrap: normal; white-space: pre; }
@@ -266,11 +45,9 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 .guide table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.86rem; }
 .guide th, .guide td { border: 1px solid hsl(var(--line)); padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
 .guide th { background: hsl(var(--raised)); font-weight: 600; }
-
 /* the now-playing screensaver: the cover drifts slowly so no pixel stays lit for long */
 @keyframes bt-drift { 0% { transform: translate(-3vmin, -2vmin) scale(1); } 50% { transform: translate(3vmin, 2vmin) scale(1.04); } 100% { transform: translate(-3vmin, -2vmin) scale(1); } }
 .bt-drift { animation: bt-drift 60s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .bt-drift { animation: none; } }
-
 /* the full-screen player: a click on an icon must count as a click on its button (the glyph itself was not reliably the target) */
 .bt-now button svg, .bt-now button svg * { pointer-events: none; }

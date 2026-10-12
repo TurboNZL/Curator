@@ -158,6 +158,9 @@ importers:
       react-router-dom:
         specifier: ^6.26.2
         version: 6.30.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      turbothemes:
+        specifier: github:TurboNZL/turbothemes
+        version: https://codeload.github.com/TurboNZL/turbothemes/tar.gz/c614e40eef426350dca0cd0fa5fee19a0f17b726
       zustand:
         specifier: ^5.0.13
         version: 5.0.13(@types/react@19.2.8)(react@19.2.3)
@@ -2767,6 +2770,12 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  turbothemes@https://codeload.github.com/TurboNZL/turbothemes/tar.gz/c614e40eef426350dca0cd0fa5fee19a0f17b726:
+    resolution: {tarball: https://codeload.github.com/TurboNZL/turbothemes/tar.gz/c614e40eef426350dca0cd0fa5fee19a0f17b726}
+    version: 1.0.0
+    engines: {node: '>=22.6'}
+    hasBin: true
+
   type-fest@0.13.1:
     resolution: {integrity: sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg==}
     engines: {node: '>=10'}
@@ -5373,6 +5382,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
     optional: true
+
+  turbothemes@https://codeload.github.com/TurboNZL/turbothemes/tar.gz/c614e40eef426350dca0cd0fa5fee19a0f17b726: {}
 
   type-fest@0.13.1:
     optional: true
