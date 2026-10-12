@@ -83,6 +83,6 @@ export class Updates {
     });
     this.installing = false;
     if (result.ok) { app.relaunch(); app.exit(0); return; }
-    this.set({ status: 'ready', version, message: result.message, command: result.cancelled ? undefined : manualInstallCommand(file) });
+    this.set({ status: 'ready', version, message: `${result.message}${result.cancelled ? '' : ' (The AppImage build updates itself without ever asking for a password.)'}`, command: result.cancelled ? undefined : manualInstallCommand(file) });
   }
 }

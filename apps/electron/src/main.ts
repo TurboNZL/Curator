@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
 import { startServer, type Running } from '../../../packages/server/src/start.ts';
 import { BUILT_IN_DISCORD_CLIENT_ID, findWebDir, loadDesktopConfig, loadDiscordConfig, loadUpdateToken, saveUpdateToken, saveDesktopConfig, saveDiscordConfig } from './desktopConfig.ts';
-import { DiscordPresence, type Presence } from './discord.ts';
+import { DiscordPresence, findSockets, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
 import { describeGraphics, type Graphics } from './graphics.ts';
 
@@ -106,7 +106,7 @@ ipcMain.on('curator:info', (e) => {
 });
 ipcMain.handle('curator:graphics', () => graphics());
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
-const discordInfo = () => ({ ...loadDiscordConfig(userData()), builtIn: !!BUILT_IN_DISCORD_CLIENT_ID, status: discord.status });
+const discordInfo = () => ({ ...loadDiscordConfig(userData()), builtIn: !!BUILT_IN_DISCORD_CLIENT_ID, status: discord.status, detail: discord.detail, sockets: findSockets() });
 ipcMain.on('curator:presence', (_e, p: Presence | null) => {
   if (p && (typeof p.title !== 'string' || typeof p.artist !== 'string')) return;
   discord.update(p ? { title: p.title, artist: p.artist, album: String(p.album ?? ''), duration: Number(p.duration) || 0, position: Number(p.position) || 0, playing: !!p.playing } : null);
