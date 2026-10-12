@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check, Equal, Play, RefreshCw, SkipForward, ThumbsDown, ThumbsUp, X } from 'lucide-react';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -31,6 +31,8 @@ export function EloQuestions() {
   const pool = useMemo(() => lib.tracks.filter((t) => t.file).map((t) => ({ id: t.id, elo: t.elo, comparisons: t.comparisons, rating: t.rating })), [lib]);
   const [q, setQ] = useState<Question | null>(() => nextQuestion(pool));
   const [answered, setAnswered] = useState(0);
+  // the library may still be loading when this mounts: ask again once there is something to ask about
+  useEffect(() => { if (!q && pool.length >= 2) setQ(nextQuestion(pool)); }, [q, pool]);
   const next = (prev?: Question['kind']) => setQ(nextQuestion(pool, prev));
   const answer = (a: string) => {
     if (!q) return;
@@ -40,7 +42,7 @@ export function EloQuestions() {
   };
   const T = (id: string) => lib.trackById.get(id);
   if (!q) return null;
-  const tracks = q.kind === 'duel' ? [T(q.a), T(q.b)] : q.kind === 'triple' ? q.ids.map(T) : [T(q.id), 'ref' in q ? T(q.ref) : undefined];
+  const tracks = q.kind === 'duel' ? [T(q.a), T(q.b)] : q.kind === 'triple' ? q.ids.map(T) : q.kind === 'benchmark' ? [T(q.id), T(q.ref)] : [T(q.id)];
   if (tracks.some((t) => !t)) return null;
   return (
     <section className="card space-y-3 p-5" aria-label="Ranking question">

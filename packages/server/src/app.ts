@@ -8,6 +8,7 @@ import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
 import { analyzeAudio } from './audioinfo.ts';
 import { Matcher, type MatchAlbum } from './match.ts';
+import { LyricsFinder } from './lyrics.ts';
 import { similarArtists } from './recommend.ts';
 import { lookupAlbumDate } from './dates.ts';
 import { Soloist } from './soloist.ts';
@@ -43,6 +44,7 @@ export function createApp(
   matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   mover = new StorageMover(config.dataDir),
   soloist = new Soloist(config.dataDir, { ffmpegDir: config.ffmpegDir }),
+  lyricsFinder = new LyricsFinder(),
 ) {
   const app = new Hono();
 
@@ -168,6 +170,15 @@ export function createApp(
       failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error, dead }) => ({ trackId, error, dead: !!dead })),
       // what is downloading right now, with how far along it is
       active: jobs.filter((j) => j.state === 'running').map(({ trackId, stage, percent }) => ({ trackId, stage: stage ?? 'downloading', percent: percent ?? 0 })) });
+  });
+
+  // ---- lyrics (lyrics.ts, from LRCLIB) ----
+  app.get('/api/lyrics', async (c) => {
+    const artist = (c.req.query('artist') ?? '').slice(0, 200), title = (c.req.query('title') ?? '').slice(0, 200);
+    if (!artist || !title) return c.json({ error: 'artist and title are needed' }, 400);
+    const duration = Number(c.req.query('duration'));
+    const lyrics = await lyricsFinder.find({ artist, title, album: (c.req.query('album') ?? '').slice(0, 200) || undefined, duration: Number.isFinite(duration) && duration > 0 ? duration : undefined }).catch(() => null);
+    return c.json({ lyrics });
   });
 
   // ---- find the YouTube Music album of albums that have no link (match.ts): a few albums per request, the page asks again for the next batch ----

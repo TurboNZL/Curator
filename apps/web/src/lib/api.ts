@@ -120,6 +120,10 @@ export class Api {
   spotifyPlaylist(id: string) { return this.req<SpotifyList>(`/api/spotify/playlist/${id}`); }
   spotifyResolve(url: string) { return this.req<SpotifyList>('/api/spotify/resolve', { method: 'POST', body: JSON.stringify({ url }) }); }
   spotifyCover(uri: string) { return this.req<{ hash: string; url: string }>('/api/spotify/cover', { method: 'POST', body: JSON.stringify({ uri }) }); }
+  lyrics(q: { artist: string; title: string; album?: string; duration?: number }) {
+    const p = new URLSearchParams({ artist: q.artist, title: q.title, ...(q.album ? { album: q.album } : {}), ...(q.duration ? { duration: String(Math.round(q.duration)) } : {}) });
+    return this.req<{ lyrics: { synced: string | null; plain: string | null; instrumental: boolean; source: string } | null }>(`/api/lyrics?${p}`);
+  }
   matchAlbums(albums: MatchAlbumReq[]) { return this.req<{ results: MatchResultRes[] }>('/api/match-album', { method: 'POST', body: JSON.stringify({ albums }) }); }
   spotifyDevices() { return this.req<{ devices: SpotifyDeviceInfo[] }>('/api/spotify/player/devices'); }
   spotifyPlayerState() { return this.req<{ state: SpotifyPlayerInfo | null }>('/api/spotify/player/state'); }

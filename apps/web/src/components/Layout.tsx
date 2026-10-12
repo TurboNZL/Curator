@@ -8,6 +8,7 @@ import { useStore } from '../lib/store.ts';
 import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
+import { NowPlaying } from './NowPlaying.tsx';
 import { DevicesMenu } from './Devices.tsx';
 import { navLayout } from '../lib/uiStyle.ts';
 
@@ -192,6 +193,7 @@ export function Layout() {
       </div>
       <PlayerBar />
       <EditorHost />
+      <NowPlaying />
       <nav ref={tabRef} className="bt-tabbar bt-shell relative flex md:hidden">
         <span className="bt-ind" aria-hidden />
         {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
