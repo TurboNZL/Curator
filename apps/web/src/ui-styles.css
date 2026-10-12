@@ -165,13 +165,20 @@ html[data-ui="gtk4"] ::selection { background: color-mix(in srgb, hsl(var(--acce
   --rng-appearance: none; --rng-h: 0.3rem; --rng-r: 3px; --rng-track: color-mix(in srgb, hsl(var(--fg)) 20%, transparent);
   --rng-tw: 1.1rem; --rng-th: 1.1rem; --rng-thumb: color-mix(in srgb, hsl(var(--surface)) 94%, hsl(var(--bg))); --rng-tb: 1px solid color-mix(in srgb, hsl(var(--fg)) 38%, transparent); --rng-ts: 0 1px 2px rgb(0 0 0 / 0.25);
 }
-html[data-ui="breeze"] { font-size: 15px; }
+html[data-ui="breeze"] { font-size: 14px; } /* Noto Sans 10 pt, Breeze's default size */
 [data-ui="breeze"] .bt-titlebar svg { color: hsl(var(--fg)); }
 [data-ui="breeze"] .bt-nav { font-weight: 400; color: hsl(var(--fg)); }
 [data-ui="breeze"] .bt-nav[aria-current="page"] svg { color: inherit; }
 [data-ui="breeze"] .bt-shell { backdrop-filter: none; -webkit-backdrop-filter: none; }
 [data-ui="breeze"] .bt-brand { font-weight: 600; }
-[data-ui="breeze"] h1 { font-weight: 600; }
+/* Kirigami headings are regular weight; Plasma 6 dropped framed views for 1 px separators and lists use the scheme's alternate row colour; focus is an encircling accent ring */
+[data-ui="breeze"] :is(h1, h2) { font-weight: 400; }
+[data-ui="breeze"] h1 { font-size: 1.6rem; }
+[data-ui="breeze"] .card { box-shadow: none; --card-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 12%, transparent); }
+[data-ui="breeze"] .card .bt-row:nth-child(even):not(:hover):not(.bt-row-current) { background: color-mix(in srgb, hsl(var(--fg)) 3.5%, transparent); }
+[data-ui="breeze"] .card .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, hsl(var(--fg)) 9%, transparent); }
+[data-ui="breeze"] :is(.btn, .input, .bt-nav, .bt-tab, .chip):focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 1px; }
+[data-ui="breeze"] .bt-nav[aria-current="page"] { font-weight: 400; }
 
 /* ================== Windows 11 (Fluent) ================== */
 [data-ui="win11"] {
@@ -934,73 +941,69 @@ html[data-ui="winamp"] { font-size: 13px; }
 html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 
 /* ================== LG Optimus "Marshmallow" theme ==================
- * Optimus UI 3.0 (Android 4.x, 2012-13) shipped four home-screen themes: Optimus, Biz, Cozywall and Marshmallow. The reviews describe
- * Marshmallow as a pink, cartoonish, candy-like theme that changes the icon set, wallpaper and the colour of the app drawer and
- * notification area (GSMArena's Optimus L9 review; LG's user guide lists the four themes). No screenshots or colour specs are
- * available, so this is an interpretation: bubblegum pink, glossy pill buttons, puffy rounded cards, soft candy shadows, round type
- * (Nunito/Fredoka stand in for the era's rounded system fonts). Pair it with the "Marshmallow" colours. The id stays `lgux` so saved
- * settings keep working. */
+ * Optimus UI 3.0 (Android 4.x, 2012-13) shipped four home-screen themes: Optimus, Biz, Cozywall and Marshmallow. Marshmallow is the
+ * pink one. Redone from a screenshot of its home screen (not from a spec): FLAT pastel pink, hand-drawn illustration behind everything,
+ * translucent white widget panels with a thin rose frame and small corners, soft pink buttons with rose labels (the RAM widget), a
+ * black status bar on top, a rose line as the page indicator and white labels with a soft shadow on the dock. No gloss, no heavy
+ * shadows, no bounce. The era's own sans (Roboto / Droid Sans) carries the type. Pair it with the "Marshmallow" colours.
+ * The id stays `lgux` so saved settings keep working. */
 [data-ui="lgux"] {
-  --radius: 18px; --ctl-r: 9999px; --card-r: 22px; --win-r: 30px; --menu-r: 20px; --nav-r: 9999px; --chip-r: 9999px; --in-r: 9999px;
-  --font: Nunito, "Varela Round", "Segoe UI", system-ui, sans-serif; --title-font: Fredoka, Nunito, "Varela Round", system-ui, sans-serif;
-  --dur: 240ms; --ease: cubic-bezier(0.34, 1.45, 0.64, 1);
-  --mm-gloss: linear-gradient(to bottom, rgb(255 255 255 / 0.6) 0%, rgb(255 255 255 / 0.12) 48%, rgb(255 255 255 / 0) 52%, rgb(255 255 255 / 0.12) 100%);
-  --mm-pop: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black), 0 8px 14px color-mix(in srgb, hsl(var(--accent)) 35%, transparent);
-  --btn-bg: var(--mm-gloss), hsl(var(--raised)); --btn-fg: hsl(var(--fg)); --btn-weight: 800;
-  --btn-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 35%, hsl(var(--bg)));
-  --btn-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 28%, hsl(var(--bg)));
-  --btn-hover-bg: var(--mm-gloss), color-mix(in srgb, hsl(var(--accent)) 14%, hsl(var(--raised))); --btn-hover-border: hsl(var(--accent));
-  --btn-hover-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
-  --btn-active-shadow: 0 0 0 color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg))); --btn-active-transform: translateY(3px) scale(0.98);
-  --btn-accent-bg: var(--mm-gloss), hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
-  --btn-accent-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 70%, white); --btn-accent-border-color: color-mix(in srgb, hsl(var(--accent)) 70%, white);
-  --btn-accent-shadow: var(--mm-pop);
-  --btn-accent-hover-bg: var(--mm-gloss), color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: var(--mm-pop);
+  --radius: 8px; --ctl-r: 6px; --card-r: 8px; --win-r: 8px; --menu-r: 6px; --nav-r: 6px; --chip-r: 4px; --in-r: 6px;
+  --font: Roboto, "Droid Sans", "Open Sans", "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --dur: 150ms; --ease: ease-out;
+  --mm-frame: color-mix(in srgb, hsl(var(--accent)) 55%, hsl(var(--bg)));
+  --mm-soft: color-mix(in srgb, hsl(var(--accent)) 18%, hsl(var(--surface)));
+  --mm-glass: color-mix(in srgb, hsl(var(--surface)) 72%, transparent);
+  --btn-bg: var(--mm-soft); --btn-fg: hsl(var(--accent)); --btn-weight: 500;
+  --btn-border: 2px solid var(--mm-frame); --btn-shadow: none;
+  --btn-hover-bg: color-mix(in srgb, hsl(var(--accent)) 28%, hsl(var(--surface))); --btn-hover-border: hsl(var(--accent)); --btn-hover-shadow: none;
+  --btn-active-shadow: inset 0 2px 4px color-mix(in srgb, hsl(var(--accent)) 30%, transparent); --btn-active-transform: none;
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-text-shadow: none;
+  --btn-accent-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 78%, black); --btn-accent-border-color: color-mix(in srgb, hsl(var(--accent)) 78%, black);
+  --btn-accent-shadow: none; --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: none;
   --ghost-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --in-bg: hsl(var(--surface)); --in-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))); --in-shadow: inset 0 2px 4px color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --in-hover-border: color-mix(in srgb, hsl(var(--accent)) 60%, hsl(var(--bg))); --in-focus-border: hsl(var(--accent));
-  --in-focus-shadow: 0 0 0 4px color-mix(in srgb, hsl(var(--accent)) 25%, transparent); --in-px: 1rem;
-  --card-bg: hsl(var(--surface)); --card-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg)));
-  --card-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 16%, hsl(var(--bg))), 0 10px 22px color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --backdrop: color-mix(in srgb, hsl(var(--accent)) 28%, rgb(40 10 30 / 0.45));
-  --win-bg: hsl(var(--surface)); --win-border: 3px solid color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
-  --win-shadow: 0 8px 0 color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))), 0 24px 44px color-mix(in srgb, hsl(var(--accent)) 30%, transparent);
-  --dialog-anim: bt-pop 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  --tb-bg: var(--mm-gloss), hsl(var(--accent)); --tb-border: 0 solid transparent; --tb-pad: 0.8rem 1.3rem; --tb-size: 1.2rem; --tb-weight: 600; --tb-justify: space-between;
-  --tb-fg: hsl(var(--accent-fg)); --tb-text-shadow: 0 1px 0 rgb(0 0 0 / 0.16);
-  --close-r: 9999px; --close-fg: hsl(var(--accent-fg)); --close-hover-bg: rgb(255 255 255 / 0.28);
-  --bar-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 24%, hsl(var(--bg)));
-  --menu-bg: hsl(var(--surface)); --menu-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 40%, hsl(var(--bg)));
-  --pop-shadow: 0 6px 0 color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg))), 0 14px 26px color-mix(in srgb, hsl(var(--accent)) 24%, transparent);
-  --menu-anim: bt-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  --menu-hi-bg: var(--mm-gloss), hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
-  --side-bg: color-mix(in srgb, hsl(var(--accent)) 9%, hsl(var(--bg))); --side-shadow: none;
-  --top-bg: var(--mm-gloss), hsl(var(--accent)); --top-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black);
-  --player-bg: hsl(var(--surface)); --player-shadow: 0 -4px 0 color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg)));
-  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --nav-active-bg: var(--mm-gloss), hsl(var(--accent)); --nav-active-fg: hsl(var(--accent-fg)); --nav-active-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black);
-  --row-hover: color-mix(in srgb, hsl(var(--accent)) 12%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 22%, transparent);
+  --in-bg: var(--mm-glass); --in-border: 2px solid var(--mm-frame); --in-shadow: none;
+  --in-hover-border: hsl(var(--accent)); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--accent)) 22%, transparent); --in-px: 0.75rem;
+  --card-bg: var(--mm-glass); --card-border: 2px solid var(--mm-frame); --card-shadow: none;
+  --backdrop: rgb(60 20 32 / 0.35);
+  --win-bg: color-mix(in srgb, hsl(var(--surface)) 94%, transparent); --win-border: 2px solid var(--mm-frame);
+  --win-shadow: 0 10px 28px color-mix(in srgb, hsl(var(--accent)) 28%, transparent);
+  --dialog-anim: bt-fade 160ms ease-out;
+  --tb-bg: color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--surface))); --tb-border: 0 solid transparent; --tb-pad: 0.7rem 1.1rem; --tb-size: 1.05rem; --tb-weight: 500; --tb-justify: space-between;
+  --tb-fg: hsl(var(--accent)); --tb-text-shadow: none;
+  --close-r: 4px; --close-fg: hsl(var(--accent)); --close-hover-bg: color-mix(in srgb, hsl(var(--accent)) 20%, transparent);
+  --bar-border: 2px solid var(--mm-frame);
+  --menu-bg: color-mix(in srgb, hsl(var(--surface)) 95%, transparent); --menu-border: 2px solid var(--mm-frame);
+  --pop-shadow: 0 8px 20px color-mix(in srgb, hsl(var(--accent)) 24%, transparent);
+  --menu-anim: bt-fade 120ms ease-out;
+  --menu-hi-bg: color-mix(in srgb, hsl(var(--accent)) 22%, transparent); --menu-hi-fg: hsl(var(--accent));
+  --side-bg: color-mix(in srgb, hsl(var(--surface)) 55%, transparent); --side-shadow: none;
+  --top-bg: #231a1d; --top-shadow: none;
+  --player-bg: color-mix(in srgb, hsl(var(--surface)) 80%, transparent); --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 12%, transparent);
+  --nav-active-bg: color-mix(in srgb, hsl(var(--accent)) 16%, transparent); --nav-active-fg: hsl(var(--accent)); --nav-active-shadow: inset 3px 0 0 hsl(var(--accent));
+  --row-hover: color-mix(in srgb, hsl(var(--accent)) 10%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 18%, transparent);
   --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
-  --chk-size: 1.3rem; --chk-r: 9px; --chk-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 55%, hsl(var(--bg))); --chk-bg: hsl(var(--surface));
-  --chk-on-bg: var(--mm-gloss), hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: var(--mm-gloss), hsl(var(--accent));
-  --chk-dot: hsl(var(--accent-fg)); --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 4px color-mix(in srgb, hsl(var(--accent)) 28%, transparent);
-  --rng-appearance: none; --rng-h: 12px; --rng-r: 9999px; --rng-track: color-mix(in srgb, hsl(var(--accent)) 20%, hsl(var(--bg)));
-  --rng-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg)));
-  --rng-tw: 1.5rem; --rng-th: 1.5rem; --rng-tr: 9999px; --rng-thumb: radial-gradient(circle at 35% 30%, #fff 0 22%, hsl(var(--accent)) 24%); --rng-tb: 2px solid #fff;
-  --rng-ts: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black), 0 5px 8px rgb(0 0 0 / 0.2);
+  --chk-size: 1.15rem; --chk-r: 3px; --chk-border: 2px solid var(--mm-frame); --chk-bg: var(--mm-glass);
+  --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: hsl(var(--accent));
+  --chk-dot: hsl(var(--accent-fg)); --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 3px color-mix(in srgb, hsl(var(--accent)) 25%, transparent);
+  --rng-appearance: none; --rng-h: 4px; --rng-r: 2px; --rng-track: color-mix(in srgb, hsl(var(--accent)) 25%, hsl(var(--bg)));
+  --rng-border: 0 solid transparent;
+  --rng-tw: 1.1rem; --rng-th: 1.1rem; --rng-tr: 9999px; --rng-thumb: hsl(var(--accent)); --rng-tb: 2px solid #fff;
+  --rng-ts: 0 1px 3px rgb(0 0 0 / 0.3);
 }
-/* headings and the logo get the round display face; the app bar, active tab and window title bars are glossy candy */
-[data-ui="lgux"] h1, [data-ui="lgux"] h2, [data-ui="lgux"] h3, [data-ui="lgux"] .bt-brand { font-family: var(--title-font); font-weight: 600; letter-spacing: 0.01em; }
-[data-ui="lgux"] .bt-top { color: hsl(var(--accent-fg)); }
-[data-ui="lgux"] .bt-top .input { color: hsl(var(--fg)); border-color: rgb(255 255 255 / 0.7); }
-[data-ui="lgux"] .bt-top .btn:not(.btn-accent) { color: hsl(var(--accent-fg)); background: rgb(255 255 255 / 0.2); border-color: rgb(255 255 255 / 0.55); box-shadow: none; }
-[data-ui="lgux"] .bt-top .btn-accent { background: #fff; color: hsl(var(--accent)); border-color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black); }
-[data-ui="lgux"] .bt-top .btn:not(.btn-accent) svg { color: hsl(var(--accent-fg)); }
-[data-ui="lgux"] .bt-top .btn-accent svg { color: hsl(var(--accent)); }
-[data-ui="lgux"] .bt-titlebar { color: hsl(var(--accent-fg)); border-radius: calc(var(--win-r) - 4px) calc(var(--win-r) - 4px) 0 0; text-shadow: var(--tb-text-shadow); }
-[data-ui="lgux"] .bt-menu, [data-ui="lgux"] .bt-menu svg { color: hsl(var(--fg)); }
+/* the black status bar of the home screen carries light type; the dock-like bars keep rose type on the pale glass */
+[data-ui="lgux"] .bt-top { color: #fff; --fg: 0 0% 100%; --muted: 340 20% 78%; }
+[data-ui="lgux"] .bt-top .input { color: hsl(var(--fg)); background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.35); }
+[data-ui="lgux"] .bt-top .input::placeholder { color: rgb(255 255 255 / 0.6); }
+[data-ui="lgux"] .bt-top .btn:not(.btn-accent) { color: #fff; background: transparent; border-color: rgb(255 255 255 / 0.35); }
+[data-ui="lgux"] .bt-top .btn-accent { background: hsl(var(--accent)); color: hsl(var(--accent-fg)); }
+[data-ui="lgux"] .bt-top .btn:not(.btn-accent) svg { color: #fff; }
+/* the page indicator of the home screen: a rose line under the active tab */
+[data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -3px 0 hsl(var(--accent)); }
 [data-ui="lgux"] .bt-titlebar svg { display: none; }
-[data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -2px 0 hsl(var(--accent)); }
+[data-ui="lgux"] .bt-menu, [data-ui="lgux"] .bt-menu svg { color: hsl(var(--fg)); }
+[data-ui="lgux"] .btn-ghost { color: hsl(var(--fg)); }
 /* Material ink ripple (lib/ripple.ts) and the squircle of UX 5.0's app icons for the candy logo */
 [data-ui="lgux"] :is(.btn, .bt-nav, .bt-tab, .bt-toplink):not(.absolute):not(.fixed) { position: relative; overflow: hidden; }
 .bt-ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.22; pointer-events: none; transform: scale(0); animation: bt-ripple 480ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
@@ -1064,17 +1067,17 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
   --btn-accent-bg: #fbf6c8; --btn-accent-fg: #1b2342; --btn-accent-shadow: inset 0 -3px 0 #f0e02c, 0 3px 0 rgb(40 52 96 / 0.45);
   --btn-accent-hover-bg: #fffbe3; --btn-accent-hover-shadow: inset 0 -3px 0 #f0e02c, 0 3px 0 rgb(40 52 96 / 0.45);
   --in-bg: #5f7bab; --in-border: 0 solid transparent; --in-shadow: inset 0 2px 0 rgb(10 20 60 / 0.25); --in-hover-border: transparent; --in-focus-border: transparent;
-  --card-bg: #b6c5e2; --card-border: 0 solid transparent; --card-shadow: 0 2px 0 rgb(40 52 96 / 0.3);
-  --win-bg: #aebfdf; --win-border: 0 solid transparent; --win-shadow: 0 18px 40px rgb(10 16 40 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --card-bg: #4c66a8; --card-border: 0 solid transparent; --card-shadow: 0 2px 0 rgb(20 30 70 / 0.45);
+  --win-bg: #3c5391; --win-border: 0 solid transparent; --win-shadow: 0 18px 40px rgb(10 16 40 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
   --tb-bg: #222c4e; --tb-fg: #fff; --close-fg: #fff; --close-hover-fg: #fff;
   --bar-border: 0 solid transparent;
-  --menu-bg: #aebfdf; --menu-border: 0 solid transparent; --pop-shadow: 0 6px 0 rgb(40 52 96 / 0.3), 0 16px 30px rgb(10 16 40 / 0.4); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-bg: #36508f; --menu-border: 0 solid transparent; --pop-shadow: 0 6px 0 rgb(20 30 70 / 0.45), 0 16px 30px rgb(10 16 40 / 0.5); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
   --menu-hi-bg: #5f7bab; --menu-hi-fg: #fff;
   --side-bg: #222c4e; --top-bg: #222c4e; --player-bg: #222c4e; --player-shadow: none;
   --nav-hover-bg: rgb(255 255 255 / 0.08); --nav-active-bg: #8b9cc6; --nav-active-fg: #fff; --nav-active-shadow: none;
-  --row-hover: rgb(255 255 255 / 0.3); --row-current: rgb(251 246 200 / 0.6);
-  --panel-tb-fg: #1b2342;
-  --chk-border: 2px solid #1b2342; --chk-on-fg: #1b2342;
+  --row-hover: rgb(255 255 255 / 0.12); --row-current: rgb(251 246 200 / 0.22);
+  --panel-tb-fg: #fff;
+  --chk-border: 2px solid #fff; --chk-on-fg: #1b2342;
   --rng-track: #1d2646; --rng-fill: #1aa0ff; --rng-thumb: #d4dbea; --rng-ts: 0 2px 0 rgb(24 34 70 / 0.4);
 }
 /* Noto Sans, normal case: the sentence-case look of the settings screens */

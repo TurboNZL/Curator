@@ -216,15 +216,15 @@ export const THEME_DEFS: ThemeDef[] = [
   // Winamp 2.x: bluish metal chrome, a black playlist with #00ff00 text and #000080 selection (the skin's pledit.txt defaults)
   dark({ id: "winamp", label: "Winamp Classic", bg: hex("#1c1c2a"), primary: hex("#00e800"), onPrimary: "0 0% 0%", fg: hx("#d8dbe6"), mutedFg: hx("#8e96a8"), motif: "grid",
     ov: { card: "#000000", secondary: "#34344a", muted: "#2a2a3c", accent: "#000080", border: "#46465e", input: "#5a5a72" } }),
-  // LG Optimus "Marshmallow" theme: bubblegum pink and white, berry text (an interpretation: LG published no palette)
-  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#fff0f6"), primary: hex("#e8338a"), onPrimary: "0 0% 100%", fg: hx("#4a1a35"), mutedFg: hx("#a05a7c"), motif: "dots",
-    ov: { card: "#ffffff", secondary: "#ffdceb", muted: "#ffe6f1", accent: "#ffc9e0", border: "#ffc2da", input: "#f08fbc" } }),
+  // LG Optimus "Marshmallow" theme: pastel pink, cream and rose, read off a screenshot of its home screen (LG published no palette)
+  light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f7dde2"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#5a3a43"), mutedFg: hx("#9a6f7a"), motif: "dots",
+    ov: { card: "#fdf3f4", secondary: "#f8d0d8", muted: "#f3d5db", accent: "#dc5a76", border: "#e8a6b3", input: "#e69aaa" } }),
   dark({ id: "lg-marshmallow-dark", label: "Marshmallow Night", bg: hex("#2b1224"), primary: hex("#ff6fb0"), onPrimary: "0 0% 100%", fg: hx("#ffe9f3"), mutedFg: hx("#d79ab8"), motif: "dots",
     ov: { card: "#3b1b31", secondary: "#4a2540", muted: "#40213a", accent: "#6b2d56", border: "#5a2a49", input: "#b45c8c" } }),
   // Fortnite: Epic does not publish its UI colours; these are read off screenshots of each era's settings and lobby screens.
-  // Ch 1: muted slate blue with dark navy text, a dark navy top bar, pale cream "selected" buttons with a soft yellow edge
-  light({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#a6b8dc"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#121830"), mutedFg: hx("#2f3d68"), motif: "waves",
-    ov: { card: "#b6c5e2", secondary: "#c6d2ea", muted: "#8fa2cc", accent: "#fbf6c8", border: "#7d92bd", input: "#5f7bab" } }),
+  // Ch 1: muted slate blue with WHITE type, a dark navy top bar, pale lavender buttons with dark labels, cream "selected" and a soft yellow edge
+  dark({ id: "fortnite-1", label: "Fortnite Ch 1", bg: hex("#41589a"), primary: hex("#f2e53c"), onPrimary: "230 40% 18%", fg: hx("#ffffff"), mutedFg: hx("#c7d3f2"), motif: "waves",
+    ov: { card: "#4c66a8", secondary: "#5d77b8", muted: "#36508f", accent: "#fbf6c8", border: "#2d4078", input: "#5f7bab" } }),
   // Ch 2-3: saturated royal blue, cyan outlines and selection, lime-yellow Start button, pale blue type
   dark({ id: "fortnite-2", label: "Fortnite Ch 2-3", bg: hex("#0a5db6"), primary: hex("#e8f03b"), onPrimary: "60 100% 6%", fg: hx("#d9eeff"), mutedFg: hx("#9ccbf3"), motif: "grid",
     ov: { card: "#0a4a9a", secondary: "#0d6bcb", muted: "#0a55a8", accent: "#19b0f2", border: "#22b6ff", input: "#0b4a9a" } }),
