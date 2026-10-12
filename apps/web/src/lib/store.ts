@@ -6,6 +6,7 @@ import { getMeta, localDb, setMeta } from './idb.ts';
 import { loadSettings, saveSettings, type DeviceSettings } from './settings.ts';
 import { applyAppearance, watchSystemTheme } from './appearance.ts';
 import { withoutLegacyArtist } from './defaults.ts';
+import { droppedCover, withCoverKept } from './covers.ts';
 import { planNoteMigration } from './noteMigration.ts';
 
 export type SyncState = 'unconfigured' | 'idle' | 'syncing' | 'offline' | 'error';
@@ -26,7 +27,7 @@ interface State {
   init(): Promise<void>;
   updateSettings(patch: Partial<DeviceSettings>): void;
   /** create/replace a record (full `data`); returns its id */
-  put(table: RecordTable, data: object, id?: string): string;
+  put(table: RecordTable, data: object, id?: string, opts?: { forget?: string[] }): string;
   patch(table: RecordTable, id: string, partial: object): void;
   remove(table: RecordTable, id: string): void;
   /** restore from a backup: merge keeps whichever side is newer, replace makes this device match the backup (what it lacks becomes deleted) */
@@ -49,6 +50,27 @@ export const useStore = create<State>((set, get) => {
   const setSync = (p: Partial<SyncInfo>) => set((s) => ({ sync: { ...s.sync, ...p } }));
   const api = () => new Api(get().settings);
   const configured = () => !!get().settings.token;
+
+  /** appends a release's or album's replaced cover to the album's pool (album records are changed in place; releases patch their album) */
+  function keepCover(table: RecordTable, data: object, id: string, forget: string[]) {
+    const rows = get().rows;
+    const prev = rows[table].get(id);
+    if (!prev || prev.deleted) return;
+    const gone = droppedCover((prev.data as { cover?: string | null }).cover, (data as { cover?: string | null }).cover);
+    if (!gone || forget.includes(gone)) return;
+    if (table === 'albums') {
+      const a = data as { covers?: string[] };
+      if (!(a.covers ?? []).includes(gone)) a.covers = [...(a.covers ?? []), gone];
+    } else if (table === 'releases') {
+      const albumId = (data as { albumId?: string }).albumId ?? '';
+      const album = rows.albums.get(albumId);
+      if (!album || album.deleted) return;
+      const mine = [...rows.releases.values()].filter((r) => !r.deleted && (r.data as { albumId?: string }).albumId === albumId && r.id !== id).map((r) => r.data as { cover: string | null });
+      const nextRelease = { cover: (data as { cover: string | null }).cover };
+      const covers = withCoverKept(album.data as { covers?: string[]; cover?: string | null }, [...mine, nextRelease], gone);
+      if (covers !== ((album.data as { covers?: string[] }).covers ?? [])) get().put('albums', { ...album.data, covers }, albumId);
+    }
+  }
 
   async function write(rec: SyncRecord, queue: boolean) {
     const db = await localDb();
@@ -183,7 +205,9 @@ export const useStore = create<State>((set, get) => {
       if ('token' in patch || 'serverUrl' in patch) void get().syncNow();
     },
 
-    put(table, data, id = newId()) {
+    put(table, data, id = newId(), opts) {
+      // an image that stops being used stays in its album's pool until it is deleted on purpose (`opts.forget`)
+      keepCover(table, data, id, opts?.forget ?? []);
       const rec = stamp(table, id, data, false);
       get().rows[table].set(id, rec);
       touch(table);
@@ -201,6 +225,7 @@ export const useStore = create<State>((set, get) => {
     remove(table, id) {
       const cur = get().rows[table].get(id);
       if (!cur) return;
+      if (table === 'releases') keepCover(table, { ...(cur.data as object), cover: null }, id, []);
       const rec = stamp(table, id, cur.data, true);
       get().rows[table].set(id, rec);
       touch(table);

@@ -24,3 +24,28 @@ export function albumCover(album: AlbumCovers, releases: ReleaseCover[], default
   if (coverPicked(album) && album.cover) return album.cover;
   return defaultRelease?.cover || releases.find((r) => r.cover)?.cover || album.covers?.[0] || album.cover || null;
 }
+
+/** Hashes a record pointed at before and no longer points at (an overwritten or cleared cover). */
+export function droppedCover(prev: string | null | undefined, next: string | null | undefined): string | null {
+  return prev && prev !== next ? prev : null;
+}
+
+/** The album's `covers` with `hash` added (same array when it is already in the pool, so callers can skip a write). */
+export function withCoverKept(album: AlbumCovers, releases: ReleaseCover[], hash: string): string[] {
+  const covers = album.covers ?? [];
+  return coverPool(album, releases).includes(hash) ? covers : [...covers, hash];
+}
+
+export interface CoverRemoval { album: { covers: string[]; cover: string | null; coverPicked: boolean }; releaseIds: string[] }
+
+/**
+ * Deleting an image from the pool for good: it leaves the album's list, stops being the picked cover, and every release
+ * that used it goes back to "inherit". Returns what to write; nothing is left pointing at the image.
+ */
+export function planRemoveCover(album: AlbumCovers, releases: { id: string; cover: string | null }[], hash: string): CoverRemoval {
+  const picked = album.cover === hash;
+  return {
+    album: { covers: (album.covers ?? []).filter((h) => h !== hash), cover: picked ? null : album.cover ?? null, coverPicked: picked ? false : coverPicked(album) },
+    releaseIds: releases.filter((r) => r.cover === hash).map((r) => r.id),
+  };
+}
