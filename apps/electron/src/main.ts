@@ -119,6 +119,12 @@ ipcMain.on('curator:access', (_e, serverUrl: unknown, id: unknown, secret: unkno
 });
 ipcMain.handle('curator:graphics', () => graphics());
 ipcMain.handle('curator:gpu-get', () => { const c = loadDesktopConfig(userData()); return { mode: c.gpuMode, auto: c.gpuAuto, running: gpuStart.id, modes: GPU_MODES.map(({ id, label, hint }) => ({ id, label, hint })) }; });
+ipcMain.handle('curator:gpu-report', async () => {
+  const g = await graphics();
+  const info = await app.getGPUInfo('complete').catch(() => null);
+  return JSON.stringify({ summary: g.summary, detail: g.detail, features: g.features, gpuCrashes: g.gpuCrashes, mode: gpuStart.id, electron: process.versions.electron, chrome: process.versions.chrome, session: { type: process.env.XDG_SESSION_TYPE, desktop: process.env.XDG_CURRENT_DESKTOP, display: process.env.DISPLAY, wayland: process.env.WAYLAND_DISPLAY }, gpuInfo: info }, null, 2);
+});
+ipcMain.on('curator:gpu-page', () => { const w = new BrowserWindow({ width: 1000, height: 800, title: 'Chromium GPU report' }); void w.loadURL('chrome://gpu'); });
 ipcMain.handle('curator:gpu-set', (_e, mode: unknown) => {
   const id = typeof mode === 'string' && (mode === 'auto' || GPU_MODES.some((m) => m.id === mode)) ? mode : 'auto';
   saveDesktopConfig(userData(), { gpuMode: id, gpuAuto: { step: 0, done: false } });

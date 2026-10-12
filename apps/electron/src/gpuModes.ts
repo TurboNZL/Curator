@@ -23,11 +23,13 @@ export const GPU_MODES: GpuMode[] = [
   { id: 'nosandbox', label: 'No GPU sandbox', hint: 'For NVIDIA\'s proprietary driver ("Can\'t initialize nvrm channel").', switches: [...BASE, ['disable-gpu-sandbox']] },
   { id: 'x11-nosandbox', label: 'X11 and no GPU sandbox', hint: 'Both of the above.', switches: [...BASE, ['ozone-platform', 'x11'], ['disable-gpu-sandbox']] },
   { id: 'angle-gl', label: 'OpenGL (ANGLE)', hint: 'Force ANGLE\'s OpenGL back end.', switches: [...BASE, ['use-angle', 'gl'], ['ozone-platform', 'x11']] },
+  { id: 'angle-egl', label: 'ANGLE over EGL', hint: 'ANGLE\'s OpenGL-over-EGL back end with the GPU sandbox off. Keeps whatever session you are in (Wayland or X11).', switches: [...BASE, ['use-gl', 'angle'], ['use-angle', 'gl-egl'], ['disable-gpu-sandbox']] },
+  { id: 'wayland', label: 'Wayland (native)', hint: 'Force native Wayland. This is Chromium\'s own choice on a Wayland session already; use it to be sure.', switches: [...BASE, ['ozone-platform', 'wayland']] },
   { id: 'software', label: 'Software (no GPU)', hint: 'Turn the GPU off. Slower, but never crashes.', switches: [], software: true },
 ];
 
 /** The order Automatic tries modes in (software is never tried by itself: it is only chosen by hand). */
-export const AUTO_ORDER = ['default', 'x11', 'nosandbox', 'x11-nosandbox', 'angle-gl'];
+export const AUTO_ORDER = ['default', 'x11', 'nosandbox', 'x11-nosandbox', 'angle-gl', 'angle-egl'];
 
 export interface GpuChoice { mode: string; auto: { step: number; done: boolean } }
 

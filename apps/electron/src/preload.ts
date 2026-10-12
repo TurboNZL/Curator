@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('curatorDesktop', {
     onState: (cb: (s: unknown) => void) => { const h = (_e: unknown, s: unknown) => cb(s); ipcRenderer.on('curator:update', h); return () => { ipcRenderer.removeListener('curator:update', h); }; },
   },
   getGpu: () => ipcRenderer.invoke('curator:gpu-get') as Promise<unknown>,
+  gpuReport: () => ipcRenderer.invoke('curator:gpu-report') as Promise<string>,
+  openGpuPage: () => ipcRenderer.send('curator:gpu-page'),
   setGpu: (mode: string) => ipcRenderer.invoke('curator:gpu-set', mode) as Promise<void>,
   getGraphics: () => ipcRenderer.invoke('curator:graphics') as Promise<unknown>,
   windowControl: (action: 'minimize' | 'maximize' | 'close') => ipcRenderer.send('curator:window', action),

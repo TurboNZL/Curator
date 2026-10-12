@@ -67,6 +67,8 @@ export interface CuratorDesktop {
   /** what Chromium got for painting: hardware (GPU) or software */
   getGpu?(): Promise<unknown>;
   setGpu?(mode: string): Promise<void>;
+  gpuReport?(): Promise<string>;
+  openGpuPage?(): void;
   getGraphics?(): Promise<{ hardware: boolean; summary: string; detail: string }>;
   getDiscord(): Promise<DiscordInfo>;
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
