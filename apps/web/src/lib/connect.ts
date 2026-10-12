@@ -8,6 +8,7 @@ export { positionNow };
 import { api, useStore } from './store.ts';
 import { spotifyEngine } from './spotifyPlayer.ts';
 import { stopBeam } from './beam.ts';
+import { getLibrary } from './derive.ts';
 import { HeaderEventSource, type EventSourceLike } from './sse.ts';
 
 /**
@@ -103,9 +104,13 @@ export function disconnect() { useConnect.setState({ remoteId: null }); publish(
 export async function localOnly() {
   useConnect.setState({ remoteId: null });
   const st = useStore.getState();
+  // a track Spotify was playing continues from the same spot on this device when it has a file here by now (a download may have finished meanwhile)
+  const p = usePlayer.getState();
+  const snap = p.engine === 'spotify' && p.queue.currentId ? p.snapshot() : null;
   stopBeam();
   await spotifyEngine.release(true);
   if (st.settings.spotifyDeviceId) st.updateSettings({ spotifyDeviceId: '', spotifyDeviceName: '' });
+  if (snap?.trackId && getLibrary().trackById.get(snap.trackId)?.file) p.restore(snap, { play: snap.playing });
   publish();
 }
 
