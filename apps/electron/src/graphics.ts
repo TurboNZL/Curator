@@ -33,7 +33,10 @@ const on = (v: string | undefined) => !!v && v.startsWith('enabled');
 export function describeGraphics(g: GpuFacts, gpuCrashes = 0): Graphics {
   const compositing = g.features.gpu_compositing;
   const softwareGl = SOFTWARE.test(g.renderer) || SOFTWARE.test(g.glParts);
-  const noGl = /gl=none/.test(g.glParts);
+  // "gl=none" alone is not trusted when a real GPU is plainly in use: with the GPU in the browser process (native Wayland on NVIDIA, measured)
+  // the basic query leaves the GL string empty although a GPU (vendor id found) runs WebGL and OpenGL
+  const glWorks = g.vendorIds.some((v) => v > 0) && on(g.features.webgl) && on(g.features.opengl);
+  const noGl = /gl=none/.test(g.glParts) && !glWorks;
   // some sessions (native Wayland on NVIDIA, measured) report no vendor id in the basic query although the GL is a real GPU through ANGLE: a concrete GL
   // implementation that is not software counts as a device
   const noDevice = !g.vendorIds.some((v) => v > 0) && (!g.glParts || noGl);

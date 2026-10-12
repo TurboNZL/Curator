@@ -4,7 +4,7 @@ The same library server the Raspberry Pi runs, as a Windows program that lives i
 
 ## Install
 
-1. Download `music-curator-server-setup-<version>.exe` from the newest [release](https://github.com/TurboNZL/Curator/releases) and run it. Windows may say "Windows protected your PC" because the installer is not signed: choose **More info → Run anyway**.
+1. Download `music-curator-server-<version>-windows-x64-setup.exe` from the newest [release](https://github.com/TurboNZL/Curator/releases) and run it. Windows may say "Windows protected your PC" because the installer is not signed: choose **More info → Run anyway**.
 2. The setup wizard opens by itself. It takes about five minutes (below). Reopen it any time: right-click the tray icon → **Setup and settings…**
 3. Updates arrive by themselves (tray → *Check for updates*; the server restarts into the new version).
 

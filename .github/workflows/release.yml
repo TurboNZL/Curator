@@ -89,6 +89,6 @@ jobs:
           TAG='${{ needs.release.outputs.tag }}'
           VERSION="${TAG#v}"
           gradle -p apps/android :app:assembleRelease -PappVersion="$VERSION"
-          cp apps/android/app/build/outputs/apk/release/app-release.apk "music-curator-$VERSION.apk"
-          gh release upload "$TAG" "music-curator-$VERSION.apk" --clobber
+          cp apps/android/app/build/outputs/apk/release/app-release.apk "music-curator-$VERSION-android.apk"
+          gh release upload "$TAG" "music-curator-$VERSION-android.apk" --clobber
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }

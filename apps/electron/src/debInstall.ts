@@ -49,3 +49,9 @@ export const TERMINALS: { bin: string; args: (script: string) => string[] }[] = 
 
 /** True when `installed` (from `dpkg-query -W -f='${Version}'`) is the version the update was meant to install. */
 export const installedMatches = (installed: string, wanted: string) => installed.trim() === wanted.trim();
+
+/** True when /proc/<pid>/status says the process (and so everything it starts) can never gain privileges: pkexec and sudo both refuse to run then. */
+export const hasNoNewPrivs = (procStatus: string) => /^NoNewPrivs:\s*1\s*$/m.test(procStatus);
+
+export const NO_NEW_PRIVS_MESSAGE =
+  'This copy of Music Curator was started in a way that forbids asking for a password (the "no new privileges" flag is set, for example by a sandbox or a container), so it cannot install the update itself. Install it from a normal terminal instead (the AppImage build does not need this):';
