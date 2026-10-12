@@ -20,6 +20,9 @@ Discord only lets a program show a status **under the name of a Discord applicat
 4. *(Optional, for the picture.)* **Rich Presence → Art Assets → Add Image(s)**: upload a square image (at least 512×512; `apps/web/public/icon-512.png` in the repository is the app's icon) and name it exactly **`logo`** (lower case). It can take a few minutes before Discord shows it.
 5. In the app: **Settings → This app → Discord → "Use my own Discord application"**, paste the Application ID, and make sure the box above is ticked.
 
+## Rate limit and what the app tells you
+Discord accepts a few activity updates per 20 seconds, so the app sends at most one every 4 seconds (the newest state wins); skipping through tracks quickly shows the last one a moment later. While it cannot connect, **Settings > This app > Discord** says why in a sentence: either no `discord-ipc` socket exists in the folders it looked in (Discord is not running, or it is a sandboxed Flatpak/Snap one), or it found one and could not talk to it.
+
 ## It does not show up
 Work down this list; each step rules out one cause.
 1. Is Discord's **desktop** app running (not just discord.com in a browser), and are you logged in on it?

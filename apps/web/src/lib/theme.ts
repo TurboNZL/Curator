@@ -216,6 +216,19 @@ export const THEME_DEFS: ThemeDef[] = [
   // Winamp 2.x: bluish metal chrome, a black playlist with #00ff00 text and #000080 selection (the skin's pledit.txt defaults)
   dark({ id: "winamp", label: "Winamp Classic", bg: hex("#1c1c2a"), primary: hex("#00e800"), onPrimary: "0 0% 0%", fg: hx("#d8dbe6"), mutedFg: hx("#8e96a8"), motif: "grid",
     ov: { card: "#000000", secondary: "#34344a", muted: "#2a2a3c", accent: "#000080", border: "#46465e", input: "#5a5a72" } }),
+  // Game and device inspired palettes (see the matching UI styles)
+  dark({ id: "pipboy", label: "Pip-Boy Green", bg: hex("#04150a"), primary: hex("#35ff74"), onPrimary: "141 68% 5%", fg: hx("#35ff74"), mutedFg: hx("#1fb350"), motif: "grid",
+    ov: { card: "#072214", secondary: "#0a2e1a", muted: "#0a2e1a", accent: "#0f3d22", border: "#12652f", input: "#0a2e1a" } }),
+  dark({ id: "persona", label: "Persona Red", bg: hex("#0b0b0c"), primary: hex("#e60012"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#b9b9be"), motif: "rays",
+    ov: { card: "#131315", secondary: "#1d1d20", muted: "#1d1d20", accent: "#4a0a10", border: "#3a3a3e", input: "#1d1d20" } }),
+  light({ id: "dmg", label: "DMG Green", bg: hex("#9bbc0f"), primary: hex("#306230"), onPrimary: "71 85% 40%", fg: hx("#0f380f"), mutedFg: hx("#306230"), motif: "dots",
+    ov: { card: "#8bac0f", secondary: "#8bac0f", muted: "#8bac0f", accent: "#8bac0f", border: "#306230", input: "#8bac0f" } }),
+  dark({ id: "zune", label: "Zune Orange", bg: hex("#000000"), primary: hex("#ee4d22"), onPrimary: "0 0% 100%", fg: hx("#ffffff"), mutedFg: hx("#9a9a9a"), motif: "waves",
+    ov: { card: "#0f0f0f", secondary: "#1a1a1a", muted: "#1a1a1a", accent: "#2a2a2a", border: "#262626", input: "#1d1d1d" } }),
+  dark({ id: "cyber", label: "Night City", bg: hex("#0a0a10"), primary: hex("#fcee0a"), onPrimary: "0 0% 0%", fg: hx("#f2f2f2"), mutedFg: hx("#8c8c99"), motif: "grid",
+    ov: { card: "#12121a", secondary: "#1c1c26", muted: "#1c1c26", accent: "#2b2b10", border: "#4a4a1c", input: "#181822" } }),
+  light({ id: "inventory", label: "Inventory", bg: hex("#c6c6c6"), primary: hex("#5d9b3a"), onPrimary: "0 0% 100%", fg: hx("#3f3f3f"), mutedFg: hx("#666666"), motif: "peaks",
+    ov: { card: "#c6c6c6", secondary: "#b5b5b5", muted: "#b5b5b5", accent: "#d8d8d8", border: "#555555", input: "#8b8b8b" } }),
   // LG Optimus "Marshmallow" theme: pastel pink, cream and rose, read off a screenshot of its home screen (LG published no palette)
   light({ id: "lg-marshmallow", label: "Marshmallow", bg: hex("#f7dde2"), primary: hex("#dc5a76"), onPrimary: "0 0% 100%", fg: hx("#5a3a43"), mutedFg: hx("#9a6f7a"), motif: "dots",
     ov: { card: "#fdf3f4", secondary: "#f8d0d8", muted: "#f3d5db", accent: "#dc5a76", border: "#e8a6b3", input: "#e69aaa" } }),
@@ -253,6 +266,8 @@ export const PLATFORM_THEME_IDS: ThemeId[] = [
   "adwaita", "adwaita-dark", "breeze", "breeze-dark", "win11", "win11-dark", "win10", "win10-dark",
   "win7", "win7-dark", "winxp", "win98", "macos", "macos-dark", "aqua", "holo-dark", "holo-light", "winamp", "lg-marshmallow", "lg-marshmallow-dark", "fortnite-1", "fortnite-2", "fortnite-4", "fortnite-5", "zinc", "material", "material-dark",
 ];
+/** Palettes of the game and device inspired styles, shown in their own group in Settings. */
+export const INSPIRED_THEME_IDS: ThemeId[] = ["pipboy", "persona", "dmg", "zune", "cyber", "inventory"];
 export const OWN_THEME_IDS: ThemeId[] = APP_THEMES.map((d) => d.id);
 
 export const DEFAULT_THEME: ThemeId = "default";

@@ -29,3 +29,9 @@
 @import '@fontsource/nunito/800.css';
 @import '@fontsource/fredoka/500.css';
 @import '@fontsource/fredoka/600.css';
+
+/* fonts of the game and device inspired styles (Pip-Boy, Game Boy, Block game, Zune); downloaded only when one of them is used */
+@import '@fontsource/vt323/400.css';
+@import '@fontsource/press-start-2p/400.css';
+@import '@fontsource/open-sans/300.css';
+@import '@fontsource/anton/400.css';

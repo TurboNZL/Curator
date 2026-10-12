@@ -62,6 +62,12 @@ importers:
       '@fontsource/open-sans':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/press-start-2p':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/vt323':
+        specifier: ^5.3.0
+        version: 5.3.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -691,6 +697,12 @@ packages:
 
   '@fontsource/open-sans@5.3.0':
     resolution: {integrity: sha512-V1bdMlGNyZrJwzrdusshMOw2YR0aqYDL7kOo9dkxUEKl8dFv66A9HLckOOXl572sG/7ohhDQrCrTFGSn9LZcSw==}
+
+  '@fontsource/press-start-2p@5.3.0':
+    resolution: {integrity: sha512-gxWFxdeDglPhEYSwEeooomcaFK8kSQYLQwVxfnOJeYRj2sPEHXjpVtFgEaYfqzOjuAJGrIcJOipu2KY5YkbyuQ==}
+
+  '@fontsource/vt323@5.3.0':
+    resolution: {integrity: sha512-3w33Rg/0+R1587HQfz4t7Q7e0GGeCqr3wmzIwqdGInUnrGEwMA5eX39GP4Z9wpTQnwfhVOhYuxuRwRUeIcicbw==}
 
   '@hono/node-server@1.19.17':
     resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
@@ -3218,6 +3230,10 @@ snapshots:
   '@fontsource/nunito@5.3.0': {}
 
   '@fontsource/open-sans@5.3.0': {}
+
+  '@fontsource/press-start-2p@5.3.0': {}
+
+  '@fontsource/vt323@5.3.0': {}
 
   '@hono/node-server@1.19.17(hono@4.13.13)':
     dependencies:

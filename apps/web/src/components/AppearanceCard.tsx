@@ -4,7 +4,7 @@ import { Section } from './Section.tsx';
 import { Check, Eye, ImageIcon, ImageOff, Search, Upload, Wand2 } from 'lucide-react';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
-import { OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
+import { INSPIRED_THEME_IDS, OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
 import { UI_STYLES, isUiStyle, type UiStyleId } from '../lib/uiStyle.ts';
 import { clearCustomWallpaper, getCustomImage, saveCustomWallpaper, themeWallpaper } from '../lib/wallpaper.ts';
 
@@ -96,7 +96,8 @@ export function ColourThemeSection() {
   const tonal = (t: (typeof THEMES)[number]) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
   const groups = [
     { title: 'Curator', note: 'The app\'s own looks; System follows your device.', list: THEMES.filter((t) => (t.id === 'system' || OWN_THEME_IDS.includes(t.id)) && tonal(t)) },
-    { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && tonal(t)) },
+    { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && !INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
+    { title: 'Games & devices', note: 'Pair with the matching UI style of the same name.', list: THEMES.filter((t) => INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
     { title: 'Platform palettes', note: 'Copied from a desktop or OS; they pair with the matching UI style.', list: THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id) && tonal(t)) },
   ];
   return (

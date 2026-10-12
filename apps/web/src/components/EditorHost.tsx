@@ -138,6 +138,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
         ? <CreditsEditor readOnly value={albumCredits} onChange={() => undefined} />
         : <CreditsEditor requireLead value={t.credits ?? []} onChange={(v) => set('credits', v)} />}</Field>
       {follows && <Field label="Featured artists" hint="Added on this track only; the credits above stay the album's."><FeaturedEditor value={t.credits ?? []} onChange={(v) => set('credits', v)} /></Field>}
+      {albumSel && t.syncWithAlbumCredits && <Field label="Genres (from the album)"><div className="flex flex-wrap gap-1.5">{(selAlbum?.genres ?? []).length ? selAlbum!.genres.map((g) => <span key={g} className="chip">{g}</span>) : <span className="text-sm text-muted">The album has no genre yet.</span>}</div></Field>}
       {(!albumSel || !t.syncWithAlbumCredits) && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
       {!albumSel && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
       <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
