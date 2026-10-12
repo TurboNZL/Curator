@@ -34,7 +34,9 @@ export function describeGraphics(g: GpuFacts, gpuCrashes = 0): Graphics {
   const compositing = g.features.gpu_compositing;
   const softwareGl = SOFTWARE.test(g.renderer) || SOFTWARE.test(g.glParts);
   const noGl = /gl=none/.test(g.glParts);
-  const noDevice = !g.vendorIds.some((v) => v > 0);
+  // some sessions (native Wayland on NVIDIA, measured) report no vendor id in the basic query although the GL is a real GPU through ANGLE: a concrete GL
+  // implementation that is not software counts as a device
+  const noDevice = !g.vendorIds.some((v) => v > 0) && (!g.glParts || noGl);
   const hardware = on(compositing) && !softwareGl && !noGl && !noDevice;
   const why = (v: string | undefined) => (v ?? 'unknown').replace(/_/g, ' ');
   let summary: string;

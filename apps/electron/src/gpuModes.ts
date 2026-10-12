@@ -35,7 +35,7 @@ export const GPU_MODES: GpuMode[] = [
  */
 export const autoOrder = (sessionType?: string): string[] =>
   (sessionType ?? '').toLowerCase() === 'wayland'
-    ? ['egl', 'gl-egl', 'egl-nosandbox', 'default', 'x11', 'x11-nosandbox']
+    ? ['default', 'egl', 'gl-egl', 'egl-nosandbox', 'x11', 'x11-nosandbox']
     : ['default', 'egl', 'gl-egl', 'egl-nosandbox', 'vulkan'];
 
 export interface GpuChoice { mode: string; auto: { step: number; done: boolean } }
