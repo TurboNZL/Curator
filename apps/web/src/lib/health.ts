@@ -22,6 +22,8 @@ export interface HealthCheck {
   autoDates?: boolean;
   /** groups can be marked "not duplicates" (they stop being listed) */
   notDuplicates?: boolean;
+  /** each row can be fixed in place (a date, a genre or a link typed on the row itself) */
+  quick?: 'release-date' | 'single-date' | 'album-genre' | 'track-genre' | 'youtubeMusicUrl' | 'spotifyUrl' | 'geniusUrl';
   /** items can have their dead-link mark cleared */
   clearDead?: boolean;
 }
@@ -85,19 +87,19 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.file).map((x) => t(x, isDead(x) ? 'dead YouTube link' : x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
     { id: 'no-source', title: 'Tracks with no audio and no YouTube link', why: 'Nothing to download from. Add a link in the track editor.',
       items: lib.tracks.filter((x) => !x.file && !x.youtubeMusicUrl).map((x) => t(x)) },
-    { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio. Let the server find the YouTube Music album, paste links by album, or add one in the track editor.', bulk: 'youtubeMusicUrl', matchLinks: true,
+    { id: 'no-youtube', quick: 'youtubeMusicUrl', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio. Let the server find the YouTube Music album, paste links by album, or add one in the track editor.', bulk: 'youtubeMusicUrl', matchLinks: true,
       items: lib.tracks.filter((x) => !x.youtubeMusicUrl).map((x) => t(x, x.file ? 'has audio' : 'no audio')) },
-    { id: 'no-spotify', title: 'Tracks without a Spotify link', why: 'Optional, but handy for opening the track elsewhere.', bulk: 'spotifyUrl',
+    { id: 'no-spotify', quick: 'spotifyUrl', title: 'Tracks without a Spotify link', why: 'Optional, but handy for opening the track elsewhere.', bulk: 'spotifyUrl',
       items: lib.tracks.filter((x) => !x.spotifyUrl).map((x) => t(x)) },
-    { id: 'no-genius', title: 'Tracks without a Genius link', why: 'Optional: lyrics and annotations.', bulk: 'geniusUrl',
+    { id: 'no-genius', quick: 'geniusUrl', title: 'Tracks without a Genius link', why: 'Optional: lyrics and annotations.', bulk: 'geniusUrl',
       items: lib.tracks.filter((x) => !x.geniusUrl).map((x) => t(x)) },
-    { id: 'release-no-date', title: 'Releases without a date', why: 'Find them automatically: from another dated release of the same album, or from Spotify, iTunes and MusicBrainz. Or open a release and set the date yourself.', autoDates: true,
+    { id: 'release-no-date', quick: 'release-date', title: 'Releases without a date', why: 'Find them automatically: from another dated release of the same album, or from Spotify, iTunes and MusicBrainz. Or open a release and set the date yourself.', autoDates: true,
       items: lib.releases.filter((r) => !r.releaseDate).map((r) => ({ kind: 'release' as const, id: r.id, label: `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? 'unknown album'}` })) },
-    { id: 'single-no-date', title: 'Singles without a date', why: 'A single carries its own release date (an album track takes it from its album). Open the single and fill in the date.',
+    { id: 'single-no-date', quick: 'single-date', title: 'Singles without a date', why: 'A single carries its own release date (an album track takes it from its album). Open the single and fill in the date.',
       items: lib.singles.filter((x) => !x.releaseDate).map((x) => t(x, 'single')) },
-    { id: 'album-no-genre', title: 'Albums without a genre', why: 'Tracks that follow the album take their genres from it.',
+    { id: 'album-no-genre', quick: 'album-genre', title: 'Albums without a genre', why: 'Tracks that follow the album take their genres from it.',
       items: lib.albums.filter((a) => !a.genres.length).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },
-    { id: 'no-genre', title: 'Tracks without a genre', why: 'They will not show up in genre filters or the genre stats.',
+    { id: 'no-genre', quick: 'track-genre', title: 'Tracks without a genre', why: 'They will not show up in genre filters or the genre stats.',
       items: lib.tracks.filter((x) => !x.allGenres.length).map((x) => t(x)) },
     { id: 'low-quality', title: 'Low bitrate tracks (under 192 kbps)', why: 'Worth replacing when a better source exists.',
       items: lowQuality.map((x) => t(x, x.bitrate ?? undefined)) },

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarCheck, CheckCircle2, ChevronDown, ClipboardPaste, Eraser, GitMerge, ImageDown, Search, X } from 'lucide-react';
 import { HealthHero } from '../components/HealthHero.tsx';
 import { AudioQualityCard, MissingAudioCard } from '../components/AudioTools.tsx';
+import { QuickFix } from '../components/HealthQuick.tsx';
 import { BulkLinks } from '../components/BulkLinks.tsx';
 import type { LinkKind } from '../lib/bulkLinks.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
@@ -94,7 +95,8 @@ export function HealthPage() {
               {c.autoDates && <div className="px-4 pb-2"><button className="btn btn-accent" onClick={() => edit({ kind: 'find-dates', id: '' })}><CalendarCheck size={15} />Find dates automatically</button></div>}
               {c.addLead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`${c.addLead!.label} (${c.items.length})?`) && addLeadCredits(c.items)}>{c.addLead.label}</button></div>}
               {c.fix && <div className="px-4 pb-2"><button className="btn text-bad" onClick={() => confirm(`${c.fix!.label} (${c.items.length})?`) && c.items.forEach((i) => remove(c.fix!.table, i.id))}>{c.fix.label}</button></div>}
-              {c.mergeGroups ? <div className="max-h-[28rem] space-y-2 overflow-y-auto px-4 pb-3">{[...new Set(c.items.map((i) => i.group))].slice(0, 100).map((g) => { const group = c.items.filter((i) => i.group === g); return (
+              {c.quick ? <QuickFix check={c} /> :
+              c.mergeGroups ? <div className="max-h-[28rem] space-y-2 overflow-y-auto px-4 pb-3">{[...new Set(c.items.map((i) => i.group))].slice(0, 100).map((g) => { const group = c.items.filter((i) => i.group === g); return (
                 <div key={g} className="rounded-theme border border-line">
                   {group.map((i) => <button key={i.id} className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm hover:bg-raised/60" onClick={() => openItem(i)}><span className="truncate">{i.label}</span>{i.detail && <span className="shrink-0 text-xs text-muted">{i.detail}</span>}</button>)}
                   <div className="flex justify-end gap-2 border-t border-line/60 px-3 py-1.5"><button className="btn btn-ghost !py-1 text-xs" title="These are different songs: stop listing them" onClick={() => updateProfile(lib, (p) => ({ ...p, settings: { ...p.settings, notDuplicates: [...ignoredDupes(lib), dupeSignature(group.map((i) => i.id))] } }))}><X size={13} />Not duplicates</button><button className="btn btn-accent !py-1 text-xs" onClick={() => edit({ kind: 'merge-tracks', id: group.map((i) => i.id).join(',') })}><GitMerge size={13} />Merge these {group.length}</button></div>
