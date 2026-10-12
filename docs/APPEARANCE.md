@@ -5,7 +5,8 @@ How Curator looks is not decided in this repository. It is decided by **turbothe
 | Part | Where | Changes |
 |---|---|---|
 | The **engine**: applies a look, "match this device", wallpaper, Liquid Glass lens, ripple, the updater, the generic `.btn` / `.input` / `.card` rules | the `turbothemes` npm dependency (`apps/web/package.json`, pinned to a commit in `pnpm-lock.yaml`) | rarely |
-| The **themes**: 67 colour palettes, 33 UI styles, 5 layouts, one folder each | `themes/` and `layouts/` in the turbothemes repository | often, and they reach the app by themselves |
+| The **themes**: 67 colour palettes and 33 UI styles, one folder each | `themes/` in the turbothemes repository | often, and they reach the app by themselves |
+| The **layouts** (where the pages are listed: side bar, toolbar, icon rail, top tabs, dock): app-specific, so they stay here | `apps/web/src/lib/layout.ts` (the list), `apps/web/src/layouts.css` (the CSS, injected after the themes' stylesheet), `Layout.tsx` (the markup) | with the app |
 | The glue: starts the engine with this app's options, hands it the device settings | `apps/web/src/lib/appearance.ts` | rarely |
 | The picker (Settings → Appearance) and the "Themes" update card | `apps/web/src/components/AppearanceCard.tsx`, `ThemeUpdates.tsx` | with the app |
 

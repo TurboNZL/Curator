@@ -1,0 +1,76 @@
+/*
+ * Layouts: where the app's pages are listed (<html data-layout>). They are CSS over THIS app's bar markup, so they live here and not in turbothemes.
+ * Every rule is scoped to its own [data-layout]. Loaded after the themes' stylesheet (lib/appearance.ts) so they win ties with a style.
+ */
+
+/* ---- toolbar ---- */
+/* Standard v1 layout (data-layout=toolbar, any look): a 16rem side bar with the library pages only; the brand wordmark below belongs to the Standard v1 look */
+[data-layout="toolbar"] .bt-side.bt-shell { width: 16rem; padding: 0 1rem 1rem; }
+/* Toolbar: text links on the left, a 16rem pill search and icon buttons on the right (the Top tabs layout shares the link styles) */
+[data-layout="toolbar"] .bt-toplink { font-size: 0.75rem; line-height: 1rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(var(--muted)); transition: color var(--dur) var(--ease); }
+[data-layout="toolbar"] .bt-toplink:hover { color: color-mix(in srgb, hsl(var(--fg)) 80%, hsl(var(--bg))); }
+[data-layout="toolbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); }
+[data-layout="toolbar"] .bt-top .bt-search .input { height: 2.25rem; border-radius: 9999px; background: hsl(var(--raised)); }
+[data-layout="toolbar"] .bt-top .bt-search .input:focus { box-shadow: 0 0 0 2px hsl(var(--bg)), 0 0 0 4px hsl(var(--accent)); }
+[data-layout="toolbar"] .bt-top .bt-add { background: transparent; border: 0; box-shadow: none; width: 2.25rem; height: 2.25rem; padding: 0; text-transform: none; color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
+[data-layout="toolbar"] .bt-top .bt-add:hover { background: hsl(var(--hover)); color: hsl(var(--fg)); }
+[data-layout="toolbar"] .bt-top .bt-add span { display: none; }
+[data-layout="toolbar"] .bt-top .btn-ghost { color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
+[data-layout="toolbar"] .bt-top .btn-ghost:hover { color: hsl(var(--fg)); }
+@media (min-width: 768px) {
+  [data-layout="toolbar"] .bt-top.bt-shell { padding: 1rem 2rem; }
+  [data-layout="toolbar"] .bt-topin { max-width: none; margin: 0; gap: 1rem; }
+  [data-layout="toolbar"] .bt-topin .bt-search { flex: 0 0 16rem; margin-left: auto; }
+  [data-layout="toolbar"] .bt-content { max-width: none; padding: 2rem; }
+}
+/* a tablet has no room for six links beside the search: they take a second row */
+@media (min-width: 768px) and (max-width: 1099.98px) {
+  [data-layout="toolbar"] .bt-topin { flex-wrap: wrap; row-gap: 0.75rem; }
+  [data-layout="toolbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
+  [data-layout="toolbar"] .bt-topin .bt-search { flex: 1 1 8rem; margin-left: 0; }
+}
+
+/* ---- rail ---- */
+/* ---- Layouts (lib/layout.ts): where the pages are listed, whatever the look. "toolbar" (Standard v1) is above. ---- */
+/* Icon rail */
+[data-layout="rail"] .bt-side.bt-shell { width: 4.5rem; padding: 0.75rem 0.5rem; align-items: center; }
+[data-layout="rail"] .bt-side .bt-label-text { display: none; }
+[data-layout="rail"] .bt-side .bt-nav { justify-content: center; padding: 0.65rem; width: 100%; }
+[data-layout="rail"] .bt-side .bt-brand { padding: 0; margin-bottom: 0.5rem; justify-content: center; }
+[data-layout="rail"] .bt-side .bt-brand img { display: block; }
+[data-layout="rail"] .bt-side > div:last-child { padding: 0; justify-content: center; }
+
+/* ---- topbar ---- */
+[data-layout="topbar"] .bt-toplink { font-size: 0.75rem; line-height: 1rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(var(--muted)); transition: color var(--dur) var(--ease); }
+[data-layout="topbar"] .bt-toplink:hover { color: color-mix(in srgb, hsl(var(--fg)) 80%, hsl(var(--bg))); }
+[data-layout="topbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); }
+[data-layout="topbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
+/* Top tabs: no side bar, every page along the top */
+@media (min-width: 768px) {
+  [data-layout="topbar"] .bt-topin { max-width: none; margin: 0; gap: 1rem; }
+  [data-layout="topbar"] .bt-topin .bt-search { flex: 0 0 14rem; margin-left: auto; }
+  [data-layout="topbar"] .bt-toplinks { gap: 1.1rem; }
+  [data-layout="topbar"] .bt-content { max-width: none; }
+}
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  [data-layout="topbar"] .bt-topin { flex-wrap: wrap; row-gap: 0.5rem; }
+  [data-layout="topbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
+  [data-layout="topbar"] .bt-topin .bt-search { flex: 1 1 8rem; margin-left: 0; }
+}
+[data-layout="topbar"] .bt-toplink { font-size: 0.8125rem; font-weight: 600; color: hsl(var(--muted)); padding: 0.3rem 0.1rem; border-bottom: 2px solid transparent; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+[data-layout="topbar"] .bt-toplink:hover { color: hsl(var(--fg)); }
+[data-layout="topbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); border-bottom-color: hsl(var(--accent)); }
+
+/* ---- dock ---- */
+/* Bottom dock: the phone's tab bar, floating and centred on a desktop window */
+@media (min-width: 768px) {
+  [data-layout="dock"] .bt-tabbar { width: min(44rem, calc(100% - 2rem)); margin: 0.25rem auto 0.75rem; border-radius: 9999px; border: 1px solid hsl(var(--line)); overflow: hidden; }
+  [data-layout="dock"] .bt-tabbar .bt-tab { padding-block: 0.55rem; font-size: 11px; }
+  [data-layout="dock"] .bt-content { max-width: 80rem; }
+}
+
+/* Liquid Glass x layout: the player bar sits differently when the pages are not in the side bar */
+@media (min-width: 768px) {
+  :is(html, div)[data-ui="liquid"][data-layout="topbar"] .bt-player.bt-shell, :is(html, div)[data-ui="liquid"][data-layout="dock"] .bt-player.bt-shell { left: 12px; }
+  :is(html, div)[data-ui="liquid"][data-layout="rail"] .bt-player.bt-shell { left: calc(4.5rem + 24px); }
+}
