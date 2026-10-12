@@ -28,7 +28,7 @@ export type ThemeDef = {
 
 /** The app's own themes. Colours here only feed previews and the wallpaper; the real ones are in index.css. */
 const APP_THEMES: ThemeDef[] = [
-  { id: "default", label: "Default", note: "Dark, medium density", dark: true, bg: [240, 12, 7], primary: [262, 83, 66], vars: {}, motif: "stars", own: true },
+  { id: "default", label: "Standard v2", note: "Dark, medium density", dark: true, bg: [240, 12, 7], primary: [262, 83, 66], vars: {}, motif: "stars", own: true },
   { id: "classic", label: "Classic", note: "The original look, tighter", dark: true, bg: [240, 6, 4], primary: [217, 91, 60], vars: {}, motif: "grid", own: true },
   { id: "light", label: "Light", note: "Light, medium density", dark: false, bg: [40, 20, 97], primary: [262, 70, 52], vars: {}, motif: "hills", own: true },
 ];
@@ -145,7 +145,7 @@ const light = (s: Spec): ThemeDef => {
 
 /** Tailwind's zinc / blue / emerald / red, which the first version of the app used everywhere (see docs/appearance/TOOLBAR.md). */
 function zinc(): ThemeDef {
-  const d = dark({ id: "zinc", label: "Zinc", bg: hex("#09090b"), primary: hex("#2563eb"), onPrimary: "0 0% 100%", fg: hx("#fafafa"), mutedFg: hx("#71717a"), motif: "grid",
+  const d = dark({ id: "zinc", label: "Standard v1", bg: hex("#09090b"), primary: hex("#2563eb"), onPrimary: "0 0% 100%", fg: hx("#fafafa"), mutedFg: hx("#71717a"), motif: "grid",
     ov: { card: "#101012", secondary: "#18181b", muted: "#18181b", accent: "#27272a", border: "#27272a", input: "#27272a" } });
   d.vars.positive = hx("#10b981"); // emerald-500: the "Merge" links, the up-votes
   d.vars.negative = hx("#ef4444"); // red-500: deletes

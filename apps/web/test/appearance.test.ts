@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { THEME_DEFS, THEMES, OWN_THEME_IDS, PLATFORM_THEME_IDS, curatorVars, hex, isTheme, readableOn, resolveTheme } from '../src/lib/theme.ts';
-import { UI_STYLES, isUiStyle, navLayout } from '../src/lib/uiStyle.ts';
+import { UI_STYLES, isUiStyle } from '../src/lib/uiStyle.ts';
+import { LAYOUTS, isLayout } from '../src/lib/layout.ts';
 import { inheritFromAlbum, sameCredits } from '../src/lib/defaults.ts';
 
 const TOKENS = ['bg', 'surface', 'raised', 'line', 'hover', 'fg', 'muted', 'accent', 'accent-fg', 'good', 'warn', 'bad', 'top'];
@@ -53,9 +54,9 @@ describe('the Toolbar style and Zinc colours (the first version)', () => {
     expect(isUiStyle('toolbar')).toBe(true);
     expect(isTheme('zinc')).toBe(true);
     expect(UI_STYLES.find((x) => x.id === 'toolbar')?.matching).toEqual({ light: 'zinc', dark: 'zinc' });
-    expect(navLayout('toolbar')).toBe('toolbar');
-    expect(navLayout('default')).toBe('side');
-    expect(navLayout('nope')).toBe('side');
+    expect(isLayout('toolbar')).toBe(true);
+    expect(isLayout('nope')).toBe(false);
+    expect(LAYOUTS.map((l) => l.id)).toEqual(['side', 'toolbar', 'rail', 'topbar', 'dock']);
   });
 
   it('uses the original Tailwind zinc and blue values', () => {

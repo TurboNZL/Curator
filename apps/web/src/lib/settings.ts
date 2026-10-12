@@ -16,6 +16,8 @@ export interface DeviceSettings {
   theme: string;
   /** UI style: shape, type and motion (see lib/uiStyle.ts) */
   ui: string;
+  /** where the pages are listed (lib/layout.ts); independent of the look */
+  layout: import('./layout.ts').LayoutId;
   /** Liquid Glass variant: Regular adapts to what is behind it, Clear is see-through with a dimming layer */
   glass: 'regular' | 'clear';
   /** picture behind the page; the picture itself is kept apart (lib/wallpaper.ts) */
@@ -75,12 +77,15 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'default', ui: 'default', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'default', ui: 'default', layout: 'side', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));
   // the first version's look was called "dyad" for a few builds
   if (s.ui === 'dyad') s.ui = 'toolbar';
+  // before layouts existed, the first-version look also meant its toolbar arrangement
+  if (!saved.layout && s.ui === 'toolbar') s.layout = 'toolbar';
+  if (!['side', 'toolbar', 'rail', 'topbar', 'dock'].includes(s.layout)) s.layout = 'side';
   if (s.theme === 'dyad') s.theme = 'zinc';
   // a fresh desktop app is already connected to its own server: no address or token to type
   if (!s.token && desktop()?.token) s.token = desktop()!.token;

@@ -6,6 +6,7 @@ import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
 import { INSPIRED_THEME_IDS, OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
 import { UI_STYLES, isUiStyle, type UiStyleId } from '../lib/uiStyle.ts';
+import { LAYOUTS } from '../lib/layout.ts';
 import { clearCustomWallpaper, getCustomImage, saveCustomWallpaper, themeWallpaper } from '../lib/wallpaper.ts';
 
 const BARS = ['#6d28d9', '#0e7490', '#b45309'];
@@ -162,6 +163,28 @@ export function UiStyleSection() {
   );
 }
 
+/** Layouts: where the pages are listed. Independent of the colours and the UI style, so any look can have any of them. */
+export function LayoutSection() {
+  const { settings, updateSettings } = useStore();
+  const cur = LAYOUTS.find((l) => l.id === settings.layout) ?? LAYOUTS[0];
+  return (
+    <Section title="Layout">
+      <p className="text-sm text-muted">Where the pages are listed. This works with every colour theme and UI style.</p>
+      <div role="radiogroup" aria-label="Layout" className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5">
+        {LAYOUTS.map((l) => {
+          const selected = cur.id === l.id;
+          return (
+            <button key={l.id} type="button" role="radio" aria-checked={selected} title={l.description} onClick={() => updateSettings({ layout: l.id })}
+              className={cn('rounded-theme border bg-raised/40 px-2.5 py-1.5 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+              <span className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-xs font-medium">{l.label}</span>{selected && <Check size={12} className="shrink-0 text-accent" />}</span>
+            </button>);
+        })}
+      </div>
+      <p className="rounded-theme bg-raised/50 px-3 py-2 text-xs leading-snug text-muted"><span className="font-medium text-fg">{cur.label}: </span>{cur.description}</p>
+    </Section>
+  );
+}
+
 /** The framed preview that stays in view beside the two sections. */
 export function AppearancePreview() {
   const { settings } = useStore();
@@ -188,7 +211,7 @@ export function AppearancePreview() {
 export function AppearanceLayout() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /></div>
+      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /><LayoutSection /></div>
       <AppearancePreview />
     </div>
   );
