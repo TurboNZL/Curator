@@ -6,6 +6,8 @@ Your answers become an Elo score for every track, shown as a 0–10 rating. Play
 
 It runs as a **web app** (desktop and phone browsers, installable as a PWA), as a **desktop app** (Electron, with the server built in) and as an **Android app** (with Android Auto), all talking to one small **server** that can live on a Raspberry Pi with an external drive. Each client is local first: it holds the whole library itself and syncs when a server is reachable.
 
+> **Status: feature complete.** Everything planned has been built and is in daily use; what remains is fixing what real use turns up. The parts that could only be checked against fakes (real YouTube, Spotify, Cloudflare and the Android build) are listed under [what is unverified](#whats-unverified).
+
 > The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Toolbar* UI style and *Zinc* colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
 
 ## Start here
@@ -16,22 +18,24 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 **Ranking**
 - **Head-to-head votes.** "Which is better?" shows two tracks; you pick one, call them equal, or skip. By default only tracks that have audio are used (a checkbox turns that off; changing it keeps the pair on screen unless it holds a track without audio). Each card buffers a 15-second mid-track preview as soon as the pair appears and says "Loading preview…" until it can start at once. Keyboard: ← or → previews that side and the same arrow again picks it, ↑ skips, ↓ is equal. On a touch screen swipe a card right to pick it.
+- **Questions on the home page** (*Sharpen your ranking*): head-to-head duels between near-equal tracks, “best of three”, “does this clear your top 10%?” and a love-it/not-really gut check, each chosen to move the ranking as much as possible and recorded as ordinary votes.
 - **Thumbs up/down** in the player is a half-weight vote for the playing track. Votes are an append-only log; Elo, comparison counts and the 0–10 rating are *derived* by replaying it, so voting from several devices merges cleanly.
 
 **Library**
 - **Hierarchy:** Era (a collection of albums and singles, e.g. a phase of an artist) › Album › Release (a specific edition, with its own cover, date and tracklist) › Track. Singles are tracks on no album, with their own cover. Each album has a cover pool and a default release.
 - **Credits are the artist.** There is no "artist" field: the *Lead artist* credit is the artist; producer, writer, featured and any role you invent are credits too. An album's credits, genres and cover flow down to its tracks until you change them.
 - **One toolbar on every list** (Artists, Albums, Eras, Tracks, Singles): search with Discord-style chips (`artist:`, `album:`, `era:`, `genre:`, `tag:`, `before:`, `after:`, `rating:`, `has:`; each page offers the ones that make sense for it), a sort column with direction, and a covers/list switch, remembered per page. Playlists show a Spotify-style 2×2 mosaic of their first covers, and can hold whole albums.
-- **Library health** finds missing covers, links, dates and lead credits and fixes them in bulk: *Find dates automatically* (from another release of the album, Spotify, iTunes, MusicBrainz), *Find YouTube links*, and **Merge duplicate tracks** (the single and the album version of one song become one track that keeps every Spotify link, vote and play). Releases can carry your own **tags**, and one release can be merged into another.
+- **Library health** finds missing covers, links, dates and lead credits and fixes them in bulk: *Find dates automatically* (from another release of the album, Spotify, iTunes, MusicBrainz), *Find YouTube Music albums* (the server searches YouTube's playlists for “artist album”; you import it one release at a time), **dead YouTube links** (videos YouTube says are gone are listed and not retried), and **Merge duplicate tracks** (the single and the album version of one song become one track that keeps every Spotify link, vote and play; “Not duplicates” hides a group for good). Releases are named from a reusable list of names (pick one or create it, like an artist; blank means the album's name), one release can be merged into another, and an album with a single release can be moved into another album as a release of it.
 - **Notes:** write-ups tied to any number of artists, albums, tracks, releases, eras or playlists, with categories you make yourself, shown on each entity's page. A journal on the home page records what you did.
 
 **Playback**
-- A real queue (play next, add, reorder, shuffle that keeps rule pairs together), playback rules, play history per track, a bass boost, media keys and lock-screen controls.
+- A real queue (play next, add, reorder, shuffle that keeps rule pairs together), playback rules, play history per track, a ten-band equaliser, media keys and lock-screen controls. The next track is fetched while the current one plays, so changes are instant even through a tunnel, and the play button shows a spinner while a track loads. A full-screen **now-playing view** shows the cover over a blurred copy of itself with synced lyrics (from the free LRCLIB database, fetched by your server) and a screensaver mode with a drifting cover.
 - **Play on a device:** every device using your server appears in the player, together with your **Spotify devices**; move playback to another one or use this one as its remote ([docs/CONNECT.md](docs/CONNECT.md)). Spotify tracks without a file play through Spotify, and the server can install and run Spotify's **Soloist** itself so no other Spotify app has to be open ([docs/SPOTIFY.md](docs/SPOTIFY.md)).
 - **Offline:** keep any album or playlist's audio on the device, within a storage limit you set.
 
 **Getting music in**
-- Import a whole album from a YouTube / YouTube Music link (a release made this way starts with the album's date when one is known, and can be merged into a release you already have) (yt-dlp on the server, with cover art), add audio files from your device, or add tracks by hand. The server can download missing audio for tracks that have a YouTube link.
+- Import a whole album from a YouTube / YouTube Music link (a release made this way starts with the album's date when one is known, and can be merged into a release you already have) (yt-dlp on the server, with cover art), add audio files from your device, or add tracks by hand. The server can download missing audio for tracks that have a YouTube link, with a progress bar for each song downloading. Imports fill in what they can (the artist, its usual genres, a cleaned title, the release date and cover).
+- **Listening history** from Spotify (the extended streaming history, a zip or json) can be imported, and exported again in Spotify's own format, split per year into files under 11.8 MiB, with every play shown in a track's history.
 - Backup and restore of the database and files from Settings, and a one-time migration from a legacy database.
 
 **Running the server**
@@ -117,7 +121,10 @@ cd apps/web && npx tsc --noEmit
 
 The Android logic that does not need a device (which requests the app answers itself, which release counts as newest) has JVM unit tests in `apps/android/app/src/test`; `gradle test` in the Android project runs them.
 
-Passing unit tests are not enough here: the server and the web client have been run for real (real server, real audio, a real browser), Electron under a virtual display, and that is how most bugs were found. **Not yet verified:** real YouTube import and downloads, the Android app on a device (including Android Auto), the desktop app on a machine with a GPU, and the Liquid Glass lens outside Chromium.
+Passing unit tests are not enough here: the server and the web client have been run for real (real server, real audio, a real browser), Electron under a virtual display, and that is how most bugs were found. 
+### What's unverified
+
+Real YouTube import, album search and downloads (the sandbox that built this had no YouTube access), lyrics from LRCLIB, Spotify and Cloudflare Access against the real services, the Android app on a device (including Android Auto), the desktop app on a machine with a GPU, and the Liquid Glass lens outside Chromium. Each is covered by tests against fakes and, where it could be, a real browser run.
 
 ## Notes
 

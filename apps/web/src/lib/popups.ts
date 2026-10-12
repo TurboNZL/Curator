@@ -9,6 +9,8 @@ export const usePopups = create<{
   toggleDevices(): void; closeDevices(): void;
   toggleQueue(): void; closeQueue(): void; setPinned(v: boolean): void;
   toggleCover(): void; closeCover(): void;
+  /** the full-screen now-playing view (cover, lyrics, screensaver) */
+  nowOpen: boolean; setNow(v: boolean): void;
 }>((set, get) => ({
   queueOpen: read(), queuePinned: read(), coverOpen: false, devicesOpen: false,
   toggleDevices: () => set({ devicesOpen: !get().devicesOpen, coverOpen: false }),
@@ -18,4 +20,5 @@ export const usePopups = create<{
   setPinned: (v) => { try { localStorage.setItem(PIN, v ? '1' : '0'); } catch { /* ignore */ } set({ queuePinned: v, queueOpen: v ? true : get().queueOpen }); },
   toggleCover: () => set({ coverOpen: !get().coverOpen, devicesOpen: false }),
   closeCover: () => set({ coverOpen: false }),
+  nowOpen: false, setNow: (v) => set({ nowOpen: v, ...(v ? { coverOpen: false, devicesOpen: false } : {}) }),
 }));

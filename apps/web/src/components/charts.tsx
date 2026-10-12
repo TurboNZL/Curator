@@ -22,7 +22,7 @@ export function Bars({ data, format = String, height = 120, highlight }: { data:
 }
 
 /** A filled line over time (monthly listening). */
-export function Area({ data, format = String, height = 150 }: { data: { label: string; value: number }[]; format?: (n: number) => string; height?: number }) {
+export function Area({ data, format = String, height = 150 }: { data: { label: string; full?: string; value: number }[]; format?: (n: number) => string; height?: number }) {
   const [hover, setHover] = useState<number | null>(null);
   const W = 600, H = height, pad = 6;
   const max = Math.max(1, ...data.map((d) => d.value));
@@ -30,7 +30,7 @@ export function Area({ data, format = String, height = 150 }: { data: { label: s
   if (!data.length) return <div className="grid place-items-center text-sm text-muted" style={{ height }}>No data</div>;
   const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${H - 18} L${pts[0][0].toFixed(1)},${H - 18} Z`;
-  const step = Math.max(1, Math.ceil(data.length / 8));
+  const step = Math.max(1, Math.ceil(data.length / 7));
   return (
     <div className="relative">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Line chart" onMouseLeave={() => setHover(null)}>
@@ -41,10 +41,10 @@ export function Area({ data, format = String, height = 150 }: { data: { label: s
         {pts.map(([x, y], i) => <g key={i}>
           <rect x={x - (W / data.length) / 2} y={0} width={W / data.length} height={H} fill="transparent" onMouseEnter={() => setHover(i)} />
           {(hover === i || data.length < 40) && <circle cx={x} cy={y} r={hover === i ? 4 : 2} fill="hsl(var(--accent))" />}
-          {i % step === 0 && <text x={x} y={H - 5} textAnchor="middle" fontSize="9" fill="hsl(var(--muted))">{data[i].label}</text>}
+          {i % step === 0 && <text x={i === 0 ? Math.max(x, 22) : i > data.length - 1 - step / 2 ? Math.min(x, W - 22) : x} y={H - 5} textAnchor="middle" fontSize="9" fill="hsl(var(--muted))">{data[i].label}</text>}
         </g>)}
       </svg>
-      {hover !== null && <div className="pointer-events-none absolute right-1 top-0 rounded-theme bg-raised px-2 py-1 text-xs shadow">{data[hover].label} · <b>{format(data[hover].value)}</b></div>}
+      {hover !== null && <div className="pointer-events-none absolute right-1 top-0 rounded-theme bg-raised px-2 py-1 text-xs shadow">{data[hover].full ?? data[hover].label} · <b>{format(data[hover].value)}</b></div>}
     </div>
   );
 }

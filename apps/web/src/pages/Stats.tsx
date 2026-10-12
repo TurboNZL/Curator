@@ -4,7 +4,7 @@ import { Clock, Download, Flame, History, LayoutGrid, List, Upload, Users, SkipF
 import { useLibrary } from '../lib/derive.ts';
 import { computeStats } from '../lib/stats.ts';
 import { buildListens, type Listen } from '../lib/listens.ts';
-import { computeListenStats, dayKey, type ListenStats, type TopRow } from '../lib/listenStats.ts';
+import { computeListenStats, dayKey, timeSeries, type ListenStats, type Range, type TopRow } from '../lib/listenStats.ts';
 import { filterListens, filterRange, applyFilter, loadFilter, saveFilter, type StatsFilter } from '../lib/statsFilter.ts';
 import { statsPath } from '../lib/entityStats.ts';
 import { StatsFilters } from '../components/StatsFilters.tsx';
@@ -19,11 +19,13 @@ const TABS = [{ id: 'overview', label: 'Overview' }, { id: 'top', label: 'Top' }
 type Tab = (typeof TABS)[number]['id'];
 
 
-function Overview({ s, lib }: { s: ListenStats; lib: ReturnType<typeof useLibrary> }) {
-  const months = s.byMonth.slice(-24);
-  // a short history has too few months for a line: show days instead
-  const daily = s.byMonth.length < 3;
-  const series = daily ? [...s.byDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-60).map(([d, v]) => ({ label: d.slice(5).replace('-', '/'), value: v })) : months.map((m) => ({ label: m.month.slice(2).replace('-', '/'), value: m.ms }));
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabel = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5)) - 1]} ${ym.slice(0, 4)}`;
+
+function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof useLibrary>; range: Range }) {
+  const months = s.byMonth.slice(-12);
+  const { unit, points: series } = useMemo(() => timeSeries(s, range), [s, range]);
+  const daily = unit === 'day';
   const feature = s.topArtists[0];
   return (
     <div className="space-y-4">
@@ -44,9 +46,9 @@ function Overview({ s, lib }: { s: ListenStats; lib: ReturnType<typeof useLibrar
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {s.onThisDay.length > 0 && <Panel title="On this day"><ul className="space-y-1.5 text-sm">{s.onThisDay.map((d) => <li key={d.year} className="flex gap-3"><b className="w-12 shrink-0 tabular-nums">{d.year}</b><span className="min-w-0 truncate text-muted">{d.plays} play{d.plays === 1 ? '' : 's'}{d.top ? ` · ${d.top}` : ''}</span></li>)}</ul></Panel>}
-        <Panel title="New artists per month" right={<span className="text-xs text-muted">first time you played them</span>}><Bars data={months.slice(-12).map((m) => ({ label: m.month.slice(5), value: m.newArtists }))} format={(n) => `${n} new`} height={110} /></Panel>
+        <Panel title="New artists per month" right={<span className="text-xs text-muted">first time you played them · {months.length ? `${monthLabel(months[0].month)} to ${monthLabel(months[months.length - 1].month)}` : ''}</span>}><Bars data={months.map((m) => ({ label: monthLabel(m.month).slice(0, 3), value: m.newArtists }))} format={(n) => `${n} new`} height={110} /></Panel>
       </div>
-      {lib.logs.length === 0 && <p className="text-sm text-muted">Nothing to show yet. Play music, or import your Spotify history with the button above.</p>}
+      {lib.logs.length === 0 && <p className="text-sm text-muted">Nothing to show yet. Play music, or import your listening history with the button above.</p>}
     </div>
   );
 }
@@ -203,15 +205,16 @@ export function StatsPage() {
   const listens = useMemo(() => buildListens(lib), [lib]);
   // the extras (source, skips, platform, time of day, words, library chips), then the range and the shortest play that counts
   const narrowed = useMemo(() => applyFilter(lib, listens, filter), [lib, listens, filter]);
-  const s = useMemo(() => computeListenStats(narrowed, filterRange(filter), { minMs: filter.minMs }), [narrowed, filter]);
+  const range = useMemo(() => filterRange(filter), [filter]);
+  const s = useMemo(() => computeListenStats(narrowed, range, { minMs: filter.minMs }), [narrowed, range, filter.minMs]);
   const shown = useMemo(() => filterListens(lib, listens, filter), [lib, listens, filter]);
   const imported = listens.filter((l) => l.source === 'spotify').length;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-2xl font-bold">Stats</h1>
-        <button className="btn" onClick={() => setDialog('import')}><Upload size={15} />Import Spotify history</button>
-        <button className="btn" onClick={() => setDialog('export')}><Download size={15} />Export for stats.fm</button>
+        <button className="btn" onClick={() => setDialog('import')}><Upload size={15} />Import listening history</button>
+        <button className="btn" onClick={() => setDialog('export')}><Download size={15} />Export listening history</button>
       </div>
       <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-line pb-px">
         {TABS.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setParams({ tab: t.id }, { replace: true })}
@@ -222,7 +225,7 @@ export function StatsPage() {
           <StatsFilters value={filter} onChange={setFilter} listens={listens} />
           {tab === 'top' && <label className="flex items-center justify-end gap-1.5 text-xs text-muted"><input type="checkbox" checked={byTime} onChange={(e) => setByTime(e.target.checked)} />Rank by time</label>}
         </div>)}
-      {tab === 'overview' && <Overview s={s} lib={lib} />}
+      {tab === 'overview' && <Overview s={s} lib={lib} range={range} />}
       {tab === 'top' && <Top s={s} byTime={byTime} lib={lib} />}
       {tab === 'activity' && <Activity s={s} />}
       {tab === 'history' && <Timeline listens={shown} lib={lib} />}

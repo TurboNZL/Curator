@@ -261,3 +261,8 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 .guide table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.86rem; }
 .guide th, .guide td { border: 1px solid hsl(var(--line)); padding: 0.35rem 0.6rem; text-align: left; vertical-align: top; }
 .guide th { background: hsl(var(--raised)); font-weight: 600; }
+
+/* the now-playing screensaver: the cover drifts slowly so no pixel stays lit for long */
+@keyframes bt-drift { 0% { transform: translate(-3vmin, -2vmin) scale(1); } 50% { transform: translate(3vmin, 2vmin) scale(1.04); } 100% { transform: translate(-3vmin, -2vmin) scale(1); } }
+.bt-drift { animation: bt-drift 60s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .bt-drift { animation: none; } }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { trackPath } from '../lib/trackPath.ts';
-import { Cast, Info, ListMusic, Pause, Play, Shuffle, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { Cast, Info, Maximize2, ListMusic, Loader2, Pause, Play, Shuffle, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useLibrary, type Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
 import { useStore } from '../lib/store.ts';
@@ -58,7 +58,7 @@ export function PlayerBar() {
             </button>
             <div className="min-w-0">
               <div className="bt-ptitle truncate text-sm font-medium"><Link to={trackPath(track)} className="hover:underline" title="Go to this track in your library">{track.title}</Link></div>
-              <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} className="hover:underline" /></div>
+              <div className="bt-partist truncate text-xs text-muted"><ArtistLinks leads={track.leads} featured={track.featured} className="hover:underline" /></div>
               {!v.remote && p.engine === 'spotify' && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {spotifyDevice || 'Spotify'}</div>}
               {v.remote && <div className="flex items-center gap-1 truncate text-[11px] font-medium text-accent"><Cast size={11} />Playing on {v.remote.name}</div>}
             </div>
@@ -71,7 +71,7 @@ export function PlayerBar() {
           <div className="flex items-center gap-2">
             <button className={cn('btn-ghost btn !p-2 max-sm:hidden', p.shuffle && 'text-accent', v.remote && 'invisible')} title="Shuffle" onClick={p.toggleShuffle}><Shuffle size={16} /></button>
             <button className="btn-ghost btn !p-2" title="Previous" onClick={v.prev}><SkipBack size={18} /></button>
-            <button className="btn btn-accent !rounded-full !p-2.5" title={v.playing ? 'Pause' : 'Play'} onClick={v.toggle}>{v.playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button>
+            <button className="btn btn-accent !rounded-full !p-2.5" title={v.loading ? 'Loading…' : v.playing ? 'Pause' : 'Play'} aria-busy={v.loading || undefined} onClick={v.toggle}>{v.loading ? <Loader2 size={18} className="animate-spin" /> : v.playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button>
             <button className="btn-ghost btn !p-2" title="Next" onClick={v.next}><SkipForward size={18} /></button>
             <button type="button" data-popover-trigger className={cn('btn-ghost btn !p-2 md:hidden', (devicesOpen || v.remote) && 'text-accent')} title="Play on a device" aria-label="Play on a device" onClick={usePopups.getState().toggleDevices}><Cast size={16} /></button>
             <button type="button" data-popover-trigger className={cn('btn-ghost btn !p-2 md:hidden', queueOpen && 'text-accent')} title="Queue" aria-label="Queue" aria-expanded={queueOpen} onClick={toggleQueue}><ListMusic size={16} /></button>
@@ -85,10 +85,12 @@ export function PlayerBar() {
         <div className="hidden w-1/3 items-center justify-end gap-2 md:flex">
           <button ref={setDevBtn} type="button" data-popover-trigger className={cn('btn-ghost btn !p-2', (devicesOpen || v.remote) && 'text-accent')} title="Play on a device" aria-label="Play on a device" aria-expanded={devicesOpen} onClick={usePopups.getState().toggleDevices}><Cast size={16} /></button>
           <button ref={setQueueBtn} type="button" data-popover-trigger className={cn('btn-ghost btn !p-2', queueOpen && 'text-accent')} title="Queue" aria-label="Queue" aria-expanded={queueOpen} onClick={toggleQueue}><ListMusic size={16} /></button>
+          <button type="button" className="btn-ghost btn !p-2" title="Full screen: cover and lyrics" aria-label="Full screen now playing" onClick={() => { usePopups.getState().setNow(true); void document.documentElement.requestFullscreen?.().catch(() => undefined); }}><Maximize2 size={16} /></button>
           <Volume2 size={16} className="text-muted" />
           <input type="range" aria-label="Volume" className="bt-range bt-hit w-24" style={pct(v.volume, 1)} min={0} max={1} step={0.01} value={v.volume} onChange={(e) => v.setVolume(Number(e.target.value))} />
         </div>
       </div>
+      <div className="h-0.5 w-full bg-line/60 sm:hidden" aria-hidden><div className="h-full bg-accent" style={{ width: `${v.duration > 0 ? Math.min(100, (v.time / v.duration) * 100) : 0}%` }} /></div>
       <CoverPreview anchor={coverBtn} track={track} />
       <MiniQueue anchor={queueBtn} />
       <DevicesPopover anchor={devBtn} />

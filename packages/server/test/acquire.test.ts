@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync, readdirSync }
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Store } from '../src/db.ts';
-import { Acquirer, BOT_HELP, FORBIDDEN_HELP, isBotCheck, isForbidden, safeUrl } from '../src/acquire.ts';
+import { Acquirer, BOT_HELP, FORBIDDEN_HELP, isBotCheck, isDeadLink, isForbidden, safeUrl } from '../src/acquire.ts';
 import { ytdlpArgs } from '../src/config.ts';
 
 let dir: string, store: Store;
@@ -173,4 +173,46 @@ printf "audio" > "$(dirname "$2")/vid.mp3"
     expect(argv).toMatch(/^--cookies \/srv\/cookies\.txt --js-runtimes node /);
   });
   it('builds no arguments when nothing is configured', () => { expect(ytdlpArgs({})).toBeUndefined(); });
+});
+
+describe('dead links and progress', () => {
+  it('recognises a video YouTube removed, not a bot check or a 403', () => {
+    expect(isDeadLink('yt-dlp exited 1: ERROR: [youtube] WDGH9fMTi6w: Video unavailable. This video is not available')).toBe(true);
+    expect(isDeadLink('ERROR: Private video. Sign in if you\'ve been granted access')).toBe(true);
+    expect(isDeadLink('ERROR: The uploader has not made this video available in your country')).toBe(false);
+    expect(isDeadLink('Sign in to confirm you’re not a bot')).toBe(false);
+    expect(isDeadLink('HTTP Error 403: Forbidden')).toBe(false);
+  });
+  it('marks the track\'s link dead, does not retry it by itself, and clears the mark after a successful download', async () => {
+    store.push([track('t', 'https://youtu.be/bad1')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp() });
+    a.enqueueMissing(); await a.drained();
+    const job = [...a.jobs.values()][0];
+    expect(job.dead).toBe(true);
+    expect((store.get('tracks', 't')!.data as any).youtubeDead).toMatchObject({ url: 'https://youtu.be/bad1' });
+    expect(a.enqueueMissing()).toHaveLength(0); // known dead: skipped by "download missing"
+    expect(a.enqueueMissing(['t'])).toHaveLength(1); // a deliberate retry of that track goes ahead
+    await a.drained();
+    // a new link replaces the dead one and downloads fine
+    const cur = store.get('tracks', 't')!;
+    store.push([{ table: 'tracks', id: 't', updatedAt: cur.updatedAt + 5, deviceId: 'd', deleted: false, data: { ...cur.data, youtubeMusicUrl: 'https://youtu.be/good' } }]);
+    a.enqueueMissing(); await a.drained();
+    const d = store.get('tracks', 't')!.data as any;
+    expect(d.file).toMatch(/^[0-9a-f]{64}$/);
+    expect(d.youtubeDead).toBeNull();
+  });
+  it('reports how far a download is', async () => {
+    const path = join(dir, 'progress-yt-dlp');
+    writeFileSync(path, `#!/bin/sh
+echo "CURATOR_PROGRESS 500 1000 NA"
+echo "[ExtractAudio] Destination: x.mp3"
+while [ "$1" != "-o" ]; do shift; done
+printf "audio" > "$(dirname "$2")/vid.mp3"
+`); chmodSync(path, 0o755);
+    store.push([track('t', 'https://youtu.be/ok')]);
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: path });
+    const [job] = a.enqueueMissing(); await a.drained();
+    expect(job.percent).toBe(100);
+    expect(job.stage).toBe('converting');
+  });
 });

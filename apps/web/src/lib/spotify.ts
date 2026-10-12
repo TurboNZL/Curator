@@ -90,6 +90,31 @@ export function exportSpotifyFormat(plays: ExportPlay[]): { entries: SpotifyHist
   return { entries, dropped };
 }
 
-/** Spotify splits big exports into several files of up to 10,000 entries. */
-export const exportFileName = (i: number, year = new Date().getFullYear()) => `Streaming_History_Audio_${year}_${i}.json`;
-export const chunkEntries = <T,>(a: T[], size = 10000): T[][] => Array.from({ length: Math.ceil(a.length / size) }, (_, i) => a.slice(i * size, (i + 1) * size));
+/** The largest file the exporter writes: what Spotify's own exports stay under (about 11.8 MiB). */
+export const EXPORT_MAX_BYTES = Math.round(11.8 * 1024 * 1024);
+
+/** `Streaming_History_Audio_2025.json`, then `..._2025_1.json`, `..._2025_2.json` when the year does not fit in one file. */
+export const exportFileName = (year: number | string, part = 0) => `Streaming_History_Audio_${year}${part ? `_${part}` : ''}.json`;
+
+/**
+ * Spotify's layout: one set of files per year (by the time of the play, UTC), each file a JSON array kept under `maxBytes`, so a big
+ * year continues in a second file instead of making one huge one. Entries stay in time order across the files of a year.
+ */
+export function exportFiles(entries: SpotifyHistoryEntry[], maxBytes = EXPORT_MAX_BYTES): { name: string; data: string; bytes: number }[] {
+  const enc = new TextEncoder();
+  const years = new Map<string, SpotifyHistoryEntry[]>();
+  for (const e of entries) { const y = String(e.ts).slice(0, 4); (years.get(y) ?? years.set(y, []).get(y)!).push(e); }
+  const out: { name: string; data: string; bytes: number }[] = [];
+  for (const [year, list] of [...years.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    let part = 0, parts: string[] = [], size = 4; // "[\n" and "\n]"
+    const flush = () => { if (!parts.length) return; const data = `[\n${parts.join(',\n')}\n]`; out.push({ name: exportFileName(year, part++), data, bytes: enc.encode(data).length }); parts = []; size = 4; };
+    for (const e of list) {
+      const text = JSON.stringify(e, null, 2).replace(/^/gm, '  ');
+      const bytes = enc.encode(text).length + 2;
+      if (parts.length && size + bytes > maxBytes) flush();
+      parts.push(text); size += bytes;
+    }
+    flush();
+  }
+  return out;
+}

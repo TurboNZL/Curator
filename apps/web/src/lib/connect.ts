@@ -128,12 +128,12 @@ export function usePlaybackView() {
   const playing = remote?.state?.playing ?? false;
   const [, tick] = useState(0);
   useEffect(() => { if (!remote || !playing) return; const t = setInterval(() => tick((n) => n + 1), 500); return () => clearInterval(t); }, [remote, playing]);
-  if (!remote) return { remote: undefined as DeviceInfo | undefined, trackId: p.queue.currentId, playing: p.playing, time: p.time, duration: p.duration, volume: p.volume,
+  if (!remote) return { remote: undefined as DeviceInfo | undefined, loading: p.loading, trackId: p.queue.currentId, playing: p.playing, time: p.time, duration: p.duration, volume: p.volume,
     toggle: p.toggle, next: p.next, prev: p.prev, seek: p.seek, setVolume: p.setVolume };
   const s = remote.state;
   const cmd = (c: Command) => () => void send(remote.id, c);
   return {
-    remote, trackId: s?.trackId ?? null, playing, time: positionNow(remote, receivedAt), duration: s?.duration ?? 0, volume: s?.volume ?? 0.8,
+    remote, loading: false, trackId: s?.trackId ?? null, playing, time: positionNow(remote, receivedAt), duration: s?.duration ?? 0, volume: s?.volume ?? 0.8,
     toggle: cmd({ type: 'toggle' }), next: cmd({ type: 'next' }), prev: cmd({ type: 'prev' }),
     seek: (t: number) => void send(remote.id, { type: 'seek', time: t }), setVolume: (v: number) => void send(remote.id, { type: 'volume', value: v }),
   };

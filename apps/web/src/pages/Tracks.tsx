@@ -49,7 +49,7 @@ export function TracksPage() {
         <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New track</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
-        {lib.tracks.some((t) => !t.youtubeMusicUrl) && <button className="btn" onClick={() => edit({ kind: 'match-links', id: '' })} title="Search YouTube for tracks that have no link yet, so their audio can be downloaded"><SearchIcon size={15} />Find YouTube links</button>}
+        {lib.tracks.some((t) => !t.youtubeMusicUrl) && <button className="btn" onClick={() => edit({ kind: 'match-links', id: '' })} title="Search YouTube Music for the albums that have no link yet, then import them one release at a time"><SearchIcon size={15} />Find YouTube albums</button>}
       </div>
       <ListToolbar scope="tracks" chips={chips} onChips={(c) => { setChips(c); setShown(PAGE); }} text={q} onText={(t) => { setQ(t); setShown(PAGE); }}
         sorts={TRACK_SORTS} sort={page.sort} dir={page.dir} onSort={(k) => { page.setSort(k); setShown(PAGE); }} onFlip={page.flip} view={page.view} onView={page.setView} />

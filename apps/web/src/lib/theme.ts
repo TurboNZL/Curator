@@ -175,7 +175,7 @@ export const THEME_DEFS: ThemeDef[] = [
   // ---- Platform palettes (pair with the matching UI style) ----
   light({ id: "adwaita", label: "Adwaita", bg: hex("#fafafb"), primary: hex("#3584e4"), fg: hx("#2e3436"), mutedFg: hx("#5e5c64"), motif: "hills",
     ov: { card: "#ffffff", secondary: "#ebebed", muted: "#ebebed", accent: "#e1e1e4", border: "#d8d8dc", input: "#cfcfd4" } }),
-  dark({ id: "adwaita-dark", label: "Adwaita Dark", bg: hex("#242424"), primary: hex("#3584e4"), onPrimary: "0 0% 100%", fg: "0 0% 100%", mutedFg: hx("#c0bfbc"), motif: "hills",
+  dark({ id: "adwaita-dark", label: "Adwaita Dark", bg: hex("#222226"), primary: hex("#3584e4"), onPrimary: "0 0% 100%", fg: "0 0% 100%", mutedFg: hx("#c0bfbc"), motif: "hills",
     ov: { card: "#303030", secondary: "#3a3a3a", muted: "#383838", accent: "#464646", border: "#3d3d3d", input: "#4a4a4a" } }),
   light({ id: "breeze", label: "Breeze", bg: hex("#eff0f1"), primary: hex("#3daee9"), onPrimary: hx("#ffffff"), fg: hx("#31363b"), mutedFg: hx("#6f7479"), motif: "waves",
     ov: { card: "#fcfcfc", secondary: "#e3e5e7", muted: "#e3e5e7", accent: "#d6e9f5", border: "#bcc0c4", input: "#bcc0c4" } }),

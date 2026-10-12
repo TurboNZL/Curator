@@ -33,7 +33,7 @@ Check the server's health any time in Settings → Library & server → **Server
 ## First ten minutes in the app
 1. **Add music** (above). Albums, singles, eras and playlists appear in the side bar.
 2. **Rank** (side bar): two tracks side by side, tap the one you like more. After a few dozen votes every track has a rating from 0 to 10, and *Stats* and *Discover* start to say something useful.
-3. **Health** (side bar): a checklist of what is incomplete (covers, links, dates, duplicates), each with a one-click tool where one exists, such as *Find dates automatically* and *Find YouTube links*.
+3. **Health** (side bar): a checklist of what is incomplete (covers, links, dates, duplicates), each with a one-click tool where one exists, such as *Find dates automatically* and *Find YouTube Music albums* (it searches YouTube for each album that has no link and opens the importer with the best match, one release at a time). Videos YouTube reports as gone are listed as *Dead YouTube links*.
 4. **Settings → Appearance:** pick a colour theme and a UI style (there are many, including old Windows and macOS looks).
 5. **Back up** (Settings → Library & server → Backup): export the database and the files before you try anything big.
 

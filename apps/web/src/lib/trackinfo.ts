@@ -1,7 +1,8 @@
 import type { Library } from './library.ts';
+import { buildListens } from './listens.ts';
 
 export interface VoteLine { voteId: string; opponent: string; opponentExists: boolean; result: 'won' | 'lost' | 'equal' | 'thumb up' | 'thumb down'; timestamp: number }
-export interface PlayLine { logId: string; timestamp: number; seconds: number; isSkip: boolean; source: string | null }
+export interface PlayLine { logId: string; timestamp: number; seconds: number; isSkip: boolean; source: string | null; imported?: boolean }
 export interface TrackInfo {
   /** every logged play of this track, newest first */
   history: PlayLine[];
@@ -28,13 +29,15 @@ export function trackInfo(lib: Library, trackId: string): TrackInfo {
     votes.push({ voteId: v.id, opponent: other ? `${other.title} · ${other.artistName}` : '(deleted track)', opponentExists: !!other, result, timestamp: v.timestamp });
   }
   votes.sort((a, b) => b.timestamp - a.timestamp);
-  const logs = lib.logs.filter((l) => l.trackId === trackId);
-  const history = logs.map((l) => ({ logId: l.id, timestamp: l.timestamp, seconds: l.duration ?? 0, isSkip: !!l.isSkip, source: l.sourceType ?? null }))
+  // Curator's own plays and the ones imported from Spotify (matched to this track by link or by title and artist)
+  const logs = buildListens(lib).filter((l) => l.trackId === trackId);
+  const sourceOf = new Map(lib.logs.map((l) => [l.id, l.sourceType ?? null] as const));
+  const history = logs.map((l) => ({ logId: l.id, timestamp: l.ts, seconds: l.ms / 1000, isSkip: l.skipped, source: l.source === 'spotify' ? 'Spotify' : sourceOf.get(l.id) ?? null, imported: l.source === 'spotify' }))
     .sort((a, b) => b.timestamp - a.timestamp);
   return {
     history, wins, losses, draws, votes,
-    plays: logs.length, skips: logs.filter((l) => l.isSkip).length,
-    secondsListened: logs.reduce((s, l) => s + (l.duration ?? 0), 0),
-    lastPlayed: logs.length ? Math.max(...logs.map((l) => l.timestamp)) : null,
+    plays: logs.length, skips: logs.filter((l) => l.skipped).length,
+    secondsListened: logs.reduce((s, l) => s + l.ms / 1000, 0),
+    lastPlayed: logs.length ? Math.max(...logs.map((l) => l.ts)) : null,
   };
 }

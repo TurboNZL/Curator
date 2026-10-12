@@ -120,7 +120,11 @@ export class Api {
   spotifyPlaylist(id: string) { return this.req<SpotifyList>(`/api/spotify/playlist/${id}`); }
   spotifyResolve(url: string) { return this.req<SpotifyList>('/api/spotify/resolve', { method: 'POST', body: JSON.stringify({ url }) }); }
   spotifyCover(uri: string) { return this.req<{ hash: string; url: string }>('/api/spotify/cover', { method: 'POST', body: JSON.stringify({ uri }) }); }
-  match(tracks: MatchTrackReq[], methods: ('odesli' | 'search')[]) { return this.req<{ results: MatchResultRes[] }>('/api/match', { method: 'POST', body: JSON.stringify({ tracks, methods }) }); }
+  lyrics(q: { artist: string; title: string; album?: string; duration?: number }) {
+    const p = new URLSearchParams({ artist: q.artist, title: q.title, ...(q.album ? { album: q.album } : {}), ...(q.duration ? { duration: String(Math.round(q.duration)) } : {}) });
+    return this.req<{ lyrics: { synced: string | null; plain: string | null; instrumental: boolean; source: string } | null }>(`/api/lyrics?${p}`);
+  }
+  matchAlbums(albums: MatchAlbumReq[]) { return this.req<{ results: MatchResultRes[] }>('/api/match-album', { method: 'POST', body: JSON.stringify({ albums }) }); }
   spotifyDevices() { return this.req<{ devices: SpotifyDeviceInfo[] }>('/api/spotify/player/devices'); }
   spotifyPlayerState() { return this.req<{ state: SpotifyPlayerInfo | null }>('/api/spotify/player/state'); }
   spotifyPlay(uris: string[], deviceId: string, positionMs = 0) { return this.req<{ ok: true }>('/api/spotify/player/play', { method: 'POST', body: JSON.stringify({ uris, deviceId, positionMs }) }); }
@@ -129,7 +133,7 @@ export class Api {
   similarArtists(artist: string) { return this.req<{ artists: { name: string; mbid: string; score: number }[] }>(`/api/recommend/similar?artist=${encodeURIComponent(artist)}`); }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
-    return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');
+    return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string; dead?: boolean }[]; active?: { trackId: string; stage: 'downloading' | 'converting'; percent: number }[] }>('/api/acquire');
   }
   /** direct download links (the browser saves them to disk without holding them in memory) */
   exportUrl(what: 'database' | 'files') { return this.url(`/api/export/${what}?token=${encodeURIComponent(this.s.token)}`); }
@@ -153,8 +157,8 @@ export class Api {
 
 export interface SpotifyImportTrack { uri: string; id: string; title: string; artists: string[]; album: string; albumUri: string | null; albumArtist: string | null; durationMs: number | null; cover: string | null; releaseDate: string | null; trackNumber: number | null; isrc: string | null }
 export interface SpotifyList { kind: 'playlist' | 'album' | 'track'; name: string; description: string | null; cover: string | null; owner: string | null; tracks: SpotifyImportTrack[]; source: 'embed' | 'api' | 'oembed' | 'file'; note?: string }
-export interface MatchTrackReq { id: string; title: string; artist: string; album?: string; durationMs?: number | null; spotifyUrl?: string | null }
-export interface MatchCandidate { url: string; title: string; channel: string; seconds: number | null; score: number; method: 'odesli' | 'search' }
+export interface MatchAlbumReq { id: string; title: string; artist: string; trackCount?: number | null }
+export interface MatchCandidate { url: string; title: string; channel: string; count: number | null; score: number }
 export interface DateAnswerRes { date: string; source: 'spotify' | 'itunes' | 'musicbrainz' }
 export interface MatchResultRes { id: string; candidates: MatchCandidate[]; error?: string }
 

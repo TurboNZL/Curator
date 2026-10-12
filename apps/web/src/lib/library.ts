@@ -1,6 +1,6 @@
 import { leadArtistId, leadArtistIds, hasLead } from './defaults.ts';
 import { albumCover, coverPool } from './covers.ts';
-import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData, type EraData, type NoteCategoryData } from '@curator/core';
+import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData, type EraData, type NoteCategoryData, type ReleaseNameData } from '@curator/core';
 
 export type Row<T> = T & { id: string };
 
@@ -11,6 +11,8 @@ export interface Track extends Omit<Row<TrackData>, 'artistId'> {
   artistId: string;
   /** every Lead artist, for individual links */
   leads: Lead[];
+  /** artists credited as "Featured artist" who are not leads: shown after the leads ("A feat. X") */
+  featured: Lead[];
   elo: number; comparisons: number;
   /** 0-10 from the votes (unfloored by comparisons); see effectiveRating */
   rating: number;
@@ -44,7 +46,9 @@ export interface Library {
   singles: Track[];
   albums: (Omit<Row<AlbumData>, 'artistId'> & { artistId: string; leads: Lead[]; artistName: string; trackIds: string[]; rating: number | null; /** every era the album is in */ eraIds: string[]; /** the default release's date, else the earliest release date */ releaseDate: string | null; /** every image of the album: uploads, its picked cover and its releases' covers */ coverPool: string[] })[];
   albumById: Map<string, Library['albums'][number]>;
-  releases: Row<ReleaseData>[];
+  /** `title` is the release's name, or the album's when it has none (`named` false) */
+  releases: (Row<ReleaseData> & { named: boolean })[];
+  releaseNames: Row<ReleaseNameData>[];
   playlists: Row<PlaylistData>[];
   genres: Row<GenreData>[];
   roles: Row<RoleCategoryData>[];
@@ -70,6 +74,16 @@ const live = <T,>(m: Map<string, SyncRecord> | undefined): Row<T>[] => {
 const leadsOf = (credits: Credit[], legacy: string | undefined, artistById: Map<string, { name: string }>): Lead[] => {
   const ids = leadArtistIds(credits);
   return (ids.length ? ids : legacy ? [legacy] : []).flatMap((id) => { const n = artistById.get(id)?.name; return n ? [{ id, name: n }] : []; });
+};
+/** Credits with the role "Featured artist" (and no lead role) as links, in credit order. */
+const featuredOf = (credits: Credit[], leads: Lead[], artistById: Map<string, { name: string }>): Lead[] => {
+  const seen = new Set(leads.map((l) => l.id)), out: Lead[] = [];
+  for (const c of credits) {
+    if (!c.artistId || seen.has(c.artistId) || !c.role.some((r) => /^featur/i.test(r.trim()))) continue;
+    const n = artistById.get(c.artistId)?.name;
+    if (n) { seen.add(c.artistId); out.push({ id: c.artistId, name: n }); }
+  }
+  return out;
 };
 const namesOf = (leads: Lead[]) => (leads.length ? leads.map((l) => l.name).join(', ') : 'Unknown artist');
 
@@ -97,7 +111,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   const ranked = replayVotes(votes.map((v) => ({ ...v })), rawTracks.map((t) => t.id));
   const ratings = balancedRatings(ranked, new Map(rawTracks.map((t) => [t.id, t.initialRating])));
 
-  const releases = live<ReleaseData>(rows.releases);
+  const albumTitles = new Map(rawAlbums.map((a) => [a.id, a.title]));
+  const releases = live<ReleaseData>(rows.releases).map((r) => ({ ...r, named: !!r.title?.trim(), title: r.title?.trim() || albumTitles.get(r.albumId) || '' }));
   // the album's cover is its picked one, else its default release's (see covers.ts); everything below sees the derived cover
   const defaultRel = (a: Row<AlbumData>) => { const mine = releases.filter((r) => r.albumId === a.id); return mine.find((r) => r.id === a.defaultReleaseId) ?? [...mine].sort((x, y) => y.trackIds.length - x.trackIds.length)[0]; };
   const coveredAlbums = rawAlbums.map((a) => ({ ...a, cover: albumCover(a, releases.filter((r) => r.albumId === a.id), defaultRel(a)) }));
@@ -133,7 +148,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const artistId = leadArtistId(credits, t.artistId ?? '');
     const leads = leadsOf(credits, t.artistId, artistById);
     return {
-      ...t, credits, artistId, leads, elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
+      ...t, credits, artistId, leads, featured: featuredOf(credits, leads, artistById), elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
       artistName: namesOf(leads),
       albumId: album?.id ?? null, albumTitle: album?.title ?? null, cover: t.cover || album?.cover || null,
       releaseDate: album ? albumDate.get(album.id) ?? null : t.releaseDate || null, // a single keeps its own
@@ -168,7 +183,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   return {
     tracks, trackById, artists, artistById, albums, albumById: by(albums),
     eras: eras, eraById: by(eras), singles: tracks.filter((t) => !t.albumId),
-    releases, playlists: live<PlaylistData>(rows.playlists),
+    releases, releaseNames: live<ReleaseNameData>(rows.releaseNames), playlists: live<PlaylistData>(rows.playlists),
     genres: live<GenreData>(rows.genres), roles: live<RoleCategoryData>(rows.roleCategories), timeline: live<TimelineData>(rows.timeline), groups: live<GroupData>(rows.groups), noteCategories: live<NoteCategoryData>(rows.noteCategories), legacyNotes: live<NoteData>(rows.notes),
     votes, logs: live<PlaybackLogData>(rows.playbackLogs), profile, rules: profile?.playbackRules ?? [],
   };

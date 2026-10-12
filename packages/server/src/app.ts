@@ -7,7 +7,8 @@ import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
 import { analyzeAudio } from './audioinfo.ts';
-import { Matcher, type MatchTrack } from './match.ts';
+import { Matcher, type MatchAlbum } from './match.ts';
+import { LyricsFinder } from './lyrics.ts';
 import { similarArtists } from './recommend.ts';
 import { lookupAlbumDate } from './dates.ts';
 import { Soloist } from './soloist.ts';
@@ -43,6 +44,7 @@ export function createApp(
   matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   mover = new StorageMover(config.dataDir),
   soloist = new Soloist(config.dataDir, { ffmpegDir: config.ffmpegDir }),
+  lyricsFinder = new LyricsFinder(),
 ) {
   const app = new Hono();
 
@@ -165,18 +167,28 @@ export function createApp(
     const jobs = [...acquirer.jobs.values()];
     const count = (s: string) => jobs.filter((j) => j.state === s).length;
     return c.json({ queued: count('queued'), running: count('running'), done: count('done'), failed: count('failed'),
-      failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error }) => ({ trackId, error })) });
+      failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error, dead }) => ({ trackId, error, dead: !!dead })),
+      // what is downloading right now, with how far along it is
+      active: jobs.filter((j) => j.state === 'running').map(({ trackId, stage, percent }) => ({ trackId, stage: stage ?? 'downloading', percent: percent ?? 0 })) });
   });
 
-  // ---- find the YouTube page of tracks that have none (match.ts): a few tracks per request, the page asks again for the next batch ----
-  app.post('/api/match', async (c) => {
-    const b = (await c.req.json().catch(() => ({}))) as { tracks?: unknown; methods?: unknown };
-    const methods = (Array.isArray(b.methods) ? b.methods : ['odesli', 'search']).filter((m): m is 'odesli' | 'search' => m === 'odesli' || m === 'search');
-    const tracks = (Array.isArray(b.tracks) ? b.tracks : []).slice(0, 12).flatMap((t: any): MatchTrack[] => typeof t?.id === 'string' && typeof t.title === 'string'
-      ? [{ id: t.id, title: t.title.slice(0, 200), artist: String(t.artist ?? '').slice(0, 200), album: typeof t.album === 'string' ? t.album : undefined, durationMs: typeof t.durationMs === 'number' ? t.durationMs : null, spotifyUrl: typeof t.spotifyUrl === 'string' ? t.spotifyUrl : null }] : []);
-    if (!tracks.length || !methods.length) return c.json({ error: 'nothing to match' }, 400);
+  // ---- lyrics (lyrics.ts, from LRCLIB) ----
+  app.get('/api/lyrics', async (c) => {
+    const artist = (c.req.query('artist') ?? '').slice(0, 200), title = (c.req.query('title') ?? '').slice(0, 200);
+    if (!artist || !title) return c.json({ error: 'artist and title are needed' }, 400);
+    const duration = Number(c.req.query('duration'));
+    const lyrics = await lyricsFinder.find({ artist, title, album: (c.req.query('album') ?? '').slice(0, 200) || undefined, duration: Number.isFinite(duration) && duration > 0 ? duration : undefined }).catch(() => null);
+    return c.json({ lyrics });
+  });
+
+  // ---- find the YouTube Music album of albums that have no link (match.ts): a few albums per request, the page asks again for the next batch ----
+  app.post('/api/match-album', async (c) => {
+    const b = (await c.req.json().catch(() => ({}))) as { albums?: unknown };
+    const albums = (Array.isArray(b.albums) ? b.albums : []).slice(0, 6).flatMap((a: any): MatchAlbum[] => typeof a?.id === 'string' && typeof a.title === 'string'
+      ? [{ id: a.id, title: a.title.slice(0, 200), artist: String(a.artist ?? '').slice(0, 200), trackCount: typeof a.trackCount === 'number' ? a.trackCount : null }] : []);
+    if (!albums.length) return c.json({ error: 'nothing to match' }, 400);
     const out = [];
-    for (let i = 0; i < tracks.length; i += 3) out.push(...(await Promise.all(tracks.slice(i, i + 3).map((t) => matcher.match(t, methods)))));
+    for (let i = 0; i < albums.length; i += 3) out.push(...(await Promise.all(albums.slice(i, i + 3).map((a) => matcher.album(a)))));
     return c.json({ results: out });
   });
 

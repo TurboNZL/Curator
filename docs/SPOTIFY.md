@@ -48,8 +48,7 @@ Run Soloist on the Pi with `--ws 127.0.0.1:PORT`, and try one `play` command by 
 | Own sign-in (Authorization Code + **PKCE**, no secret) | full details (albums, durations) of **your own** playlists | a Spotify developer app (Premium owner), its client id |
 | Account data file (`Playlist1.json`, `YourLibrary.json`) | every playlist and your liked songs, read in the browser | the "Account data" download from spotify.com/account/privacy |
 | Typed list / history | `Artist - Title` lines; album names also come from imported streaming history | nothing |
-| song.link (Odesli) | YouTube Music link from a Spotify link, ~10 requests/min | nothing |
-| yt-dlp `ytsearch` | scored YouTube search for tracks with no link | yt-dlp on the server |
+| yt-dlp playlist search | the YouTube Music album of an album a Spotify import started (Health › Find YouTube Music albums), then imported one release at a time | yt-dlp on the server |
 
 Sign-in works from any machine: the page opens Spotify's authorize URL, and you paste back the address Spotify redirects to (even if that page fails to load); the server also answers `/api/spotify/callback` directly when the redirect URI points at it (`http://127.0.0.1:47813/api/spotify/callback` by default, which Spotify allows over http for loopback only).
 

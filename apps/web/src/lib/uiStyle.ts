@@ -20,8 +20,8 @@ export type UiStyleDef = {
 
 export const UI_STYLES: UiStyleDef[] = [
   { id: "default", label: "Default", description: "The app's own look. Follows the colour theme's rounding and density (Classic is tighter).", font: "Inter", matching: { light: "light", dark: "default" } },
-  { id: "gtk4", label: "GTK 4 (Adwaita)", description: "Large rounded corners, soft flat surfaces, header-bar dialogs and springy motion in Cantarell.", font: "Cantarell", matching: { light: "adwaita", dark: "adwaita-dark" } },
-  { id: "breeze", label: "KDE Breeze", description: "Compact and tidy with thin outlines, glow-on-hover and a dark title bar in Noto Sans.", font: "Noto Sans", matching: { light: "breeze", dark: "breeze-dark" } },
+  { id: "gtk4", label: "GTK 4 (Adwaita)", description: "libadwaita: a flush grey sidebar and flat header bar, 6 px grey buttons and entries, 12 px outlined cards and popovers, grey sidebar highlight, white round slider knobs, in Cantarell.", font: "Cantarell", matching: { light: "adwaita", dark: "adwaita-dark" } },
+  { id: "breeze", label: "KDE Breeze", description: "Plasma 6 Breeze: 5 px corners, a window-grey page with lighter panels, outlined buttons that take an accent frame on hover, solid accent selections and a light title bar in Noto Sans.", font: "Noto Sans", matching: { light: "breeze", dark: "breeze-dark" } },
   { id: "win11", label: "Windows 11", description: "Fluent: rounded, light shadows, accent underline on fields and smooth slide-in motion in Segoe UI Variable.", font: "Segoe UI Variable", matching: { light: "win11", dark: "win11-dark" } },
   { id: "win10", label: "Windows 10", description: "Flat and square with crisp 2 px borders and quick transitions in Segoe UI.", font: "Segoe UI", matching: { light: "win10", dark: "win10-dark" } },
   { id: "win7", label: "Windows 7", description: "Aero: glass window frames, grey gel buttons with a blue glow and a red close button in Segoe UI.", font: "Segoe UI", matching: { light: "win7", dark: "win7-dark" } },

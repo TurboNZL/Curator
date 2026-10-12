@@ -1,3 +1,4 @@
+import { cleanAlbumTitle, cleanArtistName, genresFor, matchArtist } from '../lib/autofill.ts';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, ImagePlus, Loader2 } from 'lucide-react';
@@ -15,7 +16,7 @@ import { ArtistSelect, Field, Modal, TagInput } from './forms.tsx';
 interface Row { id: string; title: string; url: string; on: boolean }
 
 /** Import an album from a YouTube / YouTube Music link: look up, review and edit, then create it and queue the audio. */
-export function ImportDialog({ onClose }: { onClose: () => void }) {
+export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => void; /** opened from the Singles page: start in "as a single" */ singleFirst?: boolean }) {
   const lib = useLibrary();
   const { put, syncNow } = useStore();
   const configured = useStore((s) => !!s.settings.token);
@@ -36,7 +37,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [download, setDownload] = useState(true);
   /** import each chosen track as a single (no album) with its own cover and release date, instead of making an album */
-  const [asSingle, setAsSingle] = useState(false);
+  const [asSingle, setAsSingle] = useState(singleFirst);
   /** set after an import whose cover could not be fetched, so the user hears about it before the dialog closes */
   const [done, setDone] = useState<{ to: string; what: string; coverError: string } | null>(null);
 
@@ -44,9 +45,10 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
     setBusy('Looking it up…'); setError(null);
     try {
       const p = await api().importPreview(url.trim());
-      setPv(p); setTitle(p.title); setAsSingle(p.entries.length === 1); setRows(p.entries.map((e) => ({ id: e.id, title: e.title, url: e.url, on: true })));
-      const hit = lib.artists.find((a) => a.name.toLowerCase() === p.artist.toLowerCase());
-      setArtistId(hit?.id ?? ''); setNewArtist(hit ? null : p.artist);
+      setPv(p); setTitle(cleanAlbumTitle(p.title)); setAsSingle(p.entries.length === 1); setRows(p.entries.map((e) => ({ id: e.id, title: e.title, url: e.url, on: true })));
+      const hit = matchArtist(lib.artists, p.artist);
+      setArtistId(hit?.id ?? ''); setNewArtist(hit ? null : cleanArtistName(p.artist));
+      setGenres(hit ? genresFor(lib, hit.id) : []); // a known artist: start from the genres of their other albums
     } catch (e) { setError((e as Error).message === 'Failed to fetch' ? 'Cannot reach the server.' : (e as Error).message); }
     finally { setBusy(null); }
   }
@@ -77,7 +79,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
         const albumId = put('albums', newAlbumData({ title: title.trim(), credits, genres, cover: null, covers: cover ? [cover] : [], coverPicked: false }));
         ids = picked.map((r, i) => put('tracks', newTrackData({ title: r.title.trim(), credits, youtubeMusicUrl: r.url, albums: [{ albumId, order: i }] })));
         // the imported edition is the album's default release: it carries the cover and the tracklist
-        const releaseId = put('releases', { albumId, title: title.trim(), cover, releaseDate: pv.releaseDate ?? null, trackIds: ids });
+        const releaseId = put('releases', { albumId, title: '', cover, releaseDate: pv.releaseDate ?? null, trackIds: ids });
         useStore.getState().patch('albums', albumId, { trackOrder: ids, defaultReleaseId: releaseId });
         logJournal('add', `Imported album: ${title.trim()}`, `${ids.length} tracks from YouTube`, albumId);
         to = `/albums/${albumId}`; what = 'The album';

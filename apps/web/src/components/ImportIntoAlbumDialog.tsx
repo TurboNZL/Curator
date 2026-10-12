@@ -7,6 +7,9 @@ import type { ImportPreview } from '../lib/api.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
 import { api, useStore } from '../lib/store.ts';
+import { getLibrary } from '../lib/derive.ts';
+import { convertToSingleNow } from './entityMenus.tsx';
+import { useNavigate } from 'react-router-dom';
 import { Field, Modal } from './forms.tsx';
 import { Select } from './Select.tsx';
 import { foldIntoRelease, siblingDate } from '../lib/releaseOps.ts';
@@ -29,6 +32,8 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
   const [releaseTitle, setReleaseTitle] = useState('');
   /** '' = make a new release; otherwise the id of the existing release the imported tracks are folded into */
   const [into, setInto] = useState('');
+  const [toSingle, setToSingle] = useState(false);
+  const nav = useNavigate();
   const [makeDefault, setMakeDefault] = useState(false);
   const [useCover, setUseCover] = useState(true);
   const [rename, setRename] = useState(false);
@@ -40,10 +45,15 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
     setBusy('Looking it up…'); setError(null);
     try {
       const p = await api().importPreview(u.trim());
-      setPv(p); setReleaseTitle(p.title);
+      setPv(p); setReleaseTitle(''); // the name is left blank (= the album's name) until the user picks or types one
       setRows(matchEntries(have.map((t) => ({ id: t.id, title: t.title, youtubeMusicUrl: t.youtubeMusicUrl })), p.entries.map((e) => ({ id: e.id, title: e.title, url: e.url, duration: e.duration }))));
       setRename(!!rawAlbum?.needsSource && p.title.toLowerCase() !== album?.title.toLowerCase());
       setMakeDefault(!!rawAlbum?.needsSource);
+      // the first import to bring a cover into an album with a single release belongs in that release (change it if not)
+      const mine = lib.releases.filter((r) => r.albumId === albumId);
+      setInto(!album?.coverPool.length && mine.length === 1 ? mine[0].id : '');
+      // a one-song album stays one song: offer to turn it into a single afterwards
+      setToSingle(have.length === 1 && p.entries.length === 1);
     } catch (e) { setError((e as Error).message === 'Failed to fetch' ? 'Cannot reach the server.' : (e as Error).message); }
     finally { setBusy(null); }
   }
@@ -71,6 +81,8 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         const links = pv.thumbnails?.length ? pv.thumbnails : pv.thumbnail ? [pv.thumbnail] : [];
         if (links.length) { try { cover = await fetchCoverFromLinks(links); } catch (e) { coverNote = (e as Error).message; } }
       }
+      const name = releaseTitle.trim();
+      if (!into && name && !lib.releaseNames.some((n) => n.name.toLowerCase() === name.toLowerCase())) put('releaseNames', { name });
       const target = into ? lib.releases.find((r) => r.id === into && r.albumId === album.id) : undefined;
       const dates = lib.releases.filter((r) => r.albumId === album.id);
       let releaseId: string;
@@ -80,7 +92,7 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         patch('releases', target.id, { trackIds: foldIntoRelease(target.trackIds, included.map((r, i) => ({ trackId: r.trackId, newId: newIds.get(i) }))), ...(!target.cover && cover ? { cover } : {}), ...(!target.releaseDate ? { releaseDate: siblingDate(dates, album.defaultReleaseId, target.id) ?? pv.releaseDate ?? null } : {}) });
       } else {
         // a new release starts with the date the album's other releases have (a Spotify import brings the real one)
-        releaseId = put('releases', { albumId: album.id, title: releaseTitle.trim() || pv.title, cover, releaseDate: siblingDate(dates, album.defaultReleaseId) ?? pv.releaseDate ?? null, trackIds: order });
+        releaseId = put('releases', { albumId: album.id, title: name, cover, releaseDate: siblingDate(dates, album.defaultReleaseId) ?? pv.releaseDate ?? null, trackIds: order });
       }
       const albumPatch: Record<string, unknown> = {
         trackOrder: insertNewTracks(album.trackIds, included.map((r, i) => ({ trackId: r.trackId, newId: newIds.get(i), include: true }))),
@@ -90,8 +102,15 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         ...(rename && pv.title.trim() ? { title: pv.title.trim() } : {}),
       };
       patch('albums', album.id, albumPatch);
-      logJournal('add', `Imported a release into ${album.title}`, `${target ? `into “${target.title}”` : releaseTitle || pv.title}: ${newIds.size} new tracks, ${included.length - newIds.size} already in the album`, album.id);
+      logJournal('add', `Imported a release into ${album.title}`, `${target ? `into “${target.title}”` : name || album.title}: ${newIds.size} new tracks, ${included.length - newIds.size} already in the album`, album.id);
+      let single: string | null = null;
+      if (toSingle && canConvert) {
+        // the album now holds the one song in every release: make it a single (read the library again, it has changed)
+        const fresh = getLibrary(), a = fresh.albumById.get(album.id);
+        single = a ? convertToSingleNow(fresh, a) : null;
+      }
       if (download && needDownload.length) { await syncNow(); await api().acquire(needDownload).catch(() => undefined); }
+      if (single && !coverNote) { onClose(); nav('/singles'); return; }
       if (coverNote) { setDone(`Imported, but the cover could not be fetched: ${coverNote}`); setBusy(null); return; }
       onClose();
     } catch (e) { setError((e as Error).message); setBusy(null); }
@@ -99,6 +118,8 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
 
   const included = rows.filter((r) => r.include);
   const fresh = included.filter((r) => !r.trackId).length;
+  // after this import the album holds only the one song it had: it can become a single
+  const canConvert = have.length === 1 && included.length === 1 && fresh === 0;
   const taken = new Set(rows.filter((r) => r.trackId).map((r) => r.trackId));
   const footer = done ? <button className="btn btn-accent ml-auto" onClick={onClose}>Close</button>
     : pv ? <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={() => setPv(null)} disabled={!!busy}>Back</button>
@@ -115,11 +136,15 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
           <div className="space-y-3">
             <Field label="Put it in" hint="Merge it into a release you already have (the one a Spotify import made, say) instead of adding a second one."><Select value={into} onChange={setInto}
               options={[{ value: '', label: 'A new release' }, ...lib.releases.filter((r) => r.albumId === album.id).map((r) => ({ value: r.id, label: `Merge into: ${r.title}${r.releaseDate ? ` · ${r.releaseDate}` : ''}`, hint: `${r.trackIds.length} tracks` }))]} /></Field>
-            {!into && <Field label="Release name"><input className="input" value={releaseTitle} onChange={(e) => setReleaseTitle(e.target.value)} /></Field>}
+            {!into && <Field label="Release name" hint="Pick a name you have used or type a new one. Blank = the album's name.">
+              <Select value={releaseTitle} onChange={setReleaseTitle} searchable placeholder={`Same as the album (${album.title})`}
+                options={[{ value: '', label: `Same as the album (${album.title})` }, ...[...lib.releaseNames].sort((a, b) => a.name.localeCompare(b.name)).map((n) => ({ value: n.name, label: n.name }))]}
+                creatable={{ label: (n) => `Create name: “${n}”`, create: (n) => n }} /></Field>}
           </div>
           <div className="space-y-1.5 pt-5 text-sm">
             <label className="flex items-center gap-2"><input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />Make this the album's default release</label>
             {pv.thumbnail && <label className="flex items-center gap-2"><input type="checkbox" checked={useCover} onChange={(e) => setUseCover(e.target.checked)} />Add its cover to the album</label>}
+            {canConvert && <label className="flex items-center gap-2"><input type="checkbox" checked={toSingle} onChange={(e) => setToSingle(e.target.checked)} />Then turn it into a single <span className="text-muted">(it only has this one song)</span></label>}
             {rawAlbum?.needsSource && <label className="flex items-center gap-2"><input type="checkbox" checked={rename} onChange={(e) => setRename(e.target.checked)} />Rename the album to “{pv.title}”</label>}
           </div>
         </div>

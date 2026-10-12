@@ -132,7 +132,7 @@ export function computeListenStats(all: Listen[], range: Range = {}, o: { minMs?
 
 /** Quick ranges like stats.fm's: 4 weeks, 6 months, a year, this year, lifetime. */
 export const RANGES = [
-  { id: '4w', label: 'Last 4 weeks' }, { id: '6m', label: 'Last 6 months' }, { id: '1y', label: 'Last year' }, { id: 'ytd', label: 'This year' }, { id: 'all', label: 'Lifetime' },
+  { id: '4w', label: 'Last 4 weeks' }, { id: '6m', label: 'Last 6 months' }, { id: '1y', label: 'Past year' }, { id: 'ytd', label: 'This year' }, { id: 'all', label: 'Lifetime' },
 ] as const;
 export type RangeId = (typeof RANGES)[number]['id'];
 export function rangeFor(id: RangeId, now = Date.now()): Range {
@@ -141,4 +141,35 @@ export function rangeFor(id: RangeId, now = Date.now()): Range {
   if (id === '1y') return { from: now - 365 * DAY };
   if (id === 'ytd') return { from: new Date(new Date(now).getFullYear(), 0, 1).getTime() };
   return {};
+}
+
+export interface SeriesPoint { label: string; full: string; value: number }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Listening time over the chosen range as an unbroken series: one point per day for a range of up to about three months,
+ * otherwise one per month, with empty days and months as zero (so a gap is a gap, not a shortcut) and the year in every label.
+ * The step depends only on the length of the range, so moving the end date never switches the chart to another kind.
+ */
+export function timeSeries(s: Pick<ListenStats, 'byDay' | 'firstTs' | 'lastTs'>, range: Range, now = Date.now()): { unit: 'day' | 'month'; points: SeriesPoint[] } {
+  if (s.firstTs === null) return { unit: 'month', points: [] };
+  const start = new Date(range.from ?? s.firstTs), end = new Date(Math.max(start.getTime(), (range.to !== undefined ? range.to - 1 : Math.max(now, s.lastTs ?? now))));
+  const spanDays = Math.round((end.getTime() - start.getTime()) / DAY) + 1;
+  const points: SeriesPoint[] = [];
+  if (spanDays <= 92) {
+    const crossYear = start.getFullYear() !== end.getFullYear();
+    for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      const k = dayKey(d.getTime());
+      points.push({ label: `${d.getDate()} ${MONTHS[d.getMonth()]}${crossYear ? ` ${String(d.getFullYear()).slice(2)}` : ''}`, full: d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }), value: s.byDay.get(k) ?? 0 });
+    }
+    return { unit: 'day', points };
+  }
+  const perMonth = new Map<string, number>();
+  for (const [k, v] of s.byDay) perMonth.set(k.slice(0, 7), (perMonth.get(k.slice(0, 7)) ?? 0) + v);
+  for (let y = start.getFullYear(), m = start.getMonth(); y < end.getFullYear() || (y === end.getFullYear() && m <= end.getMonth());) {
+    const k = `${y}-${String(m + 1).padStart(2, '0')}`;
+    points.push({ label: `${MONTHS[m]} ${y}`, full: `${MONTHS[m]} ${y}`, value: perMonth.get(k) ?? 0 });
+    if (++m > 11) { m = 0; y++; }
+  }
+  return { unit: 'month', points };
 }

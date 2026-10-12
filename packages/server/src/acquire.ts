@@ -21,7 +21,16 @@ export interface AcquireOptions {
 }
 
 export type JobState = 'queued' | 'running' | 'done' | 'failed';
-export interface Job { id: string; trackId: string; url: string; state: JobState; error?: string; fileHash?: string }
+export interface Job {
+  id: string; trackId: string; url: string; state: JobState; error?: string; fileHash?: string;
+  /** while running: 'downloading' then 'converting'; `percent` is how much of the download is in (0..100) */
+  stage?: 'downloading' | 'converting'; percent?: number;
+  /** YouTube says the video is gone for good (removed, private, blocked): there is no point retrying */
+  dead?: boolean;
+}
+
+/** YouTube's answers that mean the video itself cannot be fetched by anyone, now or later. A bot check or a 403 is NOT one of these. */
+export const isDeadLink = (message: string) => /video unavailable|this video is not available|video is (private|no longer available|unavailable)|private video|has been removed|account associated with this video has been terminated|removed by the uploader|blocked it on copyright|who has blocked it|members-only|this content isn.t available|no longer available|does not exist|video has been (removed|deleted)/i.test(message);
 
 /** Only plain web URLs; never anything that could be parsed as a yt-dlp option or a local path. */
 export function safeUrl(u: unknown): string | null {
@@ -72,6 +81,7 @@ export class Acquirer {
       if (t.file || (wanted && !wanted.has(rec.id)) || active.has(rec.id)) continue;
       const url = safeUrl(t.youtubeMusicUrl);
       if (!url) continue;
+      if (t.youtubeDead && t.youtubeDead.url === t.youtubeMusicUrl && !wanted) continue; // known dead: only a deliberate retry of that track (or a new link) tries again
       const job: Job = { id: newId(), trackId: rec.id, url, state: 'queued' };
       this.jobs.set(job.id, job);
       this.queue.push(job.id);
@@ -100,10 +110,10 @@ export class Acquirer {
   }
 
   private async run(job: Job) {
-    job.state = 'running';
+    job.state = 'running'; job.stage = 'downloading'; job.percent = 0;
     const work = mkdtempSync(join(this.o.dataDir, 'tmp', 'dl-'));
     try {
-      await this.download(job.url, work);
+      await this.download(job.url, work, job);
       const out = readdirSync(work).find((f) => /\.(mp3|m4a|opus|ogg|flac|wav)$/i.test(f));
       if (!out) throw new Error('yt-dlp finished but produced no audio file');
       const path = join(work, out);
@@ -112,21 +122,23 @@ export class Acquirer {
       this.attach(job.trackId, hash);
       job.fileHash = hash;
       job.state = 'done';
+      this.markDead(job.trackId, null);
     } catch (e) {
       job.state = 'failed';
       job.error = e instanceof Error ? e.message.slice(0, 500) : String(e);
+      if (isDeadLink(job.error)) { job.dead = true; this.markDead(job.trackId, { url: job.url, reason: job.error.split('ERROR:').pop()!.trim().slice(0, 200) }); }
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
   }
 
   /** The default clients first, then each fallback while the failure is one that another client can get around. */
-  private async download(url: string, work: string) {
+  private async download(url: string, work: string, job: Job) {
     let last: Error;
-    try { return await this.exec(url, work); } catch (e) { last = e as Error; }
+    try { return await this.exec(url, work, [], job); } catch (e) { last = e as Error; }
     if (!isBotCheck(last.message) && !isForbidden(last.message)) throw last;
     for (const extra of FALLBACK_CLIENTS) {
-      try { return await this.exec(url, work, extra); } catch (e) { last = e as Error; }
+      try { return await this.exec(url, work, extra, job); } catch (e) { last = e as Error; }
       if (!isBotCheck(last.message) && !isForbidden(last.message)) throw last;
     }
     const tail = last.message.slice(-200);
@@ -141,17 +153,36 @@ export class Acquirer {
     this.o.store.push([{ table: 'tracks', id: trackId, updatedAt, deviceId: 'server', deleted: false, data: { ...cur.data, file: hash } }]);
   }
 
-  private exec(url: string, cwd: string, extra: string[] = []): Promise<void> {
+  /** Remember on the track that its YouTube link is dead (Health lists those), or clear the mark after a successful download. */
+  private markDead(trackId: string, dead: { url: string; reason: string } | null) {
+    const cur = this.o.store.get('tracks', trackId);
+    if (!cur || cur.deleted) return;
+    const had = (cur.data as { youtubeDead?: unknown }).youtubeDead;
+    if (!dead && !had) return;
+    const updatedAt = Math.max((this.o.now ?? Date.now)(), cur.updatedAt + 1);
+    this.o.store.push([{ table: 'tracks', id: trackId, updatedAt, deviceId: 'server', deleted: false, data: { ...cur.data, youtubeDead: dead ? { ...dead, at: updatedAt } : null } }]);
+  }
+
+  private exec(url: string, cwd: string, extra: string[] = [], job?: Job): Promise<void> {
     const args = [
       ...(this.o.ytdlpArgs ?? []), ...extra, '--retries', '3',
-      '--no-playlist', '--no-progress', '-x', '--audio-format', 'mp3', '--audio-quality', '0',
+      '--no-playlist', '--newline', '--progress-template', 'download:CURATOR_PROGRESS %(progress.downloaded_bytes)s %(progress.total_bytes)s %(progress.total_bytes_estimate)s', '-x', '--audio-format', 'mp3', '--audio-quality', '0',
       '-o', join(cwd, '%(id)s.%(ext)s'),
       ...(this.o.ffmpegDir ? ['--ffmpeg-location', this.o.ffmpegDir] : []),
       '--', url, // `--` so a URL can never be read as an option
     ];
     return new Promise((resolve, reject) => {
-      const child = spawn(this.o.ytdlp ?? 'yt-dlp', args, { stdio: ['ignore', 'ignore', 'pipe'] });
-      let err = '';
+      const child = spawn(this.o.ytdlp ?? 'yt-dlp', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      let err = '', buf = '';
+      child.stdout.on('data', (d) => {
+        buf += d;
+        const lines = buf.split('\n'); buf = lines.pop() ?? '';
+        for (const line of lines) {
+          const m = /^CURATOR_PROGRESS\s+(\S+)\s+(\S+)\s+(\S+)/.exec(line);
+          if (m && job) { const done = Number(m[1]), total = Number(m[2]) || Number(m[3]); if (done >= 0 && total > 0) { job.stage = 'downloading'; job.percent = Math.min(100, Math.round((done / total) * 100)); } }
+          else if (job && /^\[(ExtractAudio|Merger|FFmpeg\w*)\]/.test(line)) { job.stage = 'converting'; job.percent = 100; }
+        }
+      });
       child.stderr.on('data', (d) => { err = (err + d).slice(-2000); });
       child.on('error', (e: NodeJS.ErrnoException) =>
         reject(new Error(e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set CURATOR_YTDLP.` : e.message)));

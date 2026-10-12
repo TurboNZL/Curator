@@ -1,5 +1,5 @@
 import { WindowFrame } from './WindowFrame.tsx';
-import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useMatch, useNavigate, useNavigationType } from 'react-router-dom';
 import { BarChart3, Compass, Stethoscope, Disc, Disc3, Download, FileAudio, Home, Layers, ListMusic, MoreHorizontal, Network, ListOrdered, Music2, Plus, Search, Settings, Swords, User, Users } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePlayer } from '../lib/player.ts';
@@ -8,6 +8,7 @@ import { useStore } from '../lib/store.ts';
 import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
+import { NowPlaying } from './NowPlaying.tsx';
 import { DevicesMenu } from './Devices.tsx';
 import { navLayout } from '../lib/uiStyle.ts';
 
@@ -69,7 +70,7 @@ const MOBILE_HIDDEN = ['/discover', '/singles', '/eras', '/playlists', '/stats',
 const ADD: { label: string; icon: typeof Plus; target: EditTarget }[] = [
   { label: 'Import album from YouTube', icon: Download, target: { kind: 'import', id: '' } },
   { label: 'Import from Spotify', icon: ListMusic, target: { kind: 'import-spotify', id: '' } },
-  { label: 'Find YouTube links for tracks', icon: Search, target: { kind: 'match-links', id: '' } },
+  { label: 'Find YouTube Music albums', icon: Search, target: { kind: 'match-links', id: '' } },
   { label: 'Add audio files', icon: FileAudio, target: { kind: 'upload', id: '' } },
   { label: 'New album', icon: Disc3, target: { kind: 'new-album', id: '' } },
   { label: 'New track', icon: Music2, target: { kind: 'new-track', id: '' } },
@@ -119,6 +120,19 @@ function MoreMenu() {
 export function Layout() {
   const nav = useNavigate();
   const { pathname } = useLocation();
+  const navType = useNavigationType();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  const scrolls = useRef(new Map<string, number>());
+  // <main> is the scroller, so the router's own scroll handling never sees it: a new page opened at whatever depth the last one was at.
+  // New pages start at the top (a link to ?track=… scrolls to its row itself); going Back returns to where that page was.
+  useLayoutEffect(() => {
+    const m = mainRef.current, saved = scrolls.current;
+    if (!m) return;
+    const key = location.key;
+    m.scrollTop = navType === 'POP' ? saved.get(key) ?? 0 : 0;
+    return () => { saved.set(key, m.scrollTop); };
+  }, [location.key, navType]);
   const sideRef = useIndicator<HTMLElement>(pathname);
   const tabRef = useIndicator<HTMLElement>(pathname);
   // album, artist and era pages put their side panels beside the content, so they get more width
@@ -157,7 +171,7 @@ export function Layout() {
           ))}
           <div className="mt-auto"><SyncDot /></div>
         </aside>
-        <main className={cn('min-w-0 flex-1 overflow-y-auto overflow-x-hidden', hasPlayer && 'has-player')}>
+        <main ref={mainRef} className={cn('min-w-0 flex-1 overflow-y-auto overflow-x-hidden', hasPlayer && 'has-player')}>
           <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
             <div className="bt-topin relative mx-auto flex max-w-3xl items-center gap-3">
               <img src={logo} alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0 md:hidden" draggable={false} />
@@ -179,6 +193,7 @@ export function Layout() {
       </div>
       <PlayerBar />
       <EditorHost />
+      <NowPlaying />
       <nav ref={tabRef} className="bt-tabbar bt-shell relative flex md:hidden">
         <span className="bt-ind" aria-hidden />
         {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (

@@ -253,7 +253,7 @@ export function VotePage() {
             </div>
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:w-full sm:flex-none sm:items-center">
               <div className="min-w-0 text-left sm:text-center"><div className="truncate text-base font-semibold sm:text-lg">{t.title}</div>
-                <div className="truncate text-sm text-muted" onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
+                <div className="truncate text-sm text-muted" onClick={(e) => e.stopPropagation()}><ArtistLinks leads={t.leads} featured={t.featured} />{t.albumTitle && ` · ${t.albumTitle}`}</div></div>
               <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-center" onClick={(e) => e.stopPropagation()}>
                 <Rating track={t} />
                 {t.youtubeMusicUrl && <a className="btn btn-ghost !p-1.5" href={t.youtubeMusicUrl} target="_blank" rel="noreferrer" title="Open on YouTube" aria-label="Open on YouTube"><ExternalLink size={14} /></a>}

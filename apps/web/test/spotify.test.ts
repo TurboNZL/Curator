@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deflateRawSync } from 'node:zlib';
-import { chunkEntries, exportSpotifyFormat, historyId, historyRecords, parseSpotifyLink, spotifyTrackId, type SpotifyHistoryEntry } from '../src/lib/spotify.ts';
+import { exportFiles, exportSpotifyFormat, historyId, historyRecords, parseSpotifyLink, spotifyTrackId, type SpotifyHistoryEntry } from '../src/lib/spotify.ts';
 import { readZip } from '../src/lib/zipRead.ts';
 
 const entry = (o: Partial<SpotifyHistoryEntry> = {}): SpotifyHistoryEntry => ({
@@ -53,7 +53,16 @@ describe('export in Spotify format', () => {
     const { entries } = exportSpotifyFormat([play]);
     expect(historyRecords(entries, 'd').records[0].data).toMatchObject({ name: 'A', uri: play.uri });
   });
-  it('splits into files of 10 000', () => { expect(chunkEntries(Array(25000).fill(0)).map((c) => c.length)).toEqual([10000, 10000, 5000]); });
+  it('writes one set of files per year, each under the size cap, with _1, _2 for the rest', () => {
+    const e = (ts: string) => ({ ts, platform: 'x', ms_played: 1, spotify_track_uri: 'spotify:track:a' }) as unknown as SpotifyHistoryEntry;
+    const entries = [e('2024-05-01T00:00:00Z'), ...Array.from({ length: 30 }, (_, i) => e(`2025-01-${String(i % 28 + 1).padStart(2, '0')}T00:00:00Z`))];
+    const files = exportFiles(entries, 2000);
+    expect(files[0].name).toBe('Streaming_History_Audio_2024.json');
+    expect(files.slice(1).map((f) => f.name)).toEqual(files.slice(1).map((_, i) => (i ? `Streaming_History_Audio_2025_${i}.json` : 'Streaming_History_Audio_2025.json')));
+    expect(files.length).toBeGreaterThan(2);
+    for (const f of files) { expect(f.bytes).toBeLessThanOrEqual(2000); expect(Array.isArray(JSON.parse(f.data))).toBe(true); }
+    expect(files.flatMap((f) => JSON.parse(f.data) as unknown[]).length).toBe(31);
+  });
 });
 
 function zip(files: { name: string; data: string; deflate?: boolean }[]): ArrayBuffer {
