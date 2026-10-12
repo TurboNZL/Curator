@@ -20,11 +20,27 @@ export interface HealthCheck {
   mergeGroups?: boolean;
   /** a tool that fills in the missing dates by itself */
   autoDates?: boolean;
+  /** groups can be marked "not duplicates" (they stop being listed) */
+  notDuplicates?: boolean;
+  /** items can have their dead-link mark cleared */
+  clearDead?: boolean;
 }
+
+/** Groups of tracks the user said are NOT duplicates are kept in the profile's settings as sorted id lists. */
+export const dupeSignature = (ids: string[]) => [...ids].sort().join(',');
+export function ignoredDupes(lib: Library): string[] {
+  const v = lib.profile?.settings?.notDuplicates;
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+/** A group stays hidden while the tracks in it are the ones that were marked (a new look-alike makes it a new group, so it shows up again). */
+export const isIgnoredDupe = (ignored: string[], ids: string[]) => ignored.some((sig) => { const s = new Set(sig.split(',')); return ids.every((id) => s.has(id)); });
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 /** a title without its "(feat. X)" / "[with Y]" credit, so "Solar Eclipse" and "Solar Eclipse (feat. Don Toliver)" are the same song */
 export const songKey = (title: string) => norm(title.replace(/[([]\s*(?:feat\.?|ft\.?|featuring|with)\b[^)\]]*[)\]]/gi, ' '));
+
+/** The track's YouTube link was reported gone by the server and has not been changed since. */
+export const isDead = (x: { youtubeMusicUrl: string | null; youtubeDead?: { url: string } | null }) => !!x.youtubeDead && x.youtubeDead.url === x.youtubeMusicUrl;
 
 /** Data-quality checks across the whole library (replaces the old "cleanup tasks"). Pure, so it is testable. */
 export function computeHealth(lib: Library): HealthCheck[] {
@@ -46,6 +62,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
   const dupes = new Map<string, typeof lib.tracks>();
   for (const x of lib.tracks) { const k = `${songKey(x.title)}|${x.artistId}`; dupes.set(k, [...(dupes.get(k) ?? []), x]); }
 
+  const ignored = ignoredDupes(lib);
+  const dupeGroups = [...dupes.entries()].filter(([, g]) => g.length > 1 && !isIgnoredDupe(ignored, g.map((x) => x.id)));
   const lowQuality = lib.tracks.filter((x) => x.bitrate && parseInt(x.bitrate) > 0 && parseInt(x.bitrate) < 192);
 
   const fakes = lib.tracks.filter((x) => { const q = qualityOf(x); return q === 'transcode' || q === 'mismatch'; });
@@ -61,8 +79,10 @@ export function computeHealth(lib: Library): HealthCheck[] {
         ...lib.albums.filter((a) => !hasLead(a.credits ?? [])).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })),
         ...lib.tracks.filter((x) => !hasLead(x.credits ?? [])).map((x) => t(x)),
       ] },
+    { id: 'dead-links', title: 'Dead YouTube links', why: 'YouTube said these videos are no longer available (removed, private or blocked), so the audio cannot be downloaded from them. Open the track and paste a working link, then download again. The mark goes away by itself once the link changes.', clearDead: true,
+      items: lib.tracks.filter(isDead).map((x) => t(x, x.youtubeDead?.reason || 'video unavailable')) },
     { id: 'no-audio', title: 'Tracks without audio', why: 'They cannot be played. Tracks with a YouTube link can be downloaded with “Download missing audio” above.',
-      items: lib.tracks.filter((x) => !x.file).map((x) => t(x, x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
+      items: lib.tracks.filter((x) => !x.file).map((x) => t(x, isDead(x) ? 'dead YouTube link' : x.youtubeMusicUrl ? 'has a YouTube link' : 'no link either')) },
     { id: 'no-source', title: 'Tracks with no audio and no YouTube link', why: 'Nothing to download from. Add a link in the track editor.',
       items: lib.tracks.filter((x) => !x.file && !x.youtubeMusicUrl).map((x) => t(x)) },
     { id: 'no-youtube', title: 'Tracks without a YouTube Music link', why: 'The link is what lets the server download (or re-download) the audio. Let the server look for them, paste links by album, or add one in the track editor.', bulk: 'youtubeMusicUrl', matchLinks: true,
@@ -79,8 +99,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.allGenres.length).map((x) => t(x)) },
     { id: 'low-quality', title: 'Low bitrate tracks (under 192 kbps)', why: 'Worth replacing when a better source exists.',
       items: lowQuality.map((x) => t(x, x.bitrate ?? undefined)) },
-    { id: 'duplicates', title: 'Possible duplicate tracks', why: 'Same song and artist more than once, such as a single and the same song on its album. “Merge” folds them into one track: it keeps every Spotify link, the votes, plays and memories, and everything that used the others uses the survivor.', mergeGroups: true,
-      items: [...dupes.entries()].filter(([, g]) => g.length > 1).flatMap(([key, g]) => g.map((x) => ({ ...t(x, `${x.albumTitle ?? 'single'} · ${x.comparisons} comparisons${x.file ? ', has audio' : ''}`), group: key }))) },
+    { id: 'duplicates', title: 'Possible duplicate tracks', why: 'Same song and artist more than once, such as a single and the same song on its album. “Merge” folds them into one track: it keeps every Spotify link, the votes, plays and memories, and everything that used the others uses the survivor.', mergeGroups: true, notDuplicates: true,
+      items: dupeGroups.flatMap(([key, g]) => g.map((x) => ({ ...t(x, `${x.albumTitle ?? 'single'} · ${x.comparisons} comparisons${x.file ? ', has audio' : ''}`), group: key }))) },
     { id: 'album-no-cover', title: 'Albums without a cover', why: 'Open the album and choose an image.',
       items: lib.albums.filter((a) => !a.cover).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },
     { id: 'album-empty', title: 'Albums with no tracks', why: 'Probably left over from deleting tracks.',

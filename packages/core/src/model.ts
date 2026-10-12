@@ -71,6 +71,8 @@ export interface TrackData {
   spotifyUrls?: string[];
   geniusUrl: string | null;
   youtubeMusicUrl: string | null;
+  /** set by the server when YouTube says that link's video is gone (removed, private, blocked); only counts while `url` is still the track's link */
+  youtubeDead?: { url: string; reason: string; at: number } | null;
   bitrate: string | null;
   /** what the audio file really measured (server /api/audio/analyze): see Health > Check audio quality */
   audioCheck?: AudioCheck | null;

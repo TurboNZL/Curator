@@ -14,11 +14,15 @@ import { logJournal } from '../lib/journal.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
+import { EloQuestions } from '../components/EloQuestions.tsx';
+import { useMenu } from '../components/Menu.tsx';
+import { useAlbumMenuItems } from '../components/entityMenus.tsx';
+import { useTrackMenuItems } from '../components/TrackMenu.tsx';
 
 const ago = (ts: number) => { const m = Math.max(1, Math.round((Date.now() - ts) / 60000)); return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
 
-function AlbumTile({ album }: { album: Library['albums'][number] }) {
-  return <Link to={`/albums/${album.id}`} className="group w-36 shrink-0 space-y-1.5"><Cover hash={album.cover} seed={album.title} className="w-36 transition-transform group-hover:-translate-y-0.5" /><div className="truncate text-sm font-medium">{album.title}</div><div className="truncate text-xs text-muted">{album.artistName}</div></Link>;
+function AlbumTile({ album, onMenu }: { album: Library['albums'][number]; onMenu: (a: Library['albums'][number]) => (e: React.MouseEvent) => void }) {
+  return <Link to={`/albums/${album.id}`} onContextMenu={onMenu(album)} className="group w-36 shrink-0 space-y-1.5"><Cover hash={album.cover} seed={album.title} className="w-36 transition-transform group-hover:-translate-y-0.5" /><div className="truncate text-sm font-medium">{album.title}</div><div className="truncate text-xs text-muted">{album.artistName}</div></Link>;
 }
 
 function Tile({ label, value, to }: { label: string; value: string; to?: string }) {
@@ -34,6 +38,10 @@ export function HomePage() {
   const lib = useLibrary();
   const remove = useStore((s) => s.remove);
   const play = usePlayer((s) => s.play);
+  const menu = useMenu();
+  const albumItems = useAlbumMenuItems();
+  const trackItems = useTrackMenuItems();
+  const albumMenu = (a: Library['albums'][number]) => menu.onContextMenu(albumItems(a), `Actions for ${a.title}`, a.id);
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [shown, setShown] = useState(15);
@@ -77,9 +85,10 @@ export function HomePage() {
 
   return (
     <div className="space-y-8">
+      {menu.element}
       <section className="card relative overflow-hidden p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-accent/20 blur-3xl" aria-hidden />
-        <div className="relative flex flex-wrap items-center gap-5">
+        <div className="relative flex flex-wrap items-center gap-5" onContextMenu={last ? menu.onContextMenu(trackItems(last.t, resume), `Actions for ${last.t.title}`, 'resume') : undefined}>
           {last ? <>
             <Cover hash={last.t.cover} seed={last.t.albumTitle ?? last.t.title} className="h-24 w-24 shrink-0 sm:h-28 sm:w-28" />
             <div className="min-w-0 flex-1 space-y-1">
@@ -93,6 +102,7 @@ export function HomePage() {
               <div className="flex flex-wrap gap-2"><Link to="/vote" className="btn btn-accent"><Swords size={16} />Keep ranking · {lib.tracks.length - done} to go</Link><Link to="/albums" className="btn">Browse albums</Link></div></div>}
         </div>
       </section>
+      {lib.tracks.filter((t) => t.file).length >= 3 && <EloQuestions />}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile label="Library" value={`${lib.tracks.length} tracks`} to="/tracks" />
         <Tile label="Avg. rating" value={avg.toFixed(2)} to="/stats?tab=library" />
@@ -106,12 +116,12 @@ export function HomePage() {
             : <p className="py-6 text-sm text-muted">No listening in the last 30 days. <Link to="/stats" className="underline">Import your Spotify history</Link> to fill this in.</p>}
         </section>
         <section className="card space-y-2 p-5"><h2 className="font-semibold">Back in rotation</h2>
-          {comeback.length ? <ul className="space-y-1">{comeback.map((t) => <li key={t.id}><button className="flex w-full items-center gap-2 rounded-theme px-1 py-1 text-left text-sm hover:bg-raised" onClick={() => play(t.id, comeback.map((x) => x.id), { type: 'search', id: null })}><Play size={12} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 truncate">{t.title}<span className="text-muted"> · {t.artistName}</span></span><span className="text-xs tabular-nums text-muted">{t.effectiveRating.toFixed(1)}</span></button></li>)}</ul>
+          {comeback.length ? <ul className="space-y-1">{comeback.map((t) => <li key={t.id}><button className="flex w-full items-center gap-2 rounded-theme px-1 py-1 text-left text-sm hover:bg-raised" onContextMenu={menu.onContextMenu(trackItems(t, () => play(t.id, comeback.map((x) => x.id), { type: 'search', id: null })), `Actions for ${t.title}`, t.id)} onClick={() => play(t.id, comeback.map((x) => x.id), { type: 'search', id: null })}><Play size={12} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 truncate">{t.title}<span className="text-muted"> · {t.artistName}</span></span><span className="text-xs tabular-nums text-muted">{t.effectiveRating.toFixed(1)}</span></button></li>)}</ul>
             : <p className="text-sm text-muted">Tracks you rated 8 or higher and have not played for a month will show up here.</p>}
         </section>
       </div>
-      {recentAlbums.length > 0 && <Shelf title="Recently played" to="/albums"><div className="flex gap-3 overflow-x-auto pb-2">{recentAlbums.map((a) => <AlbumTile key={a.id} album={a} />)}</div></Shelf>}
-      {newest.length > 0 && <Shelf title="Latest additions" to="/albums"><div className="flex gap-3 overflow-x-auto pb-2">{newest.map((a) => <AlbumTile key={a.id} album={a} />)}</div></Shelf>}
+      {recentAlbums.length > 0 && <Shelf title="Recently played" to="/albums"><div className="flex gap-3 overflow-x-auto pb-2">{recentAlbums.map((a) => <AlbumTile key={a.id} album={a} onMenu={albumMenu} />)}</div></Shelf>}
+      {newest.length > 0 && <Shelf title="Latest additions" to="/albums"><div className="flex gap-3 overflow-x-auto pb-2">{newest.map((a) => <AlbumTile key={a.id} album={a} onMenu={albumMenu} />)}</div></Shelf>}
       <h2 className="text-lg font-semibold">Curation journal</h2>
       <section className="space-y-3">
         <form className="card space-y-2 p-4" onSubmit={(e) => { e.preventDefault(); if (!title.trim()) return; logJournal('entry', title.trim(), text.trim()); setTitle(''); setText(''); }}>

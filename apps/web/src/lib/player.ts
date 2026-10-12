@@ -2,7 +2,7 @@ import { PlayLog } from './playLog.ts';
 import { create } from 'zustand';
 import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
 import { moveTrack } from './defaults.ts';
-import { audioSource, imageSource, localAudio, streamUrl } from './files.ts';
+import { audioSource, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
 import { BEAM_ID, beamActive, beamFailed, setBeamVolume } from './beam.ts';
 import { getLibrary } from './derive.ts';
@@ -27,6 +27,8 @@ interface PlayerState {
   engine: 'web' | 'native' | 'spotify';
   /** shown when the current track has no audio file or failed to load */
   error: string | null;
+  /** the chosen track is not making sound yet (fetching, or stalled to buffer): the play button shows a spinner */
+  loading: boolean;
   play(trackId: string, list: string[], source?: Source): void;
   toggle(): void;
   /** pause without losing the position (a ranking preview does this) */
@@ -67,6 +69,7 @@ let native = false;
 const nativeBad = new Set<string>();
 const NATIVE_AHEAD = 12;
 let refreshNative: () => void = () => {};
+let preloadSoon: () => void = () => {};
 const lib = getLibrary;
 const playLog = new PlayLog();
 const rules = () => lib().rules;
@@ -78,16 +81,18 @@ export const usePlayer = create<PlayerState>((set, get) => {
     audio.preload = 'auto';
     audio.crossOrigin = 'anonymous'; // the equaliser reads the sound; the server answers with CORS headers
     audio.addEventListener('play', resumeEq);
-    audio.addEventListener('playing', () => playLog.started());
+    audio.addEventListener('playing', () => { playLog.started(); set({ loading: false }); preloadSoon(); });
+    audio.addEventListener('waiting', () => { if (!native && audio!.getAttribute('src')) set({ loading: true }); });
+    audio.addEventListener('loadeddata', () => { if (!audio!.paused) return; set({ loading: false }); });
     audio.addEventListener('timeupdate', () => { if (!native) set({ time: audio!.currentTime }); });
     audio.addEventListener('durationchange', () => !native && set({ duration: Number.isFinite(audio!.duration) ? audio!.duration : 0 }));
     audio.addEventListener('play', () => { if (!native) set({ playing: true }); });
-    audio.addEventListener('pause', () => { if (!native) set({ playing: false }); });
+    audio.addEventListener('pause', () => { if (!native && audio!.getAttribute('src')) set({ playing: false }); }); // a pause that clears the source is a track change
     audio.addEventListener('ended', () => { if (native) return; logPlay(false); get().next(); });
     audio.addEventListener('error', () => {
       if (!audio!.getAttribute('src')) return;
       const code = audio!.error?.code;
-      set({ error: `Could not load this track${code ? ` (media error ${code})` : ''}`, playing: false });
+      set({ error: `Could not load this track${code ? ` (media error ${code})` : ''}`, playing: false, loading: false });
     });
     audio.volume = get().volume;
     const eq = useStore.getState().settings;
@@ -171,7 +176,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (native) nativeAudio.stop();
       native = false;
       if (audio) { audio.pause(); audio.removeAttribute('src'); }
-      set({ time: 0, duration: 0, playing: false, error: null });
+      set({ time: 0, duration: 0, playing: false, error: null, loading: false });
       return true;
     }
     const track = lib().trackById.get(trackId);
@@ -181,7 +186,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
       if (native) { nativeAudio.stop(); native = false; }
       if (audio) { audio.pause(); audio.removeAttribute('src'); }
       const at = pendingSeek ?? 0; pendingSeek = null;
-      set({ error: null, time: at, duration: 0, playing: autoStart });
+      set({ error: null, time: at, duration: 0, playing: autoStart, loading: false });
       set({ engine: 'spotify' });
       spotifyEngine.setListener(onSpotify);
       spotifyEngine.play(spotifyUriOf(track)!, Math.round(at * 1000), autoStart).catch((e: Error) => { if (seq === loadSeq) set({ error: `Spotify: ${e.message}`, playing: false }); });
@@ -190,7 +195,9 @@ export const usePlayer = create<PlayerState>((set, get) => {
     }
     if (!track?.file) return false;
     if (spotifyEngine.active()) void spotifyEngine.release(true);
-    set({ error: null, time: 0 });
+    set({ error: null, time: 0, loading: autoStart });
+    // the old track must stop NOW: resolving the new source can take a while (a slow link), and it would keep playing meanwhile
+    if (audio && !native) { audio.pause(); audio.removeAttribute('src'); audio.load(); }
     const file = track.file;
     void (async () => {
       // the app's own player streams from the server; a copy kept on this device (or not uploaded yet) is played by the page
@@ -213,8 +220,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
         const at = pendingSeek; pendingSeek = null;
         a.addEventListener('loadedmetadata', () => { a.currentTime = Math.min(at, Number.isFinite(a.duration) ? a.duration : at); set({ time: a.currentTime }); }, { once: true });
       }
-      if (autoStart) void a.play().catch((e: Error) => set(e?.name === 'NotAllowedError' ? { playing: false, error: 'Press play: this browser blocked starting by itself.' } : { playing: false }));
-    })().catch((e: Error) => { if (seq === loadSeq) set({ error: `Could not load this track (${e.message})`, playing: false }); });
+      if (autoStart) void a.play().catch((e: Error) => set(e?.name === 'NotAllowedError' ? { playing: false, loading: false, error: 'Press play: this browser blocked starting by itself.' } : { playing: false, loading: false }));
+    })().catch((e: Error) => { if (seq === loadSeq) set({ error: `Could not load this track (${e.message})`, playing: false, loading: false }); });
     updateMediaSession(trackId);
     return true;
   }
@@ -273,7 +280,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
         if (e.id && !get().queue.currentId && e.playing) { native = true; followNative(e.id, [e.id], 'adopt'); } else return;
       }
       if (e.playing && e.pos > 0) playLog.started(e.id);
-      set({ playing: e.playing, time: e.pos / 1000, duration: e.dur / 1000 });
+      set({ playing: e.playing, time: e.pos / 1000, duration: e.dur / 1000, ...(e.playing ? { loading: false } : {}) });
     } else if (e.t === 'index') {
       if (native || !get().queue.currentId) { native = true; followNative(e.id, e.ids, e.reason); }
     } else if (e.t === 'next') {
@@ -292,7 +299,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
         const at = get().time;
         pendingSeek = at > 1 ? at : null;
         load(e.id!, true);
-      } else if (native) set({ error: `Could not load this track (${e.message})`, playing: false });
+      } else if (native) set({ error: `Could not load this track (${e.message})`, playing: false, loading: false });
     }
   }
 
@@ -323,6 +330,23 @@ export const usePlayer = create<PlayerState>((set, get) => {
     go(advance(q, rules(), get().source.type), guard + 1);
   }
 
+  /**
+   * Fetch the track that will play after this one while this one plays, so the change is instant even over a slow link
+   * (a tunnel, mobile data). Follows the queue's own rules by simulating `advance`; tracks the page cannot play from a file are skipped.
+   */
+  function preloadNextTrack() {
+    if (native || spotifyEngine.active() || !get().queue.currentId) return;
+    let sim = get().queue;
+    for (let i = 0; i < 6; i++) {
+      sim = advance(sim, rules(), get().source.type);
+      if (!sim.currentId) return;
+      const t = lib().trackById.get(sim.currentId);
+      if (t?.file) { prefetchAudio(t.file); return; }
+    }
+  }
+  let preloadTimer: ReturnType<typeof setTimeout> | undefined;
+  preloadSoon = () => { clearTimeout(preloadTimer); preloadTimer = setTimeout(preloadNextTrack, 400); };
+
   // what the app's own player is told when the queue changes underneath it (queued, removed, reshuffled): the neighbours are replaced, the sound is not interrupted
   let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   refreshNative = () => {
@@ -333,7 +357,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   return {
     queue: { user: [], active: [], currentId: null }, history: [], source: { type: 'track', id: null },
-    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), shuffle: false, engine: 'web', error: null,
+    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), shuffle: false, engine: 'web', error: null, loading: false,
 
     play(trackId, list, source = { type: 'track', id: null }) {
       const track = lib().trackById.get(trackId);
@@ -416,7 +440,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
 });
 
 // the queue changed while the app's player is playing: tell it about its neighbours
-usePlayer.subscribe((s, prev) => { if (native && (s.queue !== prev.queue || s.history !== prev.history)) refreshNative(); });
+usePlayer.subscribe((s, prev) => {
+  if (native && (s.queue !== prev.queue || s.history !== prev.history)) refreshNative();
+  if (s.queue !== prev.queue && s.playing) preloadSoon(); // the user queue changed: the next track may be a different one now
+});
 
 // the equaliser is device-wide: apply it as soon as it changes (the page's own graph and, in the Android app, the phone's equaliser)
 let lastEq = '';

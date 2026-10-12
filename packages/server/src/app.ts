@@ -165,7 +165,9 @@ export function createApp(
     const jobs = [...acquirer.jobs.values()];
     const count = (s: string) => jobs.filter((j) => j.state === s).length;
     return c.json({ queued: count('queued'), running: count('running'), done: count('done'), failed: count('failed'),
-      failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error }) => ({ trackId, error })) });
+      failures: jobs.filter((j) => j.state === 'failed').slice(-20).map(({ trackId, error, dead }) => ({ trackId, error, dead: !!dead })),
+      // what is downloading right now, with how far along it is
+      active: jobs.filter((j) => j.state === 'running').map(({ trackId, stage, percent }) => ({ trackId, stage: stage ?? 'downloading', percent: percent ?? 0 })) });
   });
 
   // ---- find the YouTube page of tracks that have none (match.ts): a few tracks per request, the page asks again for the next batch ----

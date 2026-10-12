@@ -20,9 +20,11 @@ export function ContextMenu({ at, onClose }: { at: MenuAt; onClose: () => void }
 
   // keep the menu on screen
   useLayoutEffect(() => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    setPos({ left: Math.max(8, Math.min(at.x, window.innerWidth - r.width - 8)), top: Math.max(8, Math.min(at.y, window.innerHeight - r.height - 8)) });
+    const el = ref.current;
+    if (!el) return;
+    // offset sizes, not getBoundingClientRect: the opening animation scales the menu, which would measure it too small
+    const w = el.offsetWidth, h = el.offsetHeight;
+    setPos({ left: Math.max(8, Math.min(at.x, window.innerWidth - w - 8)), top: Math.max(8, Math.min(at.y, window.innerHeight - h - 8)) });
   }, [at.x, at.y]);
   useEffect(() => {
     const down = (e: MouseEvent) => {
@@ -36,7 +38,7 @@ export function ContextMenu({ at, onClose }: { at: MenuAt; onClose: () => void }
   }, [onClose]);
 
   return createPortal(
-    <div ref={ref} role="menu" aria-label={at.label} className="bt-menu fixed z-[60] w-56 overflow-hidden py-1"
+    <div ref={ref} role="menu" aria-label={at.label} className="bt-menu fixed z-[60] max-h-[calc(100vh-1rem)] w-56 overflow-y-auto py-1"
       style={{ ...pos, transformOrigin: `${Math.max(0, at.x - pos.left)}px ${Math.max(0, at.y - pos.top)}px` }}
       onContextMenu={(e) => e.preventDefault()}>
       {at.items.map((it, i) => 'separator' in it

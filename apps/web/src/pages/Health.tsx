@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { CalendarCheck, CheckCircle2, ChevronDown, ClipboardPaste, GitMerge, ImageDown, Search } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, ChevronDown, ClipboardPaste, Eraser, GitMerge, ImageDown, Search, X } from 'lucide-react';
 import { HealthHero } from '../components/HealthHero.tsx';
 import { AudioQualityCard, MissingAudioCard } from '../components/AudioTools.tsx';
 import { BulkLinks } from '../components/BulkLinks.tsx';
 import type { LinkKind } from '../lib/bulkLinks.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
 import { thumbnailUrls, youtubeId } from '../lib/youtube.ts';
-import { computeHealth, type HealthItem } from '../lib/health.ts';
+import { computeHealth, dupeSignature, ignoredDupes, type HealthItem } from '../lib/health.ts';
+import { updateProfile } from '../lib/profile.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
@@ -89,13 +90,14 @@ export function HealthPage() {
                 <button className="btn" disabled={!configured || covers?.running} onClick={() => void fillCovers(c.items.map((i) => i.id))}><ImageDown size={15} />Try YouTube thumbnails</button>
                 <span className="text-xs text-muted">{!configured ? 'Needs a server (Settings).' : covers ? `${covers.done}/${covers.total} done${covers.failed ? `, ${covers.failed} failed` : ''}${covers.running ? '…' : ''}` : 'Uses each album\'s first track link. Check the results; replace any that look wrong.'}</span></div>}
               {(c.bulk || c.matchLinks) && <div className="flex flex-wrap gap-2 px-4 pb-2">{c.matchLinks && <button className="btn btn-accent" onClick={() => edit({ kind: 'match-links', id: '' })}><Search size={15} />Find YouTube links</button>}{c.bulk && <button className="btn" onClick={() => setBulk(c.bulk!)}><ClipboardPaste size={15} />Paste links by album</button>}</div>}
+              {c.clearDead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`Forget the dead-link mark on ${c.items.length} tracks?`) && c.items.forEach((i) => patch('tracks', i.id, { youtubeDead: null }))}><Eraser size={15} />Forget these marks</button></div>}
               {c.autoDates && <div className="px-4 pb-2"><button className="btn btn-accent" onClick={() => edit({ kind: 'find-dates', id: '' })}><CalendarCheck size={15} />Find dates automatically</button></div>}
               {c.addLead && <div className="px-4 pb-2"><button className="btn" onClick={() => confirm(`${c.addLead!.label} (${c.items.length})?`) && addLeadCredits(c.items)}>{c.addLead.label}</button></div>}
               {c.fix && <div className="px-4 pb-2"><button className="btn text-bad" onClick={() => confirm(`${c.fix!.label} (${c.items.length})?`) && c.items.forEach((i) => remove(c.fix!.table, i.id))}>{c.fix.label}</button></div>}
               {c.mergeGroups ? <div className="max-h-[28rem] space-y-2 overflow-y-auto px-4 pb-3">{[...new Set(c.items.map((i) => i.group))].slice(0, 100).map((g) => { const group = c.items.filter((i) => i.group === g); return (
                 <div key={g} className="rounded-theme border border-line">
                   {group.map((i) => <button key={i.id} className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm hover:bg-raised/60" onClick={() => openItem(i)}><span className="truncate">{i.label}</span>{i.detail && <span className="shrink-0 text-xs text-muted">{i.detail}</span>}</button>)}
-                  <div className="flex justify-end border-t border-line/60 px-3 py-1.5"><button className="btn btn-accent !py-1 text-xs" onClick={() => edit({ kind: 'merge-tracks', id: group.map((i) => i.id).join(',') })}><GitMerge size={13} />Merge these {group.length}</button></div>
+                  <div className="flex justify-end gap-2 border-t border-line/60 px-3 py-1.5"><button className="btn btn-ghost !py-1 text-xs" title="These are different songs: stop listing them" onClick={() => updateProfile(lib, (p) => ({ ...p, settings: { ...p.settings, notDuplicates: [...ignoredDupes(lib), dupeSignature(group.map((i) => i.id))] } }))}><X size={13} />Not duplicates</button><button className="btn btn-accent !py-1 text-xs" onClick={() => edit({ kind: 'merge-tracks', id: group.map((i) => i.id).join(',') })}><GitMerge size={13} />Merge these {group.length}</button></div>
                 </div>); })}</div> :
               c.albumLinks ? <div className="max-h-96 divide-y divide-line/60 overflow-y-auto">{c.items.slice(0, 200).map((i) => <AlbumLinkRow key={i.id} item={i} />)}</div> :
               <div className="max-h-80 divide-y divide-line/60 overflow-y-auto">{c.items.slice(0, 200).map((i) => (

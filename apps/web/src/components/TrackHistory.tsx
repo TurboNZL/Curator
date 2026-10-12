@@ -9,11 +9,11 @@ export function TrackHistory({ info }: { info: TrackInfo }) {
     <div className="grid gap-4 lg:grid-cols-2">
       <div>
         <div className="mb-1 text-sm font-medium">Play history ({info.history.length})</div>
-        {!info.history.length && <p className="text-sm text-muted">Not played on any synced device yet.</p>}
+        {!info.history.length && <p className="text-sm text-muted">No plays yet, in Curator or in imported Spotify history.</p>}
         {info.history.length > 0 && <div className="max-h-72 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">{info.history.map((h) => (
           <div key={h.logId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
             <span className={cn('w-12 text-xs font-semibold uppercase', h.isSkip ? 'text-warn' : 'text-good')}>{h.isSkip ? 'skip' : 'played'}</span>
-            <span className="min-w-0 flex-1 truncate text-muted">{fmtListened(h.seconds)} · from {h.source ?? 'unknown'}</span>
+            <span className="min-w-0 flex-1 truncate text-muted">{fmtListened(h.seconds)} · {h.imported ? 'on Spotify' : `from ${h.source ?? 'unknown'}`}</span>
             <span className="shrink-0 text-xs text-muted">{new Date(h.timestamp).toLocaleString()}</span></div>))}</div>}
       </div>
       <div>

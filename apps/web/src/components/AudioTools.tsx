@@ -14,7 +14,7 @@ export function MissingAudioCard() {
   const lib = useLibrary();
   const configured = useStore((s) => !!s.settings.token);
   const [msg, setMsg] = useState<string | null>(null);
-  const [st, setSt] = useState<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] } | null>(null);
+  const [st, setSt] = useState<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string; dead?: boolean }[]; active?: { trackId: string; stage: 'downloading' | 'converting'; percent: number }[] } | null>(null);
   const timer = useRef<number>(0);
   const withAudio = lib.tracks.filter((t) => t.file).length;
   const missing = lib.tracks.filter((t) => !t.file && t.youtubeMusicUrl).length;
@@ -25,7 +25,7 @@ export function MissingAudioCard() {
   }
   useEffect(() => { if (configured) void poll(); return () => window.clearInterval(timer.current); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   async function start() {
-    try { const r = await api().acquire(); setMsg(`Queued ${r.queued} tracks.`); await poll(); if (!timer.current) timer.current = window.setInterval(() => void poll(), 3000); }
+    try { const r = await api().acquire(); setMsg(`Queued ${r.queued} tracks.`); await poll(); if (!timer.current) timer.current = window.setInterval(() => void poll(), 1500); }
     catch { setMsg('Could not reach the server.'); }
   }
   const total = st ? st.queued + st.running + st.done + st.failed : 0;
@@ -41,11 +41,16 @@ export function MissingAudioCard() {
         {!configured && <span className="text-xs text-muted">Needs a server (Settings).</span>}
       </div>
       {st && total > 0 && <div className="space-y-1"><Bar value={total ? (st.done + st.failed) / total : 0} /><div className="text-xs text-muted">{st.queued} queued · {st.running} running · {st.done} done · {st.failed} failed</div></div>}
+      {st?.active && st.active.length > 0 && <ul className="space-y-2" aria-label="Downloading now">{st.active.map((a) => (
+        <li key={a.trackId} className="space-y-1">
+          <div className="flex items-baseline gap-2 text-xs"><span className="min-w-0 flex-1 truncate font-medium">{lib.trackById.get(a.trackId)?.title ?? 'A track'}</span><span className="shrink-0 tabular-nums text-muted">{a.stage === 'converting' ? 'converting to MP3…' : `${a.percent}%`}</span></div>
+          <div role="progressbar" aria-valuenow={a.percent} aria-valuemin={0} aria-valuemax={100}><Bar value={a.percent / 100} tone={a.stage === 'converting' ? 'good' : 'accent'} /></div>
+        </li>))}</ul>}
       {msg && <div className="text-xs text-muted">{msg}</div>}
       {st && st.failures.length > 0 && (
         <div className="space-y-1 rounded-theme bg-bad/10 p-3 text-xs" role="status">
           <div className="font-medium text-bad">Failed downloads (press the button to try them again)</div>
-          <ul className="max-h-40 space-y-0.5 overflow-y-auto">{st.failures.map((f, i) => <li key={i}><span className="font-medium">{lib.trackById.get(f.trackId)?.title ?? f.trackId}</span><span className="text-muted"> — {f.error}</span></li>)}</ul>
+          <ul className="max-h-40 space-y-0.5 overflow-y-auto">{st.failures.map((f, i) => <li key={i}><span className="font-medium">{lib.trackById.get(f.trackId)?.title ?? f.trackId}</span>{f.dead && <span className="ml-1 rounded bg-bad/20 px-1 text-bad">dead link</span>}<span className="text-muted"> — {f.error}</span></li>)}</ul>
           {needsCookies && <div className="pt-1 text-warn">YouTube is asking this server to prove it is not a bot. Give yt-dlp a cookies file: see docs/YTDLP_COOKIES.md.</div>}
         </div>)}
       <p className="text-xs text-muted">Downloads run on the server and need yt-dlp and ffmpeg installed there.</p>

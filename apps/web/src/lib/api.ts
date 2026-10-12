@@ -129,7 +129,7 @@ export class Api {
   similarArtists(artist: string) { return this.req<{ artists: { name: string; mbid: string; score: number }[] }>(`/api/recommend/similar?artist=${encodeURIComponent(artist)}`); }
   acquire(trackIds?: string[]) { return this.req<{ queued: number }>('/api/acquire', { method: 'POST', body: JSON.stringify({ trackIds }) }); }
   acquireStatus() {
-    return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string }[] }>('/api/acquire');
+    return this.req<{ queued: number; running: number; done: number; failed: number; failures: { trackId: string; error: string; dead?: boolean }[]; active?: { trackId: string; stage: 'downloading' | 'converting'; percent: number }[] }>('/api/acquire');
   }
   /** direct download links (the browser saves them to disk without holding them in memory) */
   exportUrl(what: 'database' | 'files') { return this.url(`/api/export/${what}?token=${encodeURIComponent(this.s.token)}`); }
