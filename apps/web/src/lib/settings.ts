@@ -56,6 +56,8 @@ export interface CuratorDesktop {
   windowControl?(action: 'minimize' | 'maximize' | 'close'): void;
   setCustomFrame?(on: boolean): Promise<void>;
   onWindowState?(cb: (maximized: boolean) => void): () => void;
+  /** the Cloudflare Access service token for the library server: the main process adds it to every request to that address */
+  setAccess?(serverUrl: string, id: string, secret: string): void;
   chooseLibraryFolder(): Promise<string | null>;
   showLibraryFolder(): Promise<void>;
   /** Discord Rich Presence (the app's main process talks to the local Discord client) */

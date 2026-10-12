@@ -1,4 +1,5 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, session, shell } from 'electron';
+import { makeRule, withAccess, type AccessRule } from './accessHeaders.ts';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
@@ -103,6 +104,14 @@ function chooseFolder(): Promise<string | null> {
 
 ipcMain.on('curator:info', (e) => {
   e.returnValue = { customFrame: loadDesktopConfig(userData()).customFrame, token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, port: server?.port ?? 0 };
+});
+// the Cloudflare Access service token rides on every request to the library server (see accessHeaders.ts), so audio and covers stream directly
+let accessRule: AccessRule | null = null;
+ipcMain.on('curator:access', (_e, serverUrl: unknown, id: unknown, secret: unknown) => {
+  accessRule = makeRule(serverUrl, id, secret);
+  const ses = session.defaultSession;
+  if (!accessRule) { ses.webRequest.onBeforeSendHeaders(null); return; }
+  ses.webRequest.onBeforeSendHeaders({ urls: [`${accessRule.origin}/*`] }, (details, cb) => cb({ requestHeaders: withAccess(accessRule, details.url, details.requestHeaders) as Record<string, string> }));
 });
 ipcMain.handle('curator:graphics', () => graphics());
 ipcMain.handle('curator:choose-folder', () => chooseFolder());

@@ -9,6 +9,7 @@ const info = ipcRenderer.sendSync('curator:info') as { token: string; version: s
 contextBridge.exposeInMainWorld('curatorDesktop', {
   ...info,
   chooseLibraryFolder: () => ipcRenderer.invoke('curator:choose-folder') as Promise<string | null>,
+  setAccess: (serverUrl: string, id: string, secret: string) => ipcRenderer.send('curator:access', serverUrl, id, secret),
   setPresence: (p: unknown) => ipcRenderer.send('curator:presence', p),
   getDiscord: () => ipcRenderer.invoke('curator:discord-get') as Promise<unknown>,
   setDiscord: (patch: unknown) => ipcRenderer.invoke('curator:discord-set', patch) as Promise<unknown>,

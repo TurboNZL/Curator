@@ -61,6 +61,8 @@ export class Api {
   /** true when the server is another origin than this page, so a service token cannot ride on a cookie and `<img>`/`<audio>` links would be refused */
   get needsHeaderFetch() {
     if (!Object.keys(this.access).length) return false;
+    // the desktop app puts the token on the requests itself (apps/electron/src/accessHeaders.ts): links work, and audio streams
+    if (typeof window !== 'undefined' && (window as unknown as { curatorDesktop?: { setAccess?: unknown } }).curatorDesktop?.setAccess) return false;
     try { return !!this.s.serverUrl && new URL(this.s.serverUrl, location.href).origin !== location.origin; } catch { return true; }
   }
   /** fetch a server link with the service token (and, same-origin, keep the cookie Access answers with) */
