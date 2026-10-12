@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Clock, Download, Flame, History, LayoutGrid, List, Upload, Users, SkipForward, Shuffle } from 'lucide-react';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { computeStats } from '../lib/stats.ts';
 import { buildListens, type Listen } from '../lib/listens.ts';
 import { computeListenStats, dayKey, timeSeries, type ListenStats, type Range, type TopRow } from '../lib/listenStats.ts';
@@ -22,7 +22,7 @@ type Tab = (typeof TABS)[number]['id'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthLabel = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5)) - 1]} ${ym.slice(0, 4)}`;
 
-function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof useLibrary>; range: Range }) {
+function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof useLibraryLive>; range: Range }) {
   const months = s.byMonth.slice(-12);
   const { unit, points: series } = useMemo(() => timeSeries(s, range), [s, range]);
   const daily = unit === 'day';
@@ -53,7 +53,7 @@ function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof us
   );
 }
 
-function Top({ s, byTime, lib }: { s: ListenStats; byTime: boolean; lib: ReturnType<typeof useLibrary> }) {
+function Top({ s, byTime, lib }: { s: ListenStats; byTime: boolean; lib: ReturnType<typeof useLibraryLive> }) {
   void lib;
   const [view, setView] = useState<'grid' | 'list'>(() => { try { return localStorage.getItem('curator.statsTopView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } });
   const choose = (v: 'grid' | 'list') => { setView(v); try { localStorage.setItem('curator.statsTopView', v); } catch { /* private window */ } };
@@ -105,7 +105,7 @@ function Activity({ s }: { s: ListenStats }) {
 
 const PAGE = 200;
 /** Every play as a timeline, newest first, grouped by day. */
-function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof useLibrary> }) {
+function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof useLibraryLive> }) {
   const [q, setQ] = useState('');
   const [source, setSource] = useState<'all' | 'curator' | 'spotify'>('all');
   const [skips, setSkips] = useState<'all' | 'played' | 'skipped'>('all');
@@ -175,7 +175,7 @@ function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof 
 
 const fmtDuration = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m` : `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`);
 function LibraryTab() {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const s = computeStats(lib);
   const maxBand = Math.max(1, ...s.ratingBands);
   return (
@@ -195,7 +195,7 @@ function LibraryTab() {
 }
 
 export function StatsPage() {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as Tab;
   const [filter, setFilterState] = useState<StatsFilter>(loadFilter);

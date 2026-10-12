@@ -24,7 +24,7 @@ import { albumCover, coverPicked, coverPool } from '../lib/covers.ts';
 import { CoverPool } from './CoverPool.tsx';
 import { saveRules } from '../lib/profile.ts';
 import { eraPatches } from '../lib/eraOps.ts';
-import { AudioPicker, CreditsEditor, EntityPicker, EraPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { AudioPicker, CreditsEditor, FeaturedEditor, EntityPicker, EraPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
 import { AddToPlaylistDialog, AddAlbumToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
 import { AddToAlbumDialog, ReleaseChoicePicker } from './AddToAlbum.tsx';
 
@@ -123,11 +123,6 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
       <Field label="Album" hint="Cover, genres and (if ticked below) credits come from the album. Moving a track puts it last on the new album.">
         <Select value={albumSel} options={albumOptions(lib, 'No album (single)')} onChange={(v) => { setAlbumSel(v); const a = lib.albumById.get(v); if (a) setChoice(defaultChoice(lib, a, !!t.cover)); }} /></Field>
       {albumSel !== (track.albumId ?? '') && albumSel && <ReleaseChoicePicker albumId={albumSel} trackTitle={t.title || track.title} hasOwnCover={!!t.cover} cover={t.cover ?? null} value={choice} onChange={setChoice} />}
-      {!albumSel && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
-      <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
-        <ImagePicker hash={t.cover ?? null} onChange={(h) => set('cover', h)} seed={t.title || 'track'} /></Field>
-      {!albumSel && <Field label="Release date" hint="When the single came out. A track on an album uses its album's release date."><input type="date" className="input" value={t.releaseDate ?? ''} onChange={(e) => set('releaseDate', e.target.value || null)} /></Field>}
-      <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
       {albumSel && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!t.syncWithAlbumCredits} onChange={(e) => {
         const on = e.target.checked;
         // Switching to track-specific credits starts from what the track showed: while it followed its album that was the album's credits
@@ -139,15 +134,22 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
             genres: !on && wasFollowing && !(p!.genres ?? []).length ? [...(selAlbum?.genres ?? [])] : p!.genres };
         });
       }} />Use the album's credits and genres{selAlbum ? ` (${selAlbum.title})` : ''}</label>}
+      <Field label={follows ? 'Credits (from the album)' : 'Credits'}>{follows
+        ? <CreditsEditor readOnly value={albumCredits} onChange={() => undefined} />
+        : <CreditsEditor requireLead value={t.credits ?? []} onChange={(v) => set('credits', v)} />}</Field>
+      {follows && <Field label="Featured artists" hint="Added on this track only; the credits above stay the album's."><FeaturedEditor value={t.credits ?? []} onChange={(v) => set('credits', v)} /></Field>}
+      {albumSel && t.syncWithAlbumCredits && <Field label="Genres (from the album)"><div className="flex flex-wrap gap-1.5">{(selAlbum?.genres ?? []).length ? selAlbum!.genres.map((g) => <span key={g} className="chip">{g}</span>) : <span className="text-sm text-muted">The album has no genre yet.</span>}</div></Field>}
       {(!albumSel || !t.syncWithAlbumCredits) && <Field label="Genres"><TagInput value={t.genres ?? []} onChange={(v) => set('genres', v)} suggestions={lib.genres.map((g) => g.name)} /></Field>}
+      {!albumSel && <Field label="Eras" hint="Optional. A single can be in several eras."><EraPicker value={eraIds} onChange={setEraIds} /></Field>}
+      <Field label="Cover" hint={albumSel ? "Optional. Without one the track shows its album's cover. If you add a track that has one to another album, it becomes a release of its own." : 'The single’s artwork.'}>
+        <ImagePicker hash={t.cover ?? null} onChange={(h) => set('cover', h)} seed={t.title || 'track'} /></Field>
+      {!albumSel && <Field label="Release date" hint="When the single came out. A track on an album uses its album's release date."><input type="date" className="input" value={t.releaseDate ?? ''} onChange={(e) => set('releaseDate', e.target.value || null)} /></Field>}
+      <Field label="Manual rating (0–10)" hint="A floor until votes take over"><input className="input" inputMode="decimal" value={t.initialRating ?? ''} onChange={(e) => set('initialRating', numOrNull(e.target.value))} /></Field>
       <Field label="Audio file" hint="Upload a file from this device, or add a YouTube link below and let the server download it"><AudioPicker hash={t.file} onChange={(file, bitrate) => setT((p) => ({ ...p!, file, bitrate: file ? bitrate ?? p!.bitrate : null }))} /></Field>
       <Field label="YouTube Music URL" hint="Used to download the audio"><input className="input" value={t.youtubeMusicUrl ?? ''} onChange={(e) => set('youtubeMusicUrl', e.target.value || null)} /></Field>
       <Field label="Spotify URLs" hint="The first one is the one played through Spotify. Add more when the same song is also another Spotify track (a single that later came out on an album has its own link).">
         <SpotifyLinks primary={t.spotifyUrl ?? null} others={t.spotifyUrls ?? []} onChange={(f) => setT((p) => ({ ...p!, ...f }))} /></Field>
       <Field label="Genius URL"><input className="input" value={t.geniusUrl ?? ''} onChange={(e) => set('geniusUrl', e.target.value || null)} /></Field>
-      <Field label={follows ? 'Credits (from the album)' : 'Credits'}>{follows
-        ? <CreditsEditor readOnly value={albumCredits} onChange={() => undefined} />
-        : <CreditsEditor requireLead value={t.credits ?? []} onChange={(v) => set('credits', v)} />}</Field>
       <div className="space-y-2 rounded-theme border border-line p-3">
         <div className="text-sm font-medium">Playback rule: play another track right after this one</div>
         <TrackPicker value={after} onChange={setAfter} exclude={id} />

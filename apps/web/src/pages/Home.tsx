@@ -11,7 +11,7 @@ import { healthScore } from '../components/HealthHero.tsx';
 import { Cover } from '../components/Cover.tsx';
 import type { Library } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
 import { EloQuestions } from '../components/EloQuestions.tsx';
@@ -35,7 +35,7 @@ function Shelf({ title, to, children }: { title: string; to?: string; children: 
 }
 
 export function HomePage() {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const remove = useStore((s) => s.remove);
   const play = usePlayer((s) => s.play);
   const menu = useMenu();

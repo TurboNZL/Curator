@@ -2,7 +2,7 @@ import { PlayLog } from './playLog.ts';
 import { create } from 'zustand';
 import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
 import { moveTrack } from './defaults.ts';
-import { audioSource, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
+import { audioSource, cancelPrefetch, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
 import { BEAM_ID, beamActive, beamFailed, setBeamVolume } from './beam.ts';
 import { getLibrary } from './derive.ts';
@@ -70,6 +70,15 @@ const nativeBad = new Set<string>();
 const NATIVE_AHEAD = 12;
 let refreshNative: () => void = () => {};
 let preloadSoon: () => void = () => {};
+/** true when the playing file is (nearly) fully in the browser's buffer, or at least 90 s ahead of the playhead is */
+function currentTrackBuffered(a: HTMLAudioElement): boolean {
+  const d = a.duration;
+  if (!Number.isFinite(d) || d <= 0) return false;
+  for (let i = 0; i < a.buffered.length; i++) {
+    if (a.buffered.start(i) <= a.currentTime + 0.5 && a.buffered.end(i) >= Math.min(d - 1, a.currentTime + 90)) return true;
+  }
+  return false;
+}
 const lib = getLibrary;
 const playLog = new PlayLog();
 const rules = () => lib().rules;
@@ -85,6 +94,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     audio.addEventListener('waiting', () => { if (!native && audio!.getAttribute('src')) set({ loading: true }); });
     audio.addEventListener('loadeddata', () => { if (!audio!.paused) return; set({ loading: false }); });
     audio.addEventListener('timeupdate', () => { if (!native) set({ time: audio!.currentTime }); });
+    audio.addEventListener('progress', () => preloadSoon());
     audio.addEventListener('durationchange', () => !native && set({ duration: Number.isFinite(audio!.duration) ? audio!.duration : 0 }));
     audio.addEventListener('play', () => { if (!native) set({ playing: true }); });
     audio.addEventListener('pause', () => { if (!native && audio!.getAttribute('src')) set({ playing: false }); }); // a pause that clears the source is a track change
@@ -172,6 +182,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     const seq = ++loadSeq; // a newer load supersedes one still resolving its source
     if (!trackId) {
       playLog.clear();
+      cancelPrefetch();
       void spotifyEngine.release(true);
       if (native) nativeAudio.stop();
       native = false;
@@ -336,6 +347,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
    */
   function preloadNextTrack() {
     if (native || spotifyEngine.active() || !get().queue.currentId) return;
+    // only once this track has (nearly) all arrived: two downloads at once would slow the one the user is listening to
+    if (audio && audio.getAttribute('src') && !currentTrackBuffered(audio)) return;
     let sim = get().queue;
     for (let i = 0; i < 6; i++) {
       sim = advance(sim, rules(), get().source.type);
@@ -345,7 +358,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     }
   }
   let preloadTimer: ReturnType<typeof setTimeout> | undefined;
-  preloadSoon = () => { clearTimeout(preloadTimer); preloadTimer = setTimeout(preloadNextTrack, 400); };
+  preloadSoon = () => { if (preloadTimer) return; preloadTimer = setTimeout(() => { preloadTimer = undefined; preloadNextTrack(); }, 600); };
 
   // what the app's own player is told when the queue changes underneath it (queued, removed, reshuffled): the neighbours are replaced, the sound is not interrupted
   let refreshTimer: ReturnType<typeof setTimeout> | undefined;

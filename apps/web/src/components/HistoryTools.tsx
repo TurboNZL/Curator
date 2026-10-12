@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Download, FileUp, Upload } from 'lucide-react';
 import { Modal } from './forms.tsx';
 import { useStore } from '../lib/store.ts';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { buildListens } from '../lib/listens.ts';
 import { exportFiles, exportSpotifyFormat, historyRecords, type ExportPlay, type HistoryImport, type SpotifyHistoryEntry } from '../lib/spotify.ts';
 import { readZip } from '../lib/zipRead.ts';
@@ -87,7 +87,7 @@ const download = (name: string, data: BlobPart, type: string) => {
 
 /** Export plays in Spotify's own file format, which stats.fm (and other Spotify-history tools) can read. */
 export function ExportHistoryDialog({ onClose }: { onClose: () => void }) {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const [includeImported, setIncludeImported] = useState(false);
   const all = buildListens(lib);
   const plays: ExportPlay[] = all.filter((l) => includeImported || l.source === 'curator').map((l) => ({ ts: l.ts, ms: l.ms, title: l.title, artist: l.artist, album: l.album, uri: l.uri, skipped: l.skipped, shuffle: l.shuffle, platform: l.platform === 'Curator' ? 'Curator' : l.platform, reasonStart: null, reasonEnd: l.reasonEnd }));

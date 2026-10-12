@@ -39,3 +39,18 @@ describe('does the toggle need a new pair', () => {
   it('replaces a pair with a track that has none', () => { expect(pairLacksAudio(['a', 'c'], byId)).toBe(true); expect(pairLacksAudio(['c', 'zzz'], byId)).toBe(true); });
   it('has nothing to replace before a pair exists', () => expect(pairLacksAudio(null, byId)).toBe(false));
 });
+
+import { tierPool } from '../src/lib/pairing.ts';
+describe('tierPool', () => {
+  const ts = Array.from({ length: 20 }, (_, i) => ({ id: `t${i}`, elo: 1000 + i * 10, comparisons: i < 2 ? 0 : 5, effectiveRating: i / 2 }));
+  it('top tiers are the highest Elo among compared tracks', () => {
+    expect(tierPool(ts, { tier: 'top10', min: 0, max: 10 }).map((t) => t.id)).toEqual(['t19', 't18']);
+    expect(tierPool(ts, { tier: 'top25', min: 0, max: 10 }).length).toBe(5); // 18 compared, a quarter rounded up is 5
+  });
+  it('halves split the compared tracks; few votes and range filter directly', () => {
+    expect(tierPool(ts, { tier: 'upper', min: 0, max: 10 }).length + tierPool(ts, { tier: 'lower', min: 0, max: 10 }).length).toBe(18);
+    expect(tierPool(ts, { tier: 'few', min: 0, max: 10 }).map((t) => t.id)).toEqual(['t0', 't1']);
+    expect(tierPool(ts, { tier: 'range', min: 8, max: 9 }).map((t) => t.id)).toEqual(['t16', 't17', 't18']);
+    expect(tierPool(ts, { tier: 'any', min: 0, max: 10 })).toBe(ts);
+  });
+});

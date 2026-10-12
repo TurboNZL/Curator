@@ -23,13 +23,21 @@ describe('album scoring', () => {
 });
 
 describe('search results', () => {
-  it('turns playlist results into YouTube Music album links, best first, and drops plain videos', () => {
+  it('reads YouTube Music album results (links without titles), keeps the search order and drops videos', () => {
     const c = parseAlbumSearch({ entries: [
-      { id: 'dQw4w9WgXcQ', title: 'Take Care video', channel: 'x' },
+      { id: 'dQw4w9WgXcQ', url: 'https://music.youtube.com/watch?v=dQw4w9WgXcQ', title: 'Take Care video' },
+      { id: 'MPREb_first', url: 'https://music.youtube.com/browse/MPREb_first' },
+      { id: 'OLAK5uy_second', url: 'https://music.youtube.com/playlist?list=OLAK5uy_second' },
+      { id: 'MPREb_first', url: 'https://music.youtube.com/browse/MPREb_first' },
+    ] }, a);
+    expect(c.map((x) => x.url)).toEqual(['https://music.youtube.com/browse/MPREb_first', 'https://music.youtube.com/playlist?list=OLAK5uy_second']);
+  });
+  it('still understands playlist rows that carry a title', () => {
+    const c = parseAlbumSearch({ entries: [
       { id: 'PLbad', title: 'Drake mix 2024', channel: 'Fan', playlist_count: 90 },
       { id: 'OLAK5uy_good', title: 'Album - Take Care', channel: 'Drake', playlist_count: 19 },
     ] }, a);
-    expect(c.map((x) => x.url)).toEqual(['https://music.youtube.com/playlist?list=OLAK5uy_good', 'https://music.youtube.com/playlist?list=PLbad']);
+    expect(c[0].url).toBe('https://music.youtube.com/playlist?list=OLAK5uy_good');
     expect(c[0].count).toBe(19);
   });
 });
@@ -37,14 +45,22 @@ describe('search results', () => {
 describe('Matcher with a fake yt-dlp', () => {
   const dir = mkdtempSync(join(tmpdir(), 'match-'));
   const fake = join(dir, 'yt-dlp');
-  writeFileSync(fake, `#!/bin/sh\necho "$@" > "${dir}/argv.log"\necho '{"entries":[{"id":"OLAK5uy_zzz","title":"Album - Take Care","channel":"Drake","playlist_count":19}]}'\n`); chmodSync(fake, 0o755);
-  it('searches YouTube\'s playlist results for "artist album"', async () => {
+  // a search URL answers with two bare album links (as YouTube Music does); an album URL answers with its page
+  writeFileSync(fake, `#!/bin/sh
+echo "$@" >> "${dir}/argv.log"
+case "$1" in
+  *search*) echo '{"entries":[{"id":"MPREb_aaa","url":"https://music.youtube.com/browse/MPREb_aaa"},{"id":"MPREb_bbb","url":"https://music.youtube.com/browse/MPREb_bbb"}]}' ;;
+  *MPREb_aaa*) echo '{"id":"OLAK5uy_aaa","title":"Views","channel":"Drake","entries":[{},{},{}]}' ;;
+  *MPREb_bbb*) echo '{"id":"OLAK5uy_bbb","title":"Album - Take Care","channel":"Drake","entries":[{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}]}' ;;
+esac
+`); chmodSync(fake, 0o755);
+  it('searches YouTube Music albums, opens the results and ranks them by what they really are', async () => {
     const r = await new Matcher({ ytdlp: fake }).album(a);
-    expect(r.candidates[0]).toMatchObject({ url: 'https://music.youtube.com/playlist?list=OLAK5uy_zzz' });
+    expect(r.candidates[0]).toMatchObject({ url: 'https://music.youtube.com/playlist?list=OLAK5uy_bbb', title: 'Album - Take Care', count: 19 });
+    expect(r.candidates[1].title).toBe('Views');
     const argv = readFileSync(join(dir, 'argv.log'), 'utf8');
-    expect(argv).toContain('search_query=Drake%20Take%20Care');
-    expect(argv).toContain('sp=EgIQAw%253D%253D');
-    expect(argv).toContain('--flat-playlist');
+    expect(argv).toContain('https://music.youtube.com/search?q=Drake%20Take%20Care#albums');
+    expect(argv).not.toContain('youtube.com/results'); // no longer the playlist search of the main site
   });
   it('reports a missing yt-dlp instead of throwing', async () => {
     const r = await new Matcher({ ytdlp: join(dir, 'missing') }).album(a);

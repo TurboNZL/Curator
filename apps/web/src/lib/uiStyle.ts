@@ -4,7 +4,7 @@
  */
 import type { ThemeId } from "./theme.ts";
 
-export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5";
+export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5" | "pipboy" | "persona" | "gameboy" | "zune" | "cyber" | "blocky";
 
 export type UiStyleDef = {
   id: UiStyleId;
@@ -33,11 +33,17 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "liquid", label: "macOS Liquid Glass", description: "Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus.", font: "SF Pro", matching: { light: "macos", dark: "macos-dark" } },
   { id: "holo", label: "Android Holo (4.x, 2011-13)", description: "Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto.", font: "Roboto", matching: { light: "holo-light", dark: "holo-dark" } },
   { id: "winamp", label: "Winamp 2 (classic skin)", description: "The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial.", font: "Arial", matching: { light: "winamp" } },
-  { id: "lgux", label: "LG Optimus: Marshmallow theme", description: "The pink, candy-like Marshmallow home-screen theme of LG's Optimus UI 3.0 (2012-13): glossy pill buttons, puffy rounded cards with chunky candy shadows, a bubblegum app bar and round type.", font: "Nunito", matching: { light: "lg-marshmallow", dark: "lg-marshmallow-dark" } },
+  { id: "lgux", label: "LG Optimus: Marshmallow theme", description: "The pink Marshmallow home-screen theme of LG Optimus UI 3.0 (2012-13), redone from its screenshot: flat pastel pink, thin rose frames, translucent white panels, a dark status bar and a rose page indicator.", font: "Nunito", matching: { light: "lg-marshmallow", dark: "lg-marshmallow-dark" } },
   { id: "fortnite1", label: "Fortnite Chapter 1 (2017-19)", description: "Slanted buttons and panels, hard drop shadows, a yellow Play button and condensed capitals on bright blue.", font: "Burbank Big Condensed", matching: { light: "fortnite-1", dark: "fortnite-1" } },
   { id: "fortnite2", label: "Fortnite Chapter 2-3 (2019-23)", description: "The same slant on deep navy with see-through blue panels and a glowing Play button.", font: "Burbank Big Condensed", matching: { light: "fortnite-2", dark: "fortnite-2" } },
   { id: "fortnite4", label: "Fortnite Chapter 4 Rift UI (2023)", description: "The lobby redesign: rounded shapes on purple, options down the left side, in Heading Now.", font: "Heading Now", matching: { light: "fortnite-4", dark: "fortnite-4" } },
   { id: "fortnite5", label: "Fortnite Chapter 5-6 (2024-)", description: "Rift UI refined: less rounding and blue instead of purple.", font: "Heading Now", matching: { light: "fortnite-5", dark: "fortnite-5" } },
+  { id: "pipboy", label: "Pip-Boy 3000 (Fallout)", description: "Green phosphor on black: one hue, square frames, glowing type, scan lines and menus that pick by inverting.", font: "VT323", matching: { light: "pipboy", dark: "pipboy" } },
+  { id: "persona", label: "Persona 5", description: "Black, red and white with hard offset shadows, italic capitals, solid red selection and white edges.", font: "Anton", matching: { light: "persona", dark: "persona" } },
+  { id: "gameboy", label: "Game Boy (DMG-01)", description: "The four greens of the original LCD, 2 px square frames, hard shadows, inverted picks and Press Start 2P type. Covers are tinted green.", font: "Press Start 2P", matching: { light: "dmg", dark: "dmg" } },
+  { id: "zune", label: "Zune HD (Metro)", description: "Black with huge light lowercase titles, boxless content, white outlined controls and one orange accent that marks where you are.", font: "Segoe UI Light", matching: { light: "zune", dark: "zune" } },
+  { id: "cyber", label: "Cyberpunk 2077", description: "Near-black with caution-tape yellow and cyan glints, chamfered corners, condensed capitals and solid yellow selection bars.", font: "Barlow Condensed", matching: { light: "cyber", dark: "cyber" } },
+  { id: "blocky", label: "Block game inventory (Minecraft)", description: "A light grey inventory panel with a bevel and black outline, grey slot buttons with shadowed white type that turn blue-violet with yellow type on hover, and pixel type.", font: "VT323", matching: { light: "inventory", dark: "inventory" } },
   { id: "material", label: "Material 3", description: "Pill buttons, tonal surfaces, filled fields with an underline and rounded dialogs in Roboto.", font: "Roboto", matching: { light: "material", dark: "material-dark" } },
 ];
 

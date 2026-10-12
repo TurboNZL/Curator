@@ -58,7 +58,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | Android Holo Dark | `holo-dark` | dark | `#000000` `#121212` `#33b5e5` `#ffffff` |
 | Android Holo Light | `holo-light` | light | `#ffffff` `#f3f3f3` `#0099cc` `#333333` |
 | Winamp Classic | `winamp` | dark | `#1c1c2a` `#000000` `#00e800` `#d8dbe6` |
-| Marshmallow | `lg-marshmallow` | light | `#fff0f6` `#ffffff` `#e8338a` `#4a1a35` |
+| Marshmallow | `lg-marshmallow` | light | `#f7dde2` `#fdf3f4` `#dc5a76` `#5a3a43` |
 | Marshmallow Night | `lg-marshmallow-dark` | dark | `#2b1224` `#3b1b31` `#ff6fb0` `#ffe9f3` |
 | Fortnite Ch 1 | `fortnite-1` | light | `#a6b8dc` `#b6c5e2` `#f1e53c` `#121830` |
 | Fortnite Ch 2-3 | `fortnite-2` | dark | `#0a5db6` `#0a4b9a` `#e7f03b` `#d9eeff` |
@@ -74,7 +74,7 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 |---|---|---|---|
 | Default | `default` | `light`, `default` | The app's own look. Follows the colour theme's rounding and density (Classic is tighter). |
 | GTK 4 (Adwaita) | `gtk4` | `adwaita`, `adwaita-dark` | libadwaita: a flush grey sidebar and flat header bar, 6 px grey buttons and entries, 12 px outlined cards and popovers, grey sidebar highlight, white round slider knobs, in Cantarell. |
-| KDE Breeze | `breeze` | `breeze`, `breeze-dark` | Plasma 6 Breeze: 5 px corners, a window-grey page with lighter panels, outlined buttons that take an accent frame on hover, solid accent selections and a light title bar in Noto Sans. |
+| KDE Breeze | `breeze` | `breeze`, `breeze-dark` | Plasma 6 Breeze (framed views were replaced by 1 px separators in Plasma 6; focus is an encircling accent ring): 5 px corners, regular-weight headings, alternate row shading, a window-grey page with lighter panels, outlined buttons that take an accent frame on hover, solid accent selections and a light title bar in Noto Sans. |
 | Windows 11 | `win11` | `win11`, `win11-dark` | Fluent: rounded, light shadows, accent underline on fields and smooth slide-in motion in Segoe UI Variable. |
 | Windows 10 | `win10` | `win10`, `win10-dark` | Flat and square with crisp 2 px borders and quick transitions in Segoe UI. |
 | Windows 7 | `win7` | `win7`, `win7-dark` | Aero: glass window frames, grey gel buttons with a blue glow and a red close button in Segoe UI. |
@@ -86,9 +86,17 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning docs/appea
 | macOS Liquid Glass | `liquid` | `macos`, `macos-dark` | Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus. |
 | Android Holo (4.x, 2011-13) | `holo` | `holo-light`, `holo-dark` | Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto. |
 | Winamp 2 (classic skin) | `winamp` | `winamp` | The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial. |
-| LG Optimus: Marshmallow theme | `lgux` | `lg-marshmallow`, `lg-marshmallow-dark` | The pink, candy-like Marshmallow home-screen theme of LG's Optimus UI 3.0 (2012-13): glossy pill buttons, puffy rounded cards with chunky candy shadows, a bubblegum app bar and round type. An interpretation: no screenshots or specs are public. |
+| LG Optimus: Marshmallow theme | `lgux` | `lg-marshmallow`, `lg-marshmallow-dark` | The pink Marshmallow home-screen theme of LG Optimus UI 3.0 (2012-13), redone from a screenshot of it: flat pastel pink, thin rose frames, translucent white panels, a dark status bar, a rose page indicator, Roboto. |
 | Fortnite Chapter 1 (2017-19) | `fortnite1` | `fortnite-1`, `fortnite-1` | Slanted buttons and panels, hard drop shadows, a yellow Play button and condensed capitals on bright blue. |
 | Fortnite Chapter 2-3 (2019-23) | `fortnite2` | `fortnite-2`, `fortnite-2` | The same slant on deep navy with see-through blue panels and a glowing Play button. |
 | Fortnite Chapter 4 Rift UI (2023) | `fortnite4` | `fortnite-4`, `fortnite-4` | The lobby redesign: rounded shapes on purple, options down the left side, in Heading Now. |
 | Fortnite Chapter 5-6 (2024-) | `fortnite5` | `fortnite-5`, `fortnite-5` | Rift UI refined: less rounding and blue instead of purple. |
 | Material 3 | `material` | `material`, `material-dark` | Pill buttons, tonal surfaces, filled fields with an underline and rounded dialogs in Roboto. |
+| Pip-Boy 3000 (Fallout) | `pipboy` | `pipboy` | Green phosphor on black: one hue, square frames, glowing type, scan lines, picks shown inverted, in VT323. |
+| Persona 5 | `persona` | `persona` | Black, red and white: hard offset shadows, italic capitals (Anton), solid red selection with a white edge. |
+| Game Boy (DMG-01) | `gameboy` | `dmg` | The four LCD greens, 2 px square frames, hard shadows, inverted picks, Press Start 2P; covers are tinted green. |
+| Zune HD (Metro) | `zune` | `zune` | Black, huge light lowercase titles, boxless content, white outlined controls, one orange accent. |
+| Cyberpunk 2077 | `cyber` | `cyber` | Near-black with caution-tape yellow and cyan glints, chamfered corners, condensed capitals, solid yellow selection. |
+| Block game inventory (Minecraft) | `blocky` | `inventory` | A light grey bevelled inventory panel, grey slot buttons with shadowed white type, blue-violet hover with yellow type, VT323. |
+
+The six styles above Material are inspired by games and devices; their palettes (`pipboy`, `persona`, `dmg`, `zune`, `cyber`, `inventory`) sit in their own "Games & devices" group in Settings. Colours are eyeballed from the originals, and the fonts are open stand-ins (VT323, Press Start 2P, Anton, Open Sans).

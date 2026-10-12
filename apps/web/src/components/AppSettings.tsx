@@ -79,6 +79,8 @@ export function DiscordCard() {
       <p className="text-sm text-muted">Show the song you are playing on your Discord profile ("Listening to …", with a progress bar). Discord's desktop app has to be running on this computer.</p>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={info.discordEnabled} onChange={(e) => save({ discordEnabled: e.target.checked })} />Show what I'm playing on Discord</label>
       <div className="text-xs text-muted">Status: {DISCORD_LABEL[info.status]}</div>
+      {info.status === 'connecting' && info.detail && <div className="text-xs text-warn">{info.detail}</div>}
+      {info.status === 'connecting' && !info.sockets?.length && <div className="text-xs text-muted">If Discord is running, it is probably a Flatpak or Snap one: see the Discord guide under Guides.</div>}
       <details className="text-sm">
         <summary className="cursor-pointer text-muted">{info.builtIn ? 'Use my own Discord application instead (optional)' : 'This build has no Discord application built in: use your own'}</summary>
         <div className="mt-2 space-y-2">

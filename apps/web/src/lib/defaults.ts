@@ -3,6 +3,9 @@ import type { AlbumData, Credit, TrackData } from '@curator/core';
 /** The role that makes a credit "the artist" of a track or album. Credits are the only place an artist is entered. */
 export const LEAD_ROLE = 'Lead artist';
 const isLead = (c: Credit) => !!c.artistId && c.role.some((r) => r.toLowerCase() === LEAD_ROLE.toLowerCase());
+export const FEATURED_ROLE = 'Featured artist';
+/** a credit that features an artist without making them a lead */
+export const isFeatured = (c: Credit) => !!c.artistId && !isLead(c) && c.role.some((r) => /^featur/i.test(r.trim()));
 export const hasLead = (credits: Credit[]) => credits.some(isLead);
 
 /** Distinct lead-artist ids, in credit order. */

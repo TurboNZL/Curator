@@ -54,3 +54,18 @@ describe('a track stops following its album (duo album, third artist added)', ()
     expect(ownCreditsFromAlbum(duo, [])).toHaveLength(2);
   });
 });
+
+describe('a featured artist on a track that follows its album', () => {
+  const lib = buildLibrary(rows(
+    rec('artists', 'a', { name: 'Ann', image: null }), rec('artists', 'f', { name: 'Fay', image: null }), rec('artists', 'p', { name: 'Pat', image: null }),
+    rec('albums', 'al', { title: 'Alb', credits: [lead('a')], genres: ['Pop'], cover: null }),
+    rec('tracks', 't', { title: 'Duet', credits: [{ artistId: 'f', role: ['Featured artist'] }, { artistId: 'p', role: ['Producer'] }], genres: [], albums: [{ albumId: 'al', order: 0 }], file: null, initialRating: null, syncWithAlbumCredits: true }),
+  ));
+  const t = lib.trackById.get('t')!;
+  it('keeps the album credits and adds only the featured artist', () => {
+    expect(t.leads.map((l) => l.name)).toEqual(['Ann']);
+    expect(t.featured.map((l) => l.name)).toEqual(['Fay']);
+    expect(t.credits.map((c) => c.artistId)).toEqual(['a', 'f']); // the producer the track stored is not part of the album's credits
+    expect(t.allGenres).toEqual(['Pop']);
+  });
+});

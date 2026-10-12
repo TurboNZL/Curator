@@ -66,7 +66,7 @@ export interface CuratorDesktop {
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
   updates: import('./native.ts').NativeUpdates;
 }
-export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; builtIn?: boolean; status: 'off' | 'no-id' | 'connecting' | 'connected' };
+export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; builtIn?: boolean; status: 'off' | 'no-id' | 'connecting' | 'connected'; detail?: string; sockets?: string[] };
 export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
 
 export function loadSettings(): DeviceSettings {

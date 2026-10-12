@@ -4,7 +4,7 @@ import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
 import type { ArtistData, Credit, EraData } from '@curator/core';
 import { useLibrary } from '../lib/derive.ts';
-import { AUDIO_ACCEPT, hasLead, LEAD_ROLE } from '../lib/defaults.ts';
+import { AUDIO_ACCEPT, FEATURED_ROLE, hasLead, isFeatured, LEAD_ROLE } from '../lib/defaults.ts';
 import { saveAudio, saveImage } from '../lib/files.ts';
 import { useStore } from '../lib/store.ts';
 import { Cover } from './Cover.tsx';
@@ -166,8 +166,27 @@ export function CreditsEditor({ value, onChange, requireLead, readOnly }: { valu
       {requireLead && !hasLead(value) && <div role="alert" className="rounded-theme bg-warn/15 p-3 text-sm text-warn">Add a credit with the role “{LEAD_ROLE}”. That is how the artist is set.</div>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn" onClick={() => onChange([...value, { artistId: '', role: [LEAD_ROLE] }])}><Plus size={15} />Add lead artist</button>
+        <button type="button" className="btn" onClick={() => onChange([...value, { artistId: '', role: [FEATURED_ROLE] }])}><Plus size={15} />Add featured artist</button>
         <button type="button" className="btn" onClick={() => onChange([...value, { artistId: '', role: [] }])}><Plus size={15} />Add credit</button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The featured artists of a track that follows its album's credits: only these are the track's own, so they can be added without
+ * unticking "Use the album's credits". Works on the same credit list the track stores; other credits in it are left alone.
+ */
+export function FeaturedEditor({ value, onChange }: { value: Credit[]; onChange: (v: Credit[]) => void }) {
+  const mine = value.map((c, i) => ({ c, i })).filter(({ c }) => isFeatured(c) || (!c.artistId && c.role.includes(FEATURED_ROLE)));
+  return (
+    <div className="space-y-2">
+      {mine.map(({ c, i }) => (
+        <div key={i} className="flex items-start gap-2">
+          <div className="flex-1"><ArtistSelect value={c.artistId} onChange={(id) => onChange(value.map((x, j) => (j === i ? { ...x, artistId: id } : x)))} /></div>
+          <button type="button" className="btn btn-ghost !p-2" aria-label="Remove featured artist" onClick={() => onChange(value.filter((_, j) => j !== i))}><X size={15} /></button>
+        </div>))}
+      <button type="button" className="btn" onClick={() => onChange([...value, { artistId: '', role: [FEATURED_ROLE] }])}><Plus size={15} />Add featured artist</button>
     </div>
   );
 }

@@ -2,8 +2,8 @@ import { spawn } from 'node:child_process';
 
 /**
  * Finds the YouTube Music album of an album that has no link yet, so it can be imported as a release (one at a time, with the usual
- * review). yt-dlp opens YouTube's search page filtered to playlists (the “Playlists” tab); an album's official audio sits in a playlist
- * whose id starts with `OLAK5uy_`. Results are scored on the album title, the artist and the track count. Needs yt-dlp; a wrong pick is
+ * review). yt-dlp runs YouTube Music's own album search (`music.youtube.com/search?q=…#albums`, the “Albums” section) and opens the best few
+ * results. Results are scored on the album title, the artist and the track count. Needs yt-dlp; a wrong pick is
  * possible, which is why the importer shows the whole tracklist before anything is saved.
  */
 export interface MatchAlbum { id: string; title: string; artist: string; trackCount?: number | null }
@@ -29,16 +29,32 @@ export function scoreAlbum(a: MatchAlbum, c: { id: string; title: string; channe
   return Math.max(0, Math.min(1, score));
 }
 
-/** The playlist results of a search page (`yt-dlp --flat-playlist -J`), best first. */
+/** The id behind a search result: a playlist (`OLAK5uy_…`, `PL…`) or a YouTube Music album page (`MPREb_…`). Single videos and channels are not albums. */
+const albumIdOf = (e: any): string | undefined => {
+  const raw = typeof e?.id === 'string' ? e.id : '';
+  const url = String(e?.url ?? '');
+  const id = /^(MPREb_|OLAK5uy_|PL|RD|FL)[\w-]+$/.test(raw) ? raw : /[?&]list=((?:OLAK5uy_|PL|RD|FL)[\w-]+)/.exec(url)?.[1] ?? /\/browse\/(MPREb_[\w-]+)/.exec(url)?.[1];
+  return id;
+};
+const urlOf = (id: string) => (id.startsWith('MPREb_') ? `https://music.youtube.com/browse/${id}` : `https://music.youtube.com/playlist?list=${id}`);
+
+/**
+ * The results of YouTube Music's own album search (`music.youtube.com/search?q=…#albums`, a yt-dlp section), best first. YouTube Music's
+ * result rows carry only a link, so `title` can be empty until `Matcher.resolve` has opened the album; results keep the search order
+ * (YouTube's own ranking is a good prior) through a small bonus.
+ */
 export function parseAlbumSearch(info: unknown, a: MatchAlbum): AlbumCandidate[] {
   const entries: any[] = Array.isArray((info as any)?.entries) ? (info as any).entries : [];
   const out: AlbumCandidate[] = [];
-  for (const e of entries) {
-    const id = typeof e?.id === 'string' ? e.id : /[?&]list=([\w-]+)/.exec(String(e?.url ?? ''))?.[1];
-    if (!id || typeof e.title !== 'string' || /^[\w-]{11}$/.test(id) && !/^(PL|OLAK5uy_|RD|UU|FL)/.test(id)) continue; // a single video, not a playlist
-    const c = { id, title: e.title, channel: String(e.channel ?? e.uploader ?? ''), count: typeof e.playlist_count === 'number' ? e.playlist_count : typeof e.n_entries === 'number' ? e.n_entries : null };
-    out.push({ url: `https://music.youtube.com/playlist?list=${id}`, title: c.title, channel: c.channel, count: c.count, score: scoreAlbum(a, c) });
-  }
+  const seen = new Set<string>();
+  entries.forEach((e, i) => {
+    const id = albumIdOf(e);
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    const title = typeof e.title === 'string' ? e.title : '';
+    const c = { id, title, channel: String(e.channel ?? e.uploader ?? ''), count: typeof e.playlist_count === 'number' ? e.playlist_count : typeof e.n_entries === 'number' ? e.n_entries : null };
+    out.push({ url: urlOf(id), title: c.title, channel: c.channel, count: c.count, score: (title ? scoreAlbum(a, c) : 0.1) + Math.max(0, 0.02 - i * 0.003) });
+  });
   return out.sort((x, y) => y.score - x.score);
 }
 
@@ -46,13 +62,31 @@ export class Matcher {
   private o: { ytdlp?: string; ytdlpArgs?: string[] };
   constructor(o: { ytdlp?: string; ytdlpArgs?: string[] } = {}) { this.o = o; }
 
-  /** Candidate playlists for one album, best first. A failure is reported in `error`, never thrown. */
-  async album(a: MatchAlbum, n = 5): Promise<AlbumMatchResult> {
+  /**
+   * Candidate albums for one album, best first. YouTube Music's album search gives links; each of the first few is opened (a flat read,
+   * no audio) to learn its real title, artist and track count, which is what the score is made of. A failure is reported in `error`.
+   */
+  async album(a: MatchAlbum, n = 4): Promise<AlbumMatchResult> {
     const q = `${a.artist} ${a.title}`.replace(/\s+/g, ' ').trim();
     try {
-      const out = await this.run([`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&sp=EgIQAw%253D%253D`, '--flat-playlist', '-J', '--no-warnings', '--playlist-end', '12']);
-      return { id: a.id, candidates: parseAlbumSearch(JSON.parse(out), a).slice(0, n) };
+      const out = await this.run([`https://music.youtube.com/search?q=${encodeURIComponent(q)}#albums`, '--flat-playlist', '-J', '--no-warnings', '--playlist-end', '8']);
+      const found = parseAlbumSearch(JSON.parse(out), a).slice(0, 5);
+      const opened = await Promise.all(found.map((c) => (c.title ? c : this.resolve(c, a))));
+      return { id: a.id, candidates: opened.sort((x, y) => y.score - x.score).slice(0, n) };
     } catch (e) { return { id: a.id, candidates: [], error: (e as Error).message }; }
+  }
+
+  /** Open one album page: its title, artist and number of tracks. A page that cannot be read keeps its search position's score. */
+  private async resolve(c: AlbumCandidate, a: MatchAlbum): Promise<AlbumCandidate> {
+    try {
+      const info = JSON.parse(await this.run([c.url, '--flat-playlist', '-J', '--no-warnings', '--playlist-end', '120'])) as any;
+      const title = typeof info?.title === 'string' ? info.title : '';
+      if (!title) return c;
+      const channel = String(info.channel ?? info.uploader ?? '');
+      const count = typeof info.playlist_count === 'number' ? info.playlist_count : Array.isArray(info.entries) ? info.entries.length : null;
+      const id = typeof info.id === 'string' && /^(OLAK5uy_|PL)/.test(info.id) ? info.id : c.url.split(/list=|browse\//).pop()!;
+      return { url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }) };
+    } catch { return c; }
   }
 
   private run(args: string[]): Promise<string> {

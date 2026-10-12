@@ -13,6 +13,7 @@ import { ArtistsPage } from './pages/Artists.tsx';
 import { ArtistPage } from './pages/Artist.tsx';
 import { TracksPage } from './pages/Tracks.tsx';
 import { VotePage } from './pages/Vote.tsx';
+import { NotePage } from './pages/NotePage.tsx';
 import { QueuePage } from './pages/Queue.tsx';
 import { PlaylistsPage } from './pages/Playlists.tsx';
 import { SearchPage } from './pages/Search.tsx';
@@ -32,6 +33,7 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="notes" element={<NotesPage />} />
+        <Route path="notes/:id" element={<NotePage />} />
         <Route path="bios" element={<Navigate to="/notes" replace />} />
         <Route path="albums" element={<AlbumsPage />} />
         <Route path="albums/:id" element={<AlbumPage />} />

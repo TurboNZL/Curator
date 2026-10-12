@@ -18,6 +18,8 @@ interface State {
   ready: boolean;
   /** bumped on every data change; selectors key their caches on it */
   rev: number;
+  /** bumped when only the play history changed: the derived library is NOT rebuilt for it (a skip would otherwise cost a full rebuild) */
+  logsRev: number;
   rows: Rows;
   settings: DeviceSettings;
   sync: SyncInfo;
@@ -43,6 +45,7 @@ let timer: ReturnType<typeof setInterval> | undefined;
 
 export const useStore = create<State>((set, get) => {
   const bump = () => set((s) => ({ rev: s.rev + 1 }));
+  const touch = (table: string) => set((s) => (table === 'playbackLogs' ? { logsRev: s.logsRev + 1 } : { rev: s.rev + 1 }));
   const setSync = (p: Partial<SyncInfo>) => set((s) => ({ sync: { ...s.sync, ...p } }));
   const api = () => new Api(get().settings);
   const configured = () => !!get().settings.token;
@@ -130,16 +133,20 @@ export const useStore = create<State>((set, get) => {
     const db = await localDb();
     const rows = get().rows;
     const tx = db.transaction(['records', 'outbox'], 'readwrite');
+    let structural = false, logs = false;
     for (const r of records) {
       const { seq: _seq, ...rec } = r as SyncRecord & { seq?: number };
       const local = rows[rec.table]?.get(rec.id);
       if (!rows[rec.table] || !wins(rec, local)) continue;
       rows[rec.table].set(rec.id, rec);
+      if (rec.table === 'playbackLogs') logs = true; else structural = true;
       tx.objectStore('records').put(rec);
       tx.objectStore('outbox').delete([rec.table, rec.id]); // remote won; nothing left to push
     }
     await tx.done;
-    bump();
+    // a pull that changed nothing (our own push coming back) must not rebuild the library
+    if (structural) bump();
+    if (logs) touch('playbackLogs');
   }
 
   const stamp = (table: RecordTable, id: string, data: object, deleted: boolean): SyncRecord => ({
@@ -147,7 +154,7 @@ export const useStore = create<State>((set, get) => {
   });
 
   return {
-    ready: false, rev: 0, filesRev: 0, audioCache: {}, rows: emptyRows(),
+    ready: false, rev: 0, logsRev: 0, filesRev: 0, audioCache: {}, rows: emptyRows(),
     touchFiles() { set((s) => ({ filesRev: s.filesRev + 1 })); },
     settings: loadSettings(),
     sync: { state: 'unconfigured', lastSync: null, pending: 0, error: null },
@@ -179,7 +186,7 @@ export const useStore = create<State>((set, get) => {
     put(table, data, id = newId()) {
       const rec = stamp(table, id, data, false);
       get().rows[table].set(id, rec);
-      bump();
+      touch(table);
       void write(rec, true).then(() => setSync({ pending: get().sync.pending + 1 }));
       schedulePush();
       return id;
@@ -196,7 +203,7 @@ export const useStore = create<State>((set, get) => {
       if (!cur) return;
       const rec = stamp(table, id, cur.data, true);
       get().rows[table].set(id, rec);
-      bump();
+      touch(table);
       void write(rec, true);
       schedulePush();
     },

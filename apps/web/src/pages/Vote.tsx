@@ -3,9 +3,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Check, ExternalLink, Loader2, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
 import type { VoteData } from '@curator/core';
 import { useLibrary, type Track } from '../lib/derive.ts';
-import { pairLacksAudio, pickPair, rankPool } from '../lib/pairing.ts';
+import { pairLacksAudio, pickPair, rankPool, tierPool, TIERS, type Tier, type TierChoice } from '../lib/pairing.ts';
 import { useStore } from '../lib/store.ts';
-import { audioSource } from '../lib/files.ts';
+import { loadPreview, middle, release, SNIPPET_MS, type Preview } from '../lib/preview.ts';
 import { usePlayer } from '../lib/player.ts';
 import { Cover } from '../components/Cover.tsx';
 import { Rating } from '../components/Rating.tsx';
@@ -13,34 +13,8 @@ import { cn } from '../lib/cn.ts';
 import { cssMs } from '../lib/presence.ts';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
 
-const SNIPPET_MS = 15_000;
 /** how long the chosen card plays its "picked" animation before the next pair appears (0 where the UI style has no motion) */
 const pickDelay = () => cssMs('--vote-ms', 440);
-
-interface Preview { el: HTMLAudioElement; url: string; local: boolean }
-const middle = (el: HTMLAudioElement) => Math.max(0, el.duration / 2 - SNIPPET_MS / 2000);
-const release = (p: Preview | null) => { if (!p) return; p.el.pause(); p.el.removeAttribute('src'); p.el.load(); if (p.local) URL.revokeObjectURL(p.url); };
-
-/**
- * Start loading a track for the preview: its source is resolved (the copy kept on this device, else the server), and the
- * element seeks to the middle as soon as its length is known, so the browser fetches that part of the file before it is wanted.
- */
-function loadPreview(file: string, volume: number): Promise<Preview | null> {
-  return audioSource(file).then(({ url, local }) => new Promise<Preview | null>((resolve) => {
-    const el = new Audio();
-    el.preload = 'auto'; el.volume = volume;
-    // ready = the middle of the track is buffered enough to start at once, not merely that its length is known
-    el.addEventListener('loadedmetadata', () => {
-      el.currentTime = middle(el);
-      const done = () => resolve({ el, url, local });
-      if (el.readyState >= 3 && !el.seeking) return done();
-      const slow = setTimeout(done, 8000); // a slow link or a browser that will not buffer unprompted must not leave the card waiting for ever
-      el.addEventListener('canplay', () => { clearTimeout(slow); done(); }, { once: true });
-    }, { once: true });
-    el.addEventListener('error', () => { if (local) URL.revokeObjectURL(url); resolve(null); }, { once: true });
-    el.src = url;
-  })).catch(() => null);
-}
 
 /**
  * The height left for the page inside the scrolling content area, so the two cards and the buttons always fit on
@@ -91,7 +65,13 @@ export function VotePage() {
   const loadSeq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fit = useFitHeight();
-  const { pool, fellBack } = useMemo(() => rankPool(lib.tracks, onlyPlayable), [lib, onlyPlayable]);
+  // which class of track both sides come from ("top 10% against top 10%"); kept for next time
+  const [tier, setTierState] = useState<TierChoice>(() => { try { return { tier: 'any' as Tier, min: 7, max: 10, ...JSON.parse(localStorage.getItem('curator.rankTier') ?? '{}') }; } catch { return { tier: 'any', min: 7, max: 10 }; } });
+  const setTier = (t: TierChoice) => { setTierState(t); setPair(null); try { localStorage.setItem('curator.rankTier', JSON.stringify(t)); } catch { /* ignore */ } };
+  const { pool: audioPool, fellBack } = useMemo(() => rankPool(lib.tracks, onlyPlayable), [lib, onlyPlayable]);
+  const tiered = useMemo(() => tierPool(audioPool, tier), [audioPool, tier]);
+  const tooFew = tiered.length < 2;
+  const pool = tooFew ? audioPool : tiered; // a band with fewer than two tracks cannot make a pair: use everything and say so
 
   const volume = usePlayer((s) => s.volume);
   const playerPlaying = usePlayer((s) => s.playing);
@@ -231,6 +211,15 @@ export function VotePage() {
           if (e.target.checked && pairLacksAudio(pair, lib.trackById)) setPair(null);
         }} />Only tracks with audio{onlyPlayable && fellBack ? ' (too few have audio yet)' : ''}</label>
         <span className="text-sm text-muted tabular-nums">{lib.votes.length} votes</span>
+      </div>
+      <div className="mb-3 flex shrink-0 flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Which tracks to compare">
+        <span className="mr-1 text-muted">Compare</span>
+        {TIERS.map((x) => <button key={x.id} type="button" title={x.hint} aria-pressed={tier.tier === x.id} onClick={() => setTier({ ...tier, tier: x.id })}
+          className={cn('chip cursor-pointer', tier.tier === x.id ? 'bg-accent text-accent-fg' : 'hover:brightness-125')}>{x.label}</button>)}
+        {tier.tier === 'range' && <span className="flex items-center gap-1">
+          <input type="number" min={0} max={10} step={0.5} className="input !w-16 !py-0.5" aria-label="Lowest rating" value={tier.min} onChange={(e) => setTier({ ...tier, min: Number(e.target.value) })} />–
+          <input type="number" min={0} max={10} step={0.5} className="input !w-16 !py-0.5" aria-label="Highest rating" value={tier.max} onChange={(e) => setTier({ ...tier, max: Number(e.target.value) })} /></span>}
+        <span className="ml-auto text-xs text-muted">{tier.tier === 'any' ? '' : tooFew ? 'Fewer than two tracks fit: using all' : `${tiered.length} tracks in this band`}</span>
       </div>
       {/* each card fills its share of the height that is left (on a phone they stack and share it), and lays itself out inside that space */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[repeat(2,minmax(0,1fr))] gap-3 sm:grid-cols-2 sm:grid-rows-[minmax(0,1fr)] sm:gap-4">

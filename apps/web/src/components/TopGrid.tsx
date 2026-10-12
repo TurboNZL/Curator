@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import type { TopRow } from '../lib/listenStats.ts';
 import { statsPath, type StatsKind } from '../lib/entityStats.ts';
 import { Cover } from './Cover.tsx';
@@ -40,7 +40,7 @@ function Section({ title, kind, rows, byTime, image }: { title: string; kind: Ex
 
 /** Top artists, albums and tracks as picture grids (the Top tab's "Grid" view). */
 export function TopGrid({ artists, albums, tracks, byTime }: { artists: TopRow[]; albums: TopRow[]; tracks: TopRow[]; byTime: boolean }) {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   return (
     <div className="space-y-8">
       <Section title="Artists" kind="artist" rows={artists} byTime={byTime} image={(r) => (r.id ? lib.artistById.get(r.id)?.image : null)} />

@@ -1,6 +1,6 @@
 import { BarChart3, Pencil, StickyNote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useLibrary } from '../lib/derive.ts';
+import { useLibraryLive } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { trackInfo } from '../lib/trackinfo.ts';
 import { statsPath } from '../lib/entityStats.ts';
@@ -10,7 +10,7 @@ import { fmtListened } from './TrackHistory.tsx';
 
 /** The small track-info popup: the headline numbers. Everything else (history, votes, charts, editing) is on the track's stats page. */
 export function TrackDetails({ id, onClose }: { id: string; onClose: () => void }) {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const edit = useEditor((s) => s.open);
   const nav = useNavigate();
   const t = lib.trackById.get(id);

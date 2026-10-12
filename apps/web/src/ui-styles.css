@@ -165,13 +165,20 @@ html[data-ui="gtk4"] ::selection { background: color-mix(in srgb, hsl(var(--acce
   --rng-appearance: none; --rng-h: 0.3rem; --rng-r: 3px; --rng-track: color-mix(in srgb, hsl(var(--fg)) 20%, transparent);
   --rng-tw: 1.1rem; --rng-th: 1.1rem; --rng-thumb: color-mix(in srgb, hsl(var(--surface)) 94%, hsl(var(--bg))); --rng-tb: 1px solid color-mix(in srgb, hsl(var(--fg)) 38%, transparent); --rng-ts: 0 1px 2px rgb(0 0 0 / 0.25);
 }
-html[data-ui="breeze"] { font-size: 15px; }
+html[data-ui="breeze"] { font-size: 14px; } /* Noto Sans 10 pt, Breeze's default size */
 [data-ui="breeze"] .bt-titlebar svg { color: hsl(var(--fg)); }
 [data-ui="breeze"] .bt-nav { font-weight: 400; color: hsl(var(--fg)); }
 [data-ui="breeze"] .bt-nav[aria-current="page"] svg { color: inherit; }
 [data-ui="breeze"] .bt-shell { backdrop-filter: none; -webkit-backdrop-filter: none; }
 [data-ui="breeze"] .bt-brand { font-weight: 600; }
-[data-ui="breeze"] h1 { font-weight: 600; }
+/* Kirigami headings are regular weight; Plasma 6 dropped framed views for 1 px separators and lists use the scheme's alternate row colour; focus is an encircling accent ring */
+[data-ui="breeze"] :is(h1, h2) { font-weight: 400; }
+[data-ui="breeze"] h1 { font-size: 1.6rem; }
+[data-ui="breeze"] .card { box-shadow: none; --card-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 12%, transparent); }
+[data-ui="breeze"] .card .bt-row:nth-child(even):not(:hover):not(.bt-row-current) { background: color-mix(in srgb, hsl(var(--fg)) 3.5%, transparent); }
+[data-ui="breeze"] .card .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: color-mix(in srgb, hsl(var(--fg)) 9%, transparent); }
+[data-ui="breeze"] :is(.btn, .input, .bt-nav, .bt-tab, .chip):focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 1px; }
+[data-ui="breeze"] .bt-nav[aria-current="page"] { font-weight: 400; }
 
 /* ================== Windows 11 (Fluent) ================== */
 [data-ui="win11"] {
@@ -934,73 +941,69 @@ html[data-ui="winamp"] { font-size: 13px; }
 html[data-ui="winamp"] ::selection { background: #000080; color: #fff; }
 
 /* ================== LG Optimus "Marshmallow" theme ==================
- * Optimus UI 3.0 (Android 4.x, 2012-13) shipped four home-screen themes: Optimus, Biz, Cozywall and Marshmallow. The reviews describe
- * Marshmallow as a pink, cartoonish, candy-like theme that changes the icon set, wallpaper and the colour of the app drawer and
- * notification area (GSMArena's Optimus L9 review; LG's user guide lists the four themes). No screenshots or colour specs are
- * available, so this is an interpretation: bubblegum pink, glossy pill buttons, puffy rounded cards, soft candy shadows, round type
- * (Nunito/Fredoka stand in for the era's rounded system fonts). Pair it with the "Marshmallow" colours. The id stays `lgux` so saved
- * settings keep working. */
+ * Optimus UI 3.0 (Android 4.x, 2012-13) shipped four home-screen themes: Optimus, Biz, Cozywall and Marshmallow. Marshmallow is the
+ * pink one. Redone from a screenshot of its home screen (not from a spec): FLAT pastel pink, hand-drawn illustration behind everything,
+ * translucent white widget panels with a thin rose frame and small corners, soft pink buttons with rose labels (the RAM widget), a
+ * black status bar on top, a rose line as the page indicator and white labels with a soft shadow on the dock. No gloss, no heavy
+ * shadows, no bounce. The era's own sans (Roboto / Droid Sans) carries the type. Pair it with the "Marshmallow" colours.
+ * The id stays `lgux` so saved settings keep working. */
 [data-ui="lgux"] {
-  --radius: 18px; --ctl-r: 9999px; --card-r: 22px; --win-r: 30px; --menu-r: 20px; --nav-r: 9999px; --chip-r: 9999px; --in-r: 9999px;
-  --font: Nunito, "Varela Round", "Segoe UI", system-ui, sans-serif; --title-font: Fredoka, Nunito, "Varela Round", system-ui, sans-serif;
-  --dur: 240ms; --ease: cubic-bezier(0.34, 1.45, 0.64, 1);
-  --mm-gloss: linear-gradient(to bottom, rgb(255 255 255 / 0.6) 0%, rgb(255 255 255 / 0.12) 48%, rgb(255 255 255 / 0) 52%, rgb(255 255 255 / 0.12) 100%);
-  --mm-pop: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black), 0 8px 14px color-mix(in srgb, hsl(var(--accent)) 35%, transparent);
-  --btn-bg: var(--mm-gloss), hsl(var(--raised)); --btn-fg: hsl(var(--fg)); --btn-weight: 800;
-  --btn-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 35%, hsl(var(--bg)));
-  --btn-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 28%, hsl(var(--bg)));
-  --btn-hover-bg: var(--mm-gloss), color-mix(in srgb, hsl(var(--accent)) 14%, hsl(var(--raised))); --btn-hover-border: hsl(var(--accent));
-  --btn-hover-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
-  --btn-active-shadow: 0 0 0 color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg))); --btn-active-transform: translateY(3px) scale(0.98);
-  --btn-accent-bg: var(--mm-gloss), hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
-  --btn-accent-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 70%, white); --btn-accent-border-color: color-mix(in srgb, hsl(var(--accent)) 70%, white);
-  --btn-accent-shadow: var(--mm-pop);
-  --btn-accent-hover-bg: var(--mm-gloss), color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: var(--mm-pop);
+  --radius: 8px; --ctl-r: 6px; --card-r: 8px; --win-r: 8px; --menu-r: 6px; --nav-r: 6px; --chip-r: 4px; --in-r: 6px;
+  --font: Roboto, "Droid Sans", "Open Sans", "Segoe UI", system-ui, sans-serif; --title-font: var(--font);
+  --dur: 150ms; --ease: ease-out;
+  --mm-frame: color-mix(in srgb, hsl(var(--accent)) 55%, hsl(var(--bg)));
+  --mm-soft: color-mix(in srgb, hsl(var(--accent)) 18%, hsl(var(--surface)));
+  --mm-glass: color-mix(in srgb, hsl(var(--surface)) 72%, transparent);
+  --btn-bg: var(--mm-soft); --btn-fg: hsl(var(--accent)); --btn-weight: 500;
+  --btn-border: 2px solid var(--mm-frame); --btn-shadow: none;
+  --btn-hover-bg: color-mix(in srgb, hsl(var(--accent)) 28%, hsl(var(--surface))); --btn-hover-border: hsl(var(--accent)); --btn-hover-shadow: none;
+  --btn-active-shadow: inset 0 2px 4px color-mix(in srgb, hsl(var(--accent)) 30%, transparent); --btn-active-transform: none;
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-text-shadow: none;
+  --btn-accent-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 78%, black); --btn-accent-border-color: color-mix(in srgb, hsl(var(--accent)) 78%, black);
+  --btn-accent-shadow: none; --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: none;
   --ghost-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --in-bg: hsl(var(--surface)); --in-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))); --in-shadow: inset 0 2px 4px color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --in-hover-border: color-mix(in srgb, hsl(var(--accent)) 60%, hsl(var(--bg))); --in-focus-border: hsl(var(--accent));
-  --in-focus-shadow: 0 0 0 4px color-mix(in srgb, hsl(var(--accent)) 25%, transparent); --in-px: 1rem;
-  --card-bg: hsl(var(--surface)); --card-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg)));
-  --card-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 16%, hsl(var(--bg))), 0 10px 22px color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --backdrop: color-mix(in srgb, hsl(var(--accent)) 28%, rgb(40 10 30 / 0.45));
-  --win-bg: hsl(var(--surface)); --win-border: 3px solid color-mix(in srgb, hsl(var(--accent)) 45%, hsl(var(--bg)));
-  --win-shadow: 0 8px 0 color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg))), 0 24px 44px color-mix(in srgb, hsl(var(--accent)) 30%, transparent);
-  --dialog-anim: bt-pop 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  --tb-bg: var(--mm-gloss), hsl(var(--accent)); --tb-border: 0 solid transparent; --tb-pad: 0.8rem 1.3rem; --tb-size: 1.2rem; --tb-weight: 600; --tb-justify: space-between;
-  --tb-fg: hsl(var(--accent-fg)); --tb-text-shadow: 0 1px 0 rgb(0 0 0 / 0.16);
-  --close-r: 9999px; --close-fg: hsl(var(--accent-fg)); --close-hover-bg: rgb(255 255 255 / 0.28);
-  --bar-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 24%, hsl(var(--bg)));
-  --menu-bg: hsl(var(--surface)); --menu-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 40%, hsl(var(--bg)));
-  --pop-shadow: 0 6px 0 color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg))), 0 14px 26px color-mix(in srgb, hsl(var(--accent)) 24%, transparent);
-  --menu-anim: bt-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  --menu-hi-bg: var(--mm-gloss), hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
-  --side-bg: color-mix(in srgb, hsl(var(--accent)) 9%, hsl(var(--bg))); --side-shadow: none;
-  --top-bg: var(--mm-gloss), hsl(var(--accent)); --top-shadow: 0 4px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black);
-  --player-bg: hsl(var(--surface)); --player-shadow: 0 -4px 0 color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--bg)));
-  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent);
-  --nav-active-bg: var(--mm-gloss), hsl(var(--accent)); --nav-active-fg: hsl(var(--accent-fg)); --nav-active-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black);
-  --row-hover: color-mix(in srgb, hsl(var(--accent)) 12%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 22%, transparent);
+  --in-bg: var(--mm-glass); --in-border: 2px solid var(--mm-frame); --in-shadow: none;
+  --in-hover-border: hsl(var(--accent)); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--accent)) 22%, transparent); --in-px: 0.75rem;
+  --card-bg: var(--mm-glass); --card-border: 2px solid var(--mm-frame); --card-shadow: none;
+  --backdrop: rgb(60 20 32 / 0.35);
+  --win-bg: color-mix(in srgb, hsl(var(--surface)) 94%, transparent); --win-border: 2px solid var(--mm-frame);
+  --win-shadow: 0 10px 28px color-mix(in srgb, hsl(var(--accent)) 28%, transparent);
+  --dialog-anim: bt-fade 160ms ease-out;
+  --tb-bg: color-mix(in srgb, hsl(var(--accent)) 22%, hsl(var(--surface))); --tb-border: 0 solid transparent; --tb-pad: 0.7rem 1.1rem; --tb-size: 1.05rem; --tb-weight: 500; --tb-justify: space-between;
+  --tb-fg: hsl(var(--accent)); --tb-text-shadow: none;
+  --close-r: 4px; --close-fg: hsl(var(--accent)); --close-hover-bg: color-mix(in srgb, hsl(var(--accent)) 20%, transparent);
+  --bar-border: 2px solid var(--mm-frame);
+  --menu-bg: color-mix(in srgb, hsl(var(--surface)) 95%, transparent); --menu-border: 2px solid var(--mm-frame);
+  --pop-shadow: 0 8px 20px color-mix(in srgb, hsl(var(--accent)) 24%, transparent);
+  --menu-anim: bt-fade 120ms ease-out;
+  --menu-hi-bg: color-mix(in srgb, hsl(var(--accent)) 22%, transparent); --menu-hi-fg: hsl(var(--accent));
+  --side-bg: color-mix(in srgb, hsl(var(--surface)) 55%, transparent); --side-shadow: none;
+  --top-bg: #231a1d; --top-shadow: none;
+  --player-bg: color-mix(in srgb, hsl(var(--surface)) 80%, transparent); --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 12%, transparent);
+  --nav-active-bg: color-mix(in srgb, hsl(var(--accent)) 16%, transparent); --nav-active-fg: hsl(var(--accent)); --nav-active-shadow: inset 3px 0 0 hsl(var(--accent));
+  --row-hover: color-mix(in srgb, hsl(var(--accent)) 10%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 18%, transparent);
   --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
-  --chk-size: 1.3rem; --chk-r: 9px; --chk-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 55%, hsl(var(--bg))); --chk-bg: hsl(var(--surface));
-  --chk-on-bg: var(--mm-gloss), hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: var(--mm-gloss), hsl(var(--accent));
-  --chk-dot: hsl(var(--accent-fg)); --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 4px color-mix(in srgb, hsl(var(--accent)) 28%, transparent);
-  --rng-appearance: none; --rng-h: 12px; --rng-r: 9999px; --rng-track: color-mix(in srgb, hsl(var(--accent)) 20%, hsl(var(--bg)));
-  --rng-border: 2px solid color-mix(in srgb, hsl(var(--accent)) 30%, hsl(var(--bg)));
-  --rng-tw: 1.5rem; --rng-th: 1.5rem; --rng-tr: 9999px; --rng-thumb: radial-gradient(circle at 35% 30%, #fff 0 22%, hsl(var(--accent)) 24%); --rng-tb: 2px solid #fff;
-  --rng-ts: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black), 0 5px 8px rgb(0 0 0 / 0.2);
+  --chk-size: 1.15rem; --chk-r: 3px; --chk-border: 2px solid var(--mm-frame); --chk-bg: var(--mm-glass);
+  --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: hsl(var(--accent));
+  --chk-dot: hsl(var(--accent-fg)); --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 3px color-mix(in srgb, hsl(var(--accent)) 25%, transparent);
+  --rng-appearance: none; --rng-h: 4px; --rng-r: 2px; --rng-track: color-mix(in srgb, hsl(var(--accent)) 25%, hsl(var(--bg)));
+  --rng-border: 0 solid transparent;
+  --rng-tw: 1.1rem; --rng-th: 1.1rem; --rng-tr: 9999px; --rng-thumb: hsl(var(--accent)); --rng-tb: 2px solid #fff;
+  --rng-ts: 0 1px 3px rgb(0 0 0 / 0.3);
 }
-/* headings and the logo get the round display face; the app bar, active tab and window title bars are glossy candy */
-[data-ui="lgux"] h1, [data-ui="lgux"] h2, [data-ui="lgux"] h3, [data-ui="lgux"] .bt-brand { font-family: var(--title-font); font-weight: 600; letter-spacing: 0.01em; }
-[data-ui="lgux"] .bt-top { color: hsl(var(--accent-fg)); }
-[data-ui="lgux"] .bt-top .input { color: hsl(var(--fg)); border-color: rgb(255 255 255 / 0.7); }
-[data-ui="lgux"] .bt-top .btn:not(.btn-accent) { color: hsl(var(--accent-fg)); background: rgb(255 255 255 / 0.2); border-color: rgb(255 255 255 / 0.55); box-shadow: none; }
-[data-ui="lgux"] .bt-top .btn-accent { background: #fff; color: hsl(var(--accent)); border-color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, hsl(var(--accent)) 55%, black); }
-[data-ui="lgux"] .bt-top .btn:not(.btn-accent) svg { color: hsl(var(--accent-fg)); }
-[data-ui="lgux"] .bt-top .btn-accent svg { color: hsl(var(--accent)); }
-[data-ui="lgux"] .bt-titlebar { color: hsl(var(--accent-fg)); border-radius: calc(var(--win-r) - 4px) calc(var(--win-r) - 4px) 0 0; text-shadow: var(--tb-text-shadow); }
-[data-ui="lgux"] .bt-menu, [data-ui="lgux"] .bt-menu svg { color: hsl(var(--fg)); }
+/* the black status bar of the home screen carries light type; the dock-like bars keep rose type on the pale glass */
+[data-ui="lgux"] .bt-top { color: #fff; --fg: 0 0% 100%; --muted: 340 20% 78%; }
+[data-ui="lgux"] .bt-top .input { color: hsl(var(--fg)); background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.35); }
+[data-ui="lgux"] .bt-top .input::placeholder { color: rgb(255 255 255 / 0.6); }
+[data-ui="lgux"] .bt-top .btn:not(.btn-accent) { color: #fff; background: transparent; border-color: rgb(255 255 255 / 0.35); }
+[data-ui="lgux"] .bt-top .btn-accent { background: hsl(var(--accent)); color: hsl(var(--accent-fg)); }
+[data-ui="lgux"] .bt-top .btn:not(.btn-accent) svg { color: #fff; }
+/* the page indicator of the home screen: a rose line under the active tab */
+[data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -3px 0 hsl(var(--accent)); }
 [data-ui="lgux"] .bt-titlebar svg { display: none; }
-[data-ui="lgux"] .bt-tab[aria-current="page"] { box-shadow: inset 0 -2px 0 hsl(var(--accent)); }
+[data-ui="lgux"] .bt-menu, [data-ui="lgux"] .bt-menu svg { color: hsl(var(--fg)); }
+[data-ui="lgux"] .btn-ghost { color: hsl(var(--fg)); }
 /* Material ink ripple (lib/ripple.ts) and the squircle of UX 5.0's app icons for the candy logo */
 [data-ui="lgux"] :is(.btn, .bt-nav, .bt-tab, .bt-toplink):not(.absolute):not(.fixed) { position: relative; overflow: hidden; }
 .bt-ripple { position: absolute; border-radius: 50%; background: currentColor; opacity: 0.22; pointer-events: none; transform: scale(0); animation: bt-ripple 480ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
@@ -1064,17 +1067,17 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
   --btn-accent-bg: #fbf6c8; --btn-accent-fg: #1b2342; --btn-accent-shadow: inset 0 -3px 0 #f0e02c, 0 3px 0 rgb(40 52 96 / 0.45);
   --btn-accent-hover-bg: #fffbe3; --btn-accent-hover-shadow: inset 0 -3px 0 #f0e02c, 0 3px 0 rgb(40 52 96 / 0.45);
   --in-bg: #5f7bab; --in-border: 0 solid transparent; --in-shadow: inset 0 2px 0 rgb(10 20 60 / 0.25); --in-hover-border: transparent; --in-focus-border: transparent;
-  --card-bg: #b6c5e2; --card-border: 0 solid transparent; --card-shadow: 0 2px 0 rgb(40 52 96 / 0.3);
-  --win-bg: #aebfdf; --win-border: 0 solid transparent; --win-shadow: 0 18px 40px rgb(10 16 40 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --card-bg: #4c66a8; --card-border: 0 solid transparent; --card-shadow: 0 2px 0 rgb(20 30 70 / 0.45);
+  --win-bg: #3c5391; --win-border: 0 solid transparent; --win-shadow: 0 18px 40px rgb(10 16 40 / 0.5); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1);
   --tb-bg: #222c4e; --tb-fg: #fff; --close-fg: #fff; --close-hover-fg: #fff;
   --bar-border: 0 solid transparent;
-  --menu-bg: #aebfdf; --menu-border: 0 solid transparent; --pop-shadow: 0 6px 0 rgb(40 52 96 / 0.3), 0 16px 30px rgb(10 16 40 / 0.4); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --menu-bg: #36508f; --menu-border: 0 solid transparent; --pop-shadow: 0 6px 0 rgb(20 30 70 / 0.45), 0 16px 30px rgb(10 16 40 / 0.5); --menu-anim: bt-pop 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
   --menu-hi-bg: #5f7bab; --menu-hi-fg: #fff;
   --side-bg: #222c4e; --top-bg: #222c4e; --player-bg: #222c4e; --player-shadow: none;
   --nav-hover-bg: rgb(255 255 255 / 0.08); --nav-active-bg: #8b9cc6; --nav-active-fg: #fff; --nav-active-shadow: none;
-  --row-hover: rgb(255 255 255 / 0.3); --row-current: rgb(251 246 200 / 0.6);
-  --panel-tb-fg: #1b2342;
-  --chk-border: 2px solid #1b2342; --chk-on-fg: #1b2342;
+  --row-hover: rgb(255 255 255 / 0.12); --row-current: rgb(251 246 200 / 0.22);
+  --panel-tb-fg: #fff;
+  --chk-border: 2px solid #fff; --chk-on-fg: #1b2342;
   --rng-track: #1d2646; --rng-fill: #1aa0ff; --rng-thumb: #d4dbea; --rng-ts: 0 2px 0 rgb(24 34 70 / 0.4);
 }
 /* Noto Sans, normal case: the sentence-case look of the settings screens */
@@ -1326,3 +1329,261 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
 
 /* Liquid Glass: the round artist pictures use the side bar's corner radius (30 px, scaled down on small thumbnails) instead of a circle */
 :is(html, div)[data-ui="liquid"] .bt-cover[data-kind="artist"] { border-radius: min(30px, 28%) !important; }
+
+/* ================== Pip-Boy 3000 (Fallout) ==================
+ * The wrist computer's green phosphor screen: one hue, square frames, a glow on the type, faint scan lines, a pick shown inverted
+ * (dark on bright green) the way the Pip-Boy's menus do. VT323 stands in for the game's Monofonto. */
+
+[data-ui="pipboy"] {
+  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
+  --font: "VT323", "Share Tech Mono", ui-monospace, monospace; --title-font: var(--font);
+  --dur: 0ms; --ease: steps(2);
+  --btn-bg: transparent; --btn-fg: hsl(var(--accent)); --btn-weight: 400; --btn-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 60%, transparent); --btn-shadow: none;
+  --btn-hover-bg: hsl(var(--accent)); --btn-hover-border: hsl(var(--accent)); --btn-hover-shadow: none;
+  --btn-active-shadow: inset 0 0 0 2px hsl(var(--bg)); --btn-active-transform: none;
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--bg)); --btn-accent-border: 1px solid hsl(var(--accent)); --btn-accent-border-color: hsl(var(--accent)); --btn-accent-shadow: none;
+  --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 80%, white); --btn-accent-hover-shadow: none; --btn-accent-text-shadow: none;
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--accent)) 16%, transparent);
+  --in-bg: transparent; --in-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 60%, transparent); --in-shadow: none; --in-hover-border: hsl(var(--accent)); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: 0 0 6px color-mix(in srgb, hsl(var(--accent)) 70%, transparent); --in-px: 0.75rem;
+  --card-bg: color-mix(in srgb, hsl(var(--accent)) 5%, hsl(var(--bg))); --card-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 45%, transparent); --card-shadow: none;
+  --backdrop: rgb(0 0 0 / 0.55);
+  --win-bg: hsl(var(--bg)); --win-border: 2px solid hsl(var(--accent)); --win-shadow: 0 0 24px color-mix(in srgb, hsl(var(--accent)) 35%, transparent); --dialog-anim: bt-fade 120ms steps(3);
+  --tb-bg: hsl(var(--accent)); --tb-fg: hsl(var(--bg)); --tb-border: 0 solid transparent; --tb-pad: 0.6rem 1rem; --tb-size: 1.15rem; --tb-weight: 400; --tb-justify: space-between; --tb-text-shadow: none;
+  --close-fg: hsl(var(--bg)); --close-hover-bg: hsl(var(--bg)); --close-hover-fg: hsl(var(--accent)); --close-r: 0;
+  --bar-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 45%, transparent);
+  --menu-bg: hsl(var(--bg)); --menu-border: 1px solid hsl(var(--accent)); --pop-shadow: 0 0 14px color-mix(in srgb, hsl(var(--accent)) 35%, transparent); --menu-anim: bt-fade 100ms ease-out; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: hsl(var(--bg));
+  --side-bg: hsl(var(--bg)); --side-shadow: none; --top-bg: hsl(var(--bg)); --top-shadow: none; --player-bg: hsl(var(--bg)); --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 14%, transparent); --nav-active-bg: hsl(var(--accent)); --nav-active-fg: hsl(var(--bg)); --nav-active-shadow: none;
+  --row-hover: color-mix(in srgb, hsl(var(--accent)) 16%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 30%, transparent);
+  --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid hsl(var(--accent)); --chk-bg: transparent; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
+  --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: hsl(var(--accent)); --chk-dot: hsl(var(--accent-fg));
+  --rng-appearance: none; --rng-h: 6px; --rng-r: 0; --rng-track: color-mix(in srgb, hsl(var(--accent)) 25%, transparent); --rng-fill: hsl(var(--accent));
+  --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-tr: 0; --rng-thumb: hsl(var(--accent)); --rng-tb: 1px solid hsl(var(--accent)); --rng-ts: 0 0 6px color-mix(in srgb, hsl(var(--accent)) 70%, transparent);
+}
+
+html[data-ui="pipboy"] { font-size: 17px; }
+[data-ui="pipboy"] { text-shadow: 0 0 5px hsl(var(--accent) / 0.55); text-transform: uppercase; letter-spacing: 0.02em; }
+[data-ui="pipboy"] :is(input, textarea, code, pre) { text-transform: none; }
+[data-ui="pipboy"] .bt-row:hover, [data-ui="pipboy"] .bt-row:hover *, [data-ui="pipboy"] .bt-nav[aria-current="page"], [data-ui="pipboy"] .bt-nav[aria-current="page"] *, [data-ui="pipboy"] .btn:hover:not(:disabled), [data-ui="pipboy"] .btn:hover:not(:disabled) *, [data-ui="pipboy"] .btn-accent, [data-ui="pipboy"] .btn-accent * { color: hsl(var(--bg)); text-shadow: none; }
+[data-ui="pipboy"] .bt-titlebar, [data-ui="pipboy"] .bt-titlebar * { text-shadow: none; }
+[data-ui="pipboy"] .bt-menu [role="menuitem"]:hover, [data-ui="pipboy"] .bt-menu [role="option"]:hover { text-shadow: none; }
+[data-ui="pipboy"] .chip { border: 1px solid hsl(var(--accent) / 0.5); background: transparent; color: hsl(var(--accent)); }
+/* scan lines and a faint vignette over the whole screen (never intercepts the pointer) */
+html[data-ui="pipboy"]::after { content: ""; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.0) 0 2px, rgb(0 0 0 / 0.16) 2px 3px), radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.45) 100%); mix-blend-mode: multiply; }
+@media (prefers-reduced-motion: reduce) { html[data-ui="pipboy"]::after { background: none; } }
+
+/* ================== Persona 5 ==================
+ * Black, red and white, nothing soft: hard offset shadows, italic capitals in a tall display face, a selected item in solid red with a
+ * white edge, borders you could cut yourself on. (Anton stands in for the game's hand-cut lettering.) */
+
+[data-ui="persona"] {
+  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
+  --font: Archivo, "Arial Narrow", system-ui, sans-serif; --title-font: Anton, "Barlow Condensed", Impact, sans-serif;
+  --dur: 110ms; --ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --btn-bg: #000; --btn-fg: #fff; --btn-weight: 800; --btn-border: 2px solid #fff; --btn-shadow: 3px 3px 0 hsl(var(--accent));
+  --btn-hover-bg: hsl(var(--accent)); --btn-hover-border: #fff; --btn-hover-shadow: 3px 3px 0 #fff;
+  --btn-active-shadow: 0 0 0 hsl(var(--accent)); --btn-active-transform: translate(3px, 3px);
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: #fff; --btn-accent-border: 2px solid #fff; --btn-accent-border-color: #fff; --btn-accent-shadow: 3px 3px 0 #000;
+  --btn-accent-hover-bg: #fff; --btn-accent-hover-shadow: 3px 3px 0 #000; --btn-accent-text-shadow: none;
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--accent)) 35%, transparent);
+  --in-bg: #000; --in-border: 2px solid #fff; --in-shadow: none; --in-hover-border: hsl(var(--accent)); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: 3px 3px 0 hsl(var(--accent)); --in-px: 0.75rem;
+  --card-bg: #101012; --card-border: 2px solid #fff; --card-shadow: 4px 4px 0 hsl(var(--accent));
+  --backdrop: rgb(0 0 0 / 0.78);
+  --win-bg: #0b0b0c; --win-border: 3px solid #fff; --win-shadow: 8px 8px 0 hsl(var(--accent)); --dialog-anim: bt-pop 160ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  --tb-bg: hsl(var(--accent)); --tb-fg: #fff; --tb-border: 0 solid transparent; --tb-pad: 0.5rem 1.1rem; --tb-size: 1.5rem; --tb-weight: 400; --tb-justify: space-between; --tb-text-shadow: none;
+  --close-fg: #fff; --close-hover-bg: #000; --close-hover-fg: #fff; --close-r: 0;
+  --bar-border: 2px solid #fff;
+  --menu-bg: #000; --menu-border: 2px solid #fff; --pop-shadow: 5px 5px 0 hsl(var(--accent)); --menu-anim: bt-drop 110ms ease-out; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: #fff;
+  --side-bg: #000; --side-shadow: none; --top-bg: #000; --top-shadow: none; --player-bg: #000; --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 30%, transparent); --nav-active-bg: hsl(var(--accent)); --nav-active-fg: #fff; --nav-active-shadow: inset 6px 0 0 #fff;
+  --row-hover: color-mix(in srgb, hsl(var(--accent)) 28%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 55%, transparent);
+  --panel-tb-fg: #fff; --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid #fff; --chk-bg: #000; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
+  --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: hsl(var(--accent)); --chk-dot: hsl(var(--accent-fg));
+  --rng-appearance: none; --rng-h: 4px; --rng-r: 0; --rng-track: #333; --rng-fill: hsl(var(--accent));
+  --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-tr: 0; --rng-thumb: hsl(var(--accent)); --rng-tb: 2px solid #fff; --rng-ts: 2px 2px 0 hsl(var(--accent));
+}
+
+[data-ui="persona"] :is(h1, h2, h3, .bt-brand, .bt-titlebar h2, .bt-panel-title) { font-family: var(--title-font); text-transform: uppercase; font-weight: 400; font-style: italic; letter-spacing: 0.03em; }
+[data-ui="persona"] h1 { font-size: 2.4rem; text-shadow: 3px 3px 0 hsl(var(--accent)); }
+[data-ui="persona"] :is(.btn, .bt-nav, .chip) { text-transform: uppercase; letter-spacing: 0.03em; }
+[data-ui="persona"] .btn { font-style: italic; }
+[data-ui="persona"] .chip { background: #fff; color: #000; font-weight: 700; }
+[data-ui="persona"] .bt-nav { font-style: italic; font-weight: 800; color: #fff; }
+[data-ui="persona"] .bt-row:hover, [data-ui="persona"] .bt-row-current { outline: 2px solid #fff; outline-offset: -2px; }
+
+/* ================== Game Boy (DMG-01) ==================
+ * The four greens of the original LCD: everything is drawn in them, with 2 px square frames, a hard 3 px shadow under things that
+ * press, a pick shown inverted (palest on darkest) and Press Start 2P for the type. Pair it with the "DMG" colours. */
+
+[data-ui="gameboy"] {
+  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
+  --font: "Press Start 2P", "VT323", ui-monospace, monospace; --title-font: var(--font);
+  --dur: 0ms; --ease: steps(2);
+  --btn-bg: hsl(var(--surface)); --btn-fg: hsl(var(--fg)); --btn-weight: 400; --btn-border: 2px solid hsl(var(--fg)); --btn-shadow: 3px 3px 0 hsl(var(--accent));
+  --btn-hover-bg: hsl(var(--fg)); --btn-hover-border: hsl(var(--fg)); --btn-hover-shadow: 3px 3px 0 hsl(var(--accent));
+  --btn-active-shadow: none; --btn-active-transform: translate(3px, 3px);
+  --btn-accent-bg: hsl(var(--fg)); --btn-accent-fg: hsl(var(--bg)); --btn-accent-border: 2px solid hsl(var(--fg)); --btn-accent-border-color: hsl(var(--fg)); --btn-accent-shadow: 3px 3px 0 hsl(var(--accent));
+  --btn-accent-hover-bg: hsl(var(--accent)); --btn-accent-hover-shadow: 3px 3px 0 hsl(var(--fg)); --btn-accent-text-shadow: none;
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 15%, transparent);
+  --in-bg: hsl(var(--bg)); --in-border: 2px solid hsl(var(--fg)); --in-shadow: none; --in-hover-border: hsl(var(--fg)); --in-focus-border: hsl(var(--fg)); --in-focus-shadow: 3px 3px 0 hsl(var(--accent)); --in-px: 0.75rem;
+  --card-bg: hsl(var(--surface)); --card-border: 2px solid hsl(var(--fg)); --card-shadow: 3px 3px 0 hsl(var(--accent));
+  --backdrop: color-mix(in srgb, hsl(var(--fg)) 55%, transparent);
+  --win-bg: hsl(var(--bg)); --win-border: 3px solid hsl(var(--fg)); --win-shadow: 6px 6px 0 hsl(var(--accent)); --dialog-anim: none;
+  --tb-bg: hsl(var(--fg)); --tb-fg: hsl(var(--bg)); --tb-border: 0 solid transparent; --tb-pad: 0.6rem 0.9rem; --tb-size: 0.75rem; --tb-weight: 400; --tb-justify: space-between; --tb-text-shadow: none;
+  --close-fg: hsl(var(--bg)); --close-hover-bg: hsl(var(--bg)); --close-hover-fg: hsl(var(--fg)); --close-r: 0;
+  --bar-border: 2px solid hsl(var(--fg));
+  --menu-bg: hsl(var(--bg)); --menu-border: 2px solid hsl(var(--fg)); --pop-shadow: 4px 4px 0 hsl(var(--accent)); --menu-anim: none; --menu-hi-bg: hsl(var(--fg)); --menu-hi-fg: hsl(var(--bg));
+  --side-bg: hsl(var(--surface)); --side-shadow: none; --top-bg: hsl(var(--surface)); --top-shadow: none; --player-bg: hsl(var(--surface)); --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--fg)) 12%, transparent); --nav-active-bg: hsl(var(--fg)); --nav-active-fg: hsl(var(--bg)); --nav-active-shadow: none;
+  --row-hover: color-mix(in srgb, hsl(var(--fg)) 16%, transparent); --row-current: color-mix(in srgb, hsl(var(--fg)) 30%, transparent);
+  --panel-tb-fg: hsl(var(--fg)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid hsl(var(--fg)); --chk-bg: hsl(var(--bg)); --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
+  --chk-on-bg: hsl(var(--fg)); --chk-on-border: hsl(var(--fg)); --chk-on-fg: hsl(var(--bg)); --chk-radio-on-bg: hsl(var(--fg)); --chk-dot: hsl(var(--bg));
+  --rng-appearance: none; --rng-h: 6px; --rng-r: 0; --rng-track: color-mix(in srgb, hsl(var(--fg)) 25%, transparent); --rng-fill: hsl(var(--fg));
+  --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-tr: 0; --rng-thumb: hsl(var(--fg)); --rng-tb: 2px solid hsl(var(--bg)); --rng-ts: none;
+}
+
+html[data-ui="gameboy"] { font-size: 10px; line-height: 1.7; }
+[data-ui="gameboy"] :is(h1, h2, h3, .bt-brand) { font-weight: 400; line-height: 1.5; }
+[data-ui="gameboy"] h1 { font-size: 1.5rem; }
+[data-ui="gameboy"] .bt-row:hover, [data-ui="gameboy"] .bt-row:hover *, [data-ui="gameboy"] .bt-nav[aria-current="page"], [data-ui="gameboy"] .bt-nav[aria-current="page"] *, [data-ui="gameboy"] .btn:hover:not(:disabled), [data-ui="gameboy"] .btn:hover:not(:disabled) * { color: hsl(var(--bg)); }
+[data-ui="gameboy"] .text-muted, [data-ui="gameboy"] .chip { color: hsl(var(--accent)); }
+[data-ui="gameboy"] .chip { border: 2px solid hsl(var(--accent)); background: transparent; }
+[data-ui="gameboy"] :is(img, canvas, .bt-cover) { image-rendering: pixelated; filter: grayscale(1) contrast(1.15) sepia(0.7) hue-rotate(40deg) saturate(1.6); }
+
+/* ================== Zune HD (Metro) ==================
+ * Black, huge light lowercase titles, no boxes: content is set in type and flat tiles, controls are outlined in white, the one accent
+ * colour marks the place you are. Segoe UI Light (Open Sans Light elsewhere). */
+
+[data-ui="zune"] {
+  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
+  --font: "Segoe UI", "Open Sans", system-ui, sans-serif; --title-font: "Segoe UI Light", "Segoe UI", "Open Sans", system-ui, sans-serif;
+  --dur: 180ms; --ease: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --btn-bg: transparent; --btn-fg: hsl(var(--fg)); --btn-weight: 400; --btn-border: 2px solid color-mix(in srgb, hsl(var(--fg)) 70%, transparent); --btn-shadow: none;
+  --btn-hover-bg: color-mix(in srgb, hsl(var(--fg)) 16%, transparent); --btn-hover-border: hsl(var(--fg)); --btn-hover-shadow: none;
+  --btn-active-shadow: none; --btn-active-transform: scale(0.97);
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: hsl(var(--accent-fg)); --btn-accent-border: 2px solid hsl(var(--accent)); --btn-accent-border-color: hsl(var(--accent)); --btn-accent-shadow: none;
+  --btn-accent-hover-bg: color-mix(in srgb, hsl(var(--accent)) 88%, white); --btn-accent-hover-shadow: none; --btn-accent-text-shadow: none;
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--fg)) 14%, transparent);
+  --in-bg: color-mix(in srgb, hsl(var(--fg)) 14%, transparent); --in-border: 2px solid transparent; --in-shadow: none; --in-hover-border: color-mix(in srgb, hsl(var(--fg)) 60%, transparent); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: none; --in-px: 0.75rem;
+  --card-bg: transparent; --card-border: 0 solid transparent; --card-shadow: none;
+  --backdrop: rgb(0 0 0 / 0.7);
+  --win-bg: hsl(var(--surface)); --win-border: 0 solid transparent; --win-shadow: 0 20px 60px rgb(0 0 0 / 0.7); --dialog-anim: bt-fade 200ms ease-out;
+  --tb-bg: transparent; --tb-fg: hsl(var(--fg)); --tb-border: 0 solid transparent; --tb-pad: 1rem 1.4rem 0.4rem; --tb-size: 2rem; --tb-weight: 300; --tb-justify: space-between; --tb-text-shadow: none;
+  --close-fg: hsl(var(--fg)); --close-hover-bg: color-mix(in srgb, hsl(var(--fg)) 15%, transparent); --close-hover-fg: hsl(var(--fg)); --close-r: 0;
+  --bar-border: 0 solid transparent;
+  --menu-bg: hsl(var(--surface)); --menu-border: 1px solid color-mix(in srgb, hsl(var(--fg)) 30%, transparent); --pop-shadow: 0 8px 24px rgb(0 0 0 / 0.6); --menu-anim: bt-fade 100ms ease-out; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: hsl(var(--accent-fg));
+  --side-bg: transparent; --side-shadow: none; --top-bg: transparent; --top-shadow: none; --player-bg: hsl(var(--surface)); --player-shadow: none;
+  --nav-hover-bg: transparent; --nav-active-bg: transparent; --nav-active-fg: hsl(var(--accent)); --nav-active-shadow: none;
+  --row-hover: color-mix(in srgb, hsl(var(--fg)) 10%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 26%, transparent);
+  --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid color-mix(in srgb, hsl(var(--fg)) 70%, transparent); --chk-bg: transparent; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
+  --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: hsl(var(--accent-fg)); --chk-radio-on-bg: hsl(var(--accent)); --chk-dot: hsl(var(--accent-fg));
+  --rng-appearance: none; --rng-h: 3px; --rng-r: 0; --rng-track: color-mix(in srgb, hsl(var(--fg)) 28%, transparent); --rng-fill: hsl(var(--accent));
+  --rng-tw: 0.5rem; --rng-th: 1.5rem; --rng-tr: 0; --rng-thumb: hsl(var(--fg)); --rng-tb: 0 solid transparent; --rng-ts: none;
+}
+
+[data-ui="zune"] :is(h1, h2, h3, .bt-brand, .bt-titlebar h2, .bt-panel-title) { font-family: var(--title-font); font-weight: 300; text-transform: lowercase; letter-spacing: -0.01em; }
+[data-ui="zune"] h1 { font-size: 3rem; line-height: 1; margin-bottom: 0.5rem; }
+[data-ui="zune"] h2 { font-size: 1.6rem; }
+[data-ui="zune"] .bt-nav { font-family: var(--title-font); font-weight: 300; font-size: 1.15rem; text-transform: lowercase; padding-top: 0.3rem; padding-bottom: 0.3rem; color: hsl(var(--muted)); }
+[data-ui="zune"] .bt-nav[aria-current="page"] { color: hsl(var(--accent)); }
+[data-ui="zune"] .btn { text-transform: lowercase; }
+[data-ui="zune"] .card { background: hsl(var(--raised) / 0.55); }
+[data-ui="zune"] .bt-cover { border-radius: 0; }
+
+/* ================== Cyberpunk 2077 ==================
+ * Near-black with caution-tape yellow, cyan and red glints; every panel has two chamfered corners instead of rounded ones, labels are
+ * condensed capitals, selection is a solid yellow bar with black type. */
+
+[data-ui="cyber"] {
+  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
+  --font: "Barlow Condensed", "Rajdhani", "Arial Narrow", system-ui, sans-serif; --title-font: var(--font);
+  --dur: 100ms; --ease: steps(3);
+  --btn-bg: hsl(var(--raised)); --btn-fg: hsl(var(--fg)); --btn-weight: 600; --btn-border: 0 solid transparent; --btn-shadow: inset 3px 0 0 hsl(var(--accent));
+  --btn-hover-bg: hsl(var(--accent)); --btn-hover-border: transparent; --btn-hover-shadow: none;
+  --btn-active-shadow: inset 0 0 0 2px #000; --btn-active-transform: none;
+  --btn-accent-bg: hsl(var(--accent)); --btn-accent-fg: #000; --btn-accent-border: 0 solid transparent; --btn-accent-border-color: transparent; --btn-accent-shadow: none;
+  --btn-accent-hover-bg: #fff; --btn-accent-hover-shadow: none; --btn-accent-text-shadow: none;
+  --ghost-hover-bg: color-mix(in srgb, hsl(var(--accent)) 16%, transparent);
+  --in-bg: color-mix(in srgb, hsl(var(--fg)) 8%, transparent); --in-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 45%, transparent); --in-shadow: none; --in-hover-border: hsl(var(--accent)); --in-focus-border: hsl(var(--accent)); --in-focus-shadow: inset 0 -2px 0 hsl(var(--accent)); --in-px: 0.75rem;
+  --card-bg: hsl(var(--surface)); --card-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 40%, transparent); --card-shadow: none;
+  --backdrop: rgb(0 0 0 / 0.75);
+  --win-bg: hsl(var(--bg)); --win-border: 1px solid hsl(var(--accent)); --win-shadow: 0 0 30px color-mix(in srgb, hsl(var(--accent)) 20%, transparent); --dialog-anim: bt-fade 120ms steps(4);
+  --tb-bg: hsl(var(--accent)); --tb-fg: #000; --tb-border: 0 solid transparent; --tb-pad: 0.45rem 1rem; --tb-size: 1.15rem; --tb-weight: 700; --tb-justify: space-between; --tb-text-shadow: none;
+  --close-fg: #000; --close-hover-bg: #000; --close-hover-fg: hsl(var(--accent)); --close-r: 0;
+  --bar-border: 1px solid color-mix(in srgb, hsl(var(--accent)) 35%, transparent);
+  --menu-bg: hsl(var(--bg)); --menu-border: 1px solid hsl(var(--accent)); --pop-shadow: 0 0 18px color-mix(in srgb, hsl(var(--accent)) 22%, transparent); --menu-anim: bt-fade 100ms ease-out; --menu-hi-bg: hsl(var(--accent)); --menu-hi-fg: #000;
+  --side-bg: hsl(var(--bg)); --side-shadow: none; --top-bg: hsl(var(--bg)); --top-shadow: none; --player-bg: hsl(var(--bg)); --player-shadow: none;
+  --nav-hover-bg: color-mix(in srgb, hsl(var(--accent)) 16%, transparent); --nav-active-bg: hsl(var(--accent)); --nav-active-fg: #000; --nav-active-shadow: none;
+  --row-hover: color-mix(in srgb, hsl(var(--accent)) 14%, transparent); --row-current: color-mix(in srgb, hsl(var(--accent)) 28%, transparent);
+  --panel-tb-fg: hsl(var(--accent)); --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid hsl(var(--accent)); --chk-bg: transparent; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
+  --chk-on-bg: hsl(var(--accent)); --chk-on-border: hsl(var(--accent)); --chk-on-fg: #000; --chk-radio-on-bg: hsl(var(--accent)); --chk-dot: #000;
+  --rng-appearance: none; --rng-h: 4px; --rng-r: 0; --rng-track: color-mix(in srgb, hsl(var(--fg)) 22%, transparent); --rng-fill: hsl(var(--accent));
+  --rng-tw: 0.9rem; --rng-th: 0.9rem; --rng-tr: 0; --rng-thumb: hsl(var(--accent)); --rng-tb: 2px solid hsl(var(--bg)); --rng-ts: none;
+}
+
+[data-ui="cyber"] :is(h1, h2, h3, .bt-brand, .bt-titlebar h2, .bt-panel-title, .btn, .bt-nav, .chip, th) { text-transform: uppercase; letter-spacing: 0.06em; }
+[data-ui="cyber"] h1 { font-size: 2.1rem; font-weight: 700; color: hsl(var(--accent)); }
+[data-ui="cyber"] .btn, [data-ui="cyber"] .card, [data-ui="cyber"] .bt-nav, [data-ui="cyber"] .bt-window, [data-ui="cyber"] .bt-menu { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+[data-ui="cyber"] .card, [data-ui="cyber"] .bt-window, [data-ui="cyber"] .bt-menu { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
+[data-ui="cyber"] .btn:hover:not(:disabled), [data-ui="cyber"] .btn:hover:not(:disabled) * { color: #000; }
+[data-ui="cyber"] .chip { background: transparent; border: 1px solid hsl(180 100% 50% / 0.6); color: hsl(180 100% 55%); }
+[data-ui="cyber"] .bt-row:hover, [data-ui="cyber"] .bt-row-current { box-shadow: inset 3px 0 0 hsl(var(--accent)); }
+
+/* ================== Block game inventory (Minecraft) ==================
+ * The inventory screen: a light grey panel with a black outline and a bevel (white lit edge top-left, dark shadow bottom-right), slots
+ * and buttons in mid grey with white type and a dark drop shadow, a hover that tints the button blue-violet and turns its label
+ * yellow. Pixel type (VT323). Pair it with the "Inventory" colours. */
+
+[data-ui="blocky"] {
+  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
+  --font: "VT323", "Press Start 2P", ui-monospace, monospace; --title-font: var(--font);
+  --dur: 0ms; --ease: steps(1);
+  --btn-bg: #8b8b8b; --btn-fg: #fff; --btn-weight: 400; --btn-border: 2px solid #000; --btn-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
+  --btn-hover-bg: #7b84c4; --btn-hover-border: #000; --btn-hover-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
+  --btn-active-shadow: inset 2px 2px 0 rgb(0 0 0 / 0.5), inset -2px -2px 0 rgb(255 255 255 / 0.3); --btn-active-transform: none;
+  --btn-accent-bg: #5d9b3a; --btn-accent-fg: #fff; --btn-accent-border: 2px solid #000; --btn-accent-border-color: #000; --btn-accent-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
+  --btn-accent-hover-bg: #6fb447; --btn-accent-hover-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45); --btn-accent-text-shadow: 2px 2px 0 #2c4a18;
+  --ghost-hover-bg: rgb(0 0 0 / 0.12);
+  --in-bg: #000; --in-border: 2px solid #a0a0a0; --in-shadow: none; --in-hover-border: #fff; --in-focus-border: #fff; --in-focus-shadow: none; --in-px: 0.75rem;
+  --card-bg: #c6c6c6; --card-border: 2px solid #000; --card-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
+  --backdrop: rgb(0 0 0 / 0.6);
+  --win-bg: #c6c6c6; --win-border: 2px solid #000; --win-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 6px 6px 0 rgb(0 0 0 / 0.5); --dialog-anim: none;
+  --tb-bg: transparent; --tb-fg: #3f3f3f; --tb-border: 0 solid transparent; --tb-pad: 0.7rem 1rem 0.2rem; --tb-size: 1.3rem; --tb-weight: 400; --tb-justify: space-between; --tb-text-shadow: none;
+  --close-fg: #3f3f3f; --close-hover-bg: #b5b5b5; --close-hover-fg: #000; --close-r: 0;
+  --bar-border: 2px solid #000;
+  --menu-bg: #c6c6c6; --menu-border: 2px solid #000; --pop-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 4px 4px 0 rgb(0 0 0 / 0.5); --menu-anim: none; --menu-hi-bg: #7b84c4; --menu-hi-fg: #ffffa0;
+  --side-bg: #c6c6c6; --side-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555; --top-bg: #c6c6c6; --top-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555; --player-bg: #c6c6c6; --player-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
+  --nav-hover-bg: rgb(255 255 255 / 0.4); --nav-active-bg: #8b8b8b; --nav-active-fg: #fff; --nav-active-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
+  --row-hover: rgb(255 255 255 / 0.45); --row-current: rgb(93 155 58 / 0.4);
+  --panel-tb-fg: #3f3f3f; --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
+  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid #000; --chk-bg: #8b8b8b; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
+  --chk-on-bg: #5d9b3a; --chk-on-border: #5d9b3a; --chk-on-fg: #fff; --chk-radio-on-bg: #5d9b3a; --chk-dot: #fff;
+  --rng-appearance: none; --rng-h: 8px; --rng-r: 0; --rng-track: #373737; --rng-fill: #5d9b3a;
+  --rng-tw: 1rem; --rng-th: 1.3rem; --rng-tr: 0; --rng-thumb: #8b8b8b; --rng-tb: 2px solid #000; --rng-ts: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
+}
+
+html[data-ui="blocky"] { font-size: 18px; }
+[data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title) { font-weight: 400; }
+[data-ui="blocky"] .btn, [data-ui="blocky"] .btn-accent { text-shadow: 2px 2px 0 #3f3f3f; }
+[data-ui="blocky"] .btn:hover:not(:disabled), [data-ui="blocky"] .btn:hover:not(:disabled) * { color: #ffffa0; }
+[data-ui="blocky"] .btn-ghost { text-shadow: none; color: #3f3f3f; }
+[data-ui="blocky"] .btn-ghost:hover:not(:disabled), [data-ui="blocky"] .btn-ghost:hover:not(:disabled) * { color: #000; }
+[data-ui="blocky"] .bt-nav { color: #3f3f3f; }
+[data-ui="blocky"] .bt-nav[aria-current="page"], [data-ui="blocky"] .bt-nav[aria-current="page"] * { color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
+[data-ui="blocky"] .text-muted, [data-ui="blocky"] .chip { color: #555; }
+[data-ui="blocky"] .chip { background: #8b8b8b; color: #fff; text-shadow: 1px 1px 0 #3f3f3f; border: 2px solid #000; box-shadow: none; }
+[data-ui="blocky"] .input { color: #fff; }
+[data-ui="blocky"] :is(img, .bt-cover) { image-rendering: pixelated; }
+[data-ui="blocky"] .bt-cover { box-shadow: 0 0 0 2px #000, 0 0 0 4px #8b8b8b; border-radius: 0; }
+
+/* instant styles: no page transition, no vote animation */
+[data-ui="pipboy"], [data-ui="gameboy"], [data-ui="blocky"] { --page-in: none; --vote-ms: 0ms; --player-in: none; --player-out: none; --player-ms: 0ms; --pop-out: none; --pop-ms: 0ms; }
+[data-ui="zune"] { --page-in: bt-fade 220ms ease-out backwards; }
+[data-ui="persona"], [data-ui="cyber"] { --page-in: bt-fade 110ms linear backwards; --vote-ms: 260ms; }
+[data-ui="pipboy"] *, [data-ui="gameboy"] *, [data-ui="blocky"] * { scroll-behavior: auto !important; }

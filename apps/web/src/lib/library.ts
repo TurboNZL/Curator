@@ -1,4 +1,4 @@
-import { leadArtistId, leadArtistIds, hasLead } from './defaults.ts';
+import { leadArtistId, leadArtistIds, hasLead, isFeatured } from './defaults.ts';
 import { albumCover, coverPool } from './covers.ts';
 import { balancedRatings, replayVotes, type AlbumData, type Credit, type ArtistData, type PlaylistData, type PlaybackRule, type ReleaseData, type SyncRecord, type TrackData, type VoteData, type GenreData, type GroupData, type NoteData, type ProfileData, type PlaybackLogData, type RoleCategoryData, type TimelineData, type EraData, type NoteCategoryData, type ReleaseNameData } from '@curator/core';
 
@@ -100,6 +100,11 @@ function withMembers(eras: Row<EraData>[], albums: Row<AlbumData>[], tracks: Row
 
 const by = <T extends { id: string }>(xs: T[]) => new Map(xs.map((x) => [x.id, x]));
 
+/** The same library with a fresh play history: logs are the one part that changes on every play, so they are swapped in instead of rebuilding everything. */
+export function withLogs(lib: Library, rows: Record<string, Map<string, SyncRecord>>): Library {
+  return { ...lib, logs: live<PlaybackLogData>(rows.playbackLogs) };
+}
+
 export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Library {
   const artists = live<ArtistData>(rows.artists);
   const artistById = by(artists);
@@ -144,7 +149,10 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const eff = r.comparisons >= 3 && rating > 0.001 ? rating : (t.initialRating ?? 0) > 0.001 ? t.initialRating! : 0;
     const genres = t.syncWithAlbumCredits && album ? album.genres : t.genres;
     // a track that follows its album takes the album's credits (when the album has a lead artist)
-    const credits = t.syncWithAlbumCredits && album && hasLead(album.credits ?? []) ? album.credits : (t.credits ?? []);
+    // ...plus the featured artists the track adds itself, so a featuring does not mean giving up the album's credits
+    const follows = t.syncWithAlbumCredits && album && hasLead(album.credits ?? []);
+    const own = (t.credits ?? []).filter((c) => !c.artistId || !(album?.credits ?? []).some((a) => a.artistId === c.artistId));
+    const credits = follows ? [...album!.credits, ...own.filter(isFeatured)] : (t.credits ?? []);
     const artistId = leadArtistId(credits, t.artistId ?? '');
     const leads = leadsOf(credits, t.artistId, artistById);
     return {
