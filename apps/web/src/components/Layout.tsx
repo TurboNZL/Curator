@@ -10,7 +10,6 @@ import { EditorHost } from './EditorHost.tsx';
 import { PlayerBar } from './PlayerBar.tsx';
 import { NowPlaying } from './NowPlaying.tsx';
 import { DevicesMenu } from './Devices.tsx';
-import { navLayout } from '../lib/uiStyle.ts';
 
 const NAV = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -58,7 +57,7 @@ function SyncDot() {
   const { state, error } = useStore((s) => s.sync);
   const color = { idle: 'bg-good', syncing: 'bg-warn animate-pulse', offline: 'bg-muted', error: 'bg-bad', unconfigured: 'bg-muted' }[state];
   const text = { idle: 'Synced', syncing: 'Syncing…', offline: 'Offline', error: error ?? 'Sync error', unconfigured: 'Local only' }[state];
-  return <div className="flex items-center gap-2 px-3 text-xs text-muted md:px-3" title={error ?? ""}><span className={cn('h-2 w-2 rounded-full', color)} />{text}</div>;
+  return <div className="flex items-center gap-2 px-3 text-xs text-muted md:px-3" title={error ?? ""}><span className={cn('h-2 w-2 rounded-full', color)} /><span className="bt-label-text">{text}</span></div>;
 }
 
 /** Layout "toolbar" (the Toolbar UI style): these pages stay in the side bar, in this order; every other page becomes a text link in the top bar. */
@@ -146,10 +145,12 @@ export function Layout() {
   const wide = matches.some(Boolean);
   const [q, setQ] = useState('');
   const ui = useStore((s) => s.settings.ui);
-  const toolbar = navLayout(ui) === 'toolbar';
+  const layout = useStore((s) => s.settings.layout);
+  const toolbar = layout === 'toolbar', topbar = layout === 'topbar', dock = layout === 'dock';
+  const noSide = topbar || dock; // these layouts have no side bar at all
   const logo = ui === 'lgux' ? '/icon-lg.svg' : '/icon.svg'; // LG UX 5.0 has its own (candy) logo
   const sideNav = toolbar ? LIBRARY.map((to) => NAV.find((n) => n.to === to)!) : NAV;
-  const topNav = toolbar ? NAV.filter((n) => !LIBRARY.includes(n.to) && n.to !== '/settings') : [];
+  const topNav = toolbar ? NAV.filter((n) => !LIBRARY.includes(n.to) && n.to !== '/settings') : topbar ? NAV : [];
   const toggle = usePlayer((s) => s.toggle);
   const hasPlayer = usePlayer((s) => !!s.queue.currentId);
   // space = play/pause, unless typing in a field or pressing a button
@@ -167,23 +168,23 @@ export function Layout() {
       <WindowFrame />
       <div className="bt-scrim" aria-hidden />
       <div className="flex min-h-0 flex-1">
-        <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
+        {!noSide && <aside ref={sideRef} className="bt-side bt-shell relative hidden w-56 shrink-0 flex-col gap-1 p-3 md:flex">
           <span className="bt-ind" aria-hidden />
-          <div className="bt-brand mb-3 flex items-center gap-2.5 px-3 pt-1 text-lg font-bold tracking-tight"><img src={logo} alt="" width={26} height={26} className="h-[26px] w-[26px] shrink-0" draggable={false} />Curator</div>
+          <div className="bt-brand mb-3 flex items-center gap-2.5 px-3 pt-1 text-lg font-bold tracking-tight"><img src={logo} alt="" width={26} height={26} className="h-[26px] w-[26px] shrink-0" draggable={false} /><span className="bt-label-text">Curator</span></div>
           {sideNav.map(({ to, label, icon: Icon, ...rest }) => (
-            <NavLink key={to} to={to} end={'end' in rest} className="bt-nav flex items-center gap-3 px-3 py-2 text-sm font-medium">
-              <Icon size={18} />{label}
+            <NavLink key={to} to={to} end={'end' in rest} title={label} className="bt-nav flex items-center gap-3 px-3 py-2 text-sm font-medium">
+              <Icon size={18} className="shrink-0" /><span className="bt-label-text">{label}</span>
             </NavLink>
           ))}
           <div className="mt-auto"><SyncDot /></div>
-        </aside>
+        </aside>}
         <main ref={mainRef} className={cn('min-w-0 flex-1 overflow-y-auto overflow-x-hidden', hasPlayer && 'has-player')}>
           <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
             <div className="bt-topin relative mx-auto flex max-w-3xl items-center gap-3">
-              <img src={logo} alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0 md:hidden" draggable={false} />
-              <div className="md:hidden"><SyncDot /></div>
-              {toolbar && <nav className="bt-toplinks hidden min-w-0 items-center gap-6 overflow-x-auto md:flex" aria-label="Pages">
-                {topNav.map(({ to, label, ...rest }) => <NavLink key={to} to={to} end={'end' in rest} className="bt-toplink whitespace-nowrap">{TOOLBAR_LABEL[to] ?? label}</NavLink>)}
+              <div className={cn('flex shrink-0 items-center gap-2 font-bold', !noSide && 'md:hidden')}><img src={logo} alt="Curator" width={28} height={28} className="h-7 w-7 shrink-0" draggable={false} />{topbar && <span className="hidden md:inline">Curator</span>}</div>
+              <div className={cn(!noSide && 'md:hidden')}><SyncDot /></div>
+              {(toolbar || topbar) && <nav className="bt-toplinks hidden min-w-0 items-center gap-6 overflow-x-auto md:flex" aria-label="Pages">
+                {topNav.map(({ to, label, ...rest }) => <NavLink key={to} to={to} end={'end' in rest} className="bt-toplink whitespace-nowrap">{toolbar ? TOOLBAR_LABEL[to] ?? label : label}</NavLink>)}
               </nav>}
               <div className="hidden shrink-0 items-center min-[480px]:flex">
                 <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Back" title="Back" disabled={!canBack} onClick={() => nav(-1)}><ArrowLeft size={17} /></button>
@@ -204,7 +205,7 @@ export function Layout() {
       <PlayerBar />
       <EditorHost />
       <NowPlaying />
-      <nav ref={tabRef} className="bt-tabbar bt-shell relative flex md:hidden">
+      <nav ref={tabRef} className={cn('bt-tabbar bt-shell relative flex', !dock && 'md:hidden')}>
         <span className="bt-ind" aria-hidden />
         {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
           <NavLink key={to} to={to} end={'end' in rest} className="bt-tab flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]">

@@ -59,9 +59,9 @@
   --chk-radio-on-bg: var(--chk-on-bg); --chk-dot: var(--chk-on-fg); --chk-mark: 78%; --chk-focus: 0 0 0 3px hsl(var(--accent) / 0.35);
   --chk-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.6 8.6 6.7 11.6 12.4 4.6'/%3E%3C/svg%3E");
 
-  --rng-appearance: auto; --rng-h: 0.25rem; --rng-r: 9999px; --rng-border: 0 solid transparent; --rng-shadow: none;
+  --rng-appearance: none; --rng-h: 0.25rem; --rng-r: 9999px; --rng-border: 0 solid transparent; --rng-shadow: none;
   --rng-track: hsl(var(--raised)); --rng-fill: hsl(var(--accent));
-  --rng-tw: 1rem; --rng-th: 1rem; --rng-tr: 9999px; --rng-tb: 0 solid transparent; --rng-thumb: hsl(var(--accent)); --rng-ts: none;
+  --rng-tw: 1rem; --rng-th: 1rem; --rng-tr: 9999px; --rng-tb: 2px solid hsl(var(--bg)); --rng-thumb: hsl(var(--accent)); --rng-ts: 0 0 0 1px hsl(var(--accent)), 0 1px 3px rgb(0 0 0 / 0.35);
 }
 
 [data-ui] { font-family: var(--font); }
@@ -1254,38 +1254,42 @@ html[data-ui="fortnite4"], html[data-ui="fortnite5"] { font-size: 14px; }
 [data-ui="toolbar"] .btn-ghost { font-weight: 500; }
 [data-ui="toolbar"] .input:focus-visible, [data-ui="toolbar"] .input:focus { box-shadow: 0 0 0 1px hsl(var(--accent)); }
 
-/* Side bar: 16rem, a CURATOR wordmark and the library pages only */
-[data-ui="toolbar"] .bt-side.bt-shell { width: 16rem; padding: 0 1rem 1rem; }
+/* Standard v1 layout (data-layout=toolbar, any look): a 16rem side bar with the library pages only; the brand wordmark below belongs to the Standard v1 look */
+[data-layout="toolbar"] .bt-side.bt-shell { width: 16rem; padding: 0 1rem 1rem; }
 [data-ui="toolbar"] .bt-brand { padding: 1.5rem 0.5rem; margin-bottom: 0; font-size: 1.25rem; line-height: 1.75rem; font-weight: 700; letter-spacing: -0.05em; text-transform: uppercase; }
 [data-ui="toolbar"] .bt-brand img { display: none; }
 [data-ui="toolbar"] .bt-side .bt-nav { color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
 [data-ui="toolbar"] .bt-side .bt-nav:hover, [data-ui="toolbar"] .bt-side .bt-nav[aria-current="page"] { color: hsl(var(--fg)); }
 [data-ui="toolbar"] .bt-tabbar .bt-tab { font-weight: 700; }
 
-/* Toolbar: text links on the left, a 16rem pill search and icon buttons on the right */
-[data-ui="toolbar"] .bt-toplink { font-size: 0.75rem; line-height: 1rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(var(--muted)); transition: color var(--dur) var(--ease); }
-[data-ui="toolbar"] .bt-toplink:hover { color: color-mix(in srgb, hsl(var(--fg)) 80%, hsl(var(--bg))); }
-[data-ui="toolbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); }
-[data-ui="toolbar"] .bt-top .bt-search .input { height: 2.25rem; border-radius: 9999px; background: hsl(var(--raised)); }
-[data-ui="toolbar"] .bt-top .bt-search .input:focus { box-shadow: 0 0 0 2px hsl(var(--bg)), 0 0 0 4px hsl(var(--accent)); }
-[data-ui="toolbar"] .bt-top .bt-add { background: transparent; border: 0; box-shadow: none; width: 2.25rem; height: 2.25rem; padding: 0; text-transform: none; color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
-[data-ui="toolbar"] .bt-top .bt-add:hover { background: hsl(var(--hover)); color: hsl(var(--fg)); }
-[data-ui="toolbar"] .bt-top .bt-add span { display: none; }
-[data-ui="toolbar"] .bt-top .btn-ghost { color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
-[data-ui="toolbar"] .bt-top .btn-ghost:hover { color: hsl(var(--fg)); }
+/* Toolbar: text links on the left, a 16rem pill search and icon buttons on the right (the Top tabs layout shares the link styles) */
+[data-layout="toolbar"] .bt-toplink { font-size: 0.75rem; line-height: 1rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(var(--muted)); transition: color var(--dur) var(--ease); }
+[data-layout="toolbar"] .bt-toplink:hover { color: color-mix(in srgb, hsl(var(--fg)) 80%, hsl(var(--bg))); }
+[data-layout="toolbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); }
+[data-layout="toolbar"] .bt-top .bt-search .input { height: 2.25rem; border-radius: 9999px; background: hsl(var(--raised)); }
+[data-layout="toolbar"] .bt-top .bt-search .input:focus { box-shadow: 0 0 0 2px hsl(var(--bg)), 0 0 0 4px hsl(var(--accent)); }
+[data-layout="toolbar"] .bt-top .bt-add { background: transparent; border: 0; box-shadow: none; width: 2.25rem; height: 2.25rem; padding: 0; text-transform: none; color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
+[data-layout="toolbar"] .bt-top .bt-add:hover { background: hsl(var(--hover)); color: hsl(var(--fg)); }
+[data-layout="toolbar"] .bt-top .bt-add span { display: none; }
+[data-layout="toolbar"] .bt-top .btn-ghost { color: color-mix(in srgb, hsl(var(--fg)) 63%, hsl(var(--bg))); }
+[data-layout="toolbar"] .bt-top .btn-ghost:hover { color: hsl(var(--fg)); }
 @media (min-width: 768px) {
-  [data-ui="toolbar"] .bt-top.bt-shell { padding: 1rem 2rem; }
-  [data-ui="toolbar"] .bt-topin { max-width: none; margin: 0; gap: 1rem; }
-  [data-ui="toolbar"] .bt-topin .bt-search { flex: 0 0 16rem; margin-left: auto; }
-  [data-ui="toolbar"] .bt-content { max-width: none; padding: 2rem; }
+  [data-layout="toolbar"] .bt-top.bt-shell { padding: 1rem 2rem; }
+  [data-layout="toolbar"] .bt-topin { max-width: none; margin: 0; gap: 1rem; }
+  [data-layout="toolbar"] .bt-topin .bt-search { flex: 0 0 16rem; margin-left: auto; }
+  [data-layout="toolbar"] .bt-content { max-width: none; padding: 2rem; }
 }
 /* a tablet has no room for six links beside the search: they take a second row */
 @media (min-width: 768px) and (max-width: 1099.98px) {
-  [data-ui="toolbar"] .bt-topin { flex-wrap: wrap; row-gap: 0.75rem; }
-  [data-ui="toolbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
-  [data-ui="toolbar"] .bt-topin .bt-search { flex: 1 1 8rem; margin-left: 0; }
+  [data-layout="toolbar"] .bt-topin { flex-wrap: wrap; row-gap: 0.75rem; }
+  [data-layout="toolbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
+  [data-layout="toolbar"] .bt-topin .bt-search { flex: 1 1 8rem; margin-left: 0; }
 }
 
+[data-layout="topbar"] .bt-toplink { font-size: 0.75rem; line-height: 1rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: hsl(var(--muted)); transition: color var(--dur) var(--ease); }
+[data-layout="topbar"] .bt-toplink:hover { color: color-mix(in srgb, hsl(var(--fg)) 80%, hsl(var(--bg))); }
+[data-layout="topbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); }
+  [data-layout="topbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
 /* Page titles, section titles and form captions */
 [data-ui="toolbar"] main h1 { font-size: 1.875rem; line-height: 2.25rem; font-weight: 900; letter-spacing: -0.025em; text-transform: uppercase; }
 [data-ui="toolbar"] main h1 > span { font-size: 0.875rem; letter-spacing: 0; }
@@ -1535,55 +1539,42 @@ html[data-ui="gameboy"] { font-size: 10px; line-height: 1.7; }
 [data-ui="cyber"] .chip { background: transparent; border: 1px solid hsl(180 100% 50% / 0.6); color: hsl(180 100% 55%); }
 [data-ui="cyber"] .bt-row:hover, [data-ui="cyber"] .bt-row-current { box-shadow: inset 3px 0 0 hsl(var(--accent)); }
 
-/* ================== Block game inventory (Minecraft) ==================
- * The inventory screen: a light grey panel with a black outline and a bevel (white lit edge top-left, dark shadow bottom-right), slots
- * and buttons in mid grey with white type and a dark drop shadow, a hover that tints the button blue-violet and turns its label
- * yellow. Pixel type (VT323). Pair it with the "Inventory" colours. */
-
-[data-ui="blocky"] {
-  --radius: 0px; --ctl-r: 0px; --card-r: 0px; --win-r: 0px; --menu-r: 0px; --nav-r: 0px; --chip-r: 0px; --in-r: 0px;
-  --font: "VT323", "Press Start 2P", ui-monospace, monospace; --title-font: var(--font);
-  --dur: 0ms; --ease: steps(1);
-  --btn-bg: #8b8b8b; --btn-fg: #fff; --btn-weight: 400; --btn-border: 2px solid #000; --btn-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --btn-hover-bg: #7b84c4; --btn-hover-border: #000; --btn-hover-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --btn-active-shadow: inset 2px 2px 0 rgb(0 0 0 / 0.5), inset -2px -2px 0 rgb(255 255 255 / 0.3); --btn-active-transform: none;
-  --btn-accent-bg: #5d9b3a; --btn-accent-fg: #fff; --btn-accent-border: 2px solid #000; --btn-accent-border-color: #000; --btn-accent-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --btn-accent-hover-bg: #6fb447; --btn-accent-hover-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45); --btn-accent-text-shadow: 2px 2px 0 #2c4a18;
-  --ghost-hover-bg: rgb(0 0 0 / 0.12);
-  --in-bg: #000; --in-border: 2px solid #a0a0a0; --in-shadow: none; --in-hover-border: #fff; --in-focus-border: #fff; --in-focus-shadow: none; --in-px: 0.75rem;
-  --card-bg: #c6c6c6; --card-border: 2px solid #000; --card-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
-  --backdrop: rgb(0 0 0 / 0.6);
-  --win-bg: #c6c6c6; --win-border: 2px solid #000; --win-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 6px 6px 0 rgb(0 0 0 / 0.5); --dialog-anim: none;
-  --tb-bg: transparent; --tb-fg: #3f3f3f; --tb-border: 0 solid transparent; --tb-pad: 0.7rem 1rem 0.2rem; --tb-size: 1.3rem; --tb-weight: 400; --tb-justify: space-between; --tb-text-shadow: none;
-  --close-fg: #3f3f3f; --close-hover-bg: #b5b5b5; --close-hover-fg: #000; --close-r: 0;
-  --bar-border: 2px solid #000;
-  --menu-bg: #c6c6c6; --menu-border: 2px solid #000; --pop-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 4px 4px 0 rgb(0 0 0 / 0.5); --menu-anim: none; --menu-hi-bg: #7b84c4; --menu-hi-fg: #ffffa0;
-  --side-bg: #c6c6c6; --side-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555; --top-bg: #c6c6c6; --top-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555; --player-bg: #c6c6c6; --player-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
-  --nav-hover-bg: rgb(255 255 255 / 0.4); --nav-active-bg: #8b8b8b; --nav-active-fg: #fff; --nav-active-shadow: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-  --row-hover: rgb(255 255 255 / 0.45); --row-current: rgb(93 155 58 / 0.4);
-  --panel-tb-fg: #3f3f3f; --panel-tb-margin: 0 0 0.5rem; --panel-tb-pad: 0;
-  --chk-size: 1.1rem; --chk-r: 0; --chk-border: 2px solid #000; --chk-bg: #8b8b8b; --chk-hover-border: hsl(var(--accent)); --chk-focus: 0 0 0 2px color-mix(in srgb, hsl(var(--accent)) 40%, transparent);
-  --chk-on-bg: #5d9b3a; --chk-on-border: #5d9b3a; --chk-on-fg: #fff; --chk-radio-on-bg: #5d9b3a; --chk-dot: #fff;
-  --rng-appearance: none; --rng-h: 8px; --rng-r: 0; --rng-track: #373737; --rng-fill: #5d9b3a;
-  --rng-tw: 1rem; --rng-th: 1.3rem; --rng-tr: 0; --rng-thumb: #8b8b8b; --rng-tb: 2px solid #000; --rng-ts: inset 2px 2px 0 rgb(255 255 255 / 0.55), inset -2px -2px 0 rgb(0 0 0 / 0.45);
-}
-
-html[data-ui="blocky"] { font-size: 18px; }
-[data-ui="blocky"] :is(h1, h2, h3, .bt-brand, .bt-panel-title) { font-weight: 400; }
-[data-ui="blocky"] .btn, [data-ui="blocky"] .btn-accent { text-shadow: 2px 2px 0 #3f3f3f; }
-[data-ui="blocky"] .btn:hover:not(:disabled), [data-ui="blocky"] .btn:hover:not(:disabled) * { color: #ffffa0; }
-[data-ui="blocky"] .btn-ghost { text-shadow: none; color: #3f3f3f; }
-[data-ui="blocky"] .btn-ghost:hover:not(:disabled), [data-ui="blocky"] .btn-ghost:hover:not(:disabled) * { color: #000; }
-[data-ui="blocky"] .bt-nav { color: #3f3f3f; }
-[data-ui="blocky"] .bt-nav[aria-current="page"], [data-ui="blocky"] .bt-nav[aria-current="page"] * { color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
-[data-ui="blocky"] .text-muted, [data-ui="blocky"] .chip { color: #555; }
-[data-ui="blocky"] .chip { background: #8b8b8b; color: #fff; text-shadow: 1px 1px 0 #3f3f3f; border: 2px solid #000; box-shadow: none; }
-[data-ui="blocky"] .input { color: #fff; }
-[data-ui="blocky"] :is(img, .bt-cover) { image-rendering: pixelated; }
-[data-ui="blocky"] .bt-cover { box-shadow: 0 0 0 2px #000, 0 0 0 4px #8b8b8b; border-radius: 0; }
-
 /* instant styles: no page transition, no vote animation */
 [data-ui="pipboy"], [data-ui="gameboy"], [data-ui="blocky"] { --page-in: none; --vote-ms: 0ms; --player-in: none; --player-out: none; --player-ms: 0ms; --pop-out: none; --pop-ms: 0ms; }
 [data-ui="zune"] { --page-in: bt-fade 220ms ease-out backwards; }
 [data-ui="persona"], [data-ui="cyber"] { --page-in: bt-fade 110ms linear backwards; --vote-ms: 260ms; }
 [data-ui="pipboy"] *, [data-ui="gameboy"] *, [data-ui="blocky"] * { scroll-behavior: auto !important; }
+
+
+/* ---- Layouts (lib/layout.ts): where the pages are listed, whatever the look. "toolbar" (Standard v1) is above. ---- */
+
+/* Icon rail */
+[data-layout="rail"] .bt-side.bt-shell { width: 4.5rem; padding: 0.75rem 0.5rem; align-items: center; }
+[data-layout="rail"] .bt-side .bt-label-text { display: none; }
+[data-layout="rail"] .bt-side .bt-nav { justify-content: center; padding: 0.65rem; width: 100%; }
+[data-layout="rail"] .bt-side .bt-brand { padding: 0; margin-bottom: 0.5rem; justify-content: center; }
+[data-layout="rail"] .bt-side .bt-brand img { display: block; }
+[data-layout="rail"] .bt-side > div:last-child { padding: 0; justify-content: center; }
+
+/* Top tabs: no side bar, every page along the top */
+@media (min-width: 768px) {
+  [data-layout="topbar"] .bt-topin { max-width: none; margin: 0; gap: 1rem; }
+  [data-layout="topbar"] .bt-topin .bt-search { flex: 0 0 14rem; margin-left: auto; }
+  [data-layout="topbar"] .bt-toplinks { gap: 1.1rem; }
+  [data-layout="topbar"] .bt-content { max-width: none; }
+}
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  [data-layout="topbar"] .bt-topin { flex-wrap: wrap; row-gap: 0.5rem; }
+  [data-layout="topbar"] .bt-toplinks { order: 2; flex: 1 0 100%; }
+  [data-layout="topbar"] .bt-topin .bt-search { flex: 1 1 8rem; margin-left: 0; }
+}
+[data-layout="topbar"] .bt-toplink { font-size: 0.8125rem; font-weight: 600; color: hsl(var(--muted)); padding: 0.3rem 0.1rem; border-bottom: 2px solid transparent; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+[data-layout="topbar"] .bt-toplink:hover { color: hsl(var(--fg)); }
+[data-layout="topbar"] .bt-toplink[aria-current="page"] { color: hsl(var(--fg)); border-bottom-color: hsl(var(--accent)); }
+
+/* Bottom dock: the phone's tab bar, floating and centred on a desktop window */
+@media (min-width: 768px) {
+  [data-layout="dock"] .bt-tabbar { width: min(44rem, calc(100% - 2rem)); margin: 0.25rem auto 0.75rem; border-radius: 9999px; border: 1px solid hsl(var(--line)); overflow: hidden; }
+  [data-layout="dock"] .bt-tabbar .bt-tab { padding-block: 0.55rem; font-size: 11px; }
+  [data-layout="dock"] .bt-content { max-width: 80rem; }
+}

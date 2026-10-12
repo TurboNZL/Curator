@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, Equal, RefreshCw, SkipForward, ThumbsDown, ThumbsUp, X } from 'lucide-react';
-import { useLibrary, type Track } from '../lib/derive.ts';
+import { useLibraryLive, type Track } from '../lib/derive.ts';
+import { buildListens } from '../lib/listens.ts';
+import { heardTrackIds, onlyHeard } from '../lib/heard.ts';
 import { useStore } from '../lib/store.ts';
 import { nextQuestion, votesFor, type Question } from '../lib/questions.ts';
 import { usePreviews } from '../lib/usePreviews.ts';
@@ -16,10 +18,11 @@ const wasOpen = () => { try { return localStorage.getItem(OPEN_KEY) === '1'; } c
  * the page. Open, it shows the tracks the way the Rank page does: tap a cover to hear 15 s, then answer.
  */
 export function EloQuestions() {
-  const lib = useLibrary();
+  const lib = useLibraryLive();
   const put = useStore((s) => s.put);
   const [open, setOpen] = useState(wasOpen);
-  const pool = useMemo(() => lib.tracks.filter((t) => t.file).map((t) => ({ id: t.id, elo: t.elo, comparisons: t.comparisons, rating: t.rating })), [lib]);
+  // only tracks that were played at least once get asked about (the rest are on the home page's "Try something new")
+  const pool = useMemo(() => onlyHeard(lib.tracks.filter((t) => t.file), heardTrackIds(buildListens(lib))).pool.map((t) => ({ id: t.id, elo: t.elo, comparisons: t.comparisons, rating: t.rating })), [lib]);
   const [q, setQ] = useState<Question | null>(() => nextQuestion(pool));
   const [answered, setAnswered] = useState(0);
   // the library may still be loading when this mounts: ask again once there is something to ask about

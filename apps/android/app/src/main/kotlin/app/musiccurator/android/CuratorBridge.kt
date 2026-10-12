@@ -23,6 +23,8 @@ class CuratorBridge(private val context: Context, private val view: View) {
 
     /** the Cloudflare Access service token the server needs, if it sits behind Cloudflare Access */
     @JavascriptInterface fun setAccess(id: String, secret: String) { prefs.cfId = id; prefs.cfSecret = secret }
+    /** this app adds the service token to the page's own GET requests for the server (AccessProxy), so the page need not download media whole to send it */
+    @JavascriptInterface fun accessInjected(): Boolean = true
 
     // ---- the app's own player (notification, lock screen, Bluetooth and car controls): see NativeAudio
     @JavascriptInterface fun audioSync(json: String) = NativeAudio.sync(json)

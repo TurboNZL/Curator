@@ -16,7 +16,10 @@
     "test": "vitest run",
     "dist:publish": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --publish always",
     "dist": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder",
-    "dist:dir": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --dir"
+    "dist:dir": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --dir",
+    "dist:server": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.server.json --win",
+    "dist:server:publish": "pnpm --filter @curator/web build && node scripts/build.mjs && electron-builder --config electron-builder.server.json --win --publish always",
+    "start:server": "node scripts/build.mjs && electron dist/server-main.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
@@ -43,7 +46,14 @@
         "to": "web"
       }
     ],
-    "publish": [{ "provider": "github", "owner": "TurboNZL", "repo": "Curator", "releaseType": "release" }],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TurboNZL",
+        "repo": "Curator",
+        "releaseType": "release"
+      }
+    ],
     "linux": {
       "target": [
         "AppImage",
@@ -54,7 +64,11 @@
       "executableName": "music-curator",
       "maintainer": "Music Curator <noreply@musiccurator.app>",
       "synopsis": "Personal music library and ranking",
-      "desktop": { "entry": { "StartupWMClass": "music-curator" } }
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "music-curator"
+        }
+      }
     },
     "deb": {
       "packageName": "music-curator",

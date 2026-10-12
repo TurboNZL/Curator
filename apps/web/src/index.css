@@ -153,6 +153,11 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
   .bt-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: var(--rng-tw); height: var(--rng-th); margin-top: calc((var(--rng-h) - var(--rng-th)) / 2); border-radius: var(--rng-tr); border: var(--rng-tb); background: var(--rng-thumb); box-shadow: var(--rng-ts); }
   .bt-range::-moz-range-thumb { width: var(--rng-tw); height: var(--rng-th); border-radius: var(--rng-tr); border: var(--rng-tb); background: var(--rng-thumb); box-shadow: var(--rng-ts); }
 
+  /* an upright slider (the equaliser bands): the bar runs bottom to top and is filled from the middle (0 dB) towards the knob */
+  .bt-range-v::-webkit-slider-runnable-track { height: auto; width: var(--rng-h); background: linear-gradient(to top, var(--rng-track) 0 min(var(--p, 50%), var(--p0, 50%)), var(--rng-fill) 0 max(var(--p, 50%), var(--p0, 50%)), var(--rng-track) 0 100%); }
+  .bt-range-v::-moz-range-track { height: auto; width: var(--rng-h); background: linear-gradient(to top, var(--rng-track) 0 min(var(--p, 50%), var(--p0, 50%)), var(--rng-fill) 0 max(var(--p, 50%), var(--p0, 50%)), var(--rng-track) 0 100%); }
+  .bt-range-v::-webkit-slider-thumb { margin-top: 0; margin-left: calc((var(--rng-h) - var(--rng-tw)) / 2); }
+
   /* Checkboxes and radios: drawn by the UI style (--chk-*) instead of the OS, so they match every theme */
   input[type='checkbox'], input[type='radio'] {
     appearance: none; -webkit-appearance: none; flex: none; margin: 0; cursor: pointer; position: relative; display: inline-block; vertical-align: middle;
@@ -266,3 +271,6 @@ input[type='date'], input[type='time'], input[type='color'] { color-scheme: inhe
 @keyframes bt-drift { 0% { transform: translate(-3vmin, -2vmin) scale(1); } 50% { transform: translate(3vmin, 2vmin) scale(1.04); } 100% { transform: translate(-3vmin, -2vmin) scale(1); } }
 .bt-drift { animation: bt-drift 60s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .bt-drift { animation: none; } }
+
+/* the full-screen player: a click on an icon must count as a click on its button (the glyph itself was not reliably the target) */
+.bt-now button svg, .bt-now button svg * { pointer-events: none; }

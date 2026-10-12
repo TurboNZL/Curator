@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { newTrackData, inheritFromAlbum } from '../lib/defaults.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
-import { insertNewTracks, matchEntries, type MergeRow } from '../lib/albumMerge.ts';
+import { mergeAllTracksOrder, matchEntries, type MergeRow } from '../lib/albumMerge.ts';
 import type { ImportPreview } from '../lib/api.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
@@ -95,7 +95,7 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         releaseId = put('releases', { albumId: album.id, title: name, cover, releaseDate: siblingDate(dates, album.defaultReleaseId) ?? pv.releaseDate ?? null, trackIds: order });
       }
       const albumPatch: Record<string, unknown> = {
-        trackOrder: insertNewTracks(album.trackIds, included.map((r, i) => ({ trackId: r.trackId, newId: newIds.get(i), include: true }))),
+        trackOrder: mergeAllTracksOrder(album.trackIds, included.map((r, i) => ({ trackId: r.trackId, newId: newIds.get(i), include: true }))),
         ...(cover ? { covers: [...(rawAlbum?.covers ?? []), cover] } : {}),
         ...(makeDefault ? { defaultReleaseId: releaseId } : {}),
         ...(rawAlbum?.needsSource ? { needsSource: false } : {}),

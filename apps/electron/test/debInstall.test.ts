@@ -16,3 +16,17 @@ describe('installing a .deb update', () => {
     expect((describePkexec(100, 'E: Unable to locate\ndpkg: error') as { message: string }).message).toMatch(/exit code 100.*dpkg: error/);
   });
 });
+
+import { installedMatches, TERMINALS, terminalInstallScript } from '../src/debInstall.ts';
+describe('terminal fallback', () => {
+  it('runs the same install with sudo and keeps the window open', () => {
+    const s = terminalInstallScript('/tmp/a b.deb');
+    expect(s).toContain(`sudo sh -c`);
+    expect(s).toContain(`dpkg -i`);
+    expect(s).toContain('read _');
+  });
+  it('every terminal passes the script to sh -c', () => {
+    for (const t of TERMINALS) expect(t.args('X')).toContain('X');
+  });
+  it('compares versions', () => { expect(installedMatches('2026.10.24\n', '2026.10.24')).toBe(true); expect(installedMatches('2026.10.23', '2026.10.24')).toBe(false); });
+});

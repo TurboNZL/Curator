@@ -4,7 +4,7 @@
  */
 import type { ThemeId } from "./theme.ts";
 
-export type UiStyleId = "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5" | "pipboy" | "persona" | "gameboy" | "zune" | "cyber" | "blocky";
+export type UiStyleId = "auto" | "oneui" | "spotify" | "ytmusic" | "discord" | "ado" | "yaru" | "default" | "gtk4" | "breeze" | "win11" | "win10" | "win7" | "winxp" | "win98" | "macos" | "liquid" | "material" | "holo" | "aqua" | "toolbar" | "winamp" | "lgux" | "fortnite1" | "fortnite2" | "fortnite4" | "fortnite5" | "pipboy" | "persona" | "gameboy" | "zune" | "cyber" | "blocky";
 
 export type UiStyleDef = {
   id: UiStyleId;
@@ -14,12 +14,11 @@ export type UiStyleDef = {
   font: string;
   /** Colour themes that copy this platform's palette: [light, dark]. Win 7 / XP / 98 have a light one only. */
   matching?: { light: ThemeId; dark?: ThemeId };
-  /** Where the app's pages are listed. Default: all in the side bar. "toolbar": library pages in the side bar, the other pages as text links in the top bar. */
-  nav?: "toolbar";
 };
 
 export const UI_STYLES: UiStyleDef[] = [
-  { id: "default", label: "Default", description: "The app's own look. Follows the colour theme's rounding and density (Classic is tighter).", font: "Inter", matching: { light: "light", dark: "default" } },
+  { id: "auto", label: "Match this device", description: "Picks the look of the device you are on: Windows 11, macOS, Material (Android, Chromebooks), One UI (Samsung), the iOS palette on iPhones and iPads, GNOME/Yaru, or KDE Breeze on Linux. Follows the device's light or dark setting.", font: "system-ui" },
+  { id: "default", label: "Standard v2", description: "The app's own look. Follows the colour theme's rounding and density (Classic is tighter).", font: "Inter", matching: { light: "light", dark: "default" } },
   { id: "gtk4", label: "GTK 4 (Adwaita)", description: "libadwaita: a flush grey sidebar and flat header bar, 6 px grey buttons and entries, 12 px outlined cards and popovers, grey sidebar highlight, white round slider knobs, in Cantarell.", font: "Cantarell", matching: { light: "adwaita", dark: "adwaita-dark" } },
   { id: "breeze", label: "KDE Breeze", description: "Plasma 6 Breeze: 5 px corners, a window-grey page with lighter panels, outlined buttons that take an accent frame on hover, solid accent selections and a light title bar in Noto Sans.", font: "Noto Sans", matching: { light: "breeze", dark: "breeze-dark" } },
   { id: "win11", label: "Windows 11", description: "Fluent: rounded, light shadows, accent underline on fields and smooth slide-in motion in Segoe UI Variable.", font: "Segoe UI Variable", matching: { light: "win11", dark: "win11-dark" } },
@@ -29,7 +28,7 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "win98", label: "Windows 98", description: "Classic: grey bevelled 3D controls, navy title bars, no animation and MS Sans Serif style type.", font: "Tahoma", matching: { light: "win98" } },
   { id: "macos", label: "macOS (Big Sur to Sequoia)", description: "Apple's flat 2020s look: 10 px windows, flat blue default buttons, a see-through sidebar and toolbar, sheet-style dialogs, in SF.", font: "system-ui", matching: { light: "macos", dark: "macos-dark" } },
   { id: "aqua", label: "Mac OS X Aqua (2001-09)", description: "Cheetah to Snow Leopard: pinstriped windows, glossy gel capsule buttons with a pulsing default, jewel traffic lights and a blue source list in Lucida Grande.", font: "Lucida Grande", matching: { light: "aqua" } },
-  { id: "toolbar", label: "Toolbar (first version)", description: "The first version's layout: a six-item side bar, text links and a pill search in a full-width toolbar, bordered cover tiles, uppercase black headings and a three-column player. Pairs with the Zinc colours.", font: "system-ui", nav: "toolbar", matching: { light: "zinc", dark: "zinc" } },
+  { id: "toolbar", label: "Standard v1", description: "The first version's look: bordered cover tiles, uppercase black headings, a wordmark and a three-column player. Pairs with the Standard v1 colours; its toolbar arrangement is the Standard v1 layout, which any look can use.", font: "system-ui", matching: { light: "zinc", dark: "zinc" } },
   { id: "liquid", label: "macOS Liquid Glass", description: "Apple's Liquid Glass: translucent floating bars that bend the light behind them, rim highlights, springy press and morphing menus.", font: "SF Pro", matching: { light: "macos", dark: "macos-dark" } },
   { id: "holo", label: "Android Holo (4.x, 2011-13)", description: "Ice Cream Sandwich to KitKat: black and cyan, square flat controls, an action bar with a blue rule, underlined tabs and fields, blue-titled dialogs in Roboto.", font: "Roboto", matching: { light: "holo-light", dark: "holo-dark" } },
   { id: "winamp", label: "Winamp 2 (classic skin)", description: "The 1998 media player: dark bevelled metal, striped title bars, a black playlist with green LCD text and a navy selection, in tiny Arial.", font: "Arial", matching: { light: "winamp" } },
@@ -43,11 +42,14 @@ export const UI_STYLES: UiStyleDef[] = [
   { id: "gameboy", label: "Game Boy (DMG-01)", description: "The four greens of the original LCD, 2 px square frames, hard shadows, inverted picks and Press Start 2P type. Covers are tinted green.", font: "Press Start 2P", matching: { light: "dmg", dark: "dmg" } },
   { id: "zune", label: "Zune HD (Metro)", description: "Black with huge light lowercase titles, boxless content, white outlined controls and one orange accent that marks where you are.", font: "Segoe UI Light", matching: { light: "zune", dark: "zune" } },
   { id: "cyber", label: "Cyberpunk 2077", description: "Near-black with caution-tape yellow and cyan glints, chamfered corners, condensed capitals and solid yellow selection bars.", font: "Barlow Condensed", matching: { light: "cyber", dark: "cyber" } },
-  { id: "blocky", label: "Block game inventory (Minecraft)", description: "A light grey inventory panel with a bevel and black outline, grey slot buttons with shadowed white type that turn blue-violet with yellow type on hover, and pixel type.", font: "VT323", matching: { light: "inventory", dark: "inventory" } },
+  { id: "blocky", label: "Minecraft (Bedrock)", description: "The game\u2019s dark settings screens: slate panels with black outlines, a light header bar, light grey buttons, two-part green on/off switches, green sliders and pixel type.", font: "VT323", matching: { light: "inventory", dark: "inventory" } },
+  { id: "oneui", label: "Samsung One UI", description: "Big rounded squircle panels, frosted translucent tiles, round pill controls, thick pill sliders with a white fill and a soft lilac glow.", font: "Outfit", matching: { light: "oneui", dark: "oneui-dark" } },
+  { id: "spotify", label: "Spotify", description: "Black canvas with floating rounded dark panels, bold muted navigation, green pill buttons, tiles that lighten on hover and a white round play button.", font: "Figtree", matching: { light: "spotify", dark: "spotify" } },
+  { id: "ytmusic", label: "YouTube Music", description: "Flat near-black pages, pill chips and search, rounded thumbnails, a rounded grey highlight on the current page and a red progress bar.", font: "Roboto", matching: { light: "ytmusic", dark: "ytmusic" } },
+  { id: "discord", label: "Discord", description: "Layered slate panels, 4 px corners, blurple buttons, a recessed dark search field, rounded hover bars and a bold channel-list sidebar.", font: "Noto Sans", matching: { light: "discord-light", dark: "discord" } },
+  { id: "ado", label: "Ado", description: "Stage-black and electric blue with a hot red edge: condensed italic capitals, thin glowing outlines, a slash before page titles and square controls that light up.", font: "Barlow Condensed", matching: { light: "ado", dark: "ado" } },
+  { id: "yaru", label: "Yaru (Ubuntu)", description: "Ubuntu's GNOME theme: libadwaita shapes with the Ubuntu typeface and the orange accent.", font: "Ubuntu", matching: { light: "yaru", dark: "yaru-dark" } },
   { id: "material", label: "Material 3", description: "Pill buttons, tonal surfaces, filled fields with an underline and rounded dialogs in Roboto.", font: "Roboto", matching: { light: "material", dark: "material-dark" } },
 ];
 
 export const isUiStyle = (id: unknown): id is UiStyleId => UI_STYLES.some((s) => s.id === id);
-
-/** The nav layout of a UI style id (unknown ids behave like the default). */
-export const navLayout = (id: unknown): "side" | "toolbar" => (UI_STYLES.find((s) => s.id === id)?.nav === "toolbar" ? "toolbar" : "side");

@@ -1,6 +1,8 @@
 import type { DeviceSettings } from "./settings.ts";
 import { applyTheme } from "./theme.ts";
 import { isUiStyle } from "./uiStyle.ts";
+import { effectiveUi } from "./deviceLook.ts";
+import { isLayout } from "./layout.ts";
 import { applyWallpaper } from "./wallpaper.ts";
 import { syncLiquidGlass } from "./liquidGlass.ts";
 
@@ -8,7 +10,9 @@ import { syncLiquidGlass } from "./liquidGlass.ts";
 export function applyAppearance(s: DeviceSettings) {
   applyTheme(s.theme);
   const root = document.documentElement;
-  root.dataset.ui = isUiStyle(s.ui) ? s.ui : "default";
+  const ui = effectiveUi(s.ui);
+  root.dataset.ui = isUiStyle(ui) ? ui : "default";
+  root.dataset.layout = isLayout(s.layout) ? s.layout : "side";
   root.dataset.glass = s.glass === "clear" ? "clear" : "regular";
   syncLiquidGlass(root.dataset.ui === "liquid");
   applyWallpaper(s.theme, { enabled: s.wallpaper, darkness: s.wallpaperDarkness, custom: s.wallpaperCustom });
@@ -21,6 +25,6 @@ export function watchSystemTheme(get: () => DeviceSettings) {
   if (watching || typeof window === "undefined" || !window.matchMedia) return;
   watching = true;
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (get().theme === "system") applyAppearance(get());
+    if (get().theme === "system" || get().theme === "auto") applyAppearance(get());
   });
 }

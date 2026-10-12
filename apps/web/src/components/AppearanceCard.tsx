@@ -6,6 +6,8 @@ import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
 import { INSPIRED_THEME_IDS, OWN_THEME_IDS, PLATFORM_THEME_IDS, THEMES, resolveTheme, themeStyle, type ThemeId } from '../lib/theme.ts';
 import { UI_STYLES, isUiStyle, type UiStyleId } from '../lib/uiStyle.ts';
+import { LAYOUTS } from '../lib/layout.ts';
+import { deviceLook, effectiveUi } from '../lib/deviceLook.ts';
 import { clearCustomWallpaper, getCustomImage, saveCustomWallpaper, themeWallpaper } from '../lib/wallpaper.ts';
 
 const BARS = ['#6d28d9', '#0e7490', '#b45309'];
@@ -97,7 +99,7 @@ export function ColourThemeSection() {
   const groups = [
     { title: 'Curator', note: 'The app\'s own looks; System follows your device.', list: THEMES.filter((t) => (t.id === 'system' || OWN_THEME_IDS.includes(t.id)) && tonal(t)) },
     { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && !OWN_THEME_IDS.includes(t.id) && !PLATFORM_THEME_IDS.includes(t.id) && !INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
-    { title: 'Games & devices', note: 'Pair with the matching UI style of the same name.', list: THEMES.filter((t) => INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
+    { title: 'Games, apps & devices', note: 'Pair with the matching UI style of the same name.', list: THEMES.filter((t) => INSPIRED_THEME_IDS.includes(t.id) && tonal(t)) },
     { title: 'Platform palettes', note: 'Copied from a desktop or OS; they pair with the matching UI style.', list: THEMES.filter((t) => PLATFORM_THEME_IDS.includes(t.id) && tonal(t)) },
   ];
   return (
@@ -147,7 +149,7 @@ export function UiStyleSection() {
         })}
       </div>
       <p className="min-h-[2.5rem] rounded-theme bg-raised/50 px-3 py-2 text-xs leading-snug text-muted" aria-live="polite">
-        <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === (hoverUi ?? ui))?.label}: </span>{UI_STYLES.find((x) => x.id === (hoverUi ?? ui))?.description}</p>
+        <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === (hoverUi ?? ui))?.label}: </span>{UI_STYLES.find((x) => x.id === (hoverUi ?? ui))?.description}{(hoverUi ?? ui) === 'auto' ? ` On this device that is ${deviceLook().name}.` : ''}</p>
       {ui === 'liquid' && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <span className="font-medium">Glass</span>
@@ -158,6 +160,28 @@ export function UiStyleSection() {
           </div>
           <span className="text-xs text-muted">{settings.glass === 'clear' ? 'Clear: more see-through, with a dimming layer for legibility. Best over bold artwork.' : 'Regular: adapts to what is behind it. The default.'}</span>
         </div>)}
+    </Section>
+  );
+}
+
+/** Layouts: where the pages are listed. Independent of the colours and the UI style, so any look can have any of them. */
+export function LayoutSection() {
+  const { settings, updateSettings } = useStore();
+  const cur = LAYOUTS.find((l) => l.id === settings.layout) ?? LAYOUTS[0];
+  return (
+    <Section title="Layout">
+      <p className="text-sm text-muted">Where the pages are listed. This works with every colour theme and UI style.</p>
+      <div role="radiogroup" aria-label="Layout" className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5">
+        {LAYOUTS.map((l) => {
+          const selected = cur.id === l.id;
+          return (
+            <button key={l.id} type="button" role="radio" aria-checked={selected} title={l.description} onClick={() => updateSettings({ layout: l.id })}
+              className={cn('rounded-theme border bg-raised/40 px-2.5 py-1.5 text-left transition-colors hover:border-accent', selected ? 'border-accent ring-1 ring-accent' : 'border-line')}>
+              <span className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-xs font-medium">{l.label}</span>{selected && <Check size={12} className="shrink-0 text-accent" />}</span>
+            </button>);
+        })}
+      </div>
+      <p className="rounded-theme bg-raised/50 px-3 py-2 text-xs leading-snug text-muted"><span className="font-medium text-fg">{cur.label}: </span>{cur.description}</p>
     </Section>
   );
 }
@@ -176,7 +200,7 @@ export function AppearancePreview() {
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-0.5 font-bold uppercase tracking-wider text-accent-fg"><Eye size={12} />Preview</span>
           <span className="truncate font-medium">{label(theme)} + {UI_STYLES.find((s) => s.id === ui)?.label}</span>
         </div>
-        <PreviewApp theme={theme} ui={ui} />
+        <PreviewApp theme={theme} ui={effectiveUi(ui) as UiStyleId} />
         <p className="mt-1.5 text-center text-[11px] text-muted">Not your real page. Hover an option to try it, click to apply.</p>
       </div>
       <p className="mt-2 text-xs text-muted">Now: <span className="font-medium text-fg">{label(settings.theme)}</span> + <span className="font-medium text-fg">{UI_STYLES.find((x) => x.id === currentUi(settings.ui))?.label}</span></p>
@@ -188,7 +212,7 @@ export function AppearancePreview() {
 export function AppearanceLayout() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /></div>
+      <div className="min-w-0 space-y-5"><ColourThemeSection /><UiStyleSection /><LayoutSection /></div>
       <AppearancePreview />
     </div>
   );

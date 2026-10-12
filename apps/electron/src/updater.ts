@@ -1,9 +1,9 @@
 import { autoUpdater } from 'electron-updater';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { app } from 'electron';
-import { debInstallScript, describePkexec, manualInstallCommand } from './debInstall.ts';
+import { debInstallScript, describePkexec, installedMatches, manualInstallCommand, TERMINALS, terminalInstallScript } from './debInstall.ts';
 import { describeError } from './updateErrors.ts';
 
 export type { UpdateState } from './updateErrors.ts';
@@ -20,7 +20,7 @@ export class Updates {
   private started = false;
   private debFile: string | null = null;
   private installing = false;
-  constructor(private readonly packaged: boolean, private readonly onState: (s: UpdateState) => void) {}
+  constructor(private readonly packaged: boolean, private readonly onState: (s: UpdateState) => void, private readonly channel?: string) {}
 
   /** A GitHub token with read access to the repository's contents: needed only while the repository is private. Empty clears it. */
   setToken(token: string) {
@@ -36,6 +36,7 @@ export class Updates {
     if (!this.packaged) { this.set({ status: 'disabled', message: 'Updates work in the installed app, not in a development run.' }); return; }
     // the project's releases are often marked pre-release, which the default "latest stable" lookup ignores
     autoUpdater.allowPrerelease = true;
+    if (this.channel) autoUpdater.channel = this.channel; // the server edition has its own update feed (server.yml), apart from the desktop app's latest.yml
     autoUpdater.autoDownload = true;
     // a .deb install needs root, which electron-updater asks for with a blocking pkexec call (it freezes the app and fails
     // without a polkit agent), also when quitting. Those installs are done by install() below instead; AppImage, Windows and macOS are unchanged.
@@ -81,8 +82,38 @@ export class Updates {
       child.on('error', (e) => resolve({ ok: false, cancelled: false, message: `pkexec could not be started (${e.message}). Install it from a terminal instead:` }));
       child.on('close', (code) => resolve(describePkexec(code, err)));
     });
+    // No password prompt on this desktop (no polkit agent): do the same install in a terminal window with sudo instead of giving up.
+    if (!result.ok && !result.cancelled) {
+      this.set({ status: 'ready', version, installing: true, message: 'No password prompt is available, so a terminal window will ask for your password…' });
+      const ran = await this.installInTerminal(file);
+      if (ran && this.installedVersion() === version) { this.installing = false; app.relaunch(); app.exit(0); return; }
+      this.installing = false;
+      this.set({ status: 'ready', version, message: ran ? 'The terminal closed before the update was installed. Install it from a terminal instead:' : `${result.message}${' (The AppImage build updates itself without ever asking for a password.)'}`, command: manualInstallCommand(file) });
+      return;
+    }
     this.installing = false;
     if (result.ok) { app.relaunch(); app.exit(0); return; }
-    this.set({ status: 'ready', version, message: `${result.message}${result.cancelled ? '' : ' (The AppImage build updates itself without ever asking for a password.)'}`, command: result.cancelled ? undefined : manualInstallCommand(file) });
+    this.set({ status: 'ready', version, message: result.message });
+  }
+
+  /** The version dpkg reports for this app, or '' when it cannot be read. */
+  private installedVersion(): string {
+    try { return execFileSync('dpkg-query', ['-W', '-f=${Version}', 'music-curator'], { encoding: 'utf8' }).trim(); } catch { return ''; }
+  }
+
+  /** Runs the install in the first terminal emulator that exists; resolves true when one opened and has closed again. */
+  private async installInTerminal(file: string): Promise<boolean> {
+    const script = terminalInstallScript(file);
+    for (const t of TERMINALS) {
+      const opened = await new Promise<boolean>((resolve) => {
+        let started = false;
+        const child = spawn(t.bin, t.args(script), { stdio: 'ignore' });
+        child.on('spawn', () => { started = true; });
+        child.on('error', () => resolve(false));
+        child.on('close', () => resolve(started));
+      });
+      if (opened) return true;
+    }
+    return false;
   }
 }

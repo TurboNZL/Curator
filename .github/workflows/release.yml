@@ -52,6 +52,23 @@ jobs:
       - run: pnpm --filter @curator/electron dist:publish
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
 
+  windows-server:
+    needs: release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --ignore-scripts --filter @curator/web --filter @curator/core --filter @curator/server --filter @curator/electron
+      - name: Set the version from the tag
+        shell: bash
+        run: cd apps/electron && npm pkg set version="$(echo '${{ needs.release.outputs.tag }}' | sed 's/^v//')"
+      - name: Build and publish the Windows server installer (its own update feed, server.yml)
+        run: pnpm --filter @curator/electron dist:server:publish
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+
   android:
     needs: release
     runs-on: ubuntu-latest

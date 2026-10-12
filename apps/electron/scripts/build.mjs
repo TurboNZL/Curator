@@ -13,3 +13,12 @@ await build({
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
 });
 await build({ ...common, entryPoints: ['src/preload.ts'], outfile: 'dist/preload.cjs', format: 'cjs', external: ['electron'] });
+
+// The Windows server edition (tray app + setup wizard): its own entry and preload, and the wizard page next to them.
+await build({
+  ...common, entryPoints: ['src/serverEdition/main.ts'], outfile: 'dist/server-main.mjs', format: 'esm', external: ['electron', 'node:sqlite'],
+  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+});
+await build({ ...common, entryPoints: ['src/serverEdition/setup-preload.ts'], outfile: 'dist/setup-preload.cjs', format: 'cjs', external: ['electron'] });
+const { copyFileSync } = await import('node:fs');
+copyFileSync(join(root, 'src/serverEdition/setup.html'), join(root, 'dist/setup.html'));

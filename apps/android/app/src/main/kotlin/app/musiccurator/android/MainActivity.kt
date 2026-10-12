@@ -73,10 +73,14 @@ class MainActivity : AppCompatActivity() {
         NativeAudio.emit = audioEmit
         web.addJavascriptInterface(CuratorBridge(this, web), "CuratorAndroid")
 
+        val accessProxy = AccessProxy(ServerPrefs(this))
         val loader = WebViewAssetLoader.Builder().setDomain(HOST).setHttpAllowed(true).addPathHandler("/", SpaAssets(this)).build()
         web.webViewClient = object : WebViewClient() {
             // only the app's own pages are answered here; the library's images and audio go straight to the server through Chromium's own network stack
-            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? = loader.shouldInterceptRequest(request.url)
+            // with a Cloudflare Access service token set, requests for the library server get the token added here (AccessProxy) so images and
+            // audio stream directly instead of being downloaded whole by the page first
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                loader.shouldInterceptRequest(request.url) ?: accessProxy.handle(request)
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == HOST) return false
                 runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }

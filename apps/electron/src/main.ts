@@ -1,4 +1,5 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, session, shell } from 'electron';
+import { makeRule, withAccess, type AccessRule } from './accessHeaders.ts';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../../../packages/server/src/config.ts';
@@ -7,6 +8,7 @@ import { BUILT_IN_DISCORD_CLIENT_ID, findWebDir, loadDesktopConfig, loadDiscordC
 import { DiscordPresence, findSockets, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
 import { describeGraphics, type Graphics } from './graphics.ts';
+import { activeMode, GPU_MODES, nextAutoStep } from './gpuModes.ts';
 
 /**
  * The desktop app runs the same server as the Raspberry Pi, inside the app, on 127.0.0.1, with the library in a folder of the
@@ -27,12 +29,15 @@ app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(
 
 // let the sound keep going when the window is hidden, and let the keyboard's media keys reach the page (MPRIS on Linux)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+const gpuChoice = loadDesktopConfig(app.getPath('userData'));
+const gpuStart = activeMode(gpuChoice.gpuMode === 'auto' && gpuChoice.gpuAuto.done ? { mode: 'auto', auto: { step: gpuChoice.gpuAuto.step, done: true } } : { mode: gpuChoice.gpuMode, auto: gpuChoice.gpuAuto });
 if (process.platform === 'linux') {
-  app.commandLine.appendSwitch('enable-features', 'MediaSessionService,HardwareMediaKeyHandling');
   // Chromium's block list leaves GPU painting off on many Linux drivers, which shows as "not using the GPU renderer": ask for it (a driver
-  // that really cannot do it still falls back by itself, and graphics() below reports what happened)
-  app.commandLine.appendSwitch('ignore-gpu-blocklist');
-  app.commandLine.appendSwitch('enable-gpu-rasterization');
+  // that really cannot do it still falls back by itself, graphics() below reports what happened, and "Automatic" then tries the next way
+  // to start the graphics: X11 instead of Wayland, no GPU sandbox, ANGLE's OpenGL; see gpuModes.ts)
+  app.commandLine.appendSwitch('enable-features', ['MediaSessionService', 'HardwareMediaKeyHandling', ...(gpuStart.features ?? [])].join(','));
+  if (gpuStart.software) app.disableHardwareAcceleration();
+  else for (const [name, value] of gpuStart.switches) app.commandLine.appendSwitch(name, value);
 }
 // escape hatch for a driver that crashes the GPU process: CURATOR_SOFTWARE_RENDERING=1 pnpm --filter @curator/electron start
 if (process.env.CURATOR_SOFTWARE_RENDERING) app.disableHardwareAcceleration();
@@ -102,9 +107,23 @@ function chooseFolder(): Promise<string | null> {
 }
 
 ipcMain.on('curator:info', (e) => {
-  e.returnValue = { customFrame: loadDesktopConfig(userData()).customFrame, token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, port: server?.port ?? 0 };
+  e.returnValue = { customFrame: loadDesktopConfig(userData()).customFrame, token: server?.config.token ?? '', version: app.getVersion(), dataDir: server?.config.dataDir ?? '', platform: process.platform, desktopEnv: process.env.XDG_CURRENT_DESKTOP ?? '', port: server?.port ?? 0 };
+});
+// the Cloudflare Access service token rides on every request to the library server (see accessHeaders.ts), so audio and covers stream directly
+let accessRule: AccessRule | null = null;
+ipcMain.on('curator:access', (_e, serverUrl: unknown, id: unknown, secret: unknown) => {
+  accessRule = makeRule(serverUrl, id, secret);
+  const ses = session.defaultSession;
+  if (!accessRule) { ses.webRequest.onBeforeSendHeaders(null); return; }
+  ses.webRequest.onBeforeSendHeaders({ urls: [`${accessRule.origin}/*`] }, (details, cb) => cb({ requestHeaders: withAccess(accessRule, details.url, details.requestHeaders) as Record<string, string> }));
 });
 ipcMain.handle('curator:graphics', () => graphics());
+ipcMain.handle('curator:gpu-get', () => { const c = loadDesktopConfig(userData()); return { mode: c.gpuMode, auto: c.gpuAuto, running: gpuStart.id, modes: GPU_MODES.map(({ id, label, hint }) => ({ id, label, hint })) }; });
+ipcMain.handle('curator:gpu-set', (_e, mode: unknown) => {
+  const id = typeof mode === 'string' && (mode === 'auto' || GPU_MODES.some((m) => m.id === mode)) ? mode : 'auto';
+  saveDesktopConfig(userData(), { gpuMode: id, gpuAuto: { step: 0, done: false } });
+  app.relaunch(); app.exit(0);
+});
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
 const discordInfo = () => ({ ...loadDiscordConfig(userData()), builtIn: !!BUILT_IN_DISCORD_CLIENT_ID, status: discord.status, detail: discord.detail, sockets: findSockets() });
 ipcMain.on('curator:presence', (_e, p: Presence | null) => {
@@ -173,4 +192,20 @@ void app.whenReady().then(async () => {
   discord.configure(dc.discordClientId, dc.discordEnabled);
   updates.setToken(loadUpdateToken(userData()));
   updates.start();
+  void settleGraphics();
 });
+
+/**
+ * Automatic mode: a few seconds after the window opened, see whether Chromium really got the GPU. If not, remember the next way to start
+ * the graphics and restart (at most once per start, and only until every mode has been tried); if yes, remember that one and stop looking.
+ */
+async function settleGraphics() {
+  const c = loadDesktopConfig(userData());
+  if (process.platform !== 'linux' || c.gpuMode !== 'auto' || c.gpuAuto.done || process.env.CURATOR_SOFTWARE_RENDERING) return;
+  await new Promise((r) => setTimeout(r, 6000));
+  const g = await graphics();
+  const next = nextAutoStep({ mode: 'auto', auto: c.gpuAuto }, g.hardware && g.gpuCrashes === 0);
+  console.log(`[curator] graphics (${gpuStart.id}): ${g.summary}${next.done ? ' - settled' : ' - trying the next mode'}`);
+  saveDesktopConfig(userData(), { gpuAuto: { step: next.step, done: next.done } });
+  if (next.relaunch) { app.relaunch(); app.exit(0); }
+}

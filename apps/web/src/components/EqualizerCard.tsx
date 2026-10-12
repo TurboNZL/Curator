@@ -35,8 +35,8 @@ export function EqualizerCard() {
             <span className="tabular-nums text-muted">{sign(s.eqBands[i])}</span>
             <input
               type="range" min={-EQ_RANGE_DB} max={EQ_RANGE_DB} step={1} value={s.eqBands[i]} disabled={off}
-              className="bt-range h-28 w-6 [writing-mode:vertical-lr] [direction:rtl]"
-              style={{ '--p': `${((s.eqBands[i] + EQ_RANGE_DB) / (2 * EQ_RANGE_DB)) * 100}%` } as CSSProperties}
+              className="bt-range bt-range-v h-28 w-6 [writing-mode:vertical-lr] [direction:rtl]"
+              style={{ '--p': `${((s.eqBands[i] + EQ_RANGE_DB) / (2 * EQ_RANGE_DB)) * 100}%`, '--p0': '50%' } as CSSProperties}
               onChange={(e) => setBand(i, Number(e.target.value))} aria-label={`${hzLabel(hz)} Hz`}
             />
             <span className="text-muted">{hzLabel(hz)}</span>
