@@ -54,6 +54,7 @@
         "releaseType": "release"
       }
     ],
+    "artifactName": "music-curator-${version}-${os}-${arch}.${ext}",
     "linux": {
       "target": [
         "AppImage",
@@ -72,7 +73,7 @@
     },
     "deb": {
       "packageName": "music-curator",
-      "artifactName": "music-curator_${version}_${arch}.${ext}"
+      "artifactName": "music-curator-${version}-linux-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -88,6 +89,7 @@
       "icon": "build/icon.png"
     },
     "nsis": {
+      "artifactName": "music-curator-${version}-windows-${arch}-setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }

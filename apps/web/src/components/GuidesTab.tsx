@@ -21,7 +21,7 @@ export function GuidesTab() {
   }, [current]);
   if (!current) return <p className="text-sm text-muted">No guides in this build.</p>;
   const open = (name: string, hash?: string) => { setParams({ tab: 'guides', doc: name }, { replace: true }); if (hash) setTimeout(() => document.getElementById(hash)?.scrollIntoView(), 80); };
-  const groups = ['Start', 'Run it', 'Apps', 'More'] as const;
+  const groups = ['Start', 'Apps', 'Servers'] as const;
   return (
     <div className="grid gap-5 md:grid-cols-[14rem_minmax(0,1fr)]">
       <div className="md:hidden"><Select aria-label="Guide" value={current.name} onChange={(v) => open(v)} options={guides.map((g) => ({ value: g.name, label: g.title }))} /></div>

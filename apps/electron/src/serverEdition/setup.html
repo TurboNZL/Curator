@@ -147,7 +147,7 @@ const views = [
         ${S.addresses.length ? `<b>On your home network</b>${S.addresses.map((a) => `<p class="fg"><code>${esc(a)}</code> <button data-copy="${esc(a)}">Copy</button></p>`).join('')}` : ''}
         <b>Access token</b><p class="fg"><code>${esc(S.token)}</code> <button data-copy="${esc(S.token)}">Copy</button></p></div>
       <div class="row"><button class="primary" id="openBrowser">Open Curator in the browser</button><button id="openFolder">Show the library folder</button></div>
-      <p>To set up another device: open its address in a browser (or the Android app) and enter the address and token under <b>Settings → Library &amp; server</b>. Easier: open Curator from the button above, then use <b>Pair a device</b> in that same Settings page to make a link or code.</p>
+      <p>To set up another device: open its address in a browser (or the Android app) and enter the address and token under <b>Settings → Server</b>. Easier: open Curator from the button above, then use <b>Pair a device</b> in that same Settings page to make a link or code.</p>
       <p>This window can be closed. The server keeps running in the tray, near the clock: right-click its icon for the menu.</p>`
     : `<h2>Ready</h2>
       <div class="card"><b>Summary</b>

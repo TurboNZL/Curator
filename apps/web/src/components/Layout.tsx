@@ -118,7 +118,7 @@ function AddMenu() {
 }
 
 /** Phone-only: the pages that do not fit in the bottom bar. */
-function MoreMenu() {
+function MoreMenu({ dock }: { dock: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative flex flex-1">
@@ -126,7 +126,7 @@ function MoreMenu() {
       {open && <>
         <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
         <div role="menu" className="bt-menu absolute bottom-full right-0 z-30 mb-2 w-48 origin-bottom-right overflow-hidden py-1">
-          {NAV.filter((n) => MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon }) => (
+          {NAV.filter((n) => MOBILE_HIDDEN.includes(n.to) && !(dock && n.to === '/settings')).map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm"><Icon size={16} />{label}</NavLink>))}
         </div></>}
     </div>
@@ -226,12 +226,12 @@ export function Layout() {
       <NowPlaying />
       <nav ref={tabRef} className={cn('bt-tabbar bt-shell relative flex', !dock && 'md:hidden')}>
         <span className="bt-ind" aria-hidden />
-        {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to)).map(({ to, label, icon: Icon, ...rest }) => (
+        {NAV.filter((n) => !MOBILE_HIDDEN.includes(n.to) || (dock && n.to === '/settings')).map(({ to, label, icon: Icon, ...rest }) => (
           <NavLink key={to} to={to} end={'end' in rest} className="bt-tab flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px]">
             <Icon size={20} />{label}
           </NavLink>
         ))}
-        <MoreMenu />
+        <MoreMenu dock={dock} />
       </nav>
     </div>
   );

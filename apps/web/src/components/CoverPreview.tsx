@@ -1,4 +1,4 @@
-import { Info, Maximize2, Shuffle, Volume2 } from 'lucide-react';
+import { Info, Maximize2, Volume2 } from 'lucide-react';
 import { usePlaybackView } from '../lib/connect.ts';
 import { usePlayer } from '../lib/player.ts';
 import { cn, fmtTime } from '../lib/cn.ts';
@@ -21,7 +21,6 @@ export function CoverPreview({ anchor, track }: { anchor: HTMLElement | null; tr
   const close = usePopups((s) => s.closeCover);
   const edit = useEditor((s) => s.open);
   const v = usePlaybackView();
-  const shuffle = usePlayer((s) => s.shuffle);
   const pct = (x: number, max: number) => ({ '--p': `${max > 0 ? Math.min(100, (x / max) * 100) : 0}%` }) as React.CSSProperties;
   return (
     <Popover open={open && !!track} anchor={anchor} onClose={close} label="Now playing" className="w-[min(22rem,calc(100vw-1.5rem))] p-3">
@@ -44,7 +43,6 @@ export function CoverPreview({ anchor, track }: { anchor: HTMLElement | null; tr
             <span className="w-9">{fmtTime(v.duration)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" className={cn('btn btn-ghost !p-2', shuffle && 'text-accent', v.remote && 'invisible')} title="Shuffle" aria-label="Shuffle" aria-pressed={shuffle} onClick={usePlayer.getState().toggleShuffle}><Shuffle size={16} /></button>
             <Volume2 size={16} className="shrink-0 text-muted" />
             <input type="range" aria-label="Volume" className="bt-range bt-hit flex-1" style={pct(v.volume, 1)} min={0} max={1} step={0.01} value={v.volume} onChange={(e) => v.setVolume(Number(e.target.value))} />
           </div>

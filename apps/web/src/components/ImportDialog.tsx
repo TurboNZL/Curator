@@ -33,6 +33,8 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
   /** a picture chosen from this device; it replaces whatever the link offers */
   const [ownCover, setOwnCover] = useState<string | null>(null);
   const [thumbBroken, setThumbBroken] = useState(false);
+  /** the picture the album will really get: fetched as soon as the link is read, so the preview shows exactly that one (the first candidate link is not always the one that downloads, and video frames are trimmed) */
+  const [linkCover, setLinkCover] = useState<{ state: 'loading' | 'ok' | 'failed'; hash?: string; error?: string }>({ state: 'loading' });
   const picker = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [download, setDownload] = useState(true);
@@ -45,7 +47,13 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
     setBusy('Looking it up…'); setError(null);
     try {
       const p = await api().importPreview(url.trim());
-      setPv(p); setTitle(cleanAlbumTitle(p.title)); setAsSingle(p.entries.length === 1); setRows(p.entries.map((e) => ({ id: e.id, title: e.title, url: e.url, on: true })));
+      setPv(p); setThumbBroken(false);
+      const links = p.thumbnails?.length ? p.thumbnails : p.thumbnail ? [p.thumbnail] : [];
+      if (links.length) {
+        setLinkCover({ state: 'loading' });
+        fetchCoverFromLinks(links).then((hash) => setLinkCover({ state: 'ok', hash }), (e: Error) => setLinkCover({ state: 'failed', error: e.message }));
+      } else setLinkCover({ state: 'failed', error: 'YouTube gave no cover image for this link.' });
+      setTitle(cleanAlbumTitle(p.title)); setAsSingle(p.entries.length === 1); setRows(p.entries.map((e) => ({ id: e.id, title: e.title, url: e.url, on: true })));
       const hit = matchArtist(lib.artists, p.artist);
       setArtistId(hit?.id ?? ''); setNewArtist(hit ? null : cleanArtistName(p.artist));
       setGenres(hit ? genresFor(lib, hit.id) : []); // a known artist: start from the genres of their other albums
@@ -63,7 +71,8 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
       let cover: string | null = ownCover, coverError = '';
       if (!ownCover && useCover) {
         const links = pv.thumbnails?.length ? pv.thumbnails : pv.thumbnail ? [pv.thumbnail] : [];
-        if (!links.length) coverError = 'YouTube gave no cover image for this link.';
+        if (linkCover.state === 'ok' && linkCover.hash) cover = linkCover.hash; // the one the preview showed
+        else if (!links.length) coverError = 'YouTube gave no cover image for this link.';
         else { try { cover = await fetchCoverFromLinks(links); } catch (e) { coverError = (e as Error).message; } }
       }
       const known = new Set(lib.genres.map((g) => g.name.toLowerCase()));
@@ -108,6 +117,8 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
       ) : (<>
         <div className="flex gap-4">
           {ownCover ? <Cover hash={ownCover} seed={title} className="h-24 w-24 shrink-0" />
+            : linkCover.state === 'ok' && !done ? <Cover hash={linkCover.hash ?? null} seed={title} className={`h-24 w-24 shrink-0 ${useCover ? '' : 'opacity-30'}`} />
+            : linkCover.state === 'loading' && pv.thumbnail && !done ? <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-theme bg-raised"><Loader2 size={18} className="animate-spin text-muted" /></div>
             : pv.thumbnail && !done && !thumbBroken ? <img src={pv.thumbnails?.[0] ?? pv.thumbnail} alt="" onError={() => setThumbBroken(true)} className={`h-24 w-24 shrink-0 rounded-theme object-cover ${useCover ? '' : 'opacity-30'}`} />
             : <Cover hash={null} seed={title} className="h-24 w-24 shrink-0" />}
           <div className="min-w-0 flex-1 space-y-2">

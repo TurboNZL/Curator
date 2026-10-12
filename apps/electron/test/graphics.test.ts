@@ -28,6 +28,12 @@ describe('describeGraphics', () => {
     const g = describeGraphics(facts({ vendorIds: [], renderer: 'ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 4060 Ti/PCIe/SSE2, OpenGL ES 3.2 NVIDIA 615.71.09)' }));
     expect(g.hardware).toBe(true);
   });
+  it('trusts a real GPU running WebGL and OpenGL although the GL string says gl=none (in-process GPU on native Wayland)', () => {
+    // measured: NVIDIA, KDE Wayland, Electron 44
+    const g = describeGraphics(facts({ glParts: '(gl=none,angle=none)', vendorIds: [0x10de], features: { gpu_compositing: 'enabled', rasterization: 'enabled_force', webgl: 'enabled', opengl: 'enabled_on' } }));
+    expect(g.hardware).toBe(true);
+    expect(g.summary).toBe('Hardware accelerated');
+  });
   it('recognises software GL', () => {
     for (const over of [{ renderer: 'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))' }, { renderer: 'llvmpipe (LLVM 17)' }, { glParts: '(gl=egl-angle,angle=swiftshader)' }]) {
       const g = describeGraphics(facts(over));

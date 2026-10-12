@@ -3,7 +3,7 @@
  * the page, scripts and styles so the app opens with no network. /api/* is never touched.
  * Bump CACHE when this file's strategy changes; hashed /assets/* files never need busting.
  */
-const CACHE = 'curator-shell-v1';
+const CACHE = 'curator-shell-v2'; // v2: drops the old logo that v1 kept forever
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -44,6 +44,10 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     const cached = await caches.match(req);
+    if (cached && url.pathname === '/icon.svg') { // the logo is not fingerprinted: show the cached one, refresh it for next time
+      event.waitUntil(fetch(req).then(async (r) => { if (r.ok) (await caches.open(CACHE)).put(req, r); }).catch(() => undefined));
+      return cached;
+    }
     if (cached) return cached; // fingerprinted assets are immutable
     const res = await fetch(req);
     if (res.ok && (url.pathname.startsWith('/assets/') || url.pathname === '/icon.svg')) (await caches.open(CACHE)).put(req, res.clone());

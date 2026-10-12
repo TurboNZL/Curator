@@ -22,7 +22,6 @@ interface PlayerState {
   time: number;
   duration: number;
   volume: number;
-  shuffle: boolean;
   /** which engine plays the current track: the page's <audio>, the Android app's player, or a Spotify device */
   engine: 'web' | 'native' | 'spotify';
   /** shown when the current track has no audio file or failed to load */
@@ -37,7 +36,6 @@ interface PlayerState {
   prev(): void;
   seek(t: number): void;
   setVolume(v: number): void;
-  toggleShuffle(): void;
   /** put at the front of the user queue ("play next") or the back ("add to queue") */
   enqueue(trackId: string, where?: 'next' | 'last'): void;
   dequeue(index: number): void;
@@ -370,13 +368,12 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   return {
     queue: { user: [], active: [], currentId: null }, history: [], source: { type: 'track', id: null },
-    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), shuffle: false, engine: 'web', error: null, loading: false,
+    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), engine: 'web', error: null, loading: false,
 
     play(trackId, list, source = { type: 'track', id: null }) {
       const track = lib().trackById.get(trackId);
       if (!track || (!track.file && !spotifyCan(track))) { set({ error: 'This track has no audio file yet', source }); return; }
-      const shuffled = get().shuffle ? shuffleWithRules(list.filter((id) => id !== trackId), rules()) : null;
-      const ordered = shuffled ? [trackId, ...shuffled] : list;
+      const ordered = list;
       const prev = get().queue.currentId;
       if (prev) logPlay(true);
       set({ source, history: pushHistory(get().history, prev) });
@@ -411,8 +408,6 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
     seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
     setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
-    toggleShuffle() { set({ shuffle: !get().shuffle }); },
-
     enqueue(trackId, where = 'last') {
       const q = get().queue;
       set({ queue: { ...q, user: where === 'next' ? [trackId, ...q.user] : [...q.user, trackId] } });

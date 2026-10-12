@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { debInstallScript, describePkexec, manualInstallCommand, shQuote } from '../src/debInstall.ts';
+import { debInstallScript, describePkexec, hasNoNewPrivs, outsideTree, manualInstallCommand, shQuote } from '../src/debInstall.ts';
 
 describe('installing a .deb update', () => {
   it('quotes the path for the shell, even with quotes and spaces in it', () => {
@@ -29,4 +29,20 @@ describe('terminal fallback', () => {
     for (const t of TERMINALS) expect(t.args('X')).toContain('X');
   });
   it('compares versions', () => { expect(installedMatches('2026.10.24\n', '2026.10.24')).toBe(true); expect(installedMatches('2026.10.23', '2026.10.24')).toBe(false); });
+});
+
+describe('hasNoNewPrivs', () => {
+  it('reads the flag from /proc status', () => {
+    expect(hasNoNewPrivs('Name:\tx\nNoNewPrivs:\t1\nSeccomp:\t0\n')).toBe(true);
+    expect(hasNoNewPrivs('Name:\tx\nNoNewPrivs:\t0\n')).toBe(false);
+    expect(hasNoNewPrivs('')).toBe(false);
+  });
+});
+
+describe('outsideTree', () => {
+  it('asks the user manager to start the terminal and passes the session variables', () => {
+    const r = outsideTree('konsole', ['-e', 'sh', '-c', 'x'], { WAYLAND_DISPLAY: 'wayland-0', DISPLAY: ':0' });
+    expect(r.bin).toBe('systemd-run');
+    expect(r.args).toEqual(['--user', '--collect', '--wait', '--quiet', '--setenv=DISPLAY', '--setenv=WAYLAND_DISPLAY', '--', 'konsole', '-e', 'sh', '-c', 'x']);
+  });
 });

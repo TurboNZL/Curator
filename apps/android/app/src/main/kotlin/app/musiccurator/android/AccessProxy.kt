@@ -37,6 +37,21 @@ object AccessRoute {
         "Access-Control-Max-Age" to "86400",
     )
 
+    /**
+     * The upstream answer's headers as the WebView should get them. The server (and Cloudflare in front of it) already send their own
+     * `Access-Control-Allow-Origin` (often in lower case), and adding ours next to it made two values, which Chromium refuses ("contains multiple
+     * values '*, *'"): every fetch() the page made through the proxy, sync included, failed. Ours replace theirs, case-insensitively. Hop-by-hop
+     * headers are dropped too, because the body is handed over already de-chunked.
+     */
+    fun answerHeaders(upstream: Map<String, String>): Map<String, String> {
+        val ours = corsAnswer.keys.map { it.lowercase() }.toSet()
+        val drop = setOf("transfer-encoding", "connection", "keep-alive", "proxy-authenticate", "te", "trailer", "upgrade") + ours
+        val out = LinkedHashMap<String, String>()
+        for ((k, v) in upstream) if (k.lowercase() !in drop) out[k] = v
+        out.putAll(corsAnswer)
+        return out
+    }
+
     /** Headers added to every proxied answer so the page (http://localhost) may read it. */
     val corsAnswer: Map<String, String> = mapOf(
         "Access-Control-Allow-Origin" to "*",
@@ -76,9 +91,9 @@ class AccessProxy(private val prefs: ServerPrefs) {
         AccessRoute.forwardable(request.requestHeaders).forEach { (k, v) -> c.setRequestProperty(k, v) }
         extra.forEach { (k, v) -> c.setRequestProperty(k, v) }
         val code = c.responseCode
-        val headers = LinkedHashMap<String, String>()
-        for ((k, v) in c.headerFields) if (k != null && v.isNotEmpty()) headers[k] = v.last()
-        headers.putAll(AccessRoute.corsAnswer)
+        val upstream = LinkedHashMap<String, String>()
+        for ((k, v) in c.headerFields) if (k != null && v.isNotEmpty()) upstream[k] = v.last()
+        val headers = AccessRoute.answerHeaders(upstream)
         val mime = (c.contentType ?: "application/octet-stream").substringBefore(';').trim()
         val body = if (code >= 400) c.errorStream else c.inputStream
         return WebResourceResponse(mime, null, code, c.responseMessage?.takeIf { it.isNotBlank() } ?: if (code == 206) "Partial Content" else "OK", headers, body ?: ByteArrayInputStream(ByteArray(0)))

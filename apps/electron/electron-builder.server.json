@@ -7,5 +7,5 @@
   "extraResources": [{ "from": "../web/dist", "to": "web" }],
   "publish": [{ "provider": "github", "owner": "TurboNZL", "repo": "Curator", "releaseType": "release", "channel": "server" }],
   "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
-  "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Music Curator Server", "artifactName": "music-curator-server-setup-${version}.${ext}" }
+  "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Music Curator Server", "artifactName": "music-curator-server-${version}-windows-${arch}-setup.${ext}" }
 }

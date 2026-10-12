@@ -49,3 +49,18 @@ export const TERMINALS: { bin: string; args: (script: string) => string[] }[] = 
 
 /** True when `installed` (from `dpkg-query -W -f='${Version}'`) is the version the update was meant to install. */
 export const installedMatches = (installed: string, wanted: string) => installed.trim() === wanted.trim();
+
+/** True when /proc/<pid>/status says the process (and so everything it starts) can never gain privileges: pkexec and sudo both refuse to run then. */
+export const hasNoNewPrivs = (procStatus: string) => /^NoNewPrivs:\s*1\s*$/m.test(procStatus);
+
+export const NO_NEW_PRIVS_MESSAGE =
+  'This copy of Music Curator was started in a way that forbids asking for a password (the "no new privileges" flag is set, for example by a sandbox or a container), and opening a terminal through your session did not work either. Install it from a normal terminal instead (the AppImage build does not need this):';
+
+/**
+ * A process started with no_new_privs hands the flag to everything it starts, so a terminal opened by the app can never run sudo. The user's systemd
+ * manager is not part of the app's process tree: asking it to start the terminal (systemd-run --user) gives a normal process. The window needs the
+ * session's display variables, which --setenv=NAME copies from the app.
+ */
+export const OUTSIDE_ENV = ['DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_SESSION_TYPE', 'XDG_CURRENT_DESKTOP'];
+export const outsideTree = (bin: string, args: string[], env: Record<string, string | undefined> = process.env) =>
+  ({ bin: 'systemd-run', args: ['--user', '--collect', '--wait', '--quiet', ...OUTSIDE_ENV.filter((n) => env[n]).map((n) => `--setenv=${n}`), '--', bin, ...args] });

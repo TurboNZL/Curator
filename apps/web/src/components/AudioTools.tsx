@@ -51,7 +51,7 @@ export function MissingAudioCard() {
         <div className="space-y-1 rounded-theme bg-bad/10 p-3 text-xs" role="status">
           <div className="font-medium text-bad">Failed downloads (press the button to try them again)</div>
           <ul className="max-h-40 space-y-0.5 overflow-y-auto">{st.failures.map((f, i) => <li key={i}><span className="font-medium">{lib.trackById.get(f.trackId)?.title ?? f.trackId}</span>{f.dead && <span className="ml-1 rounded bg-bad/20 px-1 text-bad">dead link</span>}<span className="text-muted"> — {f.error}</span></li>)}</ul>
-          {needsCookies && <div className="pt-1 text-warn">YouTube is asking this server to prove it is not a bot. Give yt-dlp a cookies file: see docs/YTDLP_COOKIES.md.</div>}
+          {needsCookies && <div className="pt-1 text-warn">YouTube is asking this server to prove it is not a bot. Give yt-dlp a cookies file: see docs/guides/YTDLP_COOKIES.md.</div>}
         </div>)}
       <p className="text-xs text-muted">Downloads run on the server and need yt-dlp and ffmpeg installed there.</p>
     </section>

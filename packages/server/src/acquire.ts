@@ -60,7 +60,7 @@ export const FALLBACK_CLIENTS: string[][] = [
 
 export const FORBIDDEN_HELP = 'YouTube refused the media download (HTTP 403). Update yt-dlp first (yt-dlp -U, or pip/nightly; 2026.08.19 or newer is needed) and make sure a JavaScript runtime (Node 22 or Deno) is installed, then press “Download missing audio” again.';
 
-export const BOT_HELP = 'YouTube wants proof that this server is not a bot. Give yt-dlp a cookies file: set CURATOR_YTDLP_COOKIES (see docs/YTDLP_COOKIES.md), then press “Download missing audio” again.';
+export const BOT_HELP = 'YouTube wants proof that this server is not a bot. Give yt-dlp a cookies file: set CURATOR_YTDLP_COOKIES (see docs/guides/YTDLP_COOKIES.md), then press “Download missing audio” again.';
 
 export class Acquirer {
   readonly jobs = new Map<string, Job>();

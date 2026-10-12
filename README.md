@@ -12,7 +12,7 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 ## Start here
 
-**[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** is the plain-language way in: install the desktop app (nothing else needed), or set up a home server on a Raspberry Pi with one command. Every guide in `docs/` is also readable inside the app (Settings → Guides).
+**[docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)** is the plain-language way in: install the desktop app (nothing else needed), or set up a home server on a Raspberry Pi with one command. Every guide in `docs/` is also readable inside the app (Settings → Guides).
 
 ## What it does
 
@@ -30,7 +30,7 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 **Playback**
 - A real queue (play next, add, reorder, shuffle that keeps rule pairs together), playback rules, play history per track, a ten-band equaliser, media keys and lock-screen controls. The next track is fetched while the current one plays, so changes are instant even through a tunnel, and the play button shows a spinner while a track loads. A full-screen **now-playing view** shows the cover over a blurred copy of itself with synced lyrics (from the free LRCLIB database, fetched by your server) and a screensaver mode with a drifting cover.
-- **Play on a device:** every device using your server appears in the player, together with your **Spotify devices**; move playback to another one or use this one as its remote ([docs/CONNECT.md](docs/CONNECT.md)). Spotify tracks without a file play through Spotify, and the server can install and run Spotify's **Soloist** itself so no other Spotify app has to be open ([docs/SPOTIFY.md](docs/SPOTIFY.md)).
+- **Play on a device:** every device using your server appears in the player, together with your **Spotify devices**; move playback to another one or use this one as its remote ([docs/guides/CONNECT.md](docs/guides/CONNECT.md)). Spotify tracks without a file play through Spotify, and the server can install and run Spotify's **Soloist** itself so no other Spotify app has to be open ([docs/development/SPOTIFY_NOTES.md](docs/development/SPOTIFY_NOTES.md)).
 - **Offline:** keep any album or playlist's audio on the device, within a storage limit you set.
 
 **Getting music in**
@@ -46,10 +46,10 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 | App | What it is | Guide |
 |---|---|---|
 | **Web** (`apps/web`) | Vite + React 19 + Tailwind 3 + zustand + IndexedDB. Served by the server at `/`, or from the dev server. Installable as a PWA on https or localhost. | below |
-| **Windows server** (`apps/electron/src/serverEdition`) | The library server as a tray program for Windows: a setup wizard picks the folders for the database, music, downloads and cache, explains the Spotify options and sets up an optional Cloudflare tunnel. Low memory, no window while it runs. | [docs/WINDOWS_SERVER.md](docs/WINDOWS_SERVER.md) |
-| **Desktop** (`apps/electron`) | The web client in its own window with the server inside it (`127.0.0.1:47814`), the library in a folder you choose. Media keys, Discord "listening to", self-update, and it says in Settings whether the GPU is painting the window. Windows and Linux installers. | [docs/ELECTRON.md](docs/ELECTRON.md) |
-| **Android** (`apps/android`) | The web client in a WebView plus a native Media3 service so **Android Auto** can browse and play the library; updates itself from GitHub releases. Never compiled in the sandbox that wrote it: CI is the first real build. | [docs/ANDROID.md](docs/ANDROID.md) |
-| **Server** (`packages/server`) | Hono + `node:sqlite` (no native build), meant for a Raspberry Pi. Sync API, content-addressed audio and image storage with HTTP range, yt-dlp import and download, backup, Play-on-a-device relay. Token auth. | [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) |
+| **Windows server** (`apps/electron/src/serverEdition`) | The library server as a tray program for Windows: a setup wizard picks the folders for the database, music, downloads and cache, explains the Spotify options and sets up an optional Cloudflare tunnel. Low memory, no window while it runs. | [docs/guides/WINDOWS_SERVER.md](docs/guides/WINDOWS_SERVER.md) |
+| **Desktop** (`apps/electron`) | The web client in its own window with the server inside it (`127.0.0.1:47814`), the library in a folder you choose. Media keys, Discord "listening to", self-update, and it says in Settings whether the GPU is painting the window. Windows and Linux installers. | [docs/development/ELECTRON.md](docs/development/ELECTRON.md) |
+| **Android** (`apps/android`) | The web client in a WebView plus a native Media3 service so **Android Auto** can browse and play the library; updates itself from GitHub releases. Never compiled in the sandbox that wrote it: CI is the first real build. | [docs/development/ANDROID.md](docs/development/ANDROID.md) |
+| **Server** (`packages/server`) | Hono + `node:sqlite` (no native build), meant for a Raspberry Pi. Sync API, content-addressed audio and image storage with HTTP range, yt-dlp import and download, backup, Play-on-a-device relay. Token auth. | [docs/guides/DEPLOY_PI.md](docs/guides/DEPLOY_PI.md) |
 | **Core** (`packages/core`) | Pure TypeScript shared by all of them: ids (UUIDv7), Elo and vote replay, queue and playback rules, the sync record and its merge rule, entity shapes. | |
 
 **Sync model.** Every row is a record `{table, id, updatedAt, deviceId, deleted, data}`. The server hands out an increasing sequence number; clients pull from their last cursor and push their outbox. The newest `updatedAt` wins (a tie goes to the higher `deviceId`); deletes are tombstones; votes, play logs and journal entries are append-only. Files are immutable and addressed by SHA-256, and records refer to files by hash, never by path.
@@ -64,13 +64,13 @@ Settings → Appearance has two independent choices with a live preview you can 
 - **Layout:** where the pages are listed, separate from the look so any theme can use any layout: Standard v2 (side bar), Standard v1 (library in the side bar, the rest as text links in a toolbar), Icon rail, Top tabs, Bottom dock.
 - An optional **wallpaper** (generated per theme or your own picture, with a darkness slider). Everything is per device.
 
-How it works: none of this is in this repository any more. The colours, UI styles, layouts, wallpaper and effects live in [**turbothemes**](https://github.com/TurboNZL/turbothemes) (an npm-style package shared by all of the owner's apps), and the app only starts its engine (`apps/web/src/lib/appearance.ts`). New and changed themes are downloaded in the background (Settings → Appearance → Themes) without an app update. To change a theme, edit its folder in that repository; the rules, the list of every palette and style, and the Liquid Glass write-up are in its `docs/`. See [docs/APPEARANCE.md](docs/APPEARANCE.md).
+How it works: none of this is in this repository any more. The colours, UI styles, layouts, wallpaper and effects live in [**turbothemes**](https://github.com/TurboNZL/turbothemes) (an npm-style package shared by all of the owner's apps), and the app only starts its engine (`apps/web/src/lib/appearance.ts`). New and changed themes are downloaded in the background (Settings → Appearance → Themes) without an app update. To change a theme, edit its folder in that repository; the rules, the list of every palette and style, and the Liquid Glass write-up are in its `docs/`. See [docs/development/APPEARANCE.md](docs/development/APPEARANCE.md).
 
 ## Running it
 
-**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/curator`. Details and what it does: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md), [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md).
+**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/curator`. Details and what it does: [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md), [docs/guides/DEPLOY_PI.md](docs/guides/DEPLOY_PI.md).
 
-**From the source**, for development or any other machine: you need **Node 22.13+** and **pnpm** ([docs/TESTING.md](docs/TESTING.md) has nvm instructions). From the repo root:
+**From the source**, for development or any other machine: you need **Node 22.13+** and **pnpm** ([docs/development/TESTING.md](docs/development/TESTING.md) has nvm instructions). From the repo root:
 
 ```bash
 # once, and after each update (--ignore-scripts skips dependency install scripts; none are needed to run the server or build the web client)
@@ -84,7 +84,7 @@ CURATOR_DATA_DIR=/path/to/data pnpm start
 
 The server prints its address and a token (also in `<data dir>/token`). Open the address in a browser and paste the token in Settings → Server (leave the URL empty when the page is served by the server itself). Default port **47813**. For development run `pnpm --filter @curator/web dev`; it proxies `/api` to `CURATOR_SERVER` (default `http://localhost:47813`).
 
-**Desktop app:** `pnpm install --ignore-scripts --filter @curator/electron …`, `node apps/electron/node_modules/electron/install.js` once, then `pnpm --filter @curator/electron start` (details and installers in [docs/ELECTRON.md](docs/ELECTRON.md)). **Android:** download the APK from the newest [release](https://github.com/TurboNZL/Curator/releases), or build with Gradle ([docs/ANDROID.md](docs/ANDROID.md)).
+**Desktop app:** `pnpm install --ignore-scripts --filter @curator/electron …`, `node apps/electron/node_modules/electron/install.js` once, then `pnpm --filter @curator/electron start` (details and installers in [docs/development/ELECTRON.md](docs/development/ELECTRON.md)). **Android:** download the APK from the newest [release](https://github.com/TurboNZL/Curator/releases), or build with Gradle ([docs/development/ANDROID.md](docs/development/ANDROID.md)).
 
 **Server settings** (environment variables):
 
@@ -95,7 +95,7 @@ The server prints its address and a token (also in `<data dir>/token`). Open the
 | `CURATOR_TOKEN` | generated into `<data>/token` | The access token. |
 | `CURATOR_MAX_UPLOAD_MB` | `1024` | Largest single file accepted. |
 | `CURATOR_YTDLP`, `CURATOR_FFMPEG_DIR` | found on `PATH` | Tools for YouTube import and downloads. |
-| `CURATOR_YTDLP_COOKIES`, `CURATOR_YTDLP_ARGS` | none | A cookies file and extra arguments for yt-dlp ([docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md)). |
+| `CURATOR_YTDLP_COOKIES`, `CURATOR_YTDLP_ARGS` | none | A cookies file and extra arguments for yt-dlp ([docs/guides/YTDLP_COOKIES.md](docs/guides/YTDLP_COOKIES.md)). |
 | `CURATOR_WEB_DIR` | `apps/web/dist` | The client build to serve. |
 | `CURATOR_UPDATE` | auto | `0` hides the Update server button, `1` shows it outside systemd. |
 
@@ -105,38 +105,11 @@ To bring an old library across: `CURATOR_DATA_DIR=… node --experimental-strip-
 
 ## Updating and releases
 
-- **Server on a Pi:** one command, [docs/UPDATING.md](docs/UPDATING.md) (`scripts/update.sh`).
-- **Desktop and Android apps** update themselves from GitHub releases. Merging a pull request into `main` is the whole release process: a pushed branch gets a PR automatically (`auto-pr.yml`), CI (`check.yml`) runs only on pushes to `main`, and a push to `main` makes `release.yml` pick the next version (`v2026.10.2`, ...), build the Windows and Linux installers and the signed APK and attach them. Docs-only changes do not release. The apps use the newest published release, **including ones marked pre-release**. Settings → App updates shows the state; a token is only needed if the repository is private.
+- **Server on a Pi:** one command, [docs/guides/UPDATING.md](docs/guides/UPDATING.md) (`scripts/update.sh`).
+- **Desktop and Android apps** update themselves from GitHub releases. Merging a pull request into `main` is the whole release process: a pushed branch gets a PR automatically (`auto-pr.yml`), CI (`check.yml`) runs only on pushes to `main`, and a push to `main` makes `release.yml` pick the next version (`v2026.10.2`, ...), build the Windows and Linux installers and the signed APK and attach them. Docs-only changes do not release. The apps use the newest published release, **including ones marked pre-release**. Settings → This app shows the state; a token is only needed if the repository is private.
 
 ## Guides
 
-[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) (start here) · [docs/TESTING.md](docs/TESTING.md) (try it with your own library) · [docs/DISCORD.md](docs/DISCORD.md) · [docs/SPOTIFY.md](docs/SPOTIFY.md) · [docs/DEPLOY_PI.md](docs/DEPLOY_PI.md) (Raspberry Pi, systemd, Tailscale/HTTPS, backups) · [docs/UPDATING.md](docs/UPDATING.md) · [docs/ELECTRON.md](docs/ELECTRON.md) · [docs/ANDROID.md](docs/ANDROID.md) · [docs/CONNECT.md](docs/CONNECT.md) · [docs/YTDLP_COOKIES.md](docs/YTDLP_COOKIES.md) · [docs/APPEARANCE.md](docs/APPEARANCE.md) (themes: the turbothemes package) · [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) (vision, rules, roadmap) · [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas).
+User guides (also inside the app: Settings → Guides): [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md) (start here) · [desktop app](docs/guides/DESKTOP_APP.md) · [Android app](docs/guides/ANDROID_APP.md) · [Spotify](docs/guides/SPOTIFY.md) · [play on a device](docs/guides/CONNECT.md) · [Discord](docs/guides/DISCORD.md) · [server on Windows](docs/guides/WINDOWS_SERVER.md) · [server on Linux / Raspberry Pi](docs/guides/DEPLOY_PI.md) · [updating a server](docs/guides/UPDATING.md) · [YouTube cookies](docs/guides/YTDLP_COOKIES.md).
 
-## Tests
-
-```bash
-pnpm --filter @curator/web test          # library derivation, ranking pairs, stats, health, themes, helpers
-pnpm --filter @curator/electron test     # config, Discord, graphics detection
-cd packages/core && npx vitest run       # Elo, queue rules, sync merge
-cd packages/server && npx vitest run && npx tsc --noEmit
-cd apps/web && npx tsc --noEmit
-```
-
-The Android logic that does not need a device (which requests the app answers itself, which release counts as newest) has JVM unit tests in `apps/android/app/src/test`; `gradle test` in the Android project runs them.
-
-Passing unit tests are not enough here: the server and the web client have been run for real (real server, real audio, a real browser), Electron under a virtual display, and that is how most bugs were found. 
-### What's unverified
-
-Real YouTube import, album search and downloads (the sandbox that built this had no YouTube access), lyrics from LRCLIB, Spotify and Cloudflare Access against the real services, the Android app on a device (including Android Auto), the desktop app on a machine with a GPU, and the Liquid Glass lens outside Chromium. Each is covered by tests against fakes and, where it could be, a real browser run.
-
-## Notes
-
-- Browsers can't hold gigabytes: the web client has a storage limit (and optional "make room automatically"); Electron and Android are meant to hold full offline copies.
-- Service workers (installable/offline PWA) need HTTPS or `localhost`; over plain HTTP on a LAN the app works online only. Use Tailscale or an HTTPS proxy (see the Pi guide).
-- YouTube import needs `yt-dlp` and `ffmpeg` on the machine running the server, and recent yt-dlp also needs a JavaScript runtime for YouTube (see the Pi guide).
-
-## License
-
-Music Curator is released under the [MIT License](LICENSE). Third-party pieces keep their own licenses: the npm packages and bundled fonts (for example the `@fontsource` families, SIL OFL) under theirs, and Spotify Soloist and yt-dlp are **not** part of this repository: Soloist is downloaded from Spotify's own server under Spotify's terms, yt-dlp from its own project.
-
-Third-party fonts bundled with the web client are under their own licences (the @fontsource packages are OFL or Apache; the Minecraft style uses "Minecraft" by Pwnage_Block, [CC BY-SA 3.0](https://fontstruct.com/fontstructions/show/432966), in `apps/web/src/assets/`).
+For developers: [PROJECT_BRIEF.md](PROJECT_BRIEF.md) (vision, rules, roadmap) · [CLAUDE.md](CLAUDE.md) (current state, decisions and gotchas) · [docs/development/](docs/development/) (Electron, Android, themes, packaging plan, Spotify research notes, trying it with a legacy library).

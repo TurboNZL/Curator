@@ -50,13 +50,13 @@ export function SettingsPage() {
   const audioCache = useStore((s) => s.audioCache);
   const audioBytes = cacheBytes(audioCache);
   const [params, setParams] = useSearchParams();
-  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'library', label: 'Library & server' }, { id: 'playback', label: 'Playback & storage' }, { id: 'spotify', label: 'Spotify' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
+  const tabs = [{ id: 'look', label: 'Appearance' }, { id: 'server', label: 'Server' }, { id: 'library', label: 'Library' }, { id: 'playback', label: 'Playback & storage' }, { id: 'spotify', label: 'Spotify' }, { id: 'guides', label: 'Guides' }, ...(desktop() || nativeUpdates() ? [{ id: 'app', label: 'This app' }] : [])];
   const tab = tabs.some((t) => t.id === params.get('tab')) ? params.get('tab')! : 'look';
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
-      <div role="tablist" aria-label="Settings sections" className="flex gap-1 overflow-x-auto border-b border-line pb-px">
+      <div role="tablist" aria-label="Settings sections" className="flex flex-wrap gap-x-1 border-b border-line pb-px">
         {tabs.map((t) => (
           <button key={t.id} role="tab" aria-selected={tab === t.id} data-selected={tab === t.id || undefined} onClick={() => setParams({ tab: t.id }, { replace: true })}
             className={cn('-mb-px shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors', tab === t.id ? 'border-accent text-fg' : 'border-transparent text-muted hover:text-fg')}>{t.label}</button>))}
@@ -68,7 +68,9 @@ export function SettingsPage() {
       <Section title="Wallpaper"><WallpaperCard /></Section>
       </>}
 
-      {tab === 'library' && <>
+      {tab === 'server' && <>
+      <ServerUpdateCard />
+
       <Section title="Server">
         <p className="text-sm text-muted">Optional. Everything works offline; with a server this device syncs your library, votes and audio. Leave the URL empty if this app is served by the server itself.</p>
         <label className="block space-y-1 text-sm">URL<input className="input" placeholder="http://raspberrypi.local:47813" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
@@ -93,10 +95,10 @@ export function SettingsPage() {
 
       <ServerHealthCard />
 
-      <ServerUpdateCard />
-
       <Section title="Backup: export and import"><BackupCard /></Section>
+      </>}
 
+      {tab === 'library' && <>
       <Section title="Genres and roles"><Vocabulary /></Section>
 
       <Section title="Release names"><ReleaseNamesManager /></Section>
@@ -111,6 +113,7 @@ export function SettingsPage() {
       {tab === 'guides' && <GuidesTab />}
 
       {tab === 'app' && <>
+      <AppUpdatesCard />
       {desktop() && <Section title="Desktop app">
         <p className="text-sm text-muted">This app runs its own server and keeps your library in a folder. Put it on a big drive: audio you keep offline lives there too. To use your home server instead, fill in its address and token under Server.</p>
         <div className="flex flex-wrap items-center gap-2 text-sm"><code className="rounded-theme bg-raised px-2 py-1">{desktop()!.dataDir}</code>
@@ -121,7 +124,6 @@ export function SettingsPage() {
         <p className="text-xs text-muted">Version {desktop()!.version}. Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first.</p>
       </Section>}
       <DiscordCard />
-      <AppUpdatesCard />
       </>}
 
       {tab === 'playback' && <>

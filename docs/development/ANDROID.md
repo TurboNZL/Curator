@@ -30,4 +30,4 @@ The launcher icon, the website icon, the desktop icon and the title logo all com
 
 ## Discord (desktop app)
 
-See [DISCORD.md](DISCORD.md) for the full guide (application id, art asset, privacy setting, Flatpak and Snap). Tested against a fake Discord IPC socket and a real Electron; not against real Discord.
+See [DISCORD.md](../guides/DISCORD.md) for the full guide (application id, art asset, privacy setting, Flatpak and Snap). Tested against a fake Discord IPC socket and a real Electron; not against real Discord.
