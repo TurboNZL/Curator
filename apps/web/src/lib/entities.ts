@@ -1,3 +1,5 @@
+import { trackPath } from './trackPath.ts';
+import { statsPath } from './entityStats.ts';
 import type { GroupMemberData } from '@curator/core';
 import type { Library } from './library.ts';
 
@@ -10,7 +12,7 @@ export function resolveEntity(lib: Library, type: EntityType | string, id: strin
   const found = (r: EntityRef | undefined) => r ?? null;
   if (type === 'artist') { const a = lib.artistById.get(id); return found(a && { type, id, label: a.name, to: `/artists/${id}`, image: a.image }); }
   if (type === 'album') { const a = lib.albumById.get(id); return found(a && { type, id, label: a.title, to: `/albums/${id}`, image: a.cover }); }
-  if (type === 'track') { const t = lib.trackById.get(id); return found(t && { type, id, label: `${t.title} · ${t.artistName}`, to: t.albumId ? `/albums/${t.albumId}` : null, image: t.cover }); }
+  if (type === 'track') { const t = lib.trackById.get(id); return found(t && { type, id, label: `${t.title} · ${t.artistName}`, to: t.albumId ? trackPath(t) : statsPath('track', id), image: t.cover }); } // a single has no album page: its stats page is where it opens
   if (type === 'era') { const e = lib.eraById.get(id); return found(e && { type, id, label: e.name, to: `/eras/${id}`, image: e.cover }); }
   if (type === 'release') { const r = lib.releases.find((x) => x.id === id); return found(r && { type, id, label: r.title, to: r.albumId ? `/albums/${r.albumId}` : null, image: r.cover }); }
   if (type === 'playlist') { const p = lib.playlists.find((x) => x.id === id); return found(p && { type, id, label: p.name, to: `/playlists`, image: p.cover }); }

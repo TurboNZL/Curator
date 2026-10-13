@@ -185,7 +185,8 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
     const leads = leadsOf(a.credits ?? [], a.artistId, artistById);
     const raw = rawAlbums.find((x) => x.id === a.id)!;
     return { ...a, artistId, leads, artistName: namesOf(leads), trackIds: ids, eraIds: erasOfAlbum.get(a.id) ?? [], releaseDate: albumDate.get(a.id) ?? null, coverPool: coverPool(raw, releases.filter((r) => r.albumId === a.id)),
-      rating: rated.length ? rated.reduce((s, x) => s + x, 0) / rated.length : null };
+      // an unrated track counts as 0, so one great track does not make a whole album look great; an album with no rated track at all has no rating
+      rating: rated.length ? rated.reduce((s, x) => s + x, 0) / ids.length : null };
   });
 
   return {

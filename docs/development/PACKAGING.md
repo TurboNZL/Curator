@@ -5,12 +5,12 @@ Status: **plan, nothing below the "Done" section is built yet.** Decisions below
 ## Done
 - **Three editions of the desktop software, built by `release.yml`** (all of `apps/electron`): **full** (`package.json` build; window + library server), **app** (`electron-builder.app.json`, `curatorEdition: "app"`, update channel `app`) and **server** (Windows: the tray app, `electron-builder.server.json`, channel `server`; Linux: `electron-builder.server-linux.json`, a headless build, channel `server`). Linux gets `.deb` and `.AppImage` of each. The server module is switchable inside the app (`serverModule` in `desktop.json`, IPC `curator:server-module`): full has it on, app has it off, either can install or remove it from Settings > This app.
 - **Headless server** (`src/headless.ts` bundled to `dist/headless.mjs`): `scripts/serverWrapper.cjs` (electron-builder `afterPack`) swaps the program for a launcher that runs the Electron binary as Node (`ELECTRON_RUN_AS_NODE=1`, Node 24 with `node:sqlite`), so nothing needs installing and it starts without a display. The `.deb` adds a systemd service (`build/server-postinst.sh`, user `music-curator`, data in `/var/lib/music-curator`). Checked in the sandbox: the launcher unpacked from electron-builder starts, serves `/api/health` and creates a library. The `.deb` and `.AppImage` targets themselves (fpm, appimagetool) were not run here, and nothing ran on real systemd.
-- **Not built: Android server.** The APK is the app. A server half needs the Termux integration described under Decisions, which cannot be written or tested without a device.
+- **Android server module (beta), built but never run on a device:** `apps/android` `TermuxServer.kt` (+ `assets/termux/*.sh`, bridge `termux*` methods, `TermuxResultReceiver`) drives Termux through its RUN_COMMAND service; `components/TermuxServerCard.tsx` is the UI (Settings > This app). The server bundle comes from `*-termux.tar.gz` (the `termux-bundle` job in `release.yml`: `headless.mjs` + `web/`). The one unavoidable manual step is the pasted line that sets `allow-external-apps = true` in Termux. Verified here: the scripts parse (`bash -n`), the bundle runs under plain Node 22 with a fixed token and answers `/api/health`, the page code typechecks. Kotlin was NOT compiled (no Android SDK, Maven rate-limited): the first CI build will say.
 - Every release asset has a lowercase name: `music-curator-<version>-<os>-<arch>.<ext>`
   - Linux: `music-curator-<version>-linux-<arch>.AppImage`, `music-curator-<version>-linux-<arch>.deb`
   - Windows app: `music-curator-<version>-windows-<arch>-setup.exe`
   - Windows server: `music-curator-server-<version>-windows-<arch>-setup.exe`
-  - Android: `music-curator-<version>-android-beta.apk`
+  - Android: `music-curator-<version>-android.apk`
 - No transition period was needed. Installed apps never look for a file name: electron-updater reads `latest*.yml` (which lists whatever name the build produced) and the Android updater takes the first asset ending in `.apk`.
 - The displayed product name ("Music Curator") and the installed app's folder are unchanged.
 
@@ -53,8 +53,8 @@ One program, three platforms (Windows, Linux, Android), each in **two halves** t
 
 ## Decisions (owner, 2026-10-12)
 - **Formats:** `.deb` is Debian-family only; `.AppImage` is its own platform. **Each of them gets three builds: full, server, app.** So Linux ships six files (now built, see Done), Windows three (full, app, server), Android the app (beta).
-  Names: `music-curator[-server|-app]-<v>-linux-<arch>.deb|.AppImage`, `music-curator[-server|-app]-<v>-windows-<arch>-setup.exe`, `music-curator-<v>-android-beta.apk`.
-- **Android is labelled beta** (the asset name says so; do the same in the app's About line).
+  Names: `music-curator[-server|-app]-<v>-linux-<arch>.deb|.AppImage`, `music-curator[-server|-app]-<v>-windows-<arch>-setup.exe`, `music-curator-<v>-android.apk`.
+- **Only the Android server module is beta** (the APK is not; its asset is `music-curator-<v>-android.apk`).
 - **Mesh = one switchable primary with replicas.** Exactly one server accepts writes (the primary); replicas pull from it and can serve files and play. "Make this the primary" is a deliberate switch: the old primary first becomes a replica of the new one. Last-writer-wins sync already makes the data side safe; what is new is the role flag, the replica list, and re-pointing clients (the pairing code already carries the address).
 - **Android server through Termux, hidden from the user.** No terminal commands for the user: the app installs and drives Termux itself (Termux's `RUN_COMMAND` intent needs the user to allow it once in Termux's settings; the app explains that screen in one step). The user sees only a Server switch with a status line. Termux must come from F-Droid or GitHub (the Play Store build is abandoned), so the app has to offer that download. Unverified here: whether the intent-based flow can be made to need no manual Termux step.
 - **Signing, free and with no ongoing effort:**

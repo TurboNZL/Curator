@@ -96,6 +96,29 @@ jobs:
           TAG='${{ needs.release.outputs.tag }}'
           VERSION="${TAG#v}"
           gradle -p apps/android :app:assembleRelease -PappVersion="$VERSION"
-          cp apps/android/app/build/outputs/apk/release/app-release.apk "music-curator-$VERSION-android-beta.apk"
-          gh release upload "$TAG" "music-curator-$VERSION-android-beta.apk" --clobber
+          cp apps/android/app/build/outputs/apk/release/app-release.apk "music-curator-$VERSION-android.apk"
+          gh release upload "$TAG" "music-curator-$VERSION-android.apk" --clobber
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+
+  # the server for the Android app's server module: it runs in Termux on the phone (apps/android TermuxServer.kt downloads the newest one)
+  termux-bundle:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --ignore-scripts --filter @curator/web --filter @curator/core --filter @curator/server --filter @curator/electron
+      - run: pnpm --filter @curator/web build
+      - name: Bundle the headless server and the web client
+        run: |
+          node apps/electron/scripts/build.mjs
+          mkdir -p bundle/web
+          cp apps/electron/dist/headless.mjs bundle/
+          cp -r apps/web/dist/. bundle/web/
+          TAG='${{ needs.release.outputs.tag }}'
+          tar -czf "music-curator-server-${TAG#v}-termux.tar.gz" -C bundle .
+          gh release upload "$TAG" "music-curator-server-${TAG#v}-termux.tar.gz" --clobber
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
