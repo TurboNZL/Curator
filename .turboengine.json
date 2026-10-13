@@ -1,7 +1,7 @@
 {
   "engine": {
     "repo": "TurboNZL/turboengine",
-    "ref": "6b26f24"
+    "ref": "9ff6653"
   },
   "modules": [
     "release-pipeline",
@@ -9,11 +9,18 @@
     "updaters",
     "appearance",
     "window-frame",
+    "gpu-modes",
+    "discord-presence",
     "guides-and-docs",
     "settings-shell",
-    "android-shell"
+    "device-pairing",
+    "android-shell",
+    "termux-server",
+    "cloudflare-access",
+    "server-install-update",
+    "self-hosted-server"
   ],
   "moved": {},
-  "notes": "Curator is the app the engine's modules were taken from, so everything starts identical. Curator also owns the library domain (packages/core, packages/server, the pages), which is not in the engine. Port improvements to a module back to the engine (see its CLAUDE.md). Themes: the turbothemes package is installed from the engine repo (pnpm git dependency on themes/); the separate turbothemes repository is retired.",
+  "notes": "TurboMusic is the app the engine's modules were first taken from; the engine is now the common source, so everything starts identical. Curator also owns the library domain (packages/core, packages/server, the pages), which is not in the engine. Port improvements to a module back to the engine (see its CLAUDE.md). Themes: the turbothemes package is installed from the engine repo (pnpm git dependency on themes/); the separate turbothemes repository is retired.",
   "themes": "on"
 }
