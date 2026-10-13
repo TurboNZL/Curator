@@ -9,7 +9,7 @@ import type { SpotifyAccount } from './spotify.ts';
  * everywhere in the app: "2024", "2024-06" or "2024-06-14".
  */
 type Fetch = typeof fetch;
-const UA = 'MusicCurator/1.0 (personal music library; https://github.com/TurboNZL/Curator)';
+const UA = 'TurboMusic/1.0 (personal music library; https://github.com/TurboNZL/turbomusic)';
 
 export interface DateAnswer { date: string; source: 'spotify' | 'itunes' | 'musicbrainz' }
 

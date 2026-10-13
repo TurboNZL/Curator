@@ -13,7 +13,7 @@ const { values } = parseArgs({
 });
 
 if (values.help || !values.db) {
-  console.log(`Import a legacy Music Curator library into this server's data dir.
+  console.log(`Import a legacy TurboMusic library into this server's data dir.
 
   node --experimental-strip-types src/cli-migrate.ts --db <old>/data/curator.db --public <old>/public
 

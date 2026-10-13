@@ -6,8 +6,8 @@ import { Beam, SINK, type BeamDeps, type BeamStatus } from './beam.ts';
 
 /**
  * Spotify Soloist as a module of this server: Spotify's own headless Spotify Connect client for Linux. Installed from Spotify's own download
- * server onto the machine running Curator (it is not redistributed with Curator: Spotify asks that nobody does), it shows up in
- * Spotify's device list under a name you choose, and Curator plays Spotify tracks on it like on any other Spotify device.
+ * server onto the machine running TurboMusic (it is not redistributed with TurboMusic: Spotify asks that nobody does), it shows up in
+ * Spotify's device list under a name you choose, and TurboMusic plays Spotify tracks on it like on any other Spotify device.
  *
  * Facts this follows (Spotify's Soloist documentation, Oct 2026): builds come from
  * https://soloist-builds.spotifycdn.com/soloist_release_<arm64|arm32|x86_64>.tar.gz and contain the `soloist` executable; it needs
@@ -102,8 +102,8 @@ export class Soloist {
   private get cfgPath() { return join(this.dir, 'config.json'); }
 
   config(): SoloistConfig {
-    try { const c = JSON.parse(readFileSync(this.cfgPath, 'utf8')) as Partial<SoloistConfig>; return { deviceName: c.deviceName ?? 'Curator', apiKey: c.apiKey ?? '', autoStart: c.autoStart ?? true, outputDevice: c.outputDevice ?? '', beam: c.beam ?? false }; }
-    catch { return { deviceName: 'Curator', apiKey: '', autoStart: true, outputDevice: '', beam: false }; }
+    try { const c = JSON.parse(readFileSync(this.cfgPath, 'utf8')) as Partial<SoloistConfig>; return { deviceName: c.deviceName ?? 'TurboMusic', apiKey: c.apiKey ?? '', autoStart: c.autoStart ?? true, outputDevice: c.outputDevice ?? '', beam: c.beam ?? false }; }
+    catch { return { deviceName: 'TurboMusic', apiKey: '', autoStart: true, outputDevice: '', beam: false }; }
   }
   /** Saves the device name and, when one is given, the key. An empty key leaves the stored one alone. */
   configure(o: { deviceName?: string; apiKey?: string; autoStart?: boolean; outputDevice?: string; beam?: boolean }) {
@@ -159,7 +159,7 @@ export class Soloist {
     if (!h.isPi && (this.d.env ?? process.env).CURATOR_SOLOIST !== '1') {
       return { ok: false, reason: this.d.desktop ?? !!process.versions.electron
         ? 'Soloist runs on your Raspberry Pi server only, not in this app. Connect this app to your Pi (Settings > Library & server) and set Soloist up there.'
-        : `Soloist runs on your Raspberry Pi only, and this server (${h.name}) is not one. Open Curator on the Pi's server to set Soloist up there.` };
+        : `Soloist runs on your Raspberry Pi only, and this server (${h.name}) is not one. Open TurboMusic on the Pi's server to set Soloist up there.` };
     }
     return { ok: true };
   }
@@ -226,7 +226,7 @@ export class Soloist {
   async ensureSink(): Promise<void> {
     try {
       const sinks = await this.pactl(['list', 'short', 'sinks']);
-      if (!sinks.split('\n').some((l) => l.split('\t')[1] === SINK)) await this.pactl(['load-module', 'module-null-sink', `sink_name=${SINK}`, 'sink_properties=device.description=Curator-Spotify']);
+      if (!sinks.split('\n').some((l) => l.split('\t')[1] === SINK)) await this.pactl(['load-module', 'module-null-sink', `sink_name=${SINK}`, 'sink_properties=device.description=TurboMusic-Spotify']);
       this.sink = { state: 'ready', message: null };
     } catch (e) {
       const m = (e as Error).message;

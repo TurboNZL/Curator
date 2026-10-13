@@ -7,7 +7,7 @@ export interface Lyrics { synced: string | null; plain: string | null; instrumen
 export interface LyricsQuery { artist: string; title: string; album?: string; duration?: number }
 
 type Fetch = typeof fetch;
-const UA = 'Curator (https://github.com/TurboNZL/Curator)';
+const UA = 'TurboMusic (https://github.com/TurboNZL/turbomusic)';
 
 const fromRecord = (j: any): Lyrics | null => {
   if (!j || typeof j !== 'object') return null;

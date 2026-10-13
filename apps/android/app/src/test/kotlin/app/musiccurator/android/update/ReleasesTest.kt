@@ -11,8 +11,8 @@ class ReleasesTest {
     private fun list(vararg r: String) = JSONArray("[" + r.joinToString(",") + "]")
 
     @Test fun picksAPreReleaseWhenItIsTheNewest() {
-        val r = list(rel("v2026.10.1", pre = true, assets = arrayOf("music-curator-2026.10.1.apk")), rel("v2026.10.0", pre = true, assets = arrayOf("music-curator-2026.10.0.apk")))
-        assertEquals("v2026.10.1" to "https://api.github.com/a/music-curator-2026.10.1.apk", Releases.newestWithApk(r))
+        val r = list(rel("v2026.10.1", pre = true, assets = arrayOf("turbomusic-2026.10.1.apk")), rel("v2026.10.0", pre = true, assets = arrayOf("music-curator-2026.10.0.apk")))
+        assertEquals("v2026.10.1" to "https://api.github.com/a/turbomusic-2026.10.1.apk", Releases.newestWithApk(r))
     }
     @Test fun skipsDraftsAndReleasesWithoutAnApk() {
         val r = list(rel("v3", draft = true, assets = arrayOf("a.apk")), rel("v2", assets = arrayOf("setup.exe")), rel("v1", assets = arrayOf("a.apk")))

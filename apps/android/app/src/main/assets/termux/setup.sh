@@ -1,4 +1,4 @@
-# Music Curator server module: install (or repair, or update) inside Termux. Run by the app through Termux's RUN_COMMAND; the app fills in the @…@ values.
+# TurboMusic server module: install (or repair, or update) inside Termux. Run by the app through Termux's RUN_COMMAND; the app fills in the @…@ values.
 # Safe to run again. Everything lives in ~/curator-server (program) and ~/curator-data (the library, never touched here).
 set -e
 export DEBIAN_FRONTEND=noninteractive

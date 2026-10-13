@@ -103,7 +103,7 @@ export function readDatabaseRecords(path: string): SyncRecord[] {
   try { db = new DatabaseSync(path, { readOnly: true }); } catch { throw new BackupError(400, 'That file is not a database'); }
   try {
     const cols = (db.prepare(`PRAGMA table_info(records)`).all() as { name: string }[]).map((c) => c.name);
-    for (const need of ['tbl', 'id', 'updated_at', 'device_id', 'deleted', 'data']) if (!cols.includes(need)) throw new BackupError(400, 'That database does not look like a Curator backup');
+    for (const need of ['tbl', 'id', 'updated_at', 'device_id', 'deleted', 'data']) if (!cols.includes(need)) throw new BackupError(400, 'That database does not look like a TurboMusic backup');
     const rows = db.prepare(`SELECT tbl, id, updated_at, device_id, deleted, data FROM records`).all() as { tbl: string; id: string; updated_at: number; device_id: string; deleted: number; data: string }[];
     const out: SyncRecord[] = [];
     for (const r of rows) {

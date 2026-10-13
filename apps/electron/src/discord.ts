@@ -12,13 +12,13 @@ const fit = (s: string, fallback = ''): string => {
   return t.length > 128 ? `${t.slice(0, 127)}…` : t;
 };
 
-/** The Discord activity for a state of the player ("Listening to Music Curator", with a progress bar while playing). Pure, so it is tested. */
+/** The Discord activity for a state of the player ("Listening to TurboMusic", with a progress bar while playing). Pure, so it is tested. */
 export function buildActivity(p: Presence, now = Date.now()) {
   const a: Record<string, unknown> = {
     type: 2, // Listening
     details: fit(p.title, 'Unknown track'),
     state: fit(p.playing ? p.artist : `Paused${p.artist ? ` · ${p.artist}` : ''}`),
-    largeImageKey: 'logo', largeImageText: fit(p.album || 'Music Curator'),
+    largeImageKey: 'logo', largeImageText: fit(p.album || 'TurboMusic'),
     instance: false,
   };
   if (!a.state) delete a.state;

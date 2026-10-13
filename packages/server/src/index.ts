@@ -8,7 +8,7 @@ const config = loadConfig();
 process.env.TMPDIR ??= join(config.dataDir, 'tmp');
 const running = await startServer(config);
 const ips = Object.values(networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i!.address);
-console.log(`Music Curator server
+console.log(`TurboMusic server
   data dir : ${config.dataDir}
   listening: ${config.host}:${running.port}
   urls     : ${ips.map((ip) => `http://${ip}:${running.port}`).join(', ') || '(no LAN address found)'}

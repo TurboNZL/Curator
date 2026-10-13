@@ -136,7 +136,7 @@ function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof 
         <input className="input !w-64 max-w-full" placeholder="Search your history…" value={q} onChange={(e) => { setQ(e.target.value); setShown(PAGE); }} />
         <input className="input !w-auto" type="date" aria-label="Jump to a day" value={on} onChange={(e) => { setOn(e.target.value); setShown(PAGE); }} />
         {on && <button className="btn btn-ghost" onClick={() => setOn('')}>All days</button>}
-        <select className="input !w-auto" value={source} onChange={(e) => { setSource(e.target.value as typeof source); setShown(PAGE); }}><option value="all">All sources</option><option value="curator">Played in Curator</option><option value="spotify">From Spotify</option></select>
+        <select className="input !w-auto" value={source} onChange={(e) => { setSource(e.target.value as typeof source); setShown(PAGE); }}><option value="all">All sources</option><option value="curator">Played in TurboMusic</option><option value="spotify">From Spotify</option></select>
         <select className="input !w-auto" value={skips} onChange={(e) => { setSkips(e.target.value as typeof skips); setShown(PAGE); }}><option value="all">Plays and skips</option><option value="played">Played through</option><option value="skipped">Skipped only</option></select>
         <span className="ml-auto text-xs text-muted">{rows.length.toLocaleString()} plays</span>
       </div>
@@ -184,7 +184,7 @@ function LibraryTab() {
         <Kpi label="Votes" value={lib.votes.length.toLocaleString()} sub={`${s.rated} rated · ${s.unrated} not yet`} />
         <Kpi label="Tracks" value={lib.tracks.length.toLocaleString()} sub={`${s.withAudio} with audio`} />
         <Kpi label="Albums" value={lib.albums.length.toLocaleString()} sub={`${lib.artists.length} artists`} />
-        <Kpi label="Played in Curator" value={fmtDuration(s.secondsListened)} sub={`${s.plays} plays · ${Math.round(s.skipRate * 100)}% skipped`} />
+        <Kpi label="Played in TurboMusic" value={fmtDuration(s.secondsListened)} sub={`${s.plays} plays · ${Math.round(s.skipRate * 100)}% skipped`} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Rating distribution"><Bars height={140} data={s.ratingBands.map((n, i) => ({ label: i === 9 ? '9+' : String(i), value: n }))} format={(n) => `${n} tracks`} highlight={s.ratingBands.indexOf(maxBand)} /></Panel>

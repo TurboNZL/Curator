@@ -15,7 +15,7 @@ If the Discord card says *Not set up: this build has no Discord application*, ma
 Discord only lets a program show a status **under the name of a Discord application**, so there is always one behind the scenes. Its name is what appears after "Listening to".
 
 1. Go to **https://discord.com/developers/applications** and log in.
-2. **New Application** → name it (for example `Music Curator`, or your own name for it) → accept the terms → **Create**.
+2. **New Application** → name it (for example `TurboMusic`, or your own name for it) → accept the terms → **Create**.
 3. On **General Information**, copy the **Application ID** (a long number). It is not a secret.
 4. *(Optional, for the picture.)* **Rich Presence → Art Assets → Add Image(s)**: upload a square image (at least 512×512; `apps/web/public/icon-512.png` in the repository is the app's icon) and name it exactly **`logo`** (lower case). It can take a few minutes before Discord shows it.
 5. In the app: **Settings → This app → Discord → "Use my own Discord application"**, paste the Application ID, and make sure the box above is ticked.
@@ -32,7 +32,7 @@ Work down this list; each step rules out one cause.
 5. **Flatpak or Snap Discord on Linux** runs in a sandbox, so the program cannot see its socket:
    - *Flatpak:* the socket is under `$XDG_RUNTIME_DIR/app/com.discordapp.Discord/`. Link it to where programs look: `ln -sf $XDG_RUNTIME_DIR/app/com.discordapp.Discord/discord-ipc-0 $XDG_RUNTIME_DIR/discord-ipc-0` (it has to be repeated after a reboot; a `tmpfiles.d` entry makes it permanent), and give Discord access to that folder with Flatseal (*Filesystem → `xdg-run/app/com.discordapp.Discord`*).
    - *Snap:* the sandbox blocks it. Use the Discord `.deb` or your distribution's package instead.
-   These steps follow what other Rich Presence programs report; they have not been tried with Curator.
+   These steps follow what other Rich Presence programs report; they have not been tried with TurboMusic.
 6. Image missing but text fine: the art asset must be named `logo` and can take up to ten minutes to appear.
 7. Still nothing: close the app, start Discord first, then the app, and look at the terminal the app was started from for lines starting `[curator]`.
 

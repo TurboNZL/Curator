@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 /**
- * Everything Curator can ask Spotify, in separate sources so one breaking does not take the others down:
+ * Everything TurboMusic can ask Spotify, in separate sources so one breaking does not take the others down:
  *  - oEmbed (open.spotify.com/oembed): title and cover of a track, album or playlist link. Public, no key.
  *  - the public embed page of a playlist (open.spotify.com/embed/playlist/<id>): the track list, no key. UNOFFICIAL: Spotify can change it.
  *  - the Web API with the user's own sign-in (Authorization Code + PKCE, a client id from their own developer app): their playlists with
@@ -129,7 +129,7 @@ export class SpotifyAccount {
   }
   signOut() { const s = this.load(); delete s.token; delete s.pending; this.save(s); }
 
-  /** Step 1: the page the user opens to allow Curator to read their playlists. */
+  /** Step 1: the page the user opens to allow TurboMusic to read their playlists. */
   authUrl(opts: { streaming?: boolean } = {}): string {
     const s = this.load(); const clientId = this.envClient || s.clientId;
     if (!clientId) throw new SpotifyError(400, 'Enter your Spotify client id first');
@@ -166,7 +166,7 @@ export class SpotifyAccount {
   }
   /**
    * What Spotify says about this sign-in, for the "Check the connection" button: the permissions the saved token holds and the raw answers
-   * of the calls Curator depends on. Never returns the token itself.
+   * of the calls TurboMusic depends on. Never returns the token itself.
    */
   async diagnose(): Promise<Record<string, unknown>> {
     const s = this.load();
@@ -229,7 +229,7 @@ export class SpotifyAccount {
       if (res.ok) return;
       const msg = ((await res.json().catch(() => null)) as { error?: { message?: string; reason?: string } } | null)?.error;
       if (res.status === 404 || msg?.reason === 'NO_ACTIVE_DEVICE') throw new SpotifyError(404, 'No Spotify device is awake. Open Spotify on a device (or start Soloist on the Pi) and pick it as the device.');
-      if (res.status === 403) throw new SpotifyError(403, msg?.reason === 'PREMIUM_REQUIRED' ? 'Spotify Premium is required to control playback' : `Spotify refused: ${msg?.message ?? 'forbidden'}. Sign in again so Curator gets playback permission.`);
+      if (res.status === 403) throw new SpotifyError(403, msg?.reason === 'PREMIUM_REQUIRED' ? 'Spotify Premium is required to control playback' : `Spotify refused: ${msg?.message ?? 'forbidden'}. Sign in again so TurboMusic gets playback permission.`);
       if (res.status === 401) throw new SpotifyError(401, 'The Spotify sign-in is no longer valid; sign in again');
       throw new SpotifyError(502, `Spotify answered ${res.status}${msg?.message ? `: ${msg.message}` : ''}`);
     }

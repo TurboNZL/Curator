@@ -40,7 +40,7 @@ export function StatsFilters({ value, onChange, listens }: { value: StatsFilter;
       {more && (
         <div className="space-y-2 rounded-theme border border-line p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <select className="input !w-auto !py-1 !text-xs" aria-label="Source" value={value.source} onChange={(e) => set({ source: e.target.value as StatsFilter['source'] })}><option value="all">All sources</option><option value="curator">Played in Curator</option><option value="spotify">From Spotify</option></select>
+            <select className="input !w-auto !py-1 !text-xs" aria-label="Source" value={value.source} onChange={(e) => set({ source: e.target.value as StatsFilter['source'] })}><option value="all">All sources</option><option value="curator">Played in TurboMusic</option><option value="spotify">From Spotify</option></select>
             <select className="input !w-auto !py-1 !text-xs" aria-label="Skips" value={value.skips} onChange={(e) => set({ skips: e.target.value as StatsFilter['skips'] })}><option value="all">Plays and skips</option><option value="played">Played through</option><option value="skipped">Skipped only</option></select>
             <select className="input !w-auto !py-1 !text-xs" aria-label="Platform" value={value.platform} onChange={(e) => set({ platform: e.target.value })}><option value="">Any platform</option>{platforms.map((p) => <option key={p} value={p}>{p}</option>)}</select>
             <select className="input !w-auto !py-1 !text-xs" aria-label="Time of day" value={value.dayPart} onChange={(e) => set({ dayPart: e.target.value as DayPart })}>{PARTS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select>

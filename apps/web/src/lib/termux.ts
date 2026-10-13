@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { isAndroidApp } from './native.ts';
 
 /**
- * The server module of the Android app (beta): the Curator server runs in Termux and the app drives it (see apps/android TermuxServer.kt).
+ * The server module of the Android app (beta): the TurboMusic server runs in Termux and the app drives it (see apps/android TermuxServer.kt).
  * The bridge returns JSON strings; this file turns them into plain values and polls the module's own address to tell whether it is up.
  */
 interface Bridge {

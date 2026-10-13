@@ -2,7 +2,7 @@ import type { PlaybackRule, ProfileData } from '@curator/core';
 import type { Library } from './library.ts';
 import { useStore } from './store.ts';
 
-const blankProfile = (): ProfileData => ({ name: 'Main Curator', theme: 'dark', accentColor: '#3b82f6', playbackMode: 'local', settings: {}, playbackRules: [] });
+const blankProfile = (): ProfileData => ({ name: 'Main TurboMusic', theme: 'dark', accentColor: '#3b82f6', playbackMode: 'local', settings: {}, playbackRules: [] });
 
 /** Change the synced profile (rules, default images), creating it first if the library has none yet. */
 export function updateProfile(lib: Library, change: (p: ProfileData) => ProfileData) {

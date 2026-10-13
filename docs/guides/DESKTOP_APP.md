@@ -1,20 +1,20 @@
 # Desktop app (Windows and Linux)
 
-The desktop app is Curator in its own window **with its own server inside it**, so a fresh install works with nothing to set up or connect.
+The desktop app is TurboMusic in its own window **with its own server inside it**, so a fresh install works with nothing to set up or connect.
 
 ## Which download
 Every release has three editions of the desktop software. Pick one; you can add or remove the server part later.
 
 | Edition | File name starts with | What it is |
 |---|---|---|
-| **Full** | `music-curator-` | The window and a library server in one app. The simplest choice. |
-| **App only** | `music-curator-app-` | Just the window. Connect it to a server (yours at home, or one run by a *Server* download). In **Settings → This app** you can install the **server module** into it later, and remove it again. |
-| **Server only** | `music-curator-server-` | No window: Windows gets a tray app with a setup wizard; Linux gets a service ([server on Linux](DEPLOY_PI.md)). |
+| **Full** | `turbomusic-` | The window and a library server in one app. The simplest choice. |
+| **App only** | `turbomusic-app-` | Just the window. Connect it to a server (yours at home, or one run by a *Server* download). In **Settings → This app** you can install the **server module** into it later, and remove it again. |
+| **Server only** | `turbomusic-server-` | No window: Windows gets a tray app with a setup wizard; Linux gets a service ([server on Linux](DEPLOY_PI.md)). |
 
 The Linux `.deb` (Debian, Ubuntu, Kubuntu) and the `.AppImage` (any distribution) each come in all three editions.
 
 ## Install
-Download the installer for your system from the newest [release](https://github.com/TurboNZL/Curator/releases/latest). Names look like `music-curator-<version>-<os>-<arch>.<ext>`:
+Download the installer for your system from the newest [release](https://github.com/TurboNZL/turbomusic/releases/latest). Names look like `turbomusic-<version>-<os>-<arch>.<ext>`:
 - **Windows:** `…-windows-x64-setup.exe`.
 - **Linux, Debian/Ubuntu/Kubuntu:** the `.deb` (installs system-wide; double-click it or `sudo apt install ./file.deb`).
 - **Linux, any distribution:** the `.AppImage` (make it executable and run it; it needs no root and updates itself).

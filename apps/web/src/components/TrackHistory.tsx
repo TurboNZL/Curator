@@ -9,7 +9,7 @@ export function TrackHistory({ info }: { info: TrackInfo }) {
     <div className="grid gap-4 lg:grid-cols-2">
       <div>
         <div className="mb-1 text-sm font-medium">Play history ({info.history.length})</div>
-        {!info.history.length && <p className="text-sm text-muted">No plays yet, in Curator or in imported Spotify history.</p>}
+        {!info.history.length && <p className="text-sm text-muted">No plays yet, in TurboMusic or in imported Spotify history.</p>}
         {info.history.length > 0 && <div className="max-h-72 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">{info.history.map((h) => (
           <div key={h.logId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
             <span className={cn('w-12 text-xs font-semibold uppercase', h.isSkip ? 'text-warn' : 'text-good')}>{h.isSkip ? 'skip' : 'played'}</span>

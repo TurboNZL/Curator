@@ -5,7 +5,7 @@
  * remembered, and the pure parts are tested with fixtures.
  */
 type Fetch = typeof fetch;
-const UA = 'MusicCurator/1.0 (personal music library; https://github.com/TurboNZL/Curator)';
+const UA = 'TurboMusic/1.0 (personal music library; https://github.com/TurboNZL/turbomusic)';
 
 export interface SimilarArtist { name: string; mbid: string; score: number }
 

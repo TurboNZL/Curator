@@ -12,7 +12,7 @@ const Step = ({ done, n, title, children }: { done: boolean; n: number; title: s
 );
 
 /**
- * Settings > This app, Android only: run the Curator server on this phone (beta). The server lives in Termux; the app installs, starts and
+ * Settings > This app, Android only: run the TurboMusic server on this phone (beta). The server lives in Termux; the app installs, starts and
  * stops it. The only thing typed by hand is one pasted line, once (Termux's own safety switch can only be flipped from inside Termux).
  */
 export function TermuxServerCard() {
@@ -33,7 +33,7 @@ export function TermuxServerCard() {
 
   return (
     <Section title="Server module (beta)">
-      <p className="text-sm text-muted">Run the Curator server on this phone, so it can hold your library and serve your other devices. It runs inside <b>Termux</b>, which this app sets up and controls; you never type commands except one pasted line, once. It is idle most of the time, but downloads and conversions use battery, so plug in for big imports. Beta: expect rough edges.</p>
+      <p className="text-sm text-muted">Run the TurboMusic server on this phone, so it can hold your library and serve your other devices. It runs inside <b>Termux</b>, which this app sets up and controls; you never type commands except one pasted line, once. It is idle most of the time, but downloads and conversions use battery, so plug in for big imports. Beta: expect rough edges.</p>
 
       {!status.module && <ol className="space-y-4">
         <Step n={1} title="Get Termux" done={status.termuxInstalled}>
