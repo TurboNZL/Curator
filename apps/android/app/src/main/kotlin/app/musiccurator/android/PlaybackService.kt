@@ -11,6 +11,7 @@ import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Player
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.CacheDataSource
@@ -27,6 +28,7 @@ import app.musiccurator.android.library.Track
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
 import java.io.File
 import java.util.concurrent.Executors
@@ -86,7 +88,10 @@ class PlaybackService : MediaLibraryService() {
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         // the notification's small icon: the default is Media3's generic play-in-a-circle, which One UI shows as is
         setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build().also { it.setSmallIcon(R.drawable.ic_stat_curator) })
-        session = MediaLibrarySession.Builder(this, offered, Callback()).setSessionActivity(open).build()
+        // The notification and lock-screen cover is fetched by the session's bitmap loader, whose default has no way to send the Access service token,
+        // so behind Cloudflare Access it got the login page and no picture. It uses the player's own upstream (same headers) on its own thread.
+        val artLoader = DataSourceBitmapLoader(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2)), upstream)
+        session = MediaLibrarySession.Builder(this, offered, Callback()).setSessionActivity(open).setBitmapLoader(artLoader).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
