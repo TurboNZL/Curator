@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
-import { BarChart3, ArrowDown, ArrowUp, Link2, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
+import { BarChart3, Search, ArrowDown, ArrowUp, Link2, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
 import { shuffleWithRules } from '@curator/core';
 import { moveTrack, removeTrack } from '../lib/defaults.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -25,6 +25,17 @@ export function PlaylistsPage() {
   const play = usePlayer((s) => s.play);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState('');
+  const [find, setFind] = useState('');
+  const PAGE = 100;
+  const [shown, setShown] = useState(PAGE);
+  useEffect(() => setShown(PAGE), [openId]);
+  // playlists match by name, description, or a track or artist inside them
+  const listed = useMemo(() => {
+    const f = find.trim().toLowerCase();
+    if (!f) return lib.playlists;
+    return lib.playlists.filter((p) => `${p.name} ${p.description ?? ''}`.toLowerCase().includes(f)
+      || playlistTrackIds(lib, p).some((id) => { const t = lib.trackById.get(id); return !!t && `${t.title} ${t.artistName}`.toLowerCase().includes(f); }));
+  }, [lib, find]);
   const open = lib.playlists.find((p) => p.id === openId);
   const albumMode = !!open && isAlbumList(open);
   const albums = open && albumMode ? playlistAlbums(lib, open) : [];
@@ -39,7 +50,10 @@ export function PlaylistsPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3"><h1 className="mr-auto text-2xl font-bold">Playlists</h1>
         <button className="btn btn-accent" onClick={() => edit({ kind: 'new-playlist', id: '' })}><Plus size={16} />New playlist</button></div>
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--grid-min), 9rem), 1fr))' }}>{lib.playlists.map((p) => { const c = playlistCount(lib, p); return (
+      {lib.playlists.length > 0 && <label className="relative block max-w-md"><Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <input className="input !pl-9" type="search" aria-label="Search playlists" placeholder="Search playlists, or a track or artist in them…" value={find} onChange={(e) => setFind(e.target.value)} /></label>}
+      {find.trim() && !listed.length && <p className="text-sm text-muted">No playlist matches.</p>}
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--grid-min), 9rem), 1fr))' }}>{listed.map((p) => { const c = playlistCount(lib, p); return (
         <button key={p.id} onClick={() => setOpenId(p.id)} aria-pressed={openId === p.id} className="bt-tile bt-sel group text-left" data-selected={openId === p.id || undefined}>
           <PlaylistCover playlist={p} className="transition-transform group-hover:scale-[1.02]" />
           <div className="bt-cap-t mt-2 truncate text-sm font-medium">{p.name}</div>
@@ -79,12 +93,13 @@ export function PlaylistsPage() {
                   </div>))}
                 {!albums.length && <div className="px-3 py-4 text-sm text-muted">No albums yet. Search above, or use “Add to an album playlist…” in an album’s menu.</div>}
               </div>
-            : <div className="card overflow-hidden"><TrackTable tracks={tracks} source="playlist" sourceId={open.id} numbered below={(t) => <PlaylistNote playlistId={open.id} trackId={t.id} notes={open.trackNotes} />} extra={(t, i) => (
+            : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} queue={tracks} source="playlist" sourceId={open.id} numbered below={(t) => <PlaylistNote playlistId={open.id} trackId={t.id} notes={open.trackNotes} />} extra={(t, i) => (
             <div className="flex">
               <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${t.title} up`} disabled={i === 0} onClick={() => patch('playlists', open.id, { trackIds: moveTrack(tracks.map((x) => x.id), i, i - 1) })}><ArrowUp size={15} /></button>
               <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${t.title} down`} disabled={i === tracks.length - 1} onClick={() => patch('playlists', open.id, { trackIds: moveTrack(tracks.map((x) => x.id), i, i + 1) })}><ArrowDown size={15} /></button>
               <button className="p-1 text-muted hover:text-bad" aria-label={`Remove ${t.title} from the playlist`} onClick={() => patch('playlists', open.id, { trackIds: removeTrack(open.trackIds, t.id), trackNotes: withoutKey(open.trackNotes, t.id) })}><X size={15} /></button>
             </div>)} /></div>}
+          {!albumMode && shown < tracks.length && <div className="text-center"><button className="btn" onClick={() => setShown(shown + PAGE)}>Show more ({tracks.length - shown} left)</button></div>}
         </section>
       )}
       {!lib.playlists.length && <div className="flex items-center gap-2 text-sm text-muted"><Link2 size={14} />No playlists yet.</div>}

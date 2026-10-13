@@ -12,6 +12,7 @@ import { cacheBytes, removeAudio } from '../lib/files.ts';
 import { AliasesManager, DefaultImages, PlaybackRules, ReleaseNamesManager, Vocabulary } from '../components/SettingsExtras.tsx';
 import { AppearanceLayout, WallpaperCard } from '../components/AppearanceCard.tsx';
 import { Section } from '../components/Section.tsx';
+import { TermuxServerCard } from '../components/TermuxServerCard.tsx';
 import { SpotifyCard } from '../components/SpotifyCard.tsx';
 import { BackupCard } from '../components/BackupCard.tsx';
 import { GuidesTab } from '../components/GuidesTab.tsx';
@@ -132,6 +133,7 @@ export function SettingsPage() {
         <GraphicsLine />
         <p className="text-xs text-muted">Version {desktop()!.version}. {!desktop()!.serverModule ? '' : "Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first."}</p>
       </Section>}
+      <TermuxServerCard />
       <DiscordCard />
       </>}
 

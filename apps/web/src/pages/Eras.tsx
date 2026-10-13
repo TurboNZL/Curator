@@ -68,8 +68,10 @@ export function EraPage() {
   const albumItems = useAlbumMenuItems();
   const era = id ? lib.eraById.get(id) : undefined;
   if (!era) return <div className="text-muted">Era not found.</div>;
-  const albums = era.albumIds.flatMap((id) => lib.albumById.get(id) ?? []);
-  const singles = era.trackIds.flatMap((id) => lib.trackById.get(id) ?? []);
+  // oldest first by release date ("2019" < "2019-05" < "2019-05-02"); what has no date goes last, in the order it was added
+  const byDate = <T extends { releaseDate: string | null }>(xs: T[]) => xs.map((x, i) => ({ x, i })).sort((a, b) => (a.x.releaseDate ?? '\uffff').localeCompare(b.x.releaseDate ?? '\uffff') || a.i - b.i).map((e) => e.x);
+  const albums = byDate(era.albumIds.flatMap((id) => lib.albumById.get(id) ?? []));
+  const singles = byDate(era.trackIds.flatMap((id) => lib.trackById.get(id) ?? []));
   const playlists = era.playlistIds.flatMap((id) => lib.playlists.find((p) => p.id === id) ?? []);
   const ids = [...albums.flatMap((a) => a.trackIds), ...singles.map((t) => t.id)].filter((t) => canPlay(lib.trackById.get(t)));
   const cover = era.cover || albums.find((a) => a.cover)?.cover || null;

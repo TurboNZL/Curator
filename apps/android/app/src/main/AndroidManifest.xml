@@ -9,6 +9,12 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- lets the app install its own updates -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- the server module: lets the app start commands in Termux (the user allows it once, and in Termux's own settings) -->
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+
+    <queries>
+        <package android:name="com.termux" />
+    </queries>
 
     <application
         android:allowBackup="false"
@@ -43,6 +49,9 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!-- Termux's answer to a command the app asked it to run -->
+        <receiver android:name=".TermuxResultReceiver" android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

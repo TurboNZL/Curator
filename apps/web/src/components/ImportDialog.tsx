@@ -5,7 +5,7 @@ import { Download, ImagePlus, Loader2 } from 'lucide-react';
 import type { ArtistData } from '@curator/core';
 import { leadCredit, newAlbumData, newTrackData } from '../lib/defaults.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
-import type { ImportPreview } from '../lib/api.ts';
+import type { ImportPreview, MatchCandidate } from '../lib/api.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
 import { api, useStore } from '../lib/store.ts';
@@ -43,10 +43,23 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
   /** set after an import whose cover could not be fetched, so the user hears about it before the dialog closes */
   const [done, setDone] = useState<{ to: string; what: string; coverError: string } | null>(null);
 
-  async function lookUp() {
-    setBusy('Looking it up…'); setError(null);
+  /** a link goes straight to the preview; anything else is searched on YouTube Music (albums) and the results are listed to pick from */
+  const isLink = (v: string) => /^https?:\/\/\S+$/i.test(v.trim());
+  const [hits, setHits] = useState<MatchCandidate[] | null>(null);
+  async function search() {
+    setBusy('Searching YouTube Music…'); setError(null); setHits(null);
     try {
-      const p = await api().importPreview(url.trim());
+      const { results } = await api().matchAlbums([{ id: 'search', title: url.trim(), artist: '', trackCount: 0 }]);
+      if (results[0]?.error) setError(results[0].error);
+      setHits(results[0]?.candidates ?? []);
+    } catch (e) { setError((e as Error).message === 'Failed to fetch' ? 'Cannot reach the server.' : (e as Error).message); }
+    finally { setBusy(null); }
+  }
+  const go = () => (isLink(url) ? void lookUp() : void search());
+  async function lookUp(link = url) {
+    setBusy('Looking it up…'); setError(null); setHits(null);
+    try {
+      const p = await api().importPreview(link.trim());
       setPv(p); setThumbBroken(false);
       const links = p.thumbnails?.length ? p.thumbnails : p.thumbnail ? [p.thumbnail] : [];
       if (links.length) {
@@ -106,14 +119,22 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
     ? <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={() => setPv(null)} disabled={!!busy}>Back</button>
         <button className="btn btn-accent" disabled={!!busy || !count || (!asSingle && !title.trim()) || (!artistId && !(newArtist ?? '').trim())} onClick={doImport}>{busy ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}{asSingle ? (count === 1 ? 'Import the single' : `Import ${count} singles`) : `Import ${count} tracks`}</button></div>
     : <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn btn-accent" disabled={!url.trim() || !!busy || !configured} onClick={lookUp}>{busy ? <Loader2 size={15} className="animate-spin" /> : null}Look up</button></div>;
+        <button className="btn btn-accent" disabled={!url.trim() || !!busy || !configured} onClick={go}>{busy ? <Loader2 size={15} className="animate-spin" /> : null}{isLink(url) || !url.trim() ? 'Look up' : 'Search'}</button></div>;
 
   return (
     <Modal title="Import from YouTube" onClose={onClose} footer={footer}>
       {!configured && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">Importing runs on your server. Connect one in Settings first.</div>}
       {done ? null : !pv ? (
-        <Field label="Album, playlist or single link" hint="A YouTube Music album or playlist, or one video for a single. Nothing is downloaded until you confirm.">
-          <input autoFocus className="input" placeholder="https://music.youtube.com/playlist?list=…" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && url.trim() && !busy && void lookUp()} /></Field>
+        <>
+        <Field label="Album, playlist or single link, or what to search for" hint="Paste a YouTube Music album or playlist link (or one video for a single), or type an album's name (and artist) to search YouTube Music. Nothing is downloaded until you confirm.">
+          <input autoFocus className="input" placeholder="https://music.youtube.com/playlist?list=…  or  artist album" value={url} onChange={(e) => { setUrl(e.target.value); setHits(null); }} onKeyDown={(e) => e.key === 'Enter' && url.trim() && !busy && go()} /></Field>
+        {hits && !hits.length && !error && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">No album found. Try the artist and the album name, or paste a link.</div>}
+        {hits && hits.length > 0 && <div className="space-y-1.5" aria-label="Search results">{hits.map((c) => (
+          <button key={c.url} type="button" className="flex w-full items-center gap-3 rounded-theme border border-line p-2 text-left hover:border-accent" onClick={() => { setUrl(c.url); void lookUp(c.url); }}>
+            {c.thumbnail ? <img src={c.thumbnail} alt="" className="h-12 w-12 shrink-0 rounded-theme object-cover" /> : <div className="h-12 w-12 shrink-0 rounded-theme bg-raised" />}
+            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{c.title}{c.edition ? ` · ${c.edition}` : ''}</span><span className="block truncate text-xs text-muted">{c.owner ?? c.channel}{c.count ? ` · ${c.count} tracks` : ''}</span></span>
+            <span className="text-xs text-muted">{Math.round(c.score * 100)}%</span></button>))}</div>}
+        </>
       ) : (<>
         <div className="flex gap-4">
           {ownCover ? <Cover hash={ownCover} seed={title} className="h-24 w-24 shrink-0" />

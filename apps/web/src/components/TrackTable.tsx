@@ -12,11 +12,14 @@ import { useMenu } from './Menu.tsx';
 import { useTrackMenuItems } from './TrackMenu.tsx';
 import { ArtistLinks } from './ArtistLinks.tsx';
 import { fmtDate } from './SingleCard.tsx';
+import { statsPath } from '../lib/entityStats.ts';
 import type { SourceType } from '@curator/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
-export function TrackTable({ tracks, source, sourceId = null, numbered = false, showAlbum = true, extra, below }: {
-  tracks: Track[]; source: SourceType; sourceId?: string | null; numbered?: boolean; showAlbum?: boolean;
+export function TrackTable({ tracks, queue, source, sourceId = null, numbered = false, showAlbum = true, extra, below }: {
+  tracks: Track[];
+  /** the whole list when `tracks` is only the part drawn so far: playing a row queues all of it */
+  queue?: Track[]; source: SourceType; sourceId?: string | null; numbered?: boolean; showAlbum?: boolean;
   /** extra controls at the end of each row (e.g. move/remove in a playlist) */
   extra?: (t: Track, index: number) => React.ReactNode;
   /** a full-width line under a row (e.g. a playlist note) */
@@ -27,7 +30,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
   const current = usePlayer((s) => s.queue.currentId);
   const edit = useEditor((s) => s.open);
   const cache = useStore((s) => s.audioCache);
-  const ids = tracks.map((t) => t.id);
+  const ids = (queue ?? tracks).map((t) => t.id);
   const menu = useMenu();
   const itemsFor = useTrackMenuItems();
   // ?track=<id> (from "Go to track") scrolls that row into view and flashes it
@@ -55,7 +58,7 @@ export function TrackTable({ tracks, source, sourceId = null, numbered = false, 
             {canPlay(t) && <Play size={14} fill="currentColor" className="mx-auto hidden group-hover:block" />}
           </button>
           <div className="min-w-0 flex-1">
-            <div className={cn('truncate text-sm font-medium', !t.file && 'text-fg/70')}>{t.title}</div>
+            <div className={cn('truncate text-sm font-medium', !t.file && 'text-fg/70')}>{t.albumId ? t.title : <Link to={statsPath('track', t.id)} className="hover:underline" title="Open this single (its stats: it has no album page)">{t.title}</Link>}</div>
             <div className="truncate text-xs text-muted">
               <ArtistLinks leads={t.leads} featured={t.featured} />
               {showAlbum && t.albumTitle && <> · <Link to={`/albums/${t.albumId}`} className="hover:text-fg hover:underline">{t.albumTitle}</Link></>}

@@ -26,6 +26,20 @@ class CuratorBridge(private val context: Context, private val view: View) {
     /** this app adds the service token to the page's own GET requests for the server (AccessProxy), so the page need not download media whole to send it */
     @JavascriptInterface fun accessInjected(): Boolean = true
 
+    // ---- the server module (beta): the Curator server running in Termux, see TermuxServer.kt
+    @JavascriptInterface fun termuxStatus(): String = Termux.status(context)
+    /** the one line to paste into Termux, once */
+    @JavascriptInterface fun termuxOneTimeLine(): String = Termux.oneTimeLine(context)
+    @JavascriptInterface fun termuxCopyLine() { Termux.copy(context, Termux.oneTimeLine(context)) }
+    @JavascriptInterface fun termuxOpenTermux(): Boolean = Termux.openTermux(context)
+    @JavascriptInterface fun termuxOpenInstallPage() = Termux.openInstallPage(context)
+    @JavascriptInterface fun termuxRequestPermission() { (context as? android.app.Activity)?.let { a -> view.post { Termux.requestPermission(a) } } }
+    @JavascriptInterface fun termuxInstall(): Boolean = Termux.install(context)
+    @JavascriptInterface fun termuxStart(): Boolean = Termux.start(context)
+    @JavascriptInterface fun termuxStop(): Boolean = Termux.stop(context)
+    @JavascriptInterface fun termuxRemove(deleteLibrary: Boolean): Boolean = Termux.remove(context, deleteLibrary)
+    @JavascriptInterface fun termuxSetOptions(autoStart: Boolean, wake: Boolean) { prefs.termuxAutoStart = autoStart; prefs.termuxWake = wake }
+
     // ---- the app's own player (notification, lock screen, Bluetooth and car controls): see NativeAudio
     @JavascriptInterface fun audioSync(json: String) = NativeAudio.sync(json)
     @JavascriptInterface fun audioPlay() = NativeAudio.play()

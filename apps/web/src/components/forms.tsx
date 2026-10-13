@@ -203,8 +203,12 @@ export function EntityPicker({ onPick }: { onPick: (e: { type: 'artist' | 'album
     ...lib.playlists.filter((p) => p.name.toLowerCase().includes(n)).map((p) => ({ type: 'playlist' as const, id: p.id, label: p.name })),
     ...lib.tracks.filter((t) => `${t.title} ${t.artistName}`.toLowerCase().includes(n)).map((t) => ({ type: 'track' as const, id: t.id, label: `${t.title} · ${t.artistName}` })),
   ].slice(0, 8);
+  // the results open below the box, often under the fold of the dialog: bring them into view as soon as there are some
+  const results = useRef<HTMLDivElement>(null);
+  const shown = hits.length;
+  useEffect(() => { if (shown) results.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [shown, n]);
   return <div className="relative"><input className="input" placeholder="Tie it to an artist, era, album, track or playlist…" value={q} onChange={(e) => setQ(e.target.value)} />
-    {hits.length > 0 && <div className="card absolute z-10 mt-1 w-full overflow-hidden shadow-xl">{hits.map((h) => (
+    {hits.length > 0 && <div ref={results} className="card absolute z-10 mt-1 w-full overflow-hidden shadow-xl">{hits.map((h) => (
       <button key={`${h.type}${h.id}`} type="button" className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => { onPick(h); setQ(''); }}>
         <span className="chip">{h.type}</span><span className="truncate">{h.label}</span></button>))}</div>}</div>;
 }

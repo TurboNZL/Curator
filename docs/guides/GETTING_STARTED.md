@@ -12,7 +12,7 @@ Music Curator keeps your music library, plays it, and lets you rank it by choosi
 4. The app updates itself: when a new version is out it downloads in the background and installs when you close it.
 
 ## 2. In a browser or on a phone, no install
-Open the address of a Curator server in any browser (option 3 gives you one). The app works offline once loaded and syncs when the server is reachable. On Android you can also install the **Android app** from the same releases page (`music-curator-<version>-android-beta.apk`: allow "install unknown apps" for your browser once). It plays in the background, with a media notification and Android Auto.
+Open the address of a Curator server in any browser (option 3 gives you one). The app works offline once loaded and syncs when the server is reachable. On Android you can also install the **Android app** from the same releases page (`music-curator-<version>-android.apk`: allow "install unknown apps" for your browser once). It plays in the background, with a media notification and Android Auto.
 
 ## 3. A home server (the same library on all your devices)
 Any computer that stays on can be the server: a **Windows PC** ([WINDOWS_SERVER.md](WINDOWS_SERVER.md): an installer with a setup wizard), or a **Linux machine such as a Raspberry Pi** (below). Pick one; you can change your mind later because the library moves with a backup.

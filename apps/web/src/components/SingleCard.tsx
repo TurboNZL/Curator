@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import { Play } from 'lucide-react';
+import { statsPath } from '../lib/entityStats.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import type { Track } from '../lib/derive.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -31,11 +33,11 @@ export function SingleGrid({ tracks }: { tracks: Track[] }) {
           return (
             <div key={t.id} className="bt-tile group" onContextMenu={menu.onContextMenu(itemsFor(t, run), `Actions for ${t.title}`, t.id)}>
               <div className="relative">
-                <Cover hash={t.cover} seed={t.title} className="transition-transform group-hover:scale-[1.02]" />
+                <Link to={statsPath('track', t.id)} aria-label={`Open ${t.title}`} className="block"><Cover hash={t.cover} seed={t.title} className="transition-transform group-hover:scale-[1.02]" /></Link>
                 <button className="btn btn-accent absolute bottom-2 right-2 !rounded-full !p-2.5 opacity-0 shadow-lg transition-opacity focus-visible:opacity-100 group-hover:opacity-100" disabled={!t.file}
                   aria-label={`Play ${t.title}`} title={t.file ? 'Play' : 'No audio file yet'} onClick={run}><Play size={16} fill="currentColor" /></button>
               </div>
-              <button className="bt-cap-t mt-2 block w-full truncate text-left text-sm font-medium hover:underline" onClick={() => edit({ kind: 'track-details', id: t.id })}>{t.title}</button>
+              <Link to={statsPath('track', t.id)} className="bt-cap-t mt-2 block w-full truncate text-left text-sm font-medium hover:underline" title="Open this single (its stats: it has no album page)">{t.title}</Link>
               <div className="bt-cap flex items-center justify-between gap-2 text-xs text-muted"><span className="truncate"><ArtistLinks leads={t.leads} featured={t.featured} /></span><Rating track={t} size="sm" /></div>
               <div className="bt-cap truncate text-xs text-muted" title={t.releaseDate ? `Released ${t.releaseDate}` : 'No release date yet'}>{t.releaseDate ? fmtDate(t.releaseDate) : <button className="hover:text-fg hover:underline" onClick={() => edit({ kind: 'track', id: t.id })}>No date</button>}</div>
             </div>

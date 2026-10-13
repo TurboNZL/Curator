@@ -38,5 +38,25 @@ class ServerPrefs(context: Context) {
         get() = p.getString("eq", "") ?: ""
         set(v) { p.edit().putString("eq", v).apply() }
 
+    // ---- the server module (Termux), see TermuxServer.kt
+    var termuxInstalled: Boolean
+        get() = p.getBoolean("termuxInstalled", false)
+        set(v) { p.edit().putBoolean("termuxInstalled", v).apply() }
+    /** the module's access token, made by the app */
+    var termuxToken: String
+        get() = p.getString("termuxToken", "") ?: ""
+        set(v) { p.edit().putString("termuxToken", v).apply() }
+    var termuxAutoStart: Boolean
+        get() = p.getBoolean("termuxAutoStart", true)
+        set(v) { p.edit().putBoolean("termuxAutoStart", v).apply() }
+    /** keep the phone awake while the server runs (uses more battery) */
+    var termuxWake: Boolean
+        get() = p.getBoolean("termuxWake", false)
+        set(v) { p.edit().putBoolean("termuxWake", v).apply() }
+    /** the last thing Termux was asked to do and how it went (JSON) */
+    var termuxResult: String
+        get() = p.getString("termuxResult", "") ?: ""
+        set(v) { p.edit().putString("termuxResult", v).apply() }
+
     val configured get() = serverUrl.isNotEmpty()
 }

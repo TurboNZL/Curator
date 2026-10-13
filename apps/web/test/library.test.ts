@@ -56,6 +56,12 @@ describe('buildLibrary', () => {
     expect(buildLibrary(r).tracks.map((t) => t.id).sort()).toEqual(['t1', 't3']);
   });
 
+  it('an album average counts unrated tracks as 0, and an album with nothing rated has no average', () => {
+    const rated = buildLibrary(rows(...base.slice(0, 2), rec('tracks', 't1', track('One', { initialRating: 9 })), rec('tracks', 't2', track('Two')), rec('tracks', 't3', track('Three'))));
+    expect(rated.albums[0].rating).toBeCloseTo(3); // (9 + 0 + 0) / 3, not 9
+    expect(buildLibrary(rows(...base)).albums[0].rating).toBeNull();
+  });
+
   it('derives rating from votes; shows initialRating until 3 comparisons; ranks 10-star tracks by Elo', () => {
     const vs = [1, 2, 3].map((i) => vote(`v${i}`, 't1', 't2', 't1', i));
     const lib = buildLibrary(rows(...base.slice(0, 3), rec('tracks', 't2', track('Two', { initialRating: 6 })), ...vs));
