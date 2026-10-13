@@ -13,7 +13,7 @@ import org.json.JSONObject
 import java.security.SecureRandom
 
 /**
- * Pure part of the server module (JVM-testable): the scripts the app asks Termux to run are plain assets (assets/termux/*.sh) with @NAME@
+ * Pure part of the server module (JVM-testable): the scripts the app asks Termux to run are plain assets (the scripts in assets/termux) with @NAME@
  * placeholders, filled in here. Termux runs `bash -c <script>` for us, so nothing has to be copied into Termux first.
  */
 object TermuxScripts {
