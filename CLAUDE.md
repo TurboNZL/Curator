@@ -2,6 +2,9 @@
 
 Read this first, then `PROJECT_BRIEF.md` (repo root) (the long vision/context doc: goals, user profile, feature inventory, rating rules, architecture, roadmap with done-criteria). This file is the running state/decision log. Update it whenever a decision or the state changes.
 
+## Engine
+Curator is pinned to **TurboNZL/turboengine** (`.turboengine.json`, `docs/development/ENGINE.md`), a reference/template repo of the parts every TurboNZL app shares: release flow and naming, updaters, the theme picker and layouts, window chrome, settings shell, docs layout and briefing. Curator is where those files are born; the engine holds copies, with the lessons in each module's `MODULE.md`. When you improve one of them, port it back (see the engine's `CLAUDE.md`) and update the pin.
+
 ## What this is
 A personal music library manager for one user (owner@example.com): library (artists, albums, releases, tracks, playlists, "relational bios" = `groups`, timeline, notes) plus a **ranking system** (head-to-head votes → Elo → 0–10 rating) and playback queue rules ("play B right after A"). Originally generated with Dyad/Gemini (hence odd comments, `dyad-*` files). Being refactored heavily. The goal is that it is easy to iterate on.
 
