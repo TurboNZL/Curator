@@ -26,7 +26,7 @@ Notes:
 - The desktop self-update was checked up to "disabled in a development run"; real updates need an installed build and a release.
 
 ## Icons
-The launcher icon, the website icon, the desktop icon and the title logo all come from one drawing (`scripts/gen-icons.mjs`): a ring, a six-bladed wheel and a hub, which is also the shape of the white notification icon (`ic_stat_curator.xml`). The launcher icon is the same drawing in flat colours on the dark adaptive background.
+The launcher icon, the website icon, the desktop icon and the title logo all come from one drawing (`scripts/gen-icons.mjs`, configured by `branding/logo.json`; the engine's `logos` module): the TurboNZL engine mark (a ring and a six-bladed wheel) with TurboMusic's red note on a dark plate in the centre, which is also the shape of the white notification icon (`ic_stat_curator.xml`). The launcher icon is the same drawing in flat colours on the dark adaptive background.
 
 ## Discord (desktop app)
 
