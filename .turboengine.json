@@ -18,7 +18,8 @@
     "termux-server",
     "cloudflare-access",
     "server-install-update",
-    "self-hosted-server"
+    "self-hosted-server",
+    "logos"
   ],
   "moved": {},
   "notes": "TurboMusic is the app the engine's modules were first taken from; the engine is now the common source, so everything starts identical. Curator also owns the library domain (packages/core, packages/server, the pages), which is not in the engine. Port improvements to a module back to the engine (see its CLAUDE.md). Themes: the turbothemes package is installed from the engine repo (pnpm git dependency on themes/); the separate turbothemes repository is retired.",
