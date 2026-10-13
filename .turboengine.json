@@ -1,7 +1,7 @@
 {
   "engine": {
     "repo": "TurboNZL/turboengine",
-    "ref": "1052e43"
+    "ref": "6b26f24"
   },
   "modules": [
     "release-pipeline",
