@@ -1,6 +1,6 @@
 # Play on a device (Connect)
 
-Spotify-Connect-style remote control. Every device that has Curator open and uses the same server shows up in the player's device
+Spotify-Connect-style remote control. Every device that has TurboMusic open and uses the same server shows up in the player's device
 list (the cast icon in the player bar, and in the top bar when nothing is playing here). From any of them you can:
 
 - **Play here** (pull): what another device is playing moves to this one, same track, same position, same queue; it stops there.
@@ -26,7 +26,7 @@ loads it from its own offline copy or from the server. Wire types and validators
 normal token (`?token=` on the event stream, because `EventSource` cannot set headers).
 
 ## Spotify devices in the same list
-The cast button also lists your **Spotify devices** (Soloist on the Pi, the Spotify app on a phone or PC, a speaker) under a *Spotify devices* heading, when the server is signed in to Spotify (Settings → Server → Spotify). They are not Curator devices (they cannot be remote-controlled like one, and Curator's queue and playback rules still decide what comes next): choosing one makes it the place where **Spotify tracks** (tracks with a Spotify link and no audio file) play from this device, and a Spotify track that is already playing moves there. While one plays the player bar says *Playing on <device>*. Details: [SPOTIFY.md](SPOTIFY.md).
+The cast button also lists your **Spotify devices** (Soloist on the Pi, the Spotify app on a phone or PC, a speaker) under a *Spotify devices* heading, when the server is signed in to Spotify (Settings → Server → Spotify). They are not TurboMusic devices (they cannot be remote-controlled like one, and TurboMusic's queue and playback rules still decide what comes next): choosing one makes it the place where **Spotify tracks** (tracks with a Spotify link and no audio file) play from this device, and a Spotify track that is already playing moves there. While one plays the player bar says *Playing on <device>*. Details: [SPOTIFY.md](SPOTIFY.md).
 
 ## Limits
 - A browser tab that was never clicked can refuse to start sound ("Press play: this browser blocked starting by itself"). The desktop app has no such rule.

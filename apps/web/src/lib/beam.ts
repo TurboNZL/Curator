@@ -47,7 +47,7 @@ export async function startBeam(): Promise<boolean> {
   if (nativeAudioAvailable()) {
     mode = 'native';
     // a new key every time: a live stream is never the same bytes twice
-    nativeAudio.sync({ currentId: BEAM_ID, positionMs: 0, play: true, hard: true, items: [{ id: BEAM_ID, key: `${BEAM_ID}-${Date.now()}`, url, title: 'Spotify', artist: 'through Curator', album: '' }] });
+    nativeAudio.sync({ currentId: BEAM_ID, positionMs: 0, play: true, hard: true, items: [{ id: BEAM_ID, key: `${BEAM_ID}-${Date.now()}`, url, title: 'Spotify', artist: 'through TurboMusic', album: '' }] });
     nativeAudio.volume(volume);
     return true;
   }

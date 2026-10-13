@@ -29,7 +29,7 @@ export function trackInfo(lib: Library, trackId: string): TrackInfo {
     votes.push({ voteId: v.id, opponent: other ? `${other.title} · ${other.artistName}` : '(deleted track)', opponentExists: !!other, result, timestamp: v.timestamp });
   }
   votes.sort((a, b) => b.timestamp - a.timestamp);
-  // Curator's own plays and the ones imported from Spotify (matched to this track by link or by title and artist)
+  // TurboMusic's own plays and the ones imported from Spotify (matched to this track by link or by title and artist)
   const logs = buildListens(lib).filter((l) => l.trackId === trackId);
   const sourceOf = new Map(lib.logs.map((l) => [l.id, l.sourceType ?? null] as const));
   const history = logs.map((l) => ({ logId: l.id, timestamp: l.ts, seconds: l.ms / 1000, isSkip: l.skipped, source: l.source === 'spotify' ? 'Spotify' : sourceOf.get(l.id) ?? null, imported: l.source === 'spotify' }))

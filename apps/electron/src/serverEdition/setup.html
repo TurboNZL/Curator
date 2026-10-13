@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Music Curator Server</title>
+<title>TurboMusic Server</title>
 <style>
   :root { --bg:#14141b; --panel:#1d1d27; --raised:#272735; --line:#34344a; --fg:#f1f1f6; --muted:#9a9ab0; --accent:#8b5cf6; --good:#34d399; --warn:#fbbf24; --bad:#f87171; }
   * { box-sizing: border-box; }
@@ -49,7 +49,7 @@
 </head>
 <body>
 <header>
-  <h1>Music Curator Server</h1>
+  <h1>TurboMusic Server</h1>
   <ol class="steps" id="steps"></ol>
 </header>
 <main id="main"></main>
@@ -113,12 +113,12 @@ const views = [
   },
 
   () => `<h2>Playing Spotify songs</h2>
-    <p class="fg">Curator can play songs from your Spotify library right next to your own files. For every option you need <b>Spotify Premium</b>, and you sign in once inside Curator under <b>Settings → Spotify</b>. Here is what each choice means in plain words:</p>
+    <p class="fg">TurboMusic can play songs from your Spotify library right next to your own files. For every option you need <b>Spotify Premium</b>, and you sign in once inside TurboMusic under <b>Settings → Spotify</b>. Here is what each choice means in plain words:</p>
     <div class="card opt"><h3>1. Use the Spotify app you already have <span class="tag rec">Easiest · recommended</span></h3>
-      <p class="fg">Curator becomes a remote control for Spotify on your phone, computer, smart speaker or TV. You press play in Curator and the song comes out of that device.</p>
-      <p>Nothing to install on this server. Good for: living-room speakers, the Spotify app you already use. Catch: it plays through the Spotify device, so Curator's own equaliser and offline mode do not apply to those songs.</p></div>
-    <div class="card opt"><h3>2. Play it inside Curator itself</h3>
-      <p class="fg">In the Curator web page or desktop app on a computer, a speaker called “Curator” appears and Spotify songs play right there, in the same queue as your files.</p>
+      <p class="fg">TurboMusic becomes a remote control for Spotify on your phone, computer, smart speaker or TV. You press play in TurboMusic and the song comes out of that device.</p>
+      <p>Nothing to install on this server. Good for: living-room speakers, the Spotify app you already use. Catch: it plays through the Spotify device, so TurboMusic's own equaliser and offline mode do not apply to those songs.</p></div>
+    <div class="card opt"><h3>2. Play it inside TurboMusic itself</h3>
+      <p class="fg">In the TurboMusic web page or desktop app on a computer, a speaker called “TurboMusic” appears and Spotify songs play right there, in the same queue as your files.</p>
       <p>Catch: it needs a modern browser and a <b>secure (https) address</b>. A plain home-network address like <code>http://192.168…</code> is not secure, so this works through the Cloudflare tunnel in the next step or on this computer itself (<code>localhost</code>). It does not work in the Android app.</p></div>
     <div class="card opt"><h3>3. A Spotify speaker run by the server <span class="tag">Raspberry Pi only</span></h3>
       <p class="fg">Spotify's own small player (“Soloist”) can run on a Raspberry Pi and play through its speakers or stream to your apps.</p>
@@ -135,7 +135,7 @@ const views = [
         <li>In the tunnel's <b>Public hostname</b> tab add one: pick a name such as <code>music.yourdomain.com</code>, set the service type to <b>HTTP</b> and the URL to <code>localhost:${S.config.port}</code>.</li>
         <li>Press <b>Apply and restart</b> on the last step. After a minute the status below says <b>Connected</b>, and <code>https://music.yourdomain.com</code> opens your server.</li>
       </ol>
-      <p>Your server's access token still protects everything: the tunnel only makes it reachable. Do not turn on Cloudflare Access in front of the whole address unless you also set it up for the apps (see the guides in Curator's Settings).</p></div>
+      <p>Your server's access token still protects everything: the tunnel only makes it reachable. Do not turn on Cloudflare Access in front of the whole address unless you also set it up for the apps (see the guides in TurboMusic's Settings).</p></div>
     <div class="card">
       <label class="check"><input type="checkbox" id="tOn" ${S.config.tunnelOn ? 'checked' : ''}><span><b>Run the tunnel</b></span></label>
       <div class="row"><input type="password" id="tToken" placeholder="Paste the tunnel token here" value="${esc(S.config.tunnelToken)}" autocomplete="off" spellcheck="false"><button id="tShow">Show</button></div>
@@ -146,8 +146,8 @@ const views = [
       <div class="card"><b>On this computer</b><p class="fg"><code>http://localhost:${S.config.port}</code></p>
         ${S.addresses.length ? `<b>On your home network</b>${S.addresses.map((a) => `<p class="fg"><code>${esc(a)}</code> <button data-copy="${esc(a)}">Copy</button></p>`).join('')}` : ''}
         <b>Access token</b><p class="fg"><code>${esc(S.token)}</code> <button data-copy="${esc(S.token)}">Copy</button></p></div>
-      <div class="row"><button class="primary" id="openBrowser">Open Curator in the browser</button><button id="openFolder">Show the library folder</button></div>
-      <p>To set up another device: open its address in a browser (or the Android app) and enter the address and token under <b>Settings → Server</b>. Easier: open Curator from the button above, then use <b>Pair a device</b> in that same Settings page to make a link or code.</p>
+      <div class="row"><button class="primary" id="openBrowser">Open TurboMusic in the browser</button><button id="openFolder">Show the library folder</button></div>
+      <p>To set up another device: open its address in a browser (or the Android app) and enter the address and token under <b>Settings → Server</b>. Easier: open TurboMusic from the button above, then use <b>Pair a device</b> in that same Settings page to make a link or code.</p>
       <p>This window can be closed. The server keeps running in the tray, near the clock: right-click its icon for the menu.</p>`
     : `<h2>Ready</h2>
       <div class="card"><b>Summary</b>

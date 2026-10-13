@@ -1,6 +1,6 @@
 {
-  "name": "Curator",
-  "short_name": "Curator",
+  "name": "TurboMusic",
+  "short_name": "TurboMusic",
   "description": "Your music library, ranked by you.",
   "start_url": "/",
   "scope": "/",

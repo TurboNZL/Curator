@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Give the Music Curator server a sound server, so Spotify Soloist can actually play.
+# Give the TurboMusic server a sound server, so Spotify Soloist can actually play.
 #
 #   sudo ./scripts/setup-pi-audio.sh [--user curator] [--dry-run]
 #

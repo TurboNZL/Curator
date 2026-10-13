@@ -97,7 +97,7 @@ export function control(id: string) { useConnect.setState({ remoteId: id === myI
 export function disconnect() { useConnect.setState({ remoteId: null }); publish(); }
 
 /**
- * "Play on this device only": drop everything that is not local. Stops controlling another Curator device (it keeps playing), pauses
+ * "Play on this device only": drop everything that is not local. Stops controlling another TurboMusic device (it keeps playing), pauses
  * Spotify and stops the stream of the server's Soloist, and forgets the chosen Spotify device so that the next local track starts at once,
  * without anything still tied to Spotify. A Spotify-only track needs a Spotify device chosen again to play.
  */

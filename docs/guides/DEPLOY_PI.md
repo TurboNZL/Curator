@@ -6,13 +6,13 @@ Written from the server's actual behaviour (`packages/server`). The parts that d
 
 > **The short way:** one command does sections 2, 3 and 4 below (Node, the app, the service, yt-dlp, ffmpeg, a weekly yt-dlp update) and prints the address and token:
 > ```
-> curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/music/curator
+> curl -fsSL https://raw.githubusercontent.com/TurboNZL/turbomusic/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/music/curator
 > ```
 > Mount the drive first (section 1; or use the folder your desktop already mounts). `--dry-run` shows what it would do; running it again updates. [GETTING_STARTED.md](GETTING_STARTED.md) has the plain-language version. Everything below is the same thing by hand, plus what the script does not cover. The script itself has only been checked with `bash -n` and a dry run, not on a real Pi: if a step fails it says which, and the manual sections below are the fallback.
 
 ## Packaged install (no Node, no git): the server .deb or AppImage
 Each release has a headless server for Linux that brings its own runtime:
-- **Debian, Ubuntu, Raspberry Pi OS 64-bit:** `sudo apt install ./music-curator-server-<version>-linux-<arch>.deb`. It creates a `music-curator` service user, a systemd service that starts at boot, and keeps the library in `/var/lib/music-curator`. The address and token: `sudo journalctl -u music-curator-server -n 20` (token file: `/var/lib/music-curator/token`). Settings (data folder, port): `/etc/music-curator/server.env`, then `sudo systemctl restart music-curator-server`. Removing the package keeps the library.
+- **Debian, Ubuntu, Raspberry Pi OS 64-bit:** `sudo apt install ./turbomusic-server-<version>-linux-<arch>.deb`. It creates a `music-curator` service user, a systemd service that starts at boot, and keeps the library in `/var/lib/music-curator`. The address and token: `sudo journalctl -u music-curator-server -n 20` (token file: `/var/lib/music-curator/token`). Settings (data folder, port): `/etc/music-curator/server.env`, then `sudo systemctl restart music-curator-server`. Removing the package keeps the library.
 - **Any distribution:** the server `.AppImage`: `chmod +x` it and run it (`--data-dir /path`, `--port`, `--help`).
 Updates for these are by installing the newer file for now (an apt repository is planned). The git-based sections below are the alternative for people who want to track the source.
 
@@ -49,7 +49,7 @@ Import your old library once (optional, idempotent), exactly as in the nvm instr
 `/etc/systemd/system/curator.service` (adjust the `node` path: `which node` as the curator user; with nvm it is under `~/.nvm/versions/node/v22.x/bin/node`):
 ```
 [Unit]
-Description=Music Curator server
+Description=TurboMusic server
 After=network-online.target mnt-curator.mount
 Wants=network-online.target
 RequiresMountsFor=/mnt/curator
@@ -110,7 +110,7 @@ An SD card dies from writes, not from age. What writes on this server and where 
 - **Already installed on the card?** Settings → **Server health → Storage locations** moves the library files, the temporary folder and the yt-dlp cache to another drive while the server runs (it copies and checks every file before switching, and leaves a link where the folder was). The database stays in the data folder: point `CURATOR_DATA_DIR` at the drive for that (stop the service, copy `curator.db*`, change the unit).
 - **yt-dlp's cache** used to go to `~/.cache` (the card). The server now passes `--cache-dir <data>/cache` itself, unless you set your own `--cache-dir` in `CURATOR_YTDLP_ARGS`.
 - **Scratch space** (`TMPDIR`) of ffmpeg and yt-dlp is `<data>/tmp`, set by the server.
-- **The system's own writing** (not Curator's): keep logs in memory with `sudo mkdir -p /etc/systemd/journald.conf.d && printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=50M\n' | sudo tee /etc/systemd/journald.conf.d/volatile.conf` (you lose logs at reboot), add `noatime` to the root line in `/etc/fstab`, and do not enable swap on the card (`sudo dphys-swapfile swapoff; sudo systemctl disable dphys-swapfile`).
+- **The system's own writing** (not TurboMusic's): keep logs in memory with `sudo mkdir -p /etc/systemd/journald.conf.d && printf '[Journal]\nStorage=volatile\nRuntimeMaxUse=50M\n' | sudo tee /etc/systemd/journald.conf.d/volatile.conf` (you lose logs at reboot), add `noatime` to the root line in `/etc/fstab`, and do not enable swap on the card (`sudo dphys-swapfile swapoff; sudo systemctl disable dphys-swapfile`).
 - **Server health** (Settings): free space on every disk the server uses, CPU temperature and load, memory and swap, whether the power supply dipped (`vcgencmd get_throttled`), how fast the disk answers a 4 KB synced write, and the database size. It reads a few kernel files and writes 4 KB every 30 seconds at most, only while the page is open. Warnings are plain sentences; nothing is stored.
 - **Copy the access token** from the Server card (Settings → Server), or use **Pair a device** to make a code or link that sets up another device (server address, access token and, if the server sits behind Cloudflare Access, the service token's client ID and secret).
 
@@ -132,7 +132,7 @@ ssh pi-admin@PI_ADDRESS
 sudo -u curator -H bash
 
 # 3. FIRST TIME ONLY: get the code. Skip this if ~/music-curator already exists.
-git clone https://github.com/TurboNZL/Curator/ ~/music-curator
+git clone https://github.com/TurboNZL/turbomusic/ ~/music-curator
 
 # 4. update: stop the service, git pull, install, build the web client, start the service
 cd ~/music-curator

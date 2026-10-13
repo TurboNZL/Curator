@@ -173,7 +173,7 @@ describe('backup file', () => {
     expect(r.skipped).toBe(2);
   });
   it('rejects other JSON and non-JSON', () => {
-    expect(() => parseBackup('{"records":[]}')).toThrow(/not a Curator/);
+    expect(() => parseBackup('{"records":[]}')).toThrow(/not a TurboMusic/);
     expect(() => parseBackup('nope')).toThrow(/not valid JSON/);
   });
 });

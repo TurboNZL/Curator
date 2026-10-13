@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Install the Music Curator home server on a Raspberry Pi (or any Debian/Ubuntu Linux machine), start it, and print how to connect.
+# Install the TurboMusic home server on a Raspberry Pi (or any Debian/Ubuntu Linux machine), start it, and print how to connect.
 #
-#   curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/music/curator
+#   curl -fsSL https://raw.githubusercontent.com/TurboNZL/turbomusic/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/music/curator
 #   sudo ./scripts/install-pi.sh --help
 #
 # Safe to run again: it updates what is there. Nothing is installed outside the folders and files named in the summary it prints first.
 set -euo pipefail
 
-USER_NAME="curator"; DATA_DIR=""; PORT="47813"; REPO="https://github.com/TurboNZL/Curator.git"; BRANCH="main"
+USER_NAME="curator"; DATA_DIR=""; PORT="47813"; REPO="https://github.com/TurboNZL/turbomusic.git"; BRANCH="main"
 DRY=0; YES=0; YTDLP=1
 
 usage() { cat <<USAGE
@@ -16,7 +16,7 @@ Usage: install-pi.sh [options]
                     Default: /var/lib/curator (that IS the SD card on a Pi, and you will be asked to confirm)
   --port N          port of the server (default $PORT)
   --user NAME       the system user that runs the server (default $USER_NAME)
-  --repo URL        where to download Music Curator from (default $REPO)
+  --repo URL        where to download TurboMusic from (default $REPO)
   --branch NAME     branch to install (default $BRANCH)
   --no-ytdlp        do not install yt-dlp (no YouTube import or audio download)
   --dry-run         print what would be done, change nothing
@@ -65,7 +65,7 @@ on_system_disk() {
   [ "$(stat -c %d "$probe")" = "$(stat -c %d /)" ]
 }
 
-say "Music Curator home server"
+say "TurboMusic home server"
 note "user: $USER_NAME     app: $APP_DIR     library: $DATA_DIR     port: $PORT"
 if on_system_disk; then
   note "WARNING: $DATA_DIR is on the same disk as the operating system. On a Raspberry Pi that is the SD card:"
@@ -103,7 +103,7 @@ if id "$USER_NAME" >/dev/null 2>&1; then note "user $USER_NAME exists"; else run
 run mkdir -p "$DATA_DIR"
 run chown -R "$USER_NAME:$USER_NAME" "$DATA_DIR"
 
-say "4/8 Downloading Music Curator"
+say "4/8 Downloading TurboMusic"
 if [ -d "$APP_DIR/.git" ]; then as_user "cd '$APP_DIR' && git fetch --depth 1 origin '$BRANCH' && git checkout -q '$BRANCH' && git reset -q --hard FETCH_HEAD"
 else as_user "git clone --depth 1 --branch '$BRANCH' '$REPO' '$APP_DIR'"; fi
 
@@ -121,14 +121,14 @@ if [ "$YTDLP" = 0 ]; then note "skipped (--no-ytdlp)"; else
   if [ "$DRY" = 1 ]; then note "[dry run] write curator-ytdlp-update.service and .timer (weekly: yt-dlp -U)"; else
     cat > /etc/systemd/system/curator-ytdlp-update.service <<UNIT
 [Unit]
-Description=Update yt-dlp for Music Curator
+Description=Update yt-dlp for TurboMusic
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/yt-dlp -U
 UNIT
     cat > /etc/systemd/system/curator-ytdlp-update.timer <<UNIT
 [Unit]
-Description=Weekly yt-dlp update for Music Curator
+Description=Weekly yt-dlp update for TurboMusic
 [Timer]
 OnCalendar=weekly
 RandomizedDelaySec=6h
@@ -145,7 +145,7 @@ MOUNT_LINE=""; case "$DATA_DIR" in /var/lib/*|/home/*) ;; *) MOUNT_LINE="Require
 if [ "$DRY" = 1 ]; then note "[dry run] write /etc/systemd/system/curator.service (user $USER_NAME, node $NODE_PATH_BIN, data $DATA_DIR, port $PORT)"; else
   cat > /etc/systemd/system/curator.service <<UNIT
 [Unit]
-Description=Music Curator server
+Description=TurboMusic server
 After=network-online.target
 Wants=network-online.target
 $MOUNT_LINE
@@ -178,7 +178,7 @@ if [ "$DRY" = 1 ]; then note "[dry run] wait for http://127.0.0.1:$PORT/api/heal
   ok=0; for _ in $(seq 1 40); do if curl -fsS "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then ok=1; break; fi; sleep 1; done
   [ "$ok" = 1 ] || die "the server did not start. Look at: journalctl -u curator -n 50"
   TOKEN="$(cat "$DATA_DIR/token" 2>/dev/null || echo '(see journalctl -u curator)')"
-  printf '\n\033[1m\033[32mDone. Music Curator is running.\033[0m\n\n'
+  printf '\n\033[1m\033[32mDone. TurboMusic is running.\033[0m\n\n'
   note "Open it in a browser on any device on your network:"
   for ip in $(hostname -I 2>/dev/null); do case "$ip" in *:*) ;; *) note "    http://$ip:$PORT" ;; esac; done
   note "    http://$(hostname).local:$PORT"

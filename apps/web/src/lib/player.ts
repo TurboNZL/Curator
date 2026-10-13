@@ -235,7 +235,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     return true;
   }
 
-  /** What the Spotify device reports about the track Curator sent it. */
+  /** What the Spotify device reports about the track TurboMusic sent it. */
   function onSpotify(r: { playing: boolean; timeMs: number; durationMs: number; ended: boolean }) {
     if (r.ended) {
       logPlay(false);

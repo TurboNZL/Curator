@@ -30,7 +30,7 @@ function CheckConnection() {
 }
 
 /**
- * Connecting Curator's server to a Spotify account (Authorization Code with PKCE; the server holds the token). Used by Settings and by the
+ * Connecting TurboMusic's server to a Spotify account (Authorization Code with PKCE; the server holds the token). Used by Settings and by the
  * Spotify import. `children` shows once signed in.
  */
 export function SpotifyAccountPanel({ children, onStatus }: { children?: (s: Status) => ReactNode; onStatus?: (s: Status) => void }) {

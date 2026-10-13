@@ -41,7 +41,7 @@ const edges = Array.from({ length: BLADES }, (_, i) => { // a thin bright line a
   const a = -Math.PI / 2 + (i * 2 * Math.PI) / BLADES, pts = Array.from({ length: 15 }, (_x, n) => { const sx = n / 14, [x, y] = pol(C, C, 52 + 124 * sx, a + 0.95 * sx); return `${f(x)},${f(y)}`; });
   return `M${pts.join('L')}`; }).join('');
 
-export const logoSvg = (size = 512) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="${size}" height="${size}" role="img" aria-label="Music Curator">
+export const logoSvg = (size = 512) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="${size}" height="${size}" role="img" aria-label="TurboMusic">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#26262f"/><stop offset="1" stop-color="${INK}"/></linearGradient>
     <radialGradient id="glow" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="${RED}" stop-opacity=".30"/><stop offset=".7" stop-color="${RED}" stop-opacity=".06"/><stop offset="1" stop-color="${RED}" stop-opacity="0"/></radialGradient>

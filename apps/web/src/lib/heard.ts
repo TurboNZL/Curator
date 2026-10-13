@@ -1,6 +1,6 @@
 import type { Listen } from './listens.ts';
 
-/** The library tracks that were played at least once (Curator's own player or an imported Spotify history). */
+/** The library tracks that were played at least once (TurboMusic's own player or an imported Spotify history). */
 export function heardTrackIds(listens: readonly Listen[]): Set<string> {
   const out = new Set<string>();
   for (const l of listens) if (l.trackId) out.add(l.trackId);

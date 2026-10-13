@@ -1,4 +1,4 @@
-# Music Curator
+# TurboMusic
 
 A personal music library manager for one person who owns their music files and cares about **ranking and curating** them. It keeps your library (artists, albums, releases, tracks, playlists, eras, notes) and ranks your tracks by asking one simple question over and over: *which of these two is better?*
 
@@ -68,7 +68,7 @@ How it works: none of this is in this repository any more. The colours, UI style
 
 ## Running it
 
-**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/Curator/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/curator`. Details and what it does: [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md), [docs/guides/DEPLOY_PI.md](docs/guides/DEPLOY_PI.md).
+**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/turbomusic/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/curator`. Details and what it does: [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md), [docs/guides/DEPLOY_PI.md](docs/guides/DEPLOY_PI.md).
 
 **From the source**, for development or any other machine: you need **Node 22.13+** and **pnpm** ([docs/development/TESTING.md](docs/development/TESTING.md) has nvm instructions). From the repo root:
 
@@ -84,7 +84,7 @@ CURATOR_DATA_DIR=/path/to/data pnpm start
 
 The server prints its address and a token (also in `<data dir>/token`). Open the address in a browser and paste the token in Settings → Server (leave the URL empty when the page is served by the server itself). Default port **47813**. For development run `pnpm --filter @curator/web dev`; it proxies `/api` to `CURATOR_SERVER` (default `http://localhost:47813`).
 
-**Desktop app:** `pnpm install --ignore-scripts --filter @curator/electron …`, `node apps/electron/node_modules/electron/install.js` once, then `pnpm --filter @curator/electron start` (details and installers in [docs/development/ELECTRON.md](docs/development/ELECTRON.md)). **Android:** download the APK from the newest [release](https://github.com/TurboNZL/Curator/releases), or build with Gradle ([docs/development/ANDROID.md](docs/development/ANDROID.md)).
+**Desktop app:** `pnpm install --ignore-scripts --filter @curator/electron …`, `node apps/electron/node_modules/electron/install.js` once, then `pnpm --filter @curator/electron start` (details and installers in [docs/development/ELECTRON.md](docs/development/ELECTRON.md)). **Android:** download the APK from the newest [release](https://github.com/TurboNZL/turbomusic/releases), or build with Gradle ([docs/development/ANDROID.md](docs/development/ANDROID.md)).
 
 **Server settings** (environment variables):
 

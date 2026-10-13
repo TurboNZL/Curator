@@ -203,7 +203,7 @@ export function createApp(
     return c.json({ results });
   });
 
-  // ---- Soloist (soloist.ts): Spotify's own headless Connect client, installed and run by this server so Curator plays Spotify tracks itself ----
+  // ---- Soloist (soloist.ts): Spotify's own headless Connect client, installed and run by this server so TurboMusic plays Spotify tracks itself ----
   app.get('/api/soloist', async (c) => c.json(await soloist.status()));
   app.post('/api/soloist/config', async (c) => {
     const b = (await c.req.json().catch(() => ({}))) as { deviceName?: unknown; apiKey?: unknown; autoStart?: unknown; outputDevice?: unknown; beam?: unknown };
@@ -250,10 +250,10 @@ export function createApp(
     try { await spotify.exchange(String(b.url ?? '')); return c.json(spotify.status()); } catch (e) { return spotifyFail(e); }
   });
   app.get('/api/spotify/callback', async (c) => {
-    try { await spotify.exchange(c.req.url); return c.html('<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Connected to Spotify</h2><p>You can close this tab and go back to Curator.</p>'); }
-    catch (e) { return c.html(`<!doctype html><meta charset="utf-8"><title>Curator</title><body style="font-family:system-ui;padding:2rem"><h2>Could not connect</h2><p>${String((e as Error).message).replace(/[<&]/g, ' ')}</p>`, 400); }
+    try { await spotify.exchange(c.req.url); return c.html('<!doctype html><meta charset="utf-8"><title>TurboMusic</title><body style="font-family:system-ui;padding:2rem"><h2>Connected to Spotify</h2><p>You can close this tab and go back to TurboMusic.</p>'); }
+    catch (e) { return c.html(`<!doctype html><meta charset="utf-8"><title>TurboMusic</title><body style="font-family:system-ui;padding:2rem"><h2>Could not connect</h2><p>${String((e as Error).message).replace(/[<&]/g, ' ')}</p>`, 400); }
   });
-  // playback: Spotify plays, Curator sends commands (the web API; Soloist on the Pi is just one more device in this list)
+  // playback: Spotify plays, TurboMusic sends commands (the web API; Soloist on the Pi is just one more device in this list)
   app.get('/api/spotify/diagnose', async (c) => { try { return c.json(await spotify.diagnose()); } catch (e) { return spotifyFail(e); } });
   app.get('/api/spotify/sdk-token', async (c) => { try { return c.json(await spotify.sdkToken()); } catch (e) { return spotifyFail(e); } });
   app.get('/api/spotify/player/devices', async (c) => { try { return c.json({ devices: await spotify.devices() }); } catch (e) { return spotifyFail(e); } });

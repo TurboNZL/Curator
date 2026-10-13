@@ -38,8 +38,8 @@ function SoloistVolume({ name }: { name: string }) {
 
 /**
  * Spotify Soloist, installed and run by the server: Spotify's own headless Connect client. Once it runs, a device with the name chosen here
- * appears in the player's device list (the cast button) and Curator plays Spotify tracks on it, with no phone or PC app open. Three steps:
- * install (downloaded from Spotify, not from Curator), the API key and a name, start.
+ * appears in the player's device list (the cast button) and TurboMusic plays Spotify tracks on it, with no phone or PC app open. Three steps:
+ * install (downloaded from Spotify, not from TurboMusic), the API key and a name, start.
  */
 export function SoloistPanel() {
   const configured = useStore((s) => !!s.settings.token);
@@ -47,14 +47,14 @@ export function SoloistPanel() {
   const chosen = useStore((s) => s.settings.spotifyDeviceId);
   const spotifyBeam = useStore((s) => s.settings.spotifyBeam);
   const [info, setInfo] = useState<SoloistInfo | null>(null);
-  const [name, setName] = useState('Curator');
+  const [name, setName] = useState('TurboMusic');
   const [key, setKey] = useState('');
   const [out, setOut] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
-  const load = async () => { const i = await api().soloist(); setInfo(i); setName((n) => (n === 'Curator' || !n ? i.deviceName : n)); return i; };
+  const load = async () => { const i = await api().soloist(); setInfo(i); setName((n) => (n === 'TurboMusic' || !n ? i.deviceName : n)); return i; };
   const poll = () => { timer.current = window.setTimeout(async () => { try { const i = await load(); if (['starting', 'installing', 'expired'].includes(i.state)) poll(); } catch { /* try again on the next action */ } }, 2000); };
   useEffect(() => { if (configured) void load().then((i) => { if (['starting', 'installing', 'expired'].includes(i.state)) poll(); }, (e: Error) => setError(e.message.includes('404') ? 'This server is older than the Soloist module: update it first (Settings › Update server).' : e.message)); return () => { if (timer.current) clearTimeout(timer.current); }; }, [configured]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -76,15 +76,15 @@ export function SoloistPanel() {
   if (!info.supported) return (
     <div className="space-y-1 border-t border-line pt-4 text-sm"><div className="font-medium">Soloist</div>
       <p className="text-muted">{info.reason}</p>
-      <p className="text-xs text-muted">Everywhere else, Spotify plays through the Spotify app on a computer or phone: it appears in the device list (cast button) and Curator controls it.</p></div>);
+      <p className="text-xs text-muted">Everywhere else, Spotify plays through the Spotify app on a computer or phone: it appears in the device list (cast button) and TurboMusic controls it.</p></div>);
 
   const working = !!busy || ['installing', 'expired'].includes(info.state);
   return (
     <div className="space-y-3 border-t border-line pt-4 text-sm">
-      <div className="flex flex-wrap items-center gap-2"><div className="font-medium">Soloist: play Spotify inside Curator</div>
+      <div className="flex flex-wrap items-center gap-2"><div className="font-medium">Soloist: play Spotify inside TurboMusic</div>
         <span className={info.state === 'running' ? 'chip !text-good' : info.state === 'error' ? 'chip !text-bad' : 'chip'}>{STATE[info.state]}</span>{info.version && <span className="text-xs text-muted">{info.version}</span>}</div>
       <div className="rounded-theme border border-line px-3 py-2 text-xs"><span className="text-muted">Runs on:</span> <b>{info.host.name}</b>{info.host.model ? <span className="text-muted"> · {info.host.model}</span> : null}<span className="text-muted"> · the server this app is connected to, not this device</span></div>
-      <p className="text-muted">Spotify’s own headless Spotify Connect player. It runs on your Raspberry Pi (the server), never in this app or on a desktop, and plays through the Pi’s sound output. Turn on “Send the sound to the apps” below to hear it on this device instead. It shows up in the device list as “{info.deviceName}”. It needs Spotify Premium and PipeWire or PulseAudio audio. Soloist is Spotify’s software, downloaded from Spotify’s server, under Spotify’s terms; builds expire after 90 days and Curator replaces them by itself.</p>
+      <p className="text-muted">Spotify’s own headless Spotify Connect player. It runs on your Raspberry Pi (the server), never in this app or on a desktop, and plays through the Pi’s sound output. Turn on “Send the sound to the apps” below to hear it on this device instead. It shows up in the device list as “{info.deviceName}”. It needs Spotify Premium and PipeWire or PulseAudio audio. Soloist is Spotify’s software, downloaded from Spotify’s server, under Spotify’s terms; builds expire after 90 days and TurboMusic replaces them by itself.</p>
 
       <ol className="space-y-3">
         <li className="space-y-1.5"><div className="font-medium">1. Install</div>
@@ -92,7 +92,7 @@ export function SoloistPanel() {
         <li className="space-y-1.5"><div className="font-medium">2. API key and name</div>
           <p className="text-xs text-muted">Make the key on <a className="text-accent underline" href={info.downloadsUrl.replace('/reference/downloads-and-updates', '')} target="_blank" rel="noreferrer">Spotify for Developers › Soloist</a> (a Premium account). It is kept on your server only and never shown again.</p>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Field label="Device name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Curator" /></Field>
+            <Field label="Device name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="TurboMusic" /></Field>
             <Field label={info.hasKey ? 'API key (saved; type to replace)' : 'API key'}><input className="input font-mono" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder={info.hasKey ? '••••••••' : 'paste the key'} /></Field></div>
           <button className="btn" disabled={working || (!key.trim() && name.trim() === info.deviceName)} onClick={() => void act('Saving…', async () => { const i = await api().soloistConfig({ deviceName: name.trim(), apiKey: key.trim() || undefined }); setKey(''); return i; })}>Save</button></li>
         <li className="space-y-1.5"><div className="font-medium">3. Sound</div>

@@ -8,7 +8,7 @@ import { refreshSpotifyStatus } from './spotifyPlayer.ts';
 /**
  * Spotify inside the page: Spotify's own Web Playback SDK turns this browser (or the desktop app) into a Spotify Connect device that
  * decodes and plays the audio itself. It then appears in Spotify's device list like Soloist or a phone, and the existing Spotify engine
- * (lib/spotifyPlayer.ts) sends it tracks through the server's account, so Curator's queue and rules work unchanged. Spotify keeps the
+ * (lib/spotifyPlayer.ts) sends it tracks through the server's account, so TurboMusic's queue and rules work unchanged. Spotify keeps the
  * audio: no equaliser, no offline copies.
  *
  * Needs Premium, a secure page (https or localhost) and a browser with Widevine, Spotify's DRM (Chrome, Edge, Firefox, Safari and Android
@@ -34,7 +34,7 @@ export async function drmSupport(): Promise<{ ok: boolean; reason: string | null
   if (typeof window === 'undefined') return { ok: false, reason: 'Not in a browser.' };
   if (typeof window !== 'undefined' && (window as unknown as { curatorDesktop?: unknown }).curatorDesktop) return { ok: false, reason: 'The desktop app has no Widevine, so it cannot play Spotify itself. Pick the Spotify app on this computer in the device list.' };
   if (isAndroidApp()) return { ok: false, reason: 'The Android app has no Widevine, so it cannot play Spotify itself. Use Soloist on your server (below), or pick the Spotify app on your phone in the device list.' };
-  if (!window.isSecureContext) return { ok: false, reason: 'Spotify’s player only runs on a secure page. Open Curator over https (for example through Tailscale) or on localhost; this address is plain http.' };
+  if (!window.isSecureContext) return { ok: false, reason: 'Spotify’s player only runs on a secure page. Open TurboMusic over https (for example through Tailscale) or on localhost; this address is plain http.' };
   if (typeof navigator.requestMediaKeySystemAccess !== 'function') return { ok: false, reason: 'This browser cannot play protected audio.' };
   try {
     await navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{ initDataTypes: ['cenc'], audioCapabilities: [{ contentType: 'audio/mp4;codecs="mp4a.40.2"', robustness: 'SW_SECURE_CRYPTO' }] }]);
@@ -61,7 +61,7 @@ function loadSdk(): Promise<SpotifyGlobal> {
 
 let player: SdkPlayer | null = null;
 let gestureBound = false;
-const deviceName = () => `${useStore.getState().settings.deviceName.trim() || guessDeviceName(navigator.userAgent, !!desktop())} (Curator)`;
+const deviceName = () => `${useStore.getState().settings.deviceName.trim() || guessDeviceName(navigator.userAgent, !!desktop())} (TurboMusic)`;
 
 /** Browsers only let a page start sound after a tap; the SDK wants to be told about one (Safari and phones). */
 function bindGesture() {

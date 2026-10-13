@@ -1,4 +1,4 @@
-# Music Curator: Project Brief
+# TurboMusic: Project Brief
 
 **Audience:** every future Claude instance (and the user) picking this project up cold.
 **Purpose:** explain *what we are building, why, for whom, and how we work*. This is the vision and context document.
@@ -12,7 +12,7 @@
 
 ## 1. The one-paragraph version
 
-Music Curator is a **personal music library for one person** who owns their music files and cares deeply about *ranking and curating* them. Its distinguishing feature is a head-to-head "This or That" voting system that turns thousands of small choices into a trustworthy 0 to 10 rating for every track, alongside rich metadata (credits and roles, releases, relational bios, a curation journal). The user wants to **use it in place of Spotify**, including **in the car via Android Auto**. So it must play their own files, work offline on a phone, and optionally sync with a home server (a Raspberry Pi with an external hard drive). It currently exists as a fragile AI-generated web app (built in "Dyad" with Gemini) that has to be rebuilt into a clean, local-first, multi-platform system that is *easy to iterate on*.
+TurboMusic is a **personal music library for one person** who owns their music files and cares deeply about *ranking and curating* them. Its distinguishing feature is a head-to-head "This or That" voting system that turns thousands of small choices into a trustworthy 0 to 10 rating for every track, alongside rich metadata (credits and roles, releases, relational bios, a curation journal). The user wants to **use it in place of Spotify**, including **in the car via Android Auto**. So it must play their own files, work offline on a phone, and optionally sync with a home server (a Raspberry Pi with an external hard drive). It currently exists as a fragile AI-generated web app (built in "Dyad" with Gemini) that has to be rebuilt into a clean, local-first, multi-platform system that is *easy to iterate on*.
 
 ## 2. Who the user is and how to work with them
 
@@ -52,7 +52,7 @@ Music Curator is a **personal music library for one person** who owns their musi
 | **User queue vs active queue** | The user queue is what you explicitly queued; the active queue is the rest of the album or list being played. The user queue plays first. |
 | **Note** | One thing, stored in the `groups` table (code and old docs also call it a *relational bio*): a title, text, your own **category** (created inline) and ties to one or more artists, albums, tracks, releases, eras or playlists. The first note on a thing starts with its name and kind as defaults. |
 | **Journal (timeline)** | Dated entries on the home page: your own plus automatic ones (new album, import, note). Filterable by text and kind. |
-| **Listening history (play log)** | Every play, from Curator's own player or imported from Spotify (`imported: 'spotify'`, matched to library tracks by link, then by title and artist). Skips are logged too. |
+| **Listening history (play log)** | Every play, from TurboMusic's own player or imported from Spotify (`imported: 'spotify'`, matched to library tracks by link, then by title and artist). Skips are logged too. |
 | **Memories** | An integer on a track, flagging sentimental songs. |
 | **Pair code** | `CUR1-…`: server address, access token and Cloudflare Access service token in one string that sets up another device. |
 

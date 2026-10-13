@@ -11,14 +11,17 @@ import { Updates } from '../updater.ts';
 import { folderPlan, lanUrls, loadServerConfig, pairCode, saveServerConfig, type ServerEditionConfig } from './serverConfig.ts';
 import { installTool, isInstalled, pathWith, TOOLS, toolsDir, type InstallProgress } from './tools.ts';
 import { Tunnel, type TunnelState } from './tunnel.ts';
+import { userDataPath } from '../appName.ts';
 
 /**
- * Music Curator Server for Windows: the same server as the Pi runs, living in the system tray. No window while it works. The first start (and
+ * TurboMusic Server for Windows: the same server as the Pi runs, living in the system tray. No window while it works. The first start (and
  * "Setup and settings" in the tray menu) opens the wizard (setup.html): folders for each kind of data, network, YouTube tools, Spotify
  * options and the optional Cloudflare tunnel. It is Electron only for the tray icon and the wizard: the GPU is off and nothing is drawn
  * while the wizard is closed, so it idles at a small amount of memory and no CPU.
  */
 const here = dirname(fileURLToPath(import.meta.url));
+// the product name changed to TurboMusic; installed apps keep their settings folder (see appName.ts)
+if (app.isPackaged) app.setPath('userData', userDataPath(app.getPath('appData'), 'server'));
 const userData = () => app.getPath('userData');
 app.disableHardwareAcceleration();
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -87,11 +90,11 @@ function statusLine(): string {
 function rebuildTray() {
   if (!tray) return;
   const c = cfg(), us = updates.state;
-  tray.setToolTip(`Music Curator Server\n${statusLine()}`);
+  tray.setToolTip(`TurboMusic Server\n${statusLine()}`);
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: statusLine(), enabled: false },
     { type: 'separator' },
-    { label: 'Open Curator in the browser', enabled: !!running, click: () => openBrowser() },
+    { label: 'Open TurboMusic in the browser', enabled: !!running, click: () => openBrowser() },
     { label: 'Copy the address for other devices', enabled: !!running, click: () => clipboard.writeText(addresses(c)[0] ?? baseUrl(c)) },
     { label: 'Copy the access token', enabled: !!running, click: () => clipboard.writeText(running!.config.token) },
     { label: 'Show the library folder', enabled: !!running, click: () => void shell.openPath(c.dataDir) },
@@ -114,7 +117,7 @@ function openBrowser() {
 function openWizard() {
   if (wizard) { wizard.show(); wizard.focus(); return; }
   wizard = new BrowserWindow({
-    width: 880, height: 700, minWidth: 640, minHeight: 520, title: 'Music Curator Server', backgroundColor: '#14141b', autoHideMenuBar: true, show: false,
+    width: 880, height: 700, minWidth: 640, minHeight: 520, title: 'TurboMusic Server', backgroundColor: '#14141b', autoHideMenuBar: true, show: false,
     icon: join(here, '../build/icon-256.png'),
     webPreferences: { preload: join(here, 'setup-preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false },
   });
@@ -178,5 +181,5 @@ void app.whenReady().then(async () => {
   updates.start();
   const c = cfg();
   if (!c.setupDone) { openWizard(); return; }
-  try { await startRuntime(); } catch (e) { dialog.showErrorBox('Music Curator Server cannot start', (e as Error).message); openWizard(); }
+  try { await startRuntime(); } catch (e) { dialog.showErrorBox('TurboMusic Server cannot start', (e as Error).message); openWizard(); }
 });

@@ -121,7 +121,7 @@ describe('database export and import', () => {
     expect(pulled.records.length).toBe(3);
   });
 
-  it('rejects files that are not a Curator database', async () => {
+  it('rejects files that are not a TurboMusic database', async () => {
     expect((await b.app.request('/api/import/database', { method: 'POST', headers: auth, body: Buffer.from('hello, not a database at all') })).status).toBe(400);
     const other = await import('node:sqlite').catch(() => null);
     void other;

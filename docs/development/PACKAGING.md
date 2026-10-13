@@ -12,7 +12,7 @@ Status: **plan, nothing below the "Done" section is built yet.** Decisions below
   - Windows server: `music-curator-server-<version>-windows-<arch>-setup.exe`
   - Android: `music-curator-<version>-android.apk`
 - No transition period was needed. Installed apps never look for a file name: electron-updater reads `latest*.yml` (which lists whatever name the build produced) and the Android updater takes the first asset ending in `.apk`.
-- The displayed product name ("Music Curator") and the installed app's folder are unchanged.
+- The displayed product name ("TurboMusic") and the installed app's folder are unchanged.
 
 ## Goal
 One program, three platforms (Windows, Linux, Android), each in **two halves** that install separately and fit together:

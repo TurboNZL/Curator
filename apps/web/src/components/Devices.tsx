@@ -100,8 +100,8 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
       <div className="flex items-center gap-2 px-3 pb-1 pt-1 text-xs text-muted" role="status"><Radio size={12} className={cn('shrink-0', (remote?.state?.playing ?? playingHere) && 'animate-pulse text-accent')} />Sound is coming from: <b className="truncate text-fg">{where}</b></div>
       <Head first>This device</Head>
       {mineDevice ? row(mineDevice) : <p className="px-3 py-2 text-xs text-muted">Registering this device…</p>}
-      <Head>Other Curator devices</Head>
-      {others.length ? others.map(row) : <p className="px-3 py-2 text-xs text-muted">None yet. Open Curator on another device that uses this server and it appears here, so you can play on it from here or move what is playing between them.</p>}
+      <Head>Other TurboMusic devices</Head>
+      {others.length ? others.map(row) : <p className="px-3 py-2 text-xs text-muted">None yet. Open TurboMusic on another device that uses this server and it appears here, so you can play on it from here or move what is playing between them.</p>}
       {spotify.length > 0 && <>
         <Head>Spotify devices</Head>
         {spotify.map((d) => {
@@ -113,7 +113,7 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
               title={d.restricted ? 'Spotify does not let other apps control this device (it reports it as restricted)' : selected ? 'Spotify tracks play here' : 'Play Spotify tracks on this device'} onClick={() => run(() => chooseSpotifyDevice(d), false)}>
               {d.type.toLowerCase() === 'speaker' ? <Speaker size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} /> : <Music size={18} className={cn('shrink-0', selected ? 'text-accent' : 'text-muted')} />}
               <span className="min-w-0 flex-1"><span className={cn('flex items-center gap-1.5 font-medium', selected && 'text-accent')}><span className="truncate">{d.name}</span>{playing && <Radio size={12} className="shrink-0 animate-pulse" aria-label="Playing" />}</span>
-                <span className="block truncate text-xs text-muted">{isSoloist ? `Soloist on ${soloist!.host}` : `Spotify · ${d.type}`}{d.restricted ? ' · restricted by Spotify' : ''}{d.active ? ' · active' : ''}{playing ? ' · playing from Curator' : selected ? ' · where Spotify tracks play' : ''}</span></span>
+                <span className="block truncate text-xs text-muted">{isSoloist ? `Soloist on ${soloist!.host}` : `Spotify · ${d.type}`}{d.restricted ? ' · restricted by Spotify' : ''}{d.active ? ' · active' : ''}{playing ? ' · playing from TurboMusic' : selected ? ' · where Spotify tracks play' : ''}</span></span>
               {selected && <Check size={16} className="shrink-0 text-accent" />}
             </button>);
         })}
@@ -121,7 +121,7 @@ export function DeviceList({ onPick }: { onPick?: () => void }) {
       {!spotify.length && spotifyNote && <p className="border-t border-line/60 px-3 py-2 text-xs text-muted" role="status">{spotifyNote}</p>}
       {notLocal && <div className="mt-1 border-t border-line/60 px-3 pb-1 pt-2.5">
         <button type="button" className="btn w-full justify-center" onClick={() => run(() => localOnly())} title="Stop controlling other devices, pause Spotify and stop its stream, so the next track starts here at once"><Unplug size={15} />Play on this device only</button>
-        <p className="mt-1 text-[11px] leading-snug text-muted">Disconnects from other Curator devices and from Spotify, so local tracks start straight away.</p>
+        <p className="mt-1 text-[11px] leading-snug text-muted">Disconnects from other TurboMusic devices and from Spotify, so local tracks start straight away.</p>
       </div>}
       {err && <p className="px-3 pb-2 text-xs text-bad">{err}</p>}
     </div>

@@ -6,8 +6,8 @@ import { setBeamErrorListener, startBeam, stopBeam } from './beam.ts';
 
 /**
  * Plays tracks that have a Spotify link but no audio file by telling a Spotify Connect device (Soloist on the Pi, the phone's Spotify app,
- * the PC app) what to play, through the server's Spotify account (server/src/spotify.ts). Spotify keeps the audio: Curator cannot equalise it,
- * keep it offline or put it on the Android notification; Curator's own queue and playback rules still decide what comes next, because a
+ * the PC app) what to play, through the server's Spotify account (server/src/spotify.ts). Spotify keeps the audio: TurboMusic cannot equalise it,
+ * keep it offline or put it on the Android notification; TurboMusic's own queue and playback rules still decide what comes next, because a
  * track is sent on its own and the next one is sent when it ends. The player (lib/player.ts) treats it as a third engine next to the
  * page's <audio> and the Android app's player.
  */
@@ -98,6 +98,6 @@ export const spotifyEngine = {
   async resume() { playingNow = true; lastAt = Date.now(); try { await api().spotifyCommand('resume', device()); void startBeam(); } catch (e) { fail(e); } },
   async seek(ms: number) { lastProgress = ms; lastAt = Date.now(); try { await api().spotifyCommand('seek', device(), ms); } catch (e) { fail(e); } },
   async volume(v: number) { try { await api().spotifyCommand('volume', device(), Math.round(v * 100)); } catch { /* some devices have fixed volume */ } },
-  /** leave Spotify alone from now on (another engine takes over); pauses it if Curator started it */
+  /** leave Spotify alone from now on (another engine takes over); pauses it if TurboMusic started it */
   async release(pause = true) { const was = uri; uri = null; stopBeam(); stopPolling(); clearInterval(tick); if (was && pause) { try { await api().spotifyCommand('pause', device()); } catch { /* already stopped */ } } },
 };

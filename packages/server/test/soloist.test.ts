@@ -115,7 +115,7 @@ describe('Soloist module', () => {
     s.start();
     expect(children).toHaveLength(0); // not before the sink exists
     await new Promise((r) => setTimeout(r, 20));
-    expect(pactl.map((a) => a.join(' '))).toEqual(['list short sinks', 'load-module module-null-sink sink_name=curator_spotify sink_properties=device.description=Curator-Spotify']);
+    expect(pactl.map((a) => a.join(' '))).toEqual(['list short sinks', 'load-module module-null-sink sink_name=curator_spotify sink_properties=device.description=TurboMusic-Spotify']);
     expect(children).toHaveLength(1);
     expect(children[0].args.slice(-2)).toEqual(['--pipewire-device', 'curator_spotify']);
     expect(children[0].env).toMatchObject({ PULSE_SINK: 'curator_spotify', XDG_RUNTIME_DIR: '/run/user/998' });
