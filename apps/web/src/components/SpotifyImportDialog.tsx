@@ -148,7 +148,7 @@ export function SpotifyImportDialog({ onClose }: { onClose: () => void }) {
 
   const tabs: { id: Source; label: string; icon: typeof Link2 }[] = [{ id: 'link', label: 'Playlist link', icon: Link2 }, { id: 'account', label: 'My account', icon: User }, { id: 'file', label: 'Account data file', icon: FileUp }, { id: 'text', label: 'Typed list', icon: ListMusic }];
   const newAlbums = plan?.albums.filter((a) => !skipped.has(a.key)) ?? [];
-  const footer = result ? <div className="ml-auto flex gap-2">{result.playlistId && <button className="btn" onClick={() => { onClose(); nav('/playlists'); }}>Open playlists</button>}<button className="btn btn-accent" onClick={() => { onClose(); nav('/health'); }}>Complete the albums in Health</button></div>
+  const footer = result ? <div className="ml-auto flex gap-2">{result.playlistId && <button className="btn" onClick={() => { onClose(); nav(`/playlists/${result.playlistId}`); }}>Open the playlist</button>}<button className="btn btn-accent" onClick={() => { onClose(); nav('/health'); }}>Complete the albums in Health</button></div>
     : list ? <div className="ml-auto flex gap-2"><button className="btn btn-ghost" disabled={!!busy} onClick={() => setList(null)}>Back</button>
       <button className="btn btn-accent" disabled={!!busy || !plan || (!makePlaylist && !makeAlbums)} onClick={() => void run()}>{busy ? <Loader2 size={15} className="animate-spin" /> : null}Import</button></div>
     : <button className="btn ml-auto" onClick={onClose}>Cancel</button>;

@@ -129,6 +129,12 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
   }
   const dateOf = (a: Row<AlbumData>) => defaultRel(a)?.releaseDate || releases.filter((r) => r.albumId === a.id && r.releaseDate).map((r) => r.releaseDate!).sort()[0] || null;
   const albumDate = new Map(rawAlbums.map((a) => [a.id, dateOf(a)]));
+  // a song's own date is the earliest release it is on (a deluxe edition of 2024 does not make a 2019 song newer); no dated release = its album's date
+  const earliestRelease = new Map<string, string>();
+  for (const r of releases) {
+    if (!r.releaseDate) continue;
+    for (const id of r.trackIds ?? []) { const cur = earliestRelease.get(id); if (!cur || r.releaseDate < cur) earliestRelease.set(id, r.releaseDate); }
+  }
   const albumOf = new Map<string, Row<AlbumData>>();
   const albumsById = by(coveredAlbums);
   const trackIdsByAlbum = new Map<string, { id: string; order: number }[]>();
@@ -159,7 +165,7 @@ export function buildLibrary(rows: Record<string, Map<string, SyncRecord>>): Lib
       ...t, credits, artistId, leads, featured: featuredOf(credits, leads, artistById), elo: r.elo, comparisons: r.comparisons, rating, effectiveRating: eff, tenStarRank: null,
       artistName: namesOf(leads),
       albumId: album?.id ?? null, albumTitle: album?.title ?? null, cover: t.cover || album?.cover || null,
-      releaseDate: album ? albumDate.get(album.id) ?? null : t.releaseDate || null, // a single keeps its own
+      releaseDate: album ? earliestRelease.get(t.id) ?? albumDate.get(album.id) ?? null : t.releaseDate || null, // a single keeps its own
       eraIds: [...new Set([...(album ? erasOfAlbum.get(album.id) ?? [] : []), ...(erasOfTrack.get(t.id) ?? [])])],
       allGenres: genres ?? [],
     };

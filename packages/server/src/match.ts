@@ -59,9 +59,15 @@ export function scoreAlbum(a: MatchAlbum, c: { id: string; title: string; channe
   return Math.max(0, Math.min(1, score));
 }
 
-const thumbOf = (e: any): string | undefined => {
-  const t = Array.isArray(e?.thumbnails) ? [...e.thumbnails].filter((x: any) => typeof x?.url === 'string').sort((x: any, y: any) => (y.width ?? 0) - (x.width ?? 0))[0]?.url : undefined;
-  return typeof t === 'string' ? t : typeof e?.thumbnail === 'string' ? e.thumbnail : undefined;
+/** YouTube Music serves the real square album art from Google image hosts; every other thumbnail is a cropped video frame. */
+const isSquareArt = (u: string) => { try { const h = new URL(u).hostname; return h === 'googleusercontent.com' || h.endsWith('.googleusercontent.com') || h === 'ggpht.com' || h.endsWith('.ggpht.com'); } catch { return false; } };
+export const thumbOf = (e: any): string | undefined => {
+  const listed: { url: string; size: number }[] = Array.isArray(e?.thumbnails) ? e.thumbnails.filter((x: any) => typeof x?.url === 'string').map((x: any) => ({ url: x.url as string, size: (x.width ?? 0) * (x.height ?? 0) })) : [];
+  if (typeof e?.thumbnail === 'string') listed.push({ url: e.thumbnail, size: 0 });
+  const square = listed.filter((x) => isSquareArt(x.url)).sort((a, b) => b.size - a.size)[0]?.url;
+  // a Google art link ends in `=w544-h544-...`: 300 px is plenty for a result row and loads fast
+  if (square) return square.replace(/=w\d+-h\d+/, '=w300-h300');
+  return listed.sort((a, b) => b.size - a.size)[0]?.url;
 };
 const ownerOf = (e: any): string | undefined => {
   const h = typeof e?.uploader_id === 'string' && e.uploader_id ? e.uploader_id : typeof e?.channel_id === 'string' ? '' : '';

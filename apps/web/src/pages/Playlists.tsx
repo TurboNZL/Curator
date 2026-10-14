@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
-import { BarChart3, Search, ArrowDown, ArrowUp, Link2, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Search, ArrowDown, ArrowUp, Link2, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
 import { shuffleWithRules } from '@turbomusic/core';
 import { moveTrack, removeTrack } from '../lib/defaults.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -11,10 +11,12 @@ import { useStore } from '../lib/store.ts';
 import { Cover } from '../components/Cover.tsx';
 import { PlaylistCover } from '../components/PlaylistCover.tsx';
 import { ArtistLinks } from '../components/ArtistLinks.tsx';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { useMenu } from '../components/Menu.tsx';
+import { usePlaylistMenuItems } from '../components/entityMenus.tsx';
 import { isAlbumList, playlistAlbums, playlistCount, playlistTrackIds } from '../lib/playlists.ts';
 import { KeepOffline } from '../components/KeepOffline.tsx';
-import { plural } from '../lib/cn.ts';
+import { cn, plural } from '../lib/cn.ts';
 import { PlaylistNote, withoutKey } from '../components/PlaylistNote.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
 import { useChunks } from '../lib/useChunks.ts';
@@ -24,7 +26,12 @@ export function PlaylistsPage() {
   const patch = useStore((s) => s.patch);
   const edit = useEditor((s) => s.open);
   const play = usePlayer((s) => s.play);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const openId = useParams().playlistId ?? null;
+  const menu = useMenu();
+  const menuItems = usePlaylistMenuItems();
+  // one switch instead of a Shuffle button next to every Play: it applies to Play, Then: replace and Add to Then
+  const [shuffleOn, setShuffleOn] = useState(() => { try { return localStorage.getItem('turbomusic.playlistShuffle') === '1'; } catch { return false; } });
+  const toggleShuffle = () => setShuffleOn((v) => { const n = !v; try { localStorage.setItem('turbomusic.playlistShuffle', n ? '1' : '0'); } catch { /* private window */ } return n; });
   const [adding, setAdding] = useState('');
   const [find, setFind] = useState('');
   const replaceRest = usePlayer((s) => s.replaceRest);
@@ -44,6 +51,7 @@ export function PlaylistsPage() {
   const albums = useMemo(() => (open && albumMode ? playlistAlbums(lib, open) : []), [lib, open, albumMode]);
   const tracks = useMemo(() => (open ? playlistTrackIds(lib, open).map((id) => lib.trackById.get(id)!) : []), [lib, open]);
   const playable = useMemo(() => tracks.filter(canPlay).map((t) => t.id), [tracks]);
+  const ordered = () => (shuffleOn ? shuffleWithRules(playable, lib.rules) : playable);
   const offlineHashes = useMemo(() => tracks.flatMap((t) => (t.file ? [t.file] : [])), [tracks]);
   // long lists are drawn a piece at a time (rows are heavy: rating, menu, note), so opening a big playlist does not freeze the page
   const rows = useChunks(tracks.length, 40, openId);
@@ -56,32 +64,34 @@ export function PlaylistsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3"><h1 className="mr-auto text-2xl font-bold">Playlists</h1>
+      {!open && <><div className="flex items-center gap-3"><h1 className="mr-auto text-2xl font-bold">Playlists</h1>
         <button className="btn btn-accent" onClick={() => edit({ kind: 'new-playlist', id: '' })}><Plus size={16} />New playlist</button></div>
       {lib.playlists.length > 0 && <label className="relative block max-w-md"><Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
         <input className="input !pl-9" type="search" aria-label="Search playlists" placeholder="Search playlists, or a track or artist in them…" value={find} onChange={(e) => setFind(e.target.value)} /></label>}
       {find.trim() && !listed.length && <p className="text-sm text-muted">No playlist matches.</p>}
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--grid-min), 9rem), 1fr))' }}>{listed.slice(0, cards.shown).map((p) => { const c = playlistCount(lib, p); return (
-        <button key={p.id} onClick={() => setOpenId(p.id)} aria-pressed={openId === p.id} className="bt-tile bt-sel group text-left" data-selected={openId === p.id || undefined}>
+        <Link key={p.id} to={`/playlists/${p.id}`} className="bt-tile group block text-left" onContextMenu={menu.onContextMenu(menuItems(p), `Actions for ${p.name}`, p.id)}>
           <PlaylistCover playlist={p} className="transition-transform group-hover:scale-[1.02]" />
           <div className="bt-cap-t mt-2 truncate text-sm font-medium">{p.name}</div>
           <div className="bt-cap text-xs text-muted">{isAlbumList(p) ? 'Albums · ' : ''}{plural(c.n, c.noun)}</div>
-        </button>); })}</div>
-      {cards.left > 0 && <div ref={cards.sentinel} className="text-center"><button className="btn" onClick={cards.more}>Show more ({cards.left} left)</button></div>}
+        </Link>); })}</div>
+      {cards.left > 0 && <div ref={cards.sentinel} className="text-center"><button className="btn" onClick={cards.more}>Show more ({cards.left} left)</button></div>}</>}
+      {openId && !open && <div className="space-y-3"><Link to="/playlists" className="btn btn-ghost"><ArrowLeft size={15} />Playlists</Link><p className="text-sm text-muted">This playlist was not found (it may have been deleted, or the library is still loading).</p></div>}
       {open && (
         <section className="space-y-3">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <Link to="/playlists" className="btn btn-ghost -ml-2"><ArrowLeft size={15} />Playlists</Link>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end" onContextMenu={menu.onContextMenu(menuItems(open), `Actions for ${open.name}`, open.id)}>
             <PlaylistCover playlist={open} className="w-32 shrink-0 sm:w-40" />
             <div className="min-w-0 space-y-2">
               <div className="text-xs uppercase tracking-wider text-muted">{albumMode ? `Album playlist · ${plural(albums.length, 'album')} · ${plural(tracks.length, 'track')}` : `Playlist · ${plural(tracks.length, 'track')}`}</div>
               <h2 className="text-2xl font-bold leading-tight">{open.name}</h2>
               {open.description && <p className="max-w-xl whitespace-pre-wrap text-sm text-muted">{open.description}</p>}
               <div className="flex flex-wrap gap-2 pt-1">
-                <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'playlist', id: open.id })}><Play size={16} fill="currentColor" />Play</button>
-                <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'playlist', id: open.id }); }}><Shuffle size={16} />Shuffle</button>
+                <button className="btn btn-accent" disabled={!playable.length} onClick={() => { const o = ordered(); play(o[0], o, { type: 'playlist', id: open.id }); }}><Play size={16} fill="currentColor" />Play</button>
+                <button className={cn('btn', shuffleOn && 'btn-accent')} aria-pressed={shuffleOn} onClick={toggleShuffle} title={shuffleOn ? 'Shuffle is on: Play, Then and Add to Then mix the playlist' : 'Shuffle is off: they keep the playlist order'}><Shuffle size={16} />Shuffle {shuffleOn ? 'on' : 'off'}</button>
                 {hasCurrent && <>
-                  <button className="btn" disabled={!playable.length} title="Keep playing the current track, then continue with this playlist instead of what was coming next" onClick={() => replaceRest(playable, { type: 'playlist', id: open.id })}><ListStart size={16} />Then: replace</button>
-                  <button className="btn btn-ghost" disabled={!playable.length} title="Add this playlist to the end of what is coming next" onClick={() => appendRest(playable)}><ListEnd size={16} />Add to Then</button>
+                  <button className="btn" disabled={!playable.length} title="Keep playing the current track, then continue with this playlist instead of what was coming next" onClick={() => replaceRest(ordered(), { type: 'playlist', id: open.id })}><ListStart size={16} />Then: replace</button>
+                  <button className="btn btn-ghost" disabled={!playable.length} title="Add this playlist to the end of what is coming next" onClick={() => appendRest(ordered())}><ListEnd size={16} />Add to Then</button>
                 </>}
                 <Link className="btn btn-ghost" to={statsPath('playlist', open.id)}><BarChart3 size={15} />Stats</Link>
                 <button className="btn btn-ghost" onClick={() => edit({ kind: 'playlist', id: open.id })}><Pencil size={15} />Edit</button>
@@ -106,7 +116,7 @@ export function PlaylistsPage() {
                   </div>))}
                 {!albums.length && <div className="px-3 py-4 text-sm text-muted">No albums yet. Search above, or use “Add to an album playlist…” in an album’s menu.</div>}
               </div>
-            : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, rows.shown)} queue={tracks} source="playlist" sourceId={open.id} numbered below={(t) => <PlaylistNote playlistId={open.id} trackId={t.id} notes={open.trackNotes} />} extra={(t, i) => (
+            : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, rows.shown)} queue={tracks} source="playlist" sourceId={open.id} numbered covers below={(t) => <PlaylistNote playlistId={open.id} trackId={t.id} notes={open.trackNotes} />} extra={(t, i) => (
             <div className="flex">
               <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${t.title} up`} disabled={i === 0} onClick={() => patch('playlists', open.id, { trackIds: moveTrack(tracks.map((x) => x.id), i, i - 1) })}><ArrowUp size={15} /></button>
               <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${t.title} down`} disabled={i === tracks.length - 1} onClick={() => patch('playlists', open.id, { trackIds: moveTrack(tracks.map((x) => x.id), i, i + 1) })}><ArrowDown size={15} /></button>
@@ -117,6 +127,7 @@ export function PlaylistsPage() {
         </section>
       )}
       {!lib.playlists.length && <div className="flex items-center gap-2 text-sm text-muted"><Link2 size={14} />No playlists yet.</div>}
+      {menu.element}
     </div>
   );
 }

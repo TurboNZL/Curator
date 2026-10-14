@@ -28,7 +28,7 @@ export function TrackDetails({ id, onClose }: { id: string; onClose: () => void 
       <div className="flex items-center gap-3"><div className="min-w-0 flex-1"><div className="truncate text-lg font-semibold">{t.title}</div><div className="truncate text-sm text-muted">{t.artistName}{t.albumTitle && ` · ${t.albumTitle}`}</div></div><Rating track={t} size="lg" /></div>
       <div className="grid grid-cols-3 gap-2">
         {stat('Elo', Math.round(t.elo).toString())}{stat('Plays', String(info.plays))}{stat('Skips', String(info.skips))}
-        {stat('Won / lost', `${info.wins} / ${info.losses}`)}{stat('Listened', fmtListened(info.secondsListened))}{stat(t.albumId ? 'Album released' : 'Released', t.releaseDate ?? '—')}
+        {stat('Won / lost', `${info.wins} / ${info.losses}`)}{stat('Listened', fmtListened(info.secondsListened))}{stat(t.albumId ? 'First released' : 'Released', t.releaseDate ?? '—')}
       </div>
       <div className="text-xs text-muted">{info.lastPlayed ? `Last played ${new Date(info.lastPlayed).toLocaleString()}` : 'Never played here'}</div>
     </Modal>
