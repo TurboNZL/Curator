@@ -30,5 +30,10 @@ contextBridge.exposeInMainWorld('curatorDesktop', {
   windowControl: (action: 'minimize' | 'maximize' | 'close') => ipcRenderer.send('curator:window', action),
   setCustomFrame: (on: boolean) => ipcRenderer.invoke('curator:set-frame', on) as Promise<void>,
   onWindowState: (cb: (maximized: boolean) => void) => { const h = (_e: unknown, m: boolean) => cb(m); ipcRenderer.on('curator:window-state', h); return () => { ipcRenderer.removeListener('curator:window-state', h); }; },
+  migration: {
+    info: () => ipcRenderer.invoke('curator:migrate-info') as Promise<unknown>,
+    run: () => ipcRenderer.invoke('curator:migrate-run') as Promise<boolean>,
+    dismiss: () => ipcRenderer.invoke('curator:migrate-dismiss') as Promise<void>,
+  },
   showLibraryFolder: () => ipcRenderer.invoke('curator:show-folder') as Promise<void>,
 });

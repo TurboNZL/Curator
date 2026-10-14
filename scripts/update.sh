@@ -36,6 +36,15 @@ if [ "$LIVE" -eq 0 ]; then
   $SUDO systemctl stop "$SERVICE"
 fi
 
+# The project was renamed from Curator to TurboMusic. GitHub forwards the old address, so this already worked; this just makes the new one permanent.
+ORIGIN="$(git remote get-url origin 2>/dev/null || true)"
+NEW_ORIGIN="$(printf '%s' "$ORIGIN" | sed -E 's#([Tt]urbo[Nn][Zz][Ll])/[Cc]urator(\.git)?/?$#\1/turbomusic.git#')"
+if [ -n "$ORIGIN" ] && [ "$NEW_ORIGIN" != "$ORIGIN" ]; then
+  step "Pointing the checkout at the renamed repository"
+  echo "$ORIGIN -> $NEW_ORIGIN"
+  git remote set-url origin "$NEW_ORIGIN"
+fi
+
 step "Pulling latest code (git pull --ff-only)"
 git pull --ff-only
 

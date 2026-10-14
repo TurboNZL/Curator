@@ -18,7 +18,7 @@ import { BackupCard } from '../components/BackupCard.tsx';
 import { GuidesTab } from '../components/GuidesTab.tsx';
 import { ServerUpdateCard } from '../components/ServerUpdate.tsx';
 import { ConnectionTokens, PairDevice, ServerHealthCard } from '../components/ServerHealthCard.tsx';
-import { AppUpdatesCard, DiscordCard, GraphicsLine } from '../components/AppSettings.tsx';
+import { AppUpdatesCard, DiscordCard, GraphicsLine, MigrateCard } from '../components/AppSettings.tsx';
 
 
 export function SettingsPage() {
@@ -133,6 +133,7 @@ export function SettingsPage() {
         <GraphicsLine />
         <p className="text-xs text-muted">Version {desktop()!.version}. {!desktop()!.serverModule ? '' : "Changing the folder restarts the app and starts with an empty library there, unless you copy the old folder's contents over first."}</p>
       </Section>}
+      <MigrateCard />
       <TermuxServerCard />
       <DiscordCard />
       </>}

@@ -11,7 +11,7 @@ import { DiscordPresence, findSockets, type Presence } from './discord.ts';
 import { Updates } from './updater.ts';
 import { describeGraphics, type Graphics } from './graphics.ts';
 import { activeMode, GPU_MODES, nextAutoStep } from './gpuModes.ts';
-import { userDataPath } from './appName.ts';
+import { bootUserData, migrationInfo, askForMigration, dismissMigrationNote } from './userDataBoot.ts';
 
 /**
  * The desktop app runs the same server as the Raspberry Pi, inside the app, on 127.0.0.1, with the library in a folder of the
@@ -27,8 +27,8 @@ const edition: 'full' | 'app' = (() => {
   if (process.env.CURATOR_EDITION === 'app') return 'app';
   try { return (JSON.parse(readFileSync(join(app.getAppPath(), 'package.json'), 'utf8')) as { curatorEdition?: string }).curatorEdition === 'app' ? 'app' : 'full'; } catch { return 'full'; }
 })();
-// the product name changed to TurboMusic; installed apps keep their settings folder (see appName.ts)
-if (app.isPackaged) app.setPath('userData', userDataPath(app.getPath('appData'), edition));
+// the product name changed to TurboMusic; an installed app keeps its old settings folder until the person moves it (userDataBoot.ts)
+bootUserData(edition);
 let win: BrowserWindow | null = null;
 const discord = new DiscordPresence();
 const updates = new Updates(app.isPackaged, (state) => win?.webContents.send('curator:update', state));
@@ -152,6 +152,23 @@ ipcMain.handle('curator:gpu-set', (_e, mode: unknown) => {
   app.relaunch(); app.exit(0);
 });
 ipcMain.handle('curator:choose-folder', () => chooseFolder());
+/** The move from the "Music Curator" settings folder to the "TurboMusic" one (Settings > This app). The folder cannot be renamed while this app has it open, so the button asks and the next start does it. */
+ipcMain.handle('curator:migrate-info', () => migrationInfo(edition));
+ipcMain.handle('curator:migrate-dismiss', () => { dismissMigrationNote(); });
+ipcMain.handle('curator:migrate-run', async () => {
+  const info = migrationInfo(edition);
+  if (!info.plan?.needed) return false;
+  const lines = [`Rename ${info.plan.from} to ${info.plan.to}.`, ...info.plan.repoint.map((r) => `Point ${r.key} at ${r.to}.`), ...info.plan.untouched.map((u) => `Leave ${u.key} (${u.value}) where it is.`)];
+  const r = await dialog.showMessageBox(win ?? undefined!, { type: 'question', buttons: ['Move now', 'Cancel'], defaultId: 0, cancelId: 1, message: 'Move to the TurboMusic folder?',
+    detail: `${lines.join('\n')}\n\nNothing is copied or deleted: the folder is renamed, with your settings, library choice and window data inside. The app restarts, and if anything goes wrong the old folder is put back.` });
+  if (r.response !== 0) return false;
+  askForMigration(edition);
+  closing = true;
+  await Promise.allSettled([discord.stop(), server?.close()]);
+  server = null;
+  app.relaunch(); app.exit(0);
+  return true;
+});
 /** Install or remove the server module (this app's own library server). Removing keeps the library files unless the user says to delete them; both restart the app. */
 ipcMain.handle('curator:server-module', async (_e, on: unknown) => {
   const desk = loadDesktopConfig(userData());
