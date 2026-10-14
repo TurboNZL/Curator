@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SyncRecord } from '@curator/core';
+import type { SyncRecord } from '@turbomusic/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { artistSubject, eraSubject, filterKeys, makeChip, matchesAll, splitTyped } from '../src/lib/filters.ts';
 import { ALBUM_SORTS, ARTIST_SORTS, artistRows, eraRows, sortAlbums, sortArtists, sortEras } from '../src/lib/listSort.ts';

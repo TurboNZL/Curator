@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../lib/derive.ts';
 import { FileAudio, Search as SearchIcon, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { TRACK_SORTS, sortTracks } from '../lib/trackSort.ts';

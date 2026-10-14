@@ -1,4 +1,4 @@
-import type { GroupData, NoteCategoryData, NoteData } from '@curator/core';
+import type { GroupData, NoteCategoryData, NoteData } from '@turbomusic/core';
 
 /** Stable id for a category made from an old fixed type, so every device that migrates makes the same record. */
 export const categoryIdFor = (name: string) => `cat-${name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 56)}`;

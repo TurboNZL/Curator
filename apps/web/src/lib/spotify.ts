@@ -1,4 +1,4 @@
-import type { PlaybackLogData, SyncRecord } from '@curator/core';
+import type { PlaybackLogData, SyncRecord } from '@turbomusic/core';
 
 /** One entry of Spotify's "Extended streaming history" (Streaming_History_Audio_*.json). Only the fields used here. */
 export interface SpotifyHistoryEntry {
@@ -80,7 +80,7 @@ export function exportSpotifyFormat(plays: ExportPlay[]): { entries: SpotifyHist
   for (const p of [...plays].sort((a, b) => a.ts - b.ts)) {
     if (!p.uri || !p.uri.startsWith('spotify:track:')) { dropped++; continue; }
     entries.push({
-      ts: new Date(p.ts).toISOString().replace(/\.\d{3}Z$/, 'Z'), platform: p.platform ?? 'Curator', ms_played: Math.round(p.ms), conn_country: null, ip_addr: null,
+      ts: new Date(p.ts).toISOString().replace(/\.\d{3}Z$/, 'Z'), platform: p.platform ?? 'TurboMusic', ms_played: Math.round(p.ms), conn_country: null, ip_addr: null,
       master_metadata_track_name: p.title, master_metadata_album_artist_name: p.artist, master_metadata_album_album_name: p.album || null,
       spotify_track_uri: p.uri, episode_name: null, episode_show_name: null, spotify_episode_uri: null,
       reason_start: p.reasonStart ?? 'trackdone', reason_end: p.reasonEnd ?? (p.skipped ? 'fwdbtn' : 'trackdone'),

@@ -1,4 +1,4 @@
-import type { DeviceInfo } from '@curator/core';
+import type { DeviceInfo } from '@turbomusic/core';
 
 /** A readable guess ("Firefox on Linux") for a device the user has not named. */
 export function guessDeviceName(ua: string, isDesktop = false): string {

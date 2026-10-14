@@ -1,4 +1,4 @@
-package app.musiccurator.android
+package app.turbomusic.android
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -3,7 +3,7 @@ import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { statsPath } from '../lib/entityStats.ts';
 import { BarChart3, Disc, Download, FileAudio, Layers, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';

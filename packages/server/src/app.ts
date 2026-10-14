@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
+import { pushSchema, sha256Hex, type PullResponse } from '@turbomusic/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
@@ -322,7 +322,7 @@ export function createApp(
     const stream = readStream(snap.path);
     stream.on('close', () => rmSync(snap.path, { force: true }));
     return new Response(Readable.toWeb(stream) as unknown as ReadableStream, { headers: {
-      'Content-Type': 'application/vnd.sqlite3', 'Content-Length': String(snap.size), 'Content-Disposition': `attachment; filename="curator-database-${stamp()}.db"` } });
+      'Content-Type': 'application/vnd.sqlite3', 'Content-Length': String(snap.size), 'Content-Disposition': `attachment; filename="turbomusic-database-${stamp()}.db"` } });
   });
   app.post('/api/import/database', async (c) => {
     const mode = c.req.query('mode') === 'replace' ? 'replace' : 'merge';
@@ -342,7 +342,7 @@ export function createApp(
   app.get('/api/export/files', (c) => {
     const archive = filesArchive(config.dataDir, store);
     return new Response(Readable.toWeb(Readable.from(archive.chunks)) as unknown as ReadableStream, { headers: {
-      'Content-Type': 'application/x-tar', 'Content-Length': String(archive.length), 'Content-Disposition': `attachment; filename="curator-files-${stamp()}.tar"` } });
+      'Content-Type': 'application/x-tar', 'Content-Length': String(archive.length), 'Content-Disposition': `attachment; filename="turbomusic-files-${stamp()}.tar"` } });
   });
   app.post('/api/import/files', async (c) => {
     if (!c.req.raw.body) return c.json({ error: 'empty body' }, 400);

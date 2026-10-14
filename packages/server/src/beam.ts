@@ -3,13 +3,13 @@ import { join } from 'node:path';
 
 /**
  * "Beaming": Spotify Soloist can only play through the sound server of the machine it runs on. With beaming on, Soloist is pointed at a
- * virtual output (a PulseAudio/PipeWire null sink called `curator_spotify`) instead of the speakers, and this class listens to that
+ * virtual output (a PulseAudio/PipeWire null sink called `turbomusic_spotify`) instead of the speakers, and this class listens to that
  * output with ffmpeg, encodes it as a live MP3 stream and hands the bytes to every connected app (`GET /api/soloist/stream`). The apps play
  * the stream like internet radio, so Spotify tracks are heard on the phone (or in the browser) while the Pi stays silent.
  * ffmpeg only runs while somebody listens. The stream is live: it has a few seconds of delay and no pausing of its own (Spotify's
  * play/pause go through the Spotify API; a paused Soloist simply sends silence).
  */
-export const SINK = 'curator_spotify';
+export const SINK = 'turbomusic_spotify';
 
 export function ffmpegArgs(source = `${SINK}.monitor`): string[] {
   return ['-hide_banner', '-loglevel', 'error', '-nostdin', '-fflags', 'nobuffer', '-flags', 'low_delay', '-f', 'pulse', '-i', source,

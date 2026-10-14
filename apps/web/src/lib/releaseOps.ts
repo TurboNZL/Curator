@@ -1,4 +1,4 @@
-import type { AlbumData, ReleaseData } from '@curator/core';
+import type { AlbumData, ReleaseData } from '@turbomusic/core';
 import type { Library } from './library.ts';
 import { insertNewTracks } from './albumMerge.ts';
 

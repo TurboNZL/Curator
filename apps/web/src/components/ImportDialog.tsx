@@ -2,7 +2,7 @@ import { cleanAlbumTitle, cleanArtistName, genresFor, matchArtist } from '../lib
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, ImagePlus, Loader2 } from 'lucide-react';
-import type { ArtistData } from '@curator/core';
+import type { ArtistData } from '@turbomusic/core';
 import { leadCredit, newAlbumData, newTrackData } from '../lib/defaults.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
 import type { ImportPreview, MatchCandidate } from '../lib/api.ts';

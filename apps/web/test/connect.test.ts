@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DeviceInfo, PlaybackSnapshot } from '@curator/core';
+import type { DeviceInfo, PlaybackSnapshot } from '@turbomusic/core';
 import { guessDeviceName, positionNow } from '../src/lib/connectPure.ts';
 
 const snap = (over: Partial<PlaybackSnapshot> = {}): PlaybackSnapshot => ({ trackId: 't', queue: { user: [], active: [], currentId: 't' }, source: { type: 'track', id: null }, history: [], position: 10, duration: 100, playing: true, volume: 0.5, ...over });

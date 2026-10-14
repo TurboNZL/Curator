@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SyncRecord } from '@curator/core';
+import type { SyncRecord } from '@turbomusic/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { findDuplicates, looseTitle, nearlySame, artistKey } from '../src/lib/duplicates.ts';
 import { computeHealth } from '../src/lib/health.ts';

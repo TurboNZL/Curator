@@ -20,13 +20,13 @@ Both apps update themselves from the newest **GitHub release**:
 **If the repository is private** the apps need a read-only token: GitHub > Settings > Developer settings > Fine-grained tokens, only this repository, permission **Contents: read-only**. Paste it in Settings > App updates > "Private repository?" on each device. Not needed while the repository is public.
 
 Notes:
-- The APK is signed with `apps/android/curator.keystore`, committed on purpose (private repo, personal app): Android only installs an update signed with the same key as the installed app. Don't change it.
+- The APK is signed with `apps/android/turbomusic.keystore`, committed on purpose (private repo, personal app): Android only installs an update signed with the same key as the installed app. Don't change it.
 - macOS is not built: auto-update on macOS needs a paid Apple signing certificate.
 - Nothing here has been run on a device. The sandbox that wrote it had no Android SDK, so the first CI run is the first compile of the Android project; expect to fix small things.
 - The desktop self-update was checked up to "disabled in a development run"; real updates need an installed build and a release.
 
 ## Icons
-The launcher icon, the website icon, the desktop icon and the title logo all come from one drawing (`scripts/gen-icons.mjs`, configured by `branding/logo.json`; the engine's `logos` module): the TurboNZL engine mark (a ring and a six-bladed wheel) with TurboMusic's red note on a dark plate in the centre, which is also the shape of the white notification icon (`ic_stat_curator.xml`). The launcher icon is the same drawing in flat colours on the dark adaptive background.
+The launcher icon, the website icon, the desktop icon and the title logo all come from one drawing (`scripts/gen-icons.mjs`, configured by `branding/logo.json`; the engine's `logos` module): the TurboNZL engine mark (a ring and a six-bladed wheel) with TurboMusic's red note on a dark plate in the centre, which is also the shape of the white notification icon (`ic_stat_turbomusic.xml`). The launcher icon is the same drawing in flat colours on the dark adaptive background.
 
 ## Discord (desktop app)
 

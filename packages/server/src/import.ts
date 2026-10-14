@@ -176,7 +176,7 @@ export class Importer {
       const timer = setTimeout(() => { child.kill(); reject(new ImportError(504, 'yt-dlp took too long')); }, 90_000);
       child.stdout.on('data', (d) => { out += d; if (out.length > 20_000_000) child.kill(); });
       child.stderr.on('data', (d) => { err = (err + d).slice(-2000); });
-      child.on('error', (e: NodeJS.ErrnoException) => { clearTimeout(timer); reject(new ImportError(500, e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set CURATOR_YTDLP.` : e.message)); });
+      child.on('error', (e: NodeJS.ErrnoException) => { clearTimeout(timer); reject(new ImportError(500, e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set TURBOMUSIC_YTDLP.` : e.message)); });
       child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve(out) : reject(new ImportError(502, `yt-dlp failed: ${err.trim().split('\n').pop() ?? code}`)); });
     });
   }

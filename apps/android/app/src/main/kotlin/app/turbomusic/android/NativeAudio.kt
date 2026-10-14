@@ -1,4 +1,4 @@
-package app.musiccurator.android
+package app.turbomusic.android
 
 import android.content.ComponentName
 import android.content.Context
@@ -19,10 +19,10 @@ import org.json.JSONObject
  * The page's connection to the app's real player (PlaybackService). Inside the app the web client does not play sound itself: a page's
  * `<audio>` gets no notification, no lock-screen controls and is cut when the page is suspended. Instead the page hands over the
  * current track plus the next few (it owns the queue and the playback rules), this object plays them in the service and reports back
- * what happens (`curator-audio` events: state every half second, track changes, errors), so the notification's Next and Previous,
+ * what happens (`turbomusic-audio` events: state every half second, track changes, errors), so the notification's Next and Previous,
  * a Bluetooth headset or the car move the page's queue along.
  *
- * The page talks to it through CuratorBridge (`audioSync`, `audioPlay`, ...); everything here runs on the main thread.
+ * The page talks to it through TurboMusicBridge (`audioSync`, `audioPlay`, ...); everything here runs on the main thread.
  */
 object NativeAudio {
     private val main = Handler(Looper.getMainLooper())

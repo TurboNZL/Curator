@@ -54,7 +54,7 @@ export function checkTarget(dataDir: string, kind: StorageKind, target: string):
   if (resolve(dataDir) === to) throw new StorageError('Choose a different folder from the data folder itself.');
   try {
     mkdirSync(to, { recursive: true });
-    const probe = join(to, `.curator-write-test-${process.pid}`);
+    const probe = join(to, `.turbomusic-write-test-${process.pid}`);
     writeFileSync(probe, 'x'); unlinkSync(probe);
   } catch (e) { throw new StorageError(`Cannot write to ${to}: ${(e as NodeJS.ErrnoException).code ?? (e as Error).message}. Is the drive mounted, and may the server's user write there?`); }
   if (readdirSync(to).length) throw new StorageError(`${to} is not empty. Choose an empty folder (a new one is created for you).`);

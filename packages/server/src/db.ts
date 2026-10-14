@@ -1,17 +1,31 @@
 import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
+import { existsSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import { wins, type SyncRecord, type RecordTable } from '@curator/core';
+import { wins, type SyncRecord, type RecordTable } from '@turbomusic/core';
 
 // getBuiltinModule: bundlers/vite cannot resolve the prefix-only `node:sqlite` specifier.
 const { DatabaseSync } = process.getBuiltinModule('node:sqlite');
 
 export interface StoredRecord extends SyncRecord { seq: number }
 
+/**
+ * The database file used to carry the app's first name. A data folder from before the rename keeps working: the old file (and its
+ * write-ahead log) is renamed on the first start, instead of the server quietly creating an empty library next to it.
+ * Delete this once every data folder has started once with this version.
+ */
+export function adoptOldDatabaseName(dataDir: string): void {
+  const file = join(dataDir, 'turbomusic.db');
+  const old = join(dataDir, 'curator.db');
+  if (existsSync(file) || !existsSync(old)) return;
+  for (const ext of ['', '-wal', '-shm']) if (existsSync(old + ext)) renameSync(old + ext, file + ext);
+}
+
 export class Store {
   readonly db: DatabaseSyncType;
 
   constructor(dataDir: string | ':memory:') {
-    this.db = new DatabaseSync(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'curator.db'));
+    if (dataDir !== ':memory:') adoptOldDatabaseName(dataDir);
+    this.db = new DatabaseSync(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'turbomusic.db'));
     this.db.exec(`
       PRAGMA journal_mode = WAL;
       PRAGMA synchronous = NORMAL;

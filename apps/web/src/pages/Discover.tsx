@@ -8,7 +8,7 @@ import { useSpotifyLink } from '../lib/spotifyPlayer.ts';
 import { leadCredit, newTrackData } from '../lib/defaults.ts';
 import { logJournal } from '../lib/journal.ts';
 
-const KEY = 'curator.discover';
+const KEY = 'turbomusic.discover';
 const load = (): { at: number; list: Suggestion[] } | null => { try { return JSON.parse(localStorage.getItem(KEY) ?? 'null'); } catch { return null; } };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

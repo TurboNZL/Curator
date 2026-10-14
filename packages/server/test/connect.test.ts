@@ -64,11 +64,11 @@ describe('ConnectHub', () => {
 
 describe('connect over HTTP', () => {
   let dir: string, store: Store;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'curator-connect-')); });
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'turbomusic-connect-')); });
   afterEach(() => { store?.close(); rmSync(dir, { recursive: true, force: true }); });
 
   it('streams the device list as server-sent events and relays a command', async () => {
-    const config = loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: 'tok' } as never);
+    const config = loadConfig({ TURBOMUSIC_DATA_DIR: dir, TURBOMUSIC_TOKEN: 'tok' } as never);
     store = new Store(config.dataDir);
     const app = createApp(config, store);
     const auth = { Authorization: 'Bearer tok', 'Content-Type': 'application/json' };

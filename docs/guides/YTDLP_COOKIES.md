@@ -33,27 +33,27 @@ Do not use `--cookies-from-browser` together with `--cookies` for this: it would
 
 ```
 scp cookies.txt pi-admin@PI_ADDRESS:/tmp/
-sudo mkdir -p /etc/curator
-sudo mv /tmp/cookies.txt /etc/curator/youtube-cookies.txt
-sudo chown curator:curator /etc/curator/youtube-cookies.txt
-sudo chmod 600 /etc/curator/youtube-cookies.txt
+sudo mkdir -p /etc/turbomusic
+sudo mv /tmp/cookies.txt /etc/turbomusic/youtube-cookies.txt
+sudo chown turbomusic:turbomusic /etc/turbomusic/youtube-cookies.txt
+sudo chmod 600 /etc/turbomusic/youtube-cookies.txt
 ```
 The file lets anyone who has it act as that account on YouTube, so keep it private (mode 600), out of the repository and out of backups you share.
 Line endings must be LF on Linux (an "HTTP Error 400" with `--cookies` points at wrong line endings).
 
 ### 3. Tell the server about it
 
-Add the line to the service (`sudo systemctl edit --full curator`, next to the other `Environment=` lines from [DEPLOY_PI.md](DEPLOY_PI.md) section 3):
+Add the line to the service (`sudo systemctl edit --full turbomusic`, next to the other `Environment=` lines from [DEPLOY_PI.md](DEPLOY_PI.md) section 3):
 
 ```
-Environment=CURATOR_YTDLP_COOKIES=/etc/curator/youtube-cookies.txt
+Environment=TURBOMUSIC_YTDLP_COOKIES=/etc/turbomusic/youtube-cookies.txt
 ```
 
-then `sudo systemctl daemon-reload && sudo systemctl restart curator`. `CURATOR_YTDLP_COOKIES` becomes `--cookies <file>` on every yt-dlp call (downloads and album look-ups). For anything else yt-dlp should always get, `CURATOR_YTDLP_ARGS` takes extra arguments separated by spaces (for example `--js-runtimes node`, see DEPLOY_PI.md section 4).
+then `sudo systemctl daemon-reload && sudo systemctl restart turbomusic`. `TURBOMUSIC_YTDLP_COOKIES` becomes `--cookies <file>` on every yt-dlp call (downloads and album look-ups). For anything else yt-dlp should always get, `TURBOMUSIC_YTDLP_ARGS` takes extra arguments separated by spaces (for example `--js-runtimes node`, see DEPLOY_PI.md section 4).
 
 Check: **Settings → Server → Test connection** now says `cookies: set`. Then **Settings → Audio → Download missing audio** retries the failed tracks.
 
-yt-dlp writes refreshed cookies back to the file while it runs, so the service user must be able to write it (`chown curator`, as above).
+yt-dlp writes refreshed cookies back to the file while it runs, so the service user must be able to write it (`chown turbomusic`, as above).
 
 ## If it keeps failing
 

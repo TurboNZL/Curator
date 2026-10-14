@@ -1,4 +1,4 @@
-package app.musiccurator.android
+package app.turbomusic.android
 
 import org.json.JSONObject
 import kotlin.math.ln

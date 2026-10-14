@@ -7,8 +7,8 @@ import { clearMigrationNote, lastMigration, planMigration, requestMigration, run
  * TurboMusic folder, then point Electron at whichever folder is in use. Development runs (not packaged) keep Electron's own default.
  * Returns what the Settings card needs.
  */
-/** A development run has no installed settings folder to move; CURATOR_ASSUME_PACKAGED=1 lets a test drive the real code against a scratch XDG_CONFIG_HOME. */
-const installed = () => app.isPackaged || process.env.CURATOR_ASSUME_PACKAGED === '1';
+/** A development run has no installed settings folder to move; TURBOMUSIC_ASSUME_PACKAGED=1 lets a test drive the real code against a scratch XDG_CONFIG_HOME. */
+const installed = () => app.isPackaged || process.env.TURBOMUSIC_ASSUME_PACKAGED === '1';
 
 export function bootUserData(edition: Edition): { appData: string; legacy: boolean } {
   if (!installed()) return { appData: app.getPath('appData'), legacy: false };

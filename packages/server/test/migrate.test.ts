@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readdirSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { replayVotes } from '@curator/core';
+import { replayVotes } from '@turbomusic/core';
 import { Store } from '../src/db.ts';
 import { migrateLegacy, unwrapJson } from '../src/migrate-legacy.ts';
 
@@ -45,7 +45,7 @@ function legacyDb(path: string) {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'curator-mig-'));
+  dir = mkdtempSync(join(tmpdir(), 'turbomusic-mig-'));
   mkdirSync(join(dir, 'data', 'tmp'), { recursive: true });
   store = new Store(join(dir, 'data'));
 });

@@ -1,4 +1,4 @@
-package app.musiccurator.android.update
+package app.turbomusic.android.update
 
 import org.json.JSONArray
 import org.junit.Assert.assertEquals
@@ -11,7 +11,7 @@ class ReleasesTest {
     private fun list(vararg r: String) = JSONArray("[" + r.joinToString(",") + "]")
 
     @Test fun picksAPreReleaseWhenItIsTheNewest() {
-        val r = list(rel("v2026.10.1", pre = true, assets = arrayOf("turbomusic-2026.10.1.apk")), rel("v2026.10.0", pre = true, assets = arrayOf("music-curator-2026.10.0.apk")))
+        val r = list(rel("v2026.10.1", pre = true, assets = arrayOf("turbomusic-2026.10.1.apk")), rel("v2026.10.0", pre = true, assets = arrayOf("turbomusic-2026.10.0.apk")))
         assertEquals("v2026.10.1" to "https://api.github.com/a/turbomusic-2026.10.1.apk", Releases.newestWithApk(r))
     }
     @Test fun skipsDraftsAndReleasesWithoutAnApk() {

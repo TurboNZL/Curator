@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { DESKTOP_PORT, findWebDir, loadDesktopConfig, loadDiscordConfig, saveDesktopConfig, saveDiscordConfig } from '../src/desktopConfig.ts';
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'curator-desktop-')); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'turbomusic-desktop-')); });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('desktop config', () => {
@@ -16,14 +16,14 @@ describe('desktop config', () => {
   it('remembers the chosen folder, and the environment overrides it', () => {
     saveDesktopConfig(dir, { dataDir: '/mnt/music' });
     expect(loadDesktopConfig(dir, {}).dataDir).toBe('/mnt/music');
-    expect(loadDesktopConfig(dir, { CURATOR_DATA_DIR: '/elsewhere' }).dataDir).toBe('/elsewhere');
+    expect(loadDesktopConfig(dir, { TURBOMUSIC_DATA_DIR: '/elsewhere' }).dataDir).toBe('/elsewhere');
     saveDesktopConfig(dir, { port: 50000 });
     expect(loadDesktopConfig(dir, {})).toEqual({ dataDir: '/mnt/music', port: 50000, customFrame: false, gpuMode: 'auto', gpuAuto: { step: 0, done: false } }); // saving one setting keeps the other
   });
   it('ignores a broken file and an impossible port', () => {
     writeFileSync(join(dir, 'desktop.json'), '{nope');
     expect(loadDesktopConfig(dir, {}).port).toBe(DESKTOP_PORT);
-    expect(loadDesktopConfig(dir, { CURATOR_DESKTOP_PORT: '99999' }).port).toBe(DESKTOP_PORT);
+    expect(loadDesktopConfig(dir, { TURBOMUSIC_DESKTOP_PORT: '99999' }).port).toBe(DESKTOP_PORT);
   });
   it('finds the web client next to the packaged app, else in the monorepo', () => {
     const res = join(dir, 'res'), dev = join(dir, 'dev');

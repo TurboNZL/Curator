@@ -1,4 +1,4 @@
-import type { PlaybackRule, RecordTable, TrackData } from '@curator/core';
+import type { PlaybackRule, RecordTable, TrackData } from '@turbomusic/core';
 import type { Library, Track } from './library.ts';
 import { allSpotifyUrls, linkFields } from './spotifyLinks.ts';
 

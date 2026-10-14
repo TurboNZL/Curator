@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowRight, Pencil, Plus, X } from 'lucide-react';
-import type { PlaybackRule } from '@curator/core';
+import type { PlaybackRule } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { saveDefaultImage, defaultImage, saveRules } from '../lib/profile.ts';

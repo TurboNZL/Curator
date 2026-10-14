@@ -15,8 +15,8 @@ const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 const rec = (id: string, updatedAt: number, extra: object = {}, deleted = false) => ({ table: 'tracks', id, updatedAt, deviceId: 'd', deleted, data: { title: id, ...extra } });
 
 function make() {
-  const dir = mkdtempSync(join(tmpdir(), 'curator-bk-'));
-  const config = loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN } as never);
+  const dir = mkdtempSync(join(tmpdir(), 'turbomusic-bk-'));
+  const config = loadConfig({ TURBOMUSIC_DATA_DIR: dir, TURBOMUSIC_TOKEN: TOKEN } as never);
   const store = new Store(config.dataDir);
   return { dir, store, app: createApp(config, store) };
 }
@@ -56,7 +56,7 @@ describe('data folder export and import', () => {
     const mp3 = Buffer.concat([Buffer.from('ID3'), randomBytes(3000)]), jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), randomBytes(700)]);
     await put(a.app, mp3, 'audio/mpeg'); await put(a.app, jpg, 'image/jpeg');
     const res = await a.app.request('/api/export/files', { headers: auth });
-    expect(res.headers.get('content-disposition')).toMatch(/curator-files-.*\.tar/);
+    expect(res.headers.get('content-disposition')).toMatch(/turbomusic-files-.*\.tar/);
     const tar = await bytes(res);
     expect(Number(res.headers.get('content-length'))).toBe(tar.length);
 

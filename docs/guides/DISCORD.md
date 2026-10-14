@@ -34,7 +34,7 @@ Work down this list; each step rules out one cause.
    - *Snap:* the sandbox blocks it. Use the Discord `.deb` or your distribution's package instead.
    These steps follow what other Rich Presence programs report; they have not been tried with TurboMusic.
 6. Image missing but text fine: the art asset must be named `logo` and can take up to ten minutes to appear.
-7. Still nothing: close the app, start Discord first, then the app, and look at the terminal the app was started from for lines starting `[curator]`.
+7. Still nothing: close the app, start Discord first, then the app, and look at the terminal the app was started from for lines starting `[turbomusic]`.
 
 ## What is sent
 The title, artist, album name (as the picture's hover text), the position and the length of the playing track, and the Application ID. Nothing else, and nothing leaves your computer except to your own Discord. Turn it off with the same box; the status disappears at once.

@@ -2,7 +2,7 @@ import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, FileAudio, Plus } from 'lucide-react';
-import type { ArtistData, Credit, PlaylistData } from '@curator/core';
+import type { ArtistData, Credit, PlaylistData } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { saveAudio } from '../lib/files.ts';

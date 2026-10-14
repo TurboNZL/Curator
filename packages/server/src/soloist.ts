@@ -136,7 +136,7 @@ export class Soloist {
     if (found) return { ok: true, server: found.server, runtimeDir: found.dir, hint: null };
     // inside the desktop app the sound server is the desktop's own (PipeWire or PulseAudio, standard on Linux desktops)
     if (this.d.desktop ?? !!process.versions.electron) return { ok: false, server: null, runtimeDir: null, hint: 'No PipeWire or PulseAudio sound server was found on this computer, and Soloist can only play through one of them. Most Linux desktops have one already: check that sound works in other programs, install pipewire-pulse (or pulseaudio) if it does not, then press Start again.' };
-    return { ok: false, server: null, runtimeDir: null, hint: 'No sound server is running for the account that runs this server, so Soloist connects to Spotify but cannot play anything. On the Pi run: sudo /home/curator/music-curator/scripts/setup-pi-audio.sh (it installs PipeWire and keeps it running for the curator account), then press Start again.' };
+    return { ok: false, server: null, runtimeDir: null, hint: 'No sound server is running for the account that runs this server, so Soloist connects to Spotify but cannot play anything. On the Pi run: sudo /home/turbomusic/turbomusic/scripts/setup-pi-audio.sh (it installs PipeWire and keeps it running for the turbomusic account), then press Start again.' };
   }
   /** The environment Soloist is started with: the normal one plus the audio session this account can reach. */
   private soloistEnv(): NodeJS.ProcessEnv {
@@ -151,12 +151,12 @@ export class Soloist {
     return { name: this.d.hostname ?? osHostname(), model, isPi: !!model && /raspberry pi/i.test(model) };
   }
 
-  /** Soloist is Spotify's headless player for a Pi that has speakers or a DAC: it is offered on a Raspberry Pi only (CURATOR_SOLOIST=1 allows another Linux machine). */
+  /** Soloist is Spotify's headless player for a Pi that has speakers or a DAC: it is offered on a Raspberry Pi only (TURBOMUSIC_SOLOIST=1 allows another Linux machine). */
   support(): { ok: boolean; reason?: string } {
     if (this.platform !== 'linux') return { ok: false, reason: 'Soloist only runs on Linux, on your Raspberry Pi.' };
     if (!archiveName(this.d.arch ?? osArch())) return { ok: false, reason: `Spotify has no Soloist build for this processor (${this.d.arch ?? osArch()}).` };
     const h = this.host();
-    if (!h.isPi && (this.d.env ?? process.env).CURATOR_SOLOIST !== '1') {
+    if (!h.isPi && (this.d.env ?? process.env).TURBOMUSIC_SOLOIST !== '1') {
       return { ok: false, reason: this.d.desktop ?? !!process.versions.electron
         ? 'Soloist runs on your Raspberry Pi server only, not in this app. Connect this app to your Pi (Settings > Library & server) and set Soloist up there.'
         : `Soloist runs on your Raspberry Pi only, and this server (${h.name}) is not one. Open TurboMusic on the Pi's server to set Soloist up there.` };

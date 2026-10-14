@@ -15,7 +15,7 @@ import { ArtistLinks } from './ArtistLinks.tsx';
  * the database has timings), and a screensaver mode that hides everything but a slowly drifting cover and the title. Controls and the
  * mouse pointer hide after a few seconds without movement; any movement or key brings them back. Esc closes.
  */
-const OFFSET_KEY = 'curator.lyricsOffset';
+const OFFSET_KEY = 'turbomusic.lyricsOffset';
 const loadOffset = () => { try { const n = Number(localStorage.getItem(OFFSET_KEY)); return Number.isFinite(n) ? Math.max(-5, Math.min(5, n)) : 0; } catch { return 0; } };
 
 /**

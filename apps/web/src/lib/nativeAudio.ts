@@ -3,14 +3,14 @@ import type { EqConfig } from './eqPresets.ts';
 /**
  * The Android app's own player (apps/android NativeAudio): inside the app the page hands the current track and the next few to it
  * instead of playing them in an <audio> element, which gets the notification with controls, lock-screen and Bluetooth/car buttons,
- * and keeps playing when the page is suspended. It reports back with `curator-audio` events. Absent in browsers and in app
+ * and keeps playing when the page is suspended. It reports back with `turbomusic-audio` events. Absent in browsers and in app
  * versions from before this existed (then the page plays the sound itself, as it always did).
  */
 interface Bridge {
   audioSync?(json: string): void; audioPlay?(): void; audioPause?(): void; audioSeek?(ms: number): void; audioVolume?(v: number): void; audioStop?(): void;
   audioState?(): string; setEq?(json: string): void;
 }
-const bridge = (): Bridge | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { CuratorAndroid?: Bridge }).CuratorAndroid);
+const bridge = (): Bridge | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { TurboMusicAndroid?: Bridge }).TurboMusicAndroid);
 
 export const nativeAudioAvailable = () => typeof bridge()?.audioSync === 'function';
 
@@ -36,7 +36,7 @@ export const nativeAudio = {
   setEq: (c: EqConfig) => { try { bridge()?.setEq?.(JSON.stringify(c)); } catch { /* older app */ } },
   on(cb: (e: NativeEvent) => void): () => void {
     const h = (e: Event) => cb((e as CustomEvent<NativeEvent>).detail);
-    window.addEventListener('curator-audio', h);
-    return () => window.removeEventListener('curator-audio', h);
+    window.addEventListener('turbomusic-audio', h);
+    return () => window.removeEventListener('turbomusic-audio', h);
   },
 };

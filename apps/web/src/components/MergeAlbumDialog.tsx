@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GitMerge } from 'lucide-react';
-import type { TrackData } from '@curator/core';
+import type { TrackData } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { logJournal } from '../lib/journal.ts';

@@ -1,6 +1,6 @@
-package app.musiccurator.android.library
+package app.turbomusic.android.library
 
-import app.musiccurator.android.ServerPrefs
+import app.turbomusic.android.ServerPrefs
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL

@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 import path from 'node:path';
 
-const target = process.env.CURATOR_SERVER ?? 'http://localhost:47813';
+const target = process.env.TURBOMUSIC_SERVER ?? 'http://localhost:47813';
 
 export default defineConfig({
   plugins: [react()],

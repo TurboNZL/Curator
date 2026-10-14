@@ -130,7 +130,7 @@ export function GraphicsLine() {
 }
 
 /**
- * Settings > This app: the app used to be called Music Curator, and its settings folder still is until it is moved. The button asks the
+ * Settings > This app: the app used to be called TurboMusic, and its settings folder still is until it is moved. The button asks the
  * app to rename that folder (the app restarts to do it, because it cannot rename a folder it has open). Shown only when there is
  * something to move, or a result to read; otherwise nothing.
  */

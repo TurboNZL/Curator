@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { RecordTable, SyncRecord } from '@curator/core';
+import type { RecordTable, SyncRecord } from '@turbomusic/core';
+import { importLegacyDb } from './legacyNames.ts';
 
 /** Local mirror of the server's records, plus an outbox of keys that still need pushing. */
 interface Schema extends DBSchema {
@@ -12,7 +13,7 @@ interface Schema extends DBSchema {
 
 let dbp: Promise<IDBPDatabase<Schema>> | undefined;
 
-export function localDb(name = 'curator') {
+export function localDb(name = 'turbomusic') {
   dbp ??= openDB<Schema>(name, 2, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
@@ -22,7 +23,7 @@ export function localDb(name = 'curator') {
       }
       if (oldVersion < 2) db.createObjectStore('blobs');
     },
-  });
+  }).then(async (db) => { if (name === 'turbomusic') await importLegacyDb(db as never); return db; });
   return dbp;
 }
 

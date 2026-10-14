@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
-import type { Command, DeviceInfo, DeviceKind, PlaybackSnapshot, ServerEvent } from '@curator/core';
+import type { Command, DeviceInfo, DeviceKind, PlaybackSnapshot, ServerEvent } from '@turbomusic/core';
 import { usePlayer } from './player.ts';
 import { desktop } from './settings.ts';
 import { guessDeviceName as guess, positionNow } from './connectPure.ts';

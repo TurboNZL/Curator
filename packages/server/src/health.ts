@@ -89,7 +89,7 @@ export async function collectHealth(dataDir: string): Promise<HealthSnapshot> {
   const mem = parseMeminfo(readText('/proc/meminfo') ?? '');
   const temp = readText('/sys/class/thermal/thermal_zone0/temp');
   const [l1, l5, l15] = loadavg();
-  const db = join(dataDir, 'curator.db');
+  const db = join(dataDir, 'turbomusic.db');
   const disks = [
     disk('Library files', join(dataDir, 'files'), root), disk('Database', dataDir, root), disk('Temporary files', join(dataDir, 'tmp'), root), disk('System', '/', root),
   ].filter((d): d is DiskInfo => !!d);

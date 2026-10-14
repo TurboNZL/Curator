@@ -32,7 +32,7 @@ declare global { interface Window { Spotify?: SpotifyGlobal; onSpotifyWebPlaybac
 /** Can this page play Spotify's protected audio? The reason is written for the person using it. */
 export async function drmSupport(): Promise<{ ok: boolean; reason: string | null }> {
   if (typeof window === 'undefined') return { ok: false, reason: 'Not in a browser.' };
-  if (typeof window !== 'undefined' && (window as unknown as { curatorDesktop?: unknown }).curatorDesktop) return { ok: false, reason: 'The desktop app has no Widevine, so it cannot play Spotify itself. Pick the Spotify app on this computer in the device list.' };
+  if (typeof window !== 'undefined' && (window as unknown as { turbomusicDesktop?: unknown }).turbomusicDesktop) return { ok: false, reason: 'The desktop app has no Widevine, so it cannot play Spotify itself. Pick the Spotify app on this computer in the device list.' };
   if (isAndroidApp()) return { ok: false, reason: 'The Android app has no Widevine, so it cannot play Spotify itself. Use Soloist on your server (below), or pick the Spotify app on your phone in the device list.' };
   if (!window.isSecureContext) return { ok: false, reason: 'Spotify’s player only runs on a secure page. Open TurboMusic over https (for example through Tailscale) or on localhost; this address is plain http.' };
   if (typeof navigator.requestMediaKeySystemAccess !== 'function') return { ok: false, reason: 'This browser cannot play protected audio.' };
@@ -82,7 +82,7 @@ export async function startSpotifySdk(): Promise<void> {
     const Spotify = await loadSdk();
     const name = deviceName();
     const p = new Spotify.Player({
-      name, volume: Number(localStorage.getItem('curator.volume') ?? 0.8),
+      name, volume: Number(localStorage.getItem('turbomusic.volume') ?? 0.8),
       getOAuthToken: (cb) => { api().spotifySdkToken().then((t) => cb(t.token), (e: Error) => set({ status: 'error', error: e.message })); },
     });
     p.addListener('ready', ((e: { device_id: string }) => {

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Give the TurboMusic server a sound server, so Spotify Soloist can actually play.
 #
-#   sudo ./scripts/setup-pi-audio.sh [--user curator] [--dry-run]
+#   sudo ./scripts/setup-pi-audio.sh [--user turbomusic] [--dry-run]
 #
 # Soloist plays only through PipeWire or PulseAudio. Raspberry Pi OS Lite has neither, and a server that systemd starts as its own account
 # has no audio session: Soloist then connects to Spotify, shows up as a device, and plays nothing. This installs PipeWire (with its
 # PulseAudio layer), lets the service account use the sound card, and keeps its audio session running without anyone logged in.
 set -euo pipefail
-USER_NAME="curator"; DRY=0
+USER_NAME="turbomusic"; DRY=0
 while [ $# -gt 0 ]; do case "$1" in --user) USER_NAME="${2:?--user needs a name}"; shift 2 ;; --dry-run) DRY=1; shift ;; -h|--help) sed -n 2,10p "$0"; exit 0 ;; *) echo "unknown option $1" >&2; exit 2 ;; esac; done
 say()  { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 note() { printf '    %s\n' "$*"; }
@@ -35,13 +35,13 @@ if [ "$DRY" = 0 ]; then
 fi
 
 say "4/4 Checking"
-if [ "$DRY" = 1 ]; then note "[dry run] would list the outputs PipeWire sees for $USER_NAME and restart curator"; exit 0; fi
+if [ "$DRY" = 1 ]; then note "[dry run] would list the outputs PipeWire sees for $USER_NAME and restart turbomusic"; exit 0; fi
 uid="$(id -u "$USER_NAME")"
 if [ -S "/run/user/$uid/pipewire-0" ]; then note "PipeWire is running for $USER_NAME (/run/user/$uid/pipewire-0)"; else
   note "PipeWire did not start yet. Reboot once (sudo reboot) and run: ls /run/user/$uid/pipewire-0"; fi
 note "Sound outputs this account can see:"
 sudo -u "$USER_NAME" XDG_RUNTIME_DIR="/run/user/$uid" wpctl status 2>/dev/null | sed -n '/Sinks:/,/Sources:/p' | sed 's/^/      /' || note "(wpctl could not list them; run: sudo -u $USER_NAME XDG_RUNTIME_DIR=/run/user/$uid wpctl status)"
 note "To pick a different output (HDMI, headphone jack, USB DAC), put its name in Settings > Spotify > Soloist > Output."
-systemctl restart curator 2>/dev/null && note "Restarted the curator service." || note "Restart the server (sudo systemctl restart curator) so it sees the new audio session."
+systemctl restart turbomusic 2>/dev/null && note "Restarted the turbomusic service." || note "Restart the server (sudo systemctl restart turbomusic) so it sees the new audio session."
 echo
-echo "Done. In Curator: Settings > Library & server > Spotify > Soloist > Start. Turn the volume up on the Pi's speakers, and make sure the output you want is not muted (alsamixer)."
+echo "Done. In TurboMusic: Settings > Library & server > Spotify > Soloist > Start. Turn the volume up on the Pi's speakers, and make sure the output you want is not muted (alsamixer)."

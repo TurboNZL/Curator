@@ -1,4 +1,4 @@
-import { newId } from '@curator/core';
+import { newId } from '@turbomusic/core';
 import { cleanBands } from './eqPresets.ts';
 
 /** Per-device settings (never synced): where the server is, who we are, how it looks. */
@@ -52,10 +52,10 @@ export interface DeviceSettings {
   haptics: boolean;
 }
 
-const KEY = 'curator.settings';
+const KEY = 'turbomusic.settings';
 
 /** What the Electron desktop app (apps/electron) puts on `window`. Absent in a browser. */
-export interface CuratorDesktop {
+export interface TurboMusicDesktop {
   token: string; version: string; dataDir: string; platform: string; desktopEnv?: string; port: number;
   /** "app" = the window-only edition: no library folder here, the library is on a server (Settings > Server) */
   edition?: 'full' | 'app';
@@ -79,7 +79,7 @@ export interface CuratorDesktop {
   gpuReport?(): Promise<string>;
   openGpuPage?(): void;
   getGraphics?(): Promise<{ hardware: boolean; summary: string; detail: string }>;
-  /** moving an installed app from the old "Music Curator" settings folder to the "TurboMusic" one (the next start does the renaming) */
+  /** moving an installed app from the settings folder of its first name to the current one (the next start does the renaming) */
   migration?: {
     info(): Promise<MigrationInfo>;
     run(): Promise<boolean>;
@@ -95,7 +95,7 @@ export interface MigrationInfo {
   last: { ok: boolean; at: number; from: string; to: string; done: string[]; error?: string; rolledBack?: boolean } | null;
 }
 export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; builtIn?: boolean; status: 'off' | 'no-id' | 'connecting' | 'connected'; detail?: string; sockets?: string[] };
-export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
+export const desktop = (): TurboMusicDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { turbomusicDesktop?: TurboMusicDesktop }).turbomusicDesktop);
 
 export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};

@@ -1,4 +1,4 @@
-package app.musiccurator.android
+package app.turbomusic.android
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -22,9 +22,9 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import app.musiccurator.android.library.LibraryIndex
-import app.musiccurator.android.library.ServerLibrary
-import app.musiccurator.android.library.Track
+import app.turbomusic.android.library.LibraryIndex
+import app.turbomusic.android.library.ServerLibrary
+import app.turbomusic.android.library.Track
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -87,7 +87,7 @@ class PlaybackService : MediaLibraryService() {
         // tapping the notification opens the app
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         // the notification's small icon: the default is Media3's generic play-in-a-circle, which One UI shows as is
-        setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build().also { it.setSmallIcon(R.drawable.ic_stat_curator) })
+        setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build().also { it.setSmallIcon(R.drawable.ic_stat_turbomusic) })
         // The notification and lock-screen cover is fetched by the session's bitmap loader, whose default has no way to send the Access service token,
         // so behind Cloudflare Access it got the login page and no picture. It uses the player's own upstream (same headers) on its own thread.
         val artLoader = DataSourceBitmapLoader(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2)), upstream)

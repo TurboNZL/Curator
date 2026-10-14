@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SyncRecord } from '@curator/core';
+import type { SyncRecord } from '@turbomusic/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { centreSquare, contentBox, coverCrop } from '../src/lib/image.ts';
 import { createHash, randomBytes } from 'node:crypto';
@@ -168,7 +168,7 @@ describe('computeHealth', () => {
 describe('backup file', () => {
   const good = { table: 'tracks', id: 'a', updatedAt: 1, deviceId: 'd', deleted: false, data: { title: 'x' } };
   it('reads records and skips broken ones', () => {
-    const r = parseBackup(JSON.stringify({ format: 'curator-database', version: 1, records: [good, { table: 'nope', id: 'b' }, 5] }));
+    const r = parseBackup(JSON.stringify({ format: 'turbomusic-database', version: 1, records: [good, { table: 'nope', id: 'b' }, 5] }));
     expect(r.records).toHaveLength(1);
     expect(r.skipped).toBe(2);
   });

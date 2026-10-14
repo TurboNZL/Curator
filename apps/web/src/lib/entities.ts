@@ -1,6 +1,6 @@
 import { trackPath } from './trackPath.ts';
 import { statsPath } from './entityStats.ts';
-import type { GroupMemberData } from '@curator/core';
+import type { GroupMemberData } from '@turbomusic/core';
 import type { Library } from './library.ts';
 
 export type EntityType = GroupMemberData['entityType'];

@@ -15,7 +15,7 @@ import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
 import { withoutLegacyArtist } from '../lib/defaults.ts';
-import type { Credit } from '@curator/core';
+import type { Credit } from '@turbomusic/core';
 
 /** One album that is waiting for its YouTube link: paste it and the import-into-album screen opens already looked up. */
 function AlbumLinkRow({ item }: { item: HealthItem }) {

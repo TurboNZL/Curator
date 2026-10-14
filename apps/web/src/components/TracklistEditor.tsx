@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, Plus, X } from 'lucide-react';
-import type { TrackData } from '@curator/core';
+import type { TrackData } from '@turbomusic/core';
 import { appendTrack, moveTrack, removeTrack } from '../lib/defaults.ts';
 import type { Library } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';

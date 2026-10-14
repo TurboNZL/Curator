@@ -7,7 +7,7 @@ import { StorageMover, checkTarget, describeStorage, moveStorage, StorageError }
 import { withCacheDir } from '../src/config.ts';
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'curator-health-')); mkdirSync(join(dir, 'data', 'files', 'ab'), { recursive: true }); mkdirSync(join(dir, 'data', 'tmp')); mkdirSync(join(dir, 'data', 'cache')); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'turbomusic-health-')); mkdirSync(join(dir, 'data', 'files', 'ab'), { recursive: true }); mkdirSync(join(dir, 'data', 'tmp')); mkdirSync(join(dir, 'data', 'cache')); });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 const snap = (over: Partial<HealthSnapshot> = {}): HealthSnapshot => ({
@@ -53,7 +53,7 @@ describe('what deserves a warning', () => {
     expect(w.every((x) => x.level === 'bad')).toBe(true);
   });
   it('says so when the library is on the SD card, and when the disk is slow', () => {
-    const w = assessHealth(snap({ disks: [{ label: 'Library files', path: '/home/curator/data/files', freeBytes: 20e9, totalBytes: 30e9, device: 1, system: true }], probe: { writeMs: 900, readMs: 2 } }));
+    const w = assessHealth(snap({ disks: [{ label: 'Library files', path: '/home/turbomusic/data/files', freeBytes: 20e9, totalBytes: 30e9, device: 1, system: true }], probe: { writeMs: 900, readMs: 2 } }));
     expect(w.map((x) => x.id).sort()).toEqual(['sd-card', 'slow-disk']);
   });
 });
@@ -117,7 +117,7 @@ describe('moving where things are stored', () => {
 
 describe('yt-dlp cache', () => {
   it('goes next to the library unless the person chose one', () => {
-    expect(withCacheDir(undefined, '/mnt/hdd/curator')).toEqual(['--cache-dir', '/mnt/hdd/curator/cache']);
+    expect(withCacheDir(undefined, '/mnt/hdd/turbomusic')).toEqual(['--cache-dir', '/mnt/hdd/turbomusic/cache']);
     expect(withCacheDir(['--cookies', 'c.txt'], '/d')).toEqual(['--cache-dir', '/d/cache', '--cookies', 'c.txt']);
     expect(withCacheDir(['--cache-dir', '/x'], '/d')).toEqual(['--cache-dir', '/x']);
     expect(withCacheDir(['--no-cache-dir'], '/d')).toEqual(['--no-cache-dir']);
