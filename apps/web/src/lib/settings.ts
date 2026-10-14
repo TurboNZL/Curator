@@ -79,9 +79,20 @@ export interface CuratorDesktop {
   gpuReport?(): Promise<string>;
   openGpuPage?(): void;
   getGraphics?(): Promise<{ hardware: boolean; summary: string; detail: string }>;
+  /** moving an installed app from the old "Music Curator" settings folder to the "TurboMusic" one (the next start does the renaming) */
+  migration?: {
+    info(): Promise<MigrationInfo>;
+    run(): Promise<boolean>;
+    dismiss(): Promise<void>;
+  };
   getDiscord(): Promise<DiscordInfo>;
   setDiscord(patch: { discordEnabled?: boolean; discordClientId?: string }): Promise<DiscordInfo>;
   updates: import('./native.ts').NativeUpdates;
+}
+export interface MigrationInfo {
+  supported: boolean;
+  plan: { needed: boolean; from: string; to: string; blocked?: string; repoint: { file: string; key: string; from: string; to: string }[]; untouched: { file: string; key: string; value: string }[] } | null;
+  last: { ok: boolean; at: number; from: string; to: string; done: string[]; error?: string; rolledBack?: boolean } | null;
 }
 export type DiscordInfo = { discordEnabled: boolean; discordClientId: string; builtIn?: boolean; status: 'off' | 'no-id' | 'connecting' | 'connected'; detail?: string; sockets?: string[] };
 export const desktop = (): CuratorDesktop | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { curatorDesktop?: CuratorDesktop }).curatorDesktop);
