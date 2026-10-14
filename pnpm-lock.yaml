@@ -2782,6 +2782,12 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  turbothemes@https://codeload.github.com/TurboNZL/turboengine/tar.gz/6b26f2431b58ea2f1d4cdd196d3860b86b2f736c#path:/themes:
+    resolution: {path: /themes, tarball: https://codeload.github.com/TurboNZL/turboengine/tar.gz/6b26f2431b58ea2f1d4cdd196d3860b86b2f736c}
+    version: 1.0.0
+    engines: {node: '>=22.6'}
+    hasBin: true
+
   type-fest@0.13.1:
     resolution: {integrity: sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg==}
     engines: {node: '>=10'}
@@ -5394,6 +5400,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
     optional: true
+
+  turbothemes@https://codeload.github.com/TurboNZL/turboengine/tar.gz/6b26f2431b58ea2f1d4cdd196d3860b86b2f736c#path:/themes: {}
 
   type-fest@0.13.1:
     optional: true
