@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { playlistTrackIds } from '../lib/playlists.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
 import { GitMerge, BarChart3, Disc, Download, FileAudio, ListEnd, ListPlus, ListStart, Pencil, Play, Plus, Shuffle, User, Layers, Search } from 'lucide-react';
@@ -94,6 +95,31 @@ export function useArtistMenuItems() {
       { separator: true },
       { label: 'Stats page', icon: <BarChart3 size={15} />, to: statsPath('artist', artistId) },
       { label: 'Edit artist…', icon: <Pencil size={15} />, run: () => edit({ kind: 'artist', id: artistId }) },
+    ];
+  };
+}
+
+/** The menu of a playlist (cards and its own page): open, play, shuffle, queue, continue-with, stats, edit. */
+export function usePlaylistMenuItems() {
+  const lib = useLibrary();
+  const edit = useEditor((s) => s.open);
+  const actions = useTrackListActions();
+  const replaceRest = usePlayer((s) => s.replaceRest);
+  const appendRest = usePlayer((s) => s.appendRest);
+  const hasCurrent = usePlayer((s) => !!s.queue.currentId);
+  return (playlist: Library['playlists'][number]): MenuItem[] => {
+    const playable = playlistTrackIds(lib, playlist).filter((id) => canPlay(lib.trackById.get(id)));
+    const source = { type: 'playlist' as const, id: playlist.id };
+    return [
+      { label: 'Open', icon: <Play size={15} />, to: `/playlists/${playlist.id}` },
+      ...actions(playlistTrackIds(lib, playlist), source),
+      ...(hasCurrent ? [
+        { label: 'Then: replace what is coming next', icon: <ListStart size={15} />, run: () => replaceRest(playable, source), disabled: !playable.length },
+        { label: 'Add to the end of what is coming next', icon: <ListEnd size={15} />, run: () => appendRest(playable), disabled: !playable.length },
+      ] : []),
+      { separator: true },
+      { label: 'Stats page', icon: <BarChart3 size={15} />, to: statsPath('playlist', playlist.id) },
+      { label: 'Edit playlist…', icon: <Pencil size={15} />, run: () => edit({ kind: 'playlist', id: playlist.id }) },
     ];
   };
 }

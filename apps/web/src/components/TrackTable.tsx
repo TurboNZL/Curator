@@ -55,12 +55,20 @@ export function TrackTable({ tracks, queue, source, sourceId = null, numbered = 
         <div key={t.id}>
         <div data-track-id={t.id} className={cn('bt-row group flex items-center gap-3 px-3', current === t.id && 'bt-row-current')} style={{ paddingBlock: 'var(--row-y)' }}
           onContextMenu={menu.onContextMenu(itemsFor(t, () => play(t.id, ids, { type: source, id: sourceId })), `Actions for ${t.title}`, t.id)}>
+          {covers ? <>
+            {numbered && <span className={cn('w-6 shrink-0 text-center text-sm text-muted', current === t.id && 'text-accent')}>{i + 1}</span>}
+            {/* the cover is the play button: the Play glyph appears over it on hover or focus (and a tap on a phone plays) */}
+            <button className="relative w-10 shrink-0 rounded-theme disabled:cursor-not-allowed" disabled={!canPlay(t)} aria-label={canPlay(t) ? `Play ${t.title}` : 'No audio file yet'}
+              onClick={() => play(t.id, ids, { type: source, id: sourceId })} title={canPlay(t) ? 'Play' : 'No audio file yet'}>
+              <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="w-full" />
+              {canPlay(t) && <span className="absolute inset-0 grid place-items-center rounded-theme bg-black/55 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"><Play size={16} fill="currentColor" /></span>}
+            </button>
+          </> : (
           <button className="relative w-6 shrink-0 text-center text-sm text-muted disabled:cursor-not-allowed" disabled={!canPlay(t)}
             onClick={() => play(t.id, ids, { type: source, id: sourceId })} title={canPlay(t) ? 'Play' : 'No audio file yet'}>
             <span className={cn(canPlay(t) && 'group-hover:hidden', current === t.id && canPlay(t) && 'text-accent')}>{numbered ? i + 1 : ''}</span>
             {canPlay(t) && <Play size={14} fill="currentColor" className="mx-auto hidden group-hover:block" />}
-          </button>
-          {covers && <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="w-9 shrink-0" />}
+          </button>)}
           <div className="min-w-0 flex-1">
             <div className={cn('truncate text-sm font-medium', !t.file && 'text-fg/70')}>{t.albumId ? t.title : <Link to={statsPath('track', t.id)} className="hover:underline" title="Open this single (its stats: it has no album page)">{t.title}</Link>}</div>
             <div className="truncate text-xs text-muted">

@@ -54,3 +54,6 @@ If it says software on a computer with a GPU: check the driver (`glxinfo -B`, `v
 - Run it: `pnpm --filter @turbomusic/electron start:server` (after `pnpm --filter @turbomusic/web build`). Settings live in `server-edition.json` in the app's user-data folder.
 - Build the installer on Windows: `pnpm --filter @turbomusic/electron dist:server`. `electron-builder.server.json` gives it its own app id, name and update feed (`server.yml`), apart from the desktop app's `latest.yml`. The release workflow builds it on `windows-latest`.
 - Tested: the settings, address listing, folder planning, tool table and `cloudflared` output parsing (`test/serverEdition.test.ts`) and the wizard page in Chromium with a stub bridge. **Not run on a real Windows machine**: the tray, the folder junctions, the downloads and the tunnel are untested there.
+
+## The window icon must be inside the package (2026-10-14)
+`BrowserWindow({ icon: join(here, '../build/icon.png') })` reads a path inside `app.asar`, and electron-builder only packs what `files` lists. `build/icon.png` was not listed, so the window icon was missing at run time (the launcher icon from the .desktop file was fine). It is in `files` now. Check with `node node_modules/@electron/asar/bin/asar.js list <resources>/app.asar` after changing icon handling.

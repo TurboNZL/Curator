@@ -46,6 +46,7 @@ export function App() {
         <Route path="vote" element={<VotePage />} />
         <Route path="queue" element={<QueuePage />} />
         <Route path="playlists" element={<PlaylistsPage />} />
+        <Route path="playlists/:playlistId" element={<PlaylistsPage />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="discover" element={<DiscoverPage />} />
         <Route path="stats" element={<StatsPage />} />

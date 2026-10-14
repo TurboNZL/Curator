@@ -54,7 +54,7 @@ export function TracksPage() {
         sorts={TRACK_SORTS} sort={page.sort} dir={page.dir} onSort={(k) => { page.setSort(k); setShown(PAGE); }} onFlip={page.flip} view={page.view} onView={page.setView} />
       {page.view === 'grid'
         ? <SingleGrid tracks={tracks.slice(0, shown)} />
-        : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} queue={tracks} source="search" numbered covers={!!q.trim() || chips.length > 0} /></div>}
+        : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} queue={tracks} source="search" numbered covers /></div>}
       {shown < tracks.length && <div className="mt-4 text-center"><button className="btn" onClick={() => setShown(shown + PAGE)}>Show more ({tracks.length - shown} left)</button></div>}
     </div>
   );

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { editionOf, Matcher, parseAlbumSearch, scoreAlbum } from '../src/match.ts';
+import { editionOf, Matcher, parseAlbumSearch, scoreAlbum, thumbOf } from '../src/match.ts';
 
 const a = { id: 'al1', title: 'Take Care', artist: 'Drake', trackCount: 19 };
 
@@ -79,5 +79,17 @@ esac
     const r = await new Matcher({ ytdlp: join(dir, 'missing') }).album(a);
     expect(r.candidates).toEqual([]);
     expect(r.error).toMatch(/not installed/);
+  });
+});
+
+describe('thumbOf', () => {
+  it('prefers the square album art over a bigger video frame', () => {
+    const e = { thumbnails: [{ url: 'https://i.ytimg.com/vi/x/maxresdefault.jpg', width: 1280, height: 720 }, { url: 'https://lh3.googleusercontent.com/abc=w544-h544-l90-rj', width: 544, height: 544 }] };
+    expect(thumbOf(e)).toBe('https://lh3.googleusercontent.com/abc=w300-h300-l90-rj');
+  });
+  it('falls back to the biggest picture when there is no square art', () => {
+    expect(thumbOf({ thumbnails: [{ url: 'https://i.ytimg.com/a.jpg', width: 120, height: 90 }, { url: 'https://i.ytimg.com/b.jpg', width: 640, height: 480 }] })).toBe('https://i.ytimg.com/b.jpg');
+    expect(thumbOf({ thumbnail: 'https://i.ytimg.com/c.jpg' })).toBe('https://i.ytimg.com/c.jpg');
+    expect(thumbOf({})).toBeUndefined();
   });
 });

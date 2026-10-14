@@ -79,7 +79,7 @@ export function ArtistPage() {
         </div></section>}
       {singles.length > 0 && <section><h2 className="mb-3 text-lg font-semibold">Singles</h2><SingleGrid tracks={singles} /></section>}
       <section><h2 className="mb-3 text-lg font-semibold">Tracks, best first</h2>
-        <div className="card overflow-hidden"><TrackTable tracks={visible} source="search" />
+        <div className="card overflow-hidden"><TrackTable tracks={visible} source="search" covers />
           {left > 0 && (
             <div className="flex items-center justify-center gap-2 border-t border-line/60 p-2.5">
               <button className="btn btn-ghost" onClick={() => setShown(shown + STEP)}>Show {Math.min(STEP, left)} more</button>

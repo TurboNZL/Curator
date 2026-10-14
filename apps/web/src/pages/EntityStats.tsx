@@ -27,7 +27,7 @@ const HOURS = Array.from({ length: 24 }, (_, h) => hourLabel(h));
 const KIND_LABEL: Record<StatsKind, string> = { track: 'Track', artist: 'Artist', album: 'Album', era: 'Era', playlist: 'Playlist' };
 
 /** Where the entity's normal page is. */
-const pageOf = (kind: StatsKind, id: string, t?: Track) => kind === 'track' ? (t ? trackPath(t) : '/tracks') : kind === 'playlist' ? '/playlists' : `/${kind === 'artist' ? 'artists' : kind === 'album' ? 'albums' : 'eras'}/${id}`;
+const pageOf = (kind: StatsKind, id: string, t?: Track) => kind === 'track' ? (t ? trackPath(t) : '/tracks') : kind === 'playlist' ? `/playlists/${id}` : `/${kind === 'artist' ? 'artists' : kind === 'album' ? 'albums' : 'eras'}/${id}`;
 
 /**
  * The stats page of one track, artist, album, era or playlist: the same numbers as the info popup and more (charts, history, rating spread),

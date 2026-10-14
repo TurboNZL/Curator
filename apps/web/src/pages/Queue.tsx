@@ -12,7 +12,7 @@ export function QueuePage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Queue</h1>
-      {current && <section><h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted">Now playing</h2><div className="card overflow-hidden"><TrackTable tracks={[current]} source="track" /></div></section>}
+      {current && <section><h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted">Now playing</h2><div className="card overflow-hidden"><TrackTable tracks={[current]} source="track" covers /></div></section>}
       <section>
         <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Up next · queued by you</h2>{user.length > 0 && <div className="flex gap-1"><button className="btn btn-ghost" onClick={shuffleQueued}><Shuffle size={14} />Shuffle</button><button className="btn btn-ghost" onClick={clearQueued}>Clear</button></div>}</div>
         {user.length ? <div className="card divide-y divide-line/60">{user.map((t, i) => (
@@ -23,7 +23,7 @@ export function QueuePage() {
           : <div className="text-sm text-muted">Nothing queued. Use the ⋯ menu on any track (or right-click it). Playback rules ("play B after A") also land here.</div>}
       </section>
       {active.length > 0 && <section><div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Then, from the album / list</h2>
-        <div className="flex gap-1"><button className="btn btn-ghost" onClick={shuffleRest}><Shuffle size={14} />Shuffle</button><button className="btn btn-ghost" onClick={keepRest} title="Move these into your own queue">Add all to my queue</button><button className="btn btn-ghost" onClick={clearRest}>Clear</button></div></div><div className="card overflow-hidden"><TrackTable tracks={active.slice(0, 100)} source="track" /></div></section>}
+        <div className="flex gap-1"><button className="btn btn-ghost" onClick={shuffleRest}><Shuffle size={14} />Shuffle</button><button className="btn btn-ghost" onClick={keepRest} title="Move these into your own queue">Add all to my queue</button><button className="btn btn-ghost" onClick={clearRest}>Clear</button></div></div><div className="card overflow-hidden"><TrackTable tracks={active.slice(0, 100)} source="track" covers /></div></section>}
     </div>
   );
 }

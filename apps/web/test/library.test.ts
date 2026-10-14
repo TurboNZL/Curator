@@ -44,6 +44,16 @@ describe('buildLibrary', () => {
     expect(lib.albumById.get('al')!.trackIds).toEqual(['t3', 't1', 't2']);
   });
 
+  it('dates a track by the earliest release it is on, not the album\'s default release', () => {
+    const lib = buildLibrary(rows(...base.slice(0, 4),
+      rec('albums', 'al', { title: 'Album', artistId: 'a', credits: [], genres: [], cover: null, defaultReleaseId: 'deluxe' }),
+      rec('releases', 'orig', { albumId: 'al', title: 'Original', cover: null, releaseDate: '2019-05-01', trackIds: ['t1'] }),
+      rec('releases', 'deluxe', { albumId: 'al', title: 'Deluxe', cover: null, releaseDate: '2024-01-01', trackIds: ['t1', 't2'] })));
+    expect(lib.trackById.get('t1')!.releaseDate).toBe('2019-05-01'); // on both: the earlier one
+    expect(lib.trackById.get('t2')!.releaseDate).toBe('2024-01-01'); // only on the deluxe edition
+    expect(lib.albumById.get('al')!.releaseDate).toBe('2024-01-01'); // the album itself still follows its default release
+  });
+
   it('takes genres from the album when the track syncs with it, and from itself otherwise', () => {
     const lib = buildLibrary(rows(...base.slice(0, 3), rec('tracks', 't9', track('Own', { syncWithAlbumCredits: false, genres: ['Jazz'] }))));
     expect(lib.trackById.get('t1')!.allGenres).toEqual(['Hip Hop']);
