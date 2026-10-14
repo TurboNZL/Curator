@@ -45,6 +45,9 @@ interface PlayerState {
   /** shuffle what is queued by you / what is left of the album or list (rules keep pairs together) */
   shuffleQueued(): void;
   shuffleRest(): void;
+  /** what is playing keeps playing; the "Then" part (rest of the album or list) becomes this list, or this list is added to its end */
+  replaceRest(list: string[], source?: Source): void;
+  appendRest(list: string[]): void;
   /** the rest of the album or list becomes part of the user queue / is dropped */
   keepRest(): void;
   clearRest(): void;
@@ -425,6 +428,16 @@ export const usePlayer = create<PlayerState>((set, get) => {
     shuffleRest() { const q = get().queue; set({ queue: { ...q, active: shuffleWithRules(q.active, rules()) } }); },
     keepRest() { const q = get().queue; set({ queue: { ...q, user: [...q.user, ...q.active], active: [] } }); },
     clearRest() { set({ queue: { ...get().queue, active: [] } }); },
+    replaceRest(list, source) {
+      const q = get().queue;
+      if (!q.currentId) { if (list.length) get().play(list[0], list, source); return; } // nothing is playing: this is just a normal play
+      set({ source: source ?? get().source, queue: { ...q, active: list.filter((id) => id !== q.currentId) } });
+    },
+    appendRest(list) {
+      const q = get().queue;
+      if (!q.currentId) { if (list.length) get().play(list[0], list); return; }
+      set({ queue: { ...q, active: [...q.active, ...list.filter((id) => id !== q.currentId)] } });
+    },
     snapshot() {
       const s = get();
       return {

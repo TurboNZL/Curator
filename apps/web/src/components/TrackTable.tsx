@@ -11,15 +11,18 @@ import { Rating } from './Rating.tsx';
 import { useMenu } from './Menu.tsx';
 import { useTrackMenuItems } from './TrackMenu.tsx';
 import { ArtistLinks } from './ArtistLinks.tsx';
+import { Cover } from './Cover.tsx';
 import { fmtDate } from './SingleCard.tsx';
 import { statsPath } from '../lib/entityStats.ts';
 import type { SourceType } from '@curator/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
-export function TrackTable({ tracks, queue, source, sourceId = null, numbered = false, showAlbum = true, extra, below }: {
+export function TrackTable({ tracks, queue, source, sourceId = null, numbered = false, showAlbum = true, covers = false, extra, below }: {
   tracks: Track[];
   /** the whole list when `tracks` is only the part drawn so far: playing a row queues all of it */
   queue?: Track[]; source: SourceType; sourceId?: string | null; numbered?: boolean; showAlbum?: boolean;
+  /** a small cover (the track's own, else its album's) before the title: for singles and search results, where the album is not around */
+  covers?: boolean;
   /** extra controls at the end of each row (e.g. move/remove in a playlist) */
   extra?: (t: Track, index: number) => React.ReactNode;
   /** a full-width line under a row (e.g. a playlist note) */
@@ -57,6 +60,7 @@ export function TrackTable({ tracks, queue, source, sourceId = null, numbered = 
             <span className={cn(canPlay(t) && 'group-hover:hidden', current === t.id && canPlay(t) && 'text-accent')}>{numbered ? i + 1 : ''}</span>
             {canPlay(t) && <Play size={14} fill="currentColor" className="mx-auto hidden group-hover:block" />}
           </button>
+          {covers && <Cover hash={t.cover} seed={t.albumTitle ?? t.title} className="w-9 shrink-0" />}
           <div className="min-w-0 flex-1">
             <div className={cn('truncate text-sm font-medium', !t.file && 'text-fg/70')}>{t.albumId ? t.title : <Link to={statsPath('track', t.id)} className="hover:underline" title="Open this single (its stats: it has no album page)">{t.title}</Link>}</div>
             <div className="truncate text-xs text-muted">

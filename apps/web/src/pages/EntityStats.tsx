@@ -9,6 +9,7 @@ import { useStore } from '../lib/store.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { entityStats, entityTrackIds, isStatsKind, type StatsKind } from '../lib/entityStats.ts';
 import { loadFilter } from '../lib/statsFilter.ts';
+import { hourLabel, timeSeries } from '../lib/listenStats.ts';
 import { trackInfo } from '../lib/trackinfo.ts';
 import { trackPath } from '../lib/trackPath.ts';
 import { fmtBytes, plural } from '../lib/cn.ts';
@@ -22,7 +23,7 @@ import { InlineModals } from '../components/forms.tsx';
 import { TrackHistory, fmtListened } from '../components/TrackHistory.tsx';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const HOURS = Array.from({ length: 24 }, (_, h) => `${h}`);
+const HOURS = Array.from({ length: 24 }, (_, h) => hourLabel(h));
 const KIND_LABEL: Record<StatsKind, string> = { track: 'Track', artist: 'Artist', album: 'Album', era: 'Era', playlist: 'Playlist' };
 
 /** Where the entity's normal page is. */
@@ -59,9 +60,8 @@ export function EntityStatsPage() {
   const playRows = [...stats.playsByTrack.entries()].sort((a, b) => b[1].plays - a[1].plays || b[1].ms - a[1].ms).slice(0, 10)
     .flatMap(([tid, v]) => { const t = lib.trackById.get(tid); return t ? [{ key: tid, label: t.title, sub: t.artistName, value: v.plays, extra: fmtHours(v.ms), to: trackPath(t) }] : []; });
 
-  const months = l.byMonth.slice(-24);
-  const daily = l.byMonth.length < 3;
-  const series = daily ? [...l.byDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-60).map(([d, v]) => ({ label: d.slice(5).replace('-', '/'), value: v })) : months.map((m) => ({ label: m.month.slice(2).replace('-', '/'), value: m.ms }));
+  const { unit, points: series } = timeSeries(l, {});
+  const daily = unit === 'day';
   const peak = l.byHour.indexOf(Math.max(...l.byHour));
   const stat = (label: string, value: string) => <div className="rounded-theme bg-raised px-3 py-2"><div className="text-[11px] uppercase tracking-wider text-muted">{label}</div><div className="text-sm font-semibold tabular-nums">{value}</div></div>;
 
@@ -128,7 +128,7 @@ export function EntityStatsPage() {
             <p className="text-sm text-muted">{l.daysActive.toLocaleString()} active day{l.daysActive === 1 ? '' : 's'}, longest streak {l.longestStreak.days} d{l.skips ? `, ${l.skips} skipped` : ''}.</p>
           </Panel>
           <div className="grid gap-4 lg:grid-cols-2">
-            <Panel title="Time of day" right={<span className="text-xs text-muted">busiest hour: {peak}:00</span>}><Bars data={l.byHour.map((v, h) => ({ label: h % 3 === 0 ? String(h) : '', value: v }))} format={fmtHours} highlight={peak} /></Panel>
+            <Panel title="Time of day" right={<span className="text-xs text-muted">busiest hour: {peak}:00</span>}><Bars data={l.byHour.map((v, h) => ({ label: h % 3 === 0 ? hourLabel(h) : '', full: hourLabel(h), value: v }))} format={fmtHours} highlight={peak} /></Panel>
             <Panel title="Day of the week"><Bars data={l.byWeekday.map((v, i) => ({ label: WEEKDAYS[i], value: v }))} format={(n) => `${n.toLocaleString()} plays`} highlight={l.byWeekday.indexOf(Math.max(...l.byWeekday))} /></Panel>
           </div>
           <Panel title="Listening clock" right={<span className="text-xs text-muted">plays by weekday and hour</span>}><Heatgrid cells={l.clock} rows={WEEKDAYS} cols={HOURS} /></Panel>

@@ -4,7 +4,7 @@ import { Clock, Download, Flame, History, LayoutGrid, List, Upload, Users, SkipF
 import { useLibraryLive } from '../lib/derive.ts';
 import { computeStats } from '../lib/stats.ts';
 import { buildListens, type Listen } from '../lib/listens.ts';
-import { computeListenStats, dayKey, timeSeries, type ListenStats, type Range, type TopRow } from '../lib/listenStats.ts';
+import { computeListenStats, dayKey, hourLabel, lastMonths, timeSeries, type ListenStats, type Range, type TopRow } from '../lib/listenStats.ts';
 import { filterListens, filterRange, applyFilter, loadFilter, saveFilter, type StatsFilter } from '../lib/statsFilter.ts';
 import { statsPath } from '../lib/entityStats.ts';
 import { StatsFilters } from '../components/StatsFilters.tsx';
@@ -14,16 +14,14 @@ import { Area, Bars, Calendar, Donut, fmtHours, Heatgrid, Kpi, Panel, RankList }
 import { ExportHistoryDialog, ImportHistoryDialog } from '../components/HistoryTools.tsx';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const HOURS = Array.from({ length: 24 }, (_, h) => `${h}`);
+const HOURS = Array.from({ length: 24 }, (_, h) => hourLabel(h));
 const TABS = [{ id: 'overview', label: 'Overview' }, { id: 'top', label: 'Top' }, { id: 'activity', label: 'Activity' }, { id: 'history', label: 'History' }, { id: 'library', label: 'Library' }] as const;
 type Tab = (typeof TABS)[number]['id'];
 
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthLabel = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5)) - 1]} ${ym.slice(0, 4)}`;
 
 function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof useLibraryLive>; range: Range }) {
-  const months = s.byMonth.slice(-12);
+  const months = lastMonths(s.byMonth, (m) => m.newArtists, 12);
   const { unit, points: series } = useMemo(() => timeSeries(s, range), [s, range]);
   const daily = unit === 'day';
   const feature = s.topArtists[0];
@@ -46,7 +44,7 @@ function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof us
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {s.onThisDay.length > 0 && <Panel title="On this day"><ul className="space-y-1.5 text-sm">{s.onThisDay.map((d) => <li key={d.year} className="flex gap-3"><b className="w-12 shrink-0 tabular-nums">{d.year}</b><span className="min-w-0 truncate text-muted">{d.plays} play{d.plays === 1 ? '' : 's'}{d.top ? ` · ${d.top}` : ''}</span></li>)}</ul></Panel>}
-        <Panel title="New artists per month" right={<span className="text-xs text-muted">first time you played them · {months.length ? `${monthLabel(months[0].month)} to ${monthLabel(months[months.length - 1].month)}` : ''}</span>}><Bars data={months.map((m) => ({ label: monthLabel(m.month).slice(0, 3), value: m.newArtists }))} format={(n) => `${n} new`} height={110} /></Panel>
+        <Panel title="New artists per month" right={<span className="text-xs text-muted">first time you played them · {months[0].full} to {months[months.length - 1].full}</span>}><Bars data={months.map((m) => ({ label: m.label, full: m.full, value: m.value }))} format={(n) => `${n} new`} height={110} /></Panel>
       </div>
       {lib.logs.length === 0 && <p className="text-sm text-muted">Nothing to show yet. Play music, or import your listening history with the button above.</p>}
     </div>
@@ -84,7 +82,7 @@ function Activity({ s }: { s: ListenStats }) {
     <div className="space-y-4">
       <Panel title="Listening clock" right={<span className="text-xs text-muted">plays by weekday and hour</span>}><Heatgrid cells={s.clock} rows={WEEKDAYS} cols={HOURS} /></Panel>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Time of day" right={<span className="text-xs text-muted">busiest hour: {s.plays ? `${peak}:00` : '–'}</span>}><Bars data={s.byHour.map((v, h) => ({ label: h % 3 === 0 ? String(h) : '', value: v }))} format={fmtHours} highlight={s.plays ? peak : undefined} /></Panel>
+        <Panel title="Time of day" right={<span className="text-xs text-muted">busiest hour: {s.plays ? `${peak}:00` : '–'}</span>}><Bars data={s.byHour.map((v, h) => ({ label: h % 3 === 0 ? hourLabel(h) : '', full: hourLabel(h), value: v }))} format={fmtHours} highlight={s.plays ? peak : undefined} /></Panel>
         <Panel title="Day of the week"><Bars data={s.byWeekday.map((v, i) => ({ label: WEEKDAYS[i], value: v }))} format={(n) => `${n.toLocaleString()} plays`} highlight={s.byWeekday.indexOf(Math.max(...s.byWeekday))} /></Panel>
       </div>
       <Panel title="Calendar" right={<span className="text-xs text-muted">the last 12 months, darker = more listening</span>}><Calendar byDay={s.byDay} format={fmtHours} /></Panel>
