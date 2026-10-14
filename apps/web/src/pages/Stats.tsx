@@ -53,8 +53,8 @@ function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof us
 
 function Top({ s, byTime, lib }: { s: ListenStats; byTime: boolean; lib: ReturnType<typeof useLibraryLive> }) {
   void lib;
-  const [view, setView] = useState<'grid' | 'list'>(() => { try { return localStorage.getItem('curator.statsTopView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } });
-  const choose = (v: 'grid' | 'list') => { setView(v); try { localStorage.setItem('curator.statsTopView', v); } catch { /* private window */ } };
+  const [view, setView] = useState<'grid' | 'list'>(() => { try { return localStorage.getItem('turbomusic.statsTopView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } });
+  const choose = (v: 'grid' | 'list') => { setView(v); try { localStorage.setItem('turbomusic.statsTopView', v); } catch { /* private window */ } };
   const rows = (list: TopRow[], kind: 'artist' | 'album' | 'track') => [...list].sort((a, b) => (byTime ? b.ms - a.ms : b.plays - a.plays)).slice(0, 25).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: byTime ? r.ms : r.plays, extra: byTime ? `${r.plays.toLocaleString()} plays` : fmtHours(r.ms), to: r.id ? statsPath(kind, r.id) : undefined }));
   const unit = byTime ? fmtHours : (n: number) => n.toLocaleString();
   return (
@@ -105,7 +105,7 @@ const PAGE = 200;
 /** Every play as a timeline, newest first, grouped by day. */
 function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof useLibraryLive> }) {
   const [q, setQ] = useState('');
-  const [source, setSource] = useState<'all' | 'curator' | 'spotify'>('all');
+  const [source, setSource] = useState<'all' | 'turbomusic' | 'spotify'>('all');
   const [skips, setSkips] = useState<'all' | 'played' | 'skipped'>('all');
   const [on, setOn] = useState('');
   const [shown, setShown] = useState(PAGE);
@@ -134,7 +134,7 @@ function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof 
         <input className="input !w-64 max-w-full" placeholder="Search your history…" value={q} onChange={(e) => { setQ(e.target.value); setShown(PAGE); }} />
         <input className="input !w-auto" type="date" aria-label="Jump to a day" value={on} onChange={(e) => { setOn(e.target.value); setShown(PAGE); }} />
         {on && <button className="btn btn-ghost" onClick={() => setOn('')}>All days</button>}
-        <select className="input !w-auto" value={source} onChange={(e) => { setSource(e.target.value as typeof source); setShown(PAGE); }}><option value="all">All sources</option><option value="curator">Played in TurboMusic</option><option value="spotify">From Spotify</option></select>
+        <select className="input !w-auto" value={source} onChange={(e) => { setSource(e.target.value as typeof source); setShown(PAGE); }}><option value="all">All sources</option><option value="turbomusic">Played in TurboMusic</option><option value="spotify">From Spotify</option></select>
         <select className="input !w-auto" value={skips} onChange={(e) => { setSkips(e.target.value as typeof skips); setShown(PAGE); }}><option value="all">Plays and skips</option><option value="played">Played through</option><option value="skipped">Skipped only</option></select>
         <span className="ml-auto text-xs text-muted">{rows.length.toLocaleString()} plays</span>
       </div>

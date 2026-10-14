@@ -5,8 +5,8 @@ import type { SortOption } from './listSort.ts';
 export type ViewMode = 'grid' | 'list';
 interface Saved { sort: string; dir: SortDir; view: ViewMode }
 
-const read = (page: string): Partial<Saved> => { try { return JSON.parse(localStorage.getItem(`curator.page.${page}`) ?? '{}'); } catch { return {}; } };
-const write = (page: string, s: Saved) => { try { localStorage.setItem(`curator.page.${page}`, JSON.stringify(s)); } catch { /* private window: not remembered */ } };
+const read = (page: string): Partial<Saved> => { try { return JSON.parse(localStorage.getItem(`turbomusic.page.${page}`) ?? '{}'); } catch { return {}; } };
+const write = (page: string, s: Saved) => { try { localStorage.setItem(`turbomusic.page.${page}`, JSON.stringify(s)); } catch { /* private window: not remembered */ } };
 
 /**
  * Sort column, direction and grid/list choice of a list page, remembered per page on this device (a per-viewer convenience,

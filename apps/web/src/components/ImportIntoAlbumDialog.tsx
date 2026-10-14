@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Download, ExternalLink, Loader2, Search } from 'lucide-react';
 import { newTrackData, inheritFromAlbum } from '../lib/defaults.ts';
 import { fetchCoverFromLinks } from '../lib/cover.ts';
 import { mergeAllTracksOrder, matchEntries, type MergeRow } from '../lib/albumMerge.ts';
-import type { ImportPreview } from '../lib/api.ts';
+import type { ImportPreview, MatchCandidate } from '../lib/api.ts';
+import { cacheMatches, cachedMatches, forgetMatches } from '../lib/matchCache.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { logJournal } from '../lib/journal.ts';
 import { api, useStore } from '../lib/store.ts';
@@ -28,6 +29,9 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pv, setPv] = useState<ImportPreview | null>(null);
+  const configured = useStore((s) => !!s.settings.token);
+  /** YouTube Music search results: the album's own search first (cached), or whatever was typed */
+  const [hits, setHits] = useState<MatchCandidate[] | null>(null);
   const [rows, setRows] = useState<MergeRow[]>([]);
   const [releaseTitle, setReleaseTitle] = useState('');
   /** '' = make a new release; otherwise the id of the existing release the imported tracks are folded into */
@@ -57,7 +61,27 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
     } catch (e) { setError((e as Error).message === 'Failed to fetch' ? 'Cannot reach the server.' : (e as Error).message); }
     finally { setBusy(null); }
   }
-  useEffect(() => { if (initialUrl) void lookUp(initialUrl); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const isLink = (v: string) => /^https?:\/\/\S+$/i.test(v.trim());
+  /** no text = search for this album ("artist album"); text = search for that; a link goes straight to the preview */
+  const searching = useRef(false);
+  async function search(text = '', fresh = false) {
+    if (!album || searching.current) return;
+    searching.current = true;
+    setError(null);
+    if (!text && !fresh) { const hit = cachedMatches(albumId); if (hit) { setHits(hit); searching.current = false; return; } }
+    if (!text && fresh) forgetMatches(albumId);
+    setBusy('Searching YouTube Music…'); setHits(null);
+    try {
+      const { results } = await api().matchAlbums([{ id: albumId, title: text || album.title, artist: text ? '' : album.leads[0]?.name ?? album.artistName, trackCount: text ? 0 : album.trackIds.length }]);
+      const r = results[0];
+      if (r?.error) setError(r.error);
+      if (!text && r && !r.error && r.candidates.length) cacheMatches(albumId, r.candidates);
+      setHits(r?.candidates ?? []);
+    } catch (e) { setError((e as Error).message === 'Failed to fetch' ? 'Cannot reach the server.' : (e as Error).message); }
+    finally { setBusy(null); searching.current = false; }
+  }
+  const go = () => { const v = url.trim(); if (!v) return; if (isLink(v)) void lookUp(v); else void search(v); };
+  useEffect(() => { if (initialUrl) void lookUp(initialUrl); else if (configured) void search(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!album) return <Modal title="Import into album" onClose={onClose}><p className="text-sm text-muted">That album no longer exists.</p></Modal>;
 
   async function run() {
@@ -124,13 +148,29 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
   const footer = done ? <button className="btn btn-accent ml-auto" onClick={onClose}>Close</button>
     : pv ? <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={() => setPv(null)} disabled={!!busy}>Back</button>
       <button className="btn btn-accent" disabled={!!busy || !included.length} onClick={() => void run()}>{busy ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}Import {included.length} tracks ({fresh} new)</button></div>
-    : <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!url.trim() || !!busy} onClick={() => void lookUp()}>{busy ? <Loader2 size={15} className="animate-spin" /> : null}Look up</button></div>;
+    : <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!url.trim() || !!busy} onClick={go}>{busy ? <Loader2 size={15} className="animate-spin" /> : null}{isLink(url) || !url.trim() ? 'Look up' : 'Search'}</button></div>;
 
   return (
-    <Modal title={`Import a release into “${album.title}”`} onClose={onClose} wide footer={footer}>
+    <Modal title={`Import a release into “${album.title}” from YouTube Music`} onClose={onClose} wide footer={footer}>
       {done ? <div role="alert" className="rounded-theme bg-warn/15 p-3 text-sm text-warn">{done}</div> : !pv ? (
-        <Field label="YouTube Music album or playlist link" hint="Songs the album already has are recognised and not added again. The link becomes a release with its own track order.">
-          <input autoFocus className="input" placeholder="https://music.youtube.com/playlist?list=…" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && url.trim() && !busy && void lookUp()} /></Field>
+        <div className="space-y-3">
+          <Field label="Search YouTube Music, or paste a link" hint="Songs the album already has are recognised and not added again. The link becomes a release with its own track order. Searching starts with this album's own name.">
+            <div className="flex gap-2"><input autoFocus className="input" placeholder={`${album.leads[0]?.name ?? album.artistName} ${album.title}  ·  or  https://music.youtube.com/playlist?list=…`} value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !busy && go()} />
+              <button className="btn shrink-0" disabled={!!busy || !configured} title="Search again for this album" onClick={() => { setUrl(''); void search('', true); }}><Search size={15} />Search again</button></div></Field>
+          {!configured && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">Searching runs on your server (it needs yt-dlp). Connect one in Settings, or paste a link.</div>}
+          {busy && <div className="flex items-center gap-2 text-sm text-muted"><Loader2 size={15} className="animate-spin" />{busy}</div>}
+          {hits && !hits.length && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">No album found. Try other words, or paste its link.</div>}
+          {hits && hits.length > 0 && <div className="space-y-1.5" aria-label="Search results">{hits.map((x) => (
+            <div key={x.url} className="card flex items-center gap-2 px-3 py-2 text-sm">
+              <button className="flex min-w-0 flex-1 items-center gap-3 text-left" disabled={!!busy} onClick={() => void lookUp(x.url)}>
+                {x.thumbnail ? <img src={x.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" /> : <span className="h-12 w-12 shrink-0 rounded-theme bg-raised" aria-hidden />}
+                <span className="min-w-0 flex-1"><span className="block truncate font-medium">{x.title || 'Album'}{x.edition && <span className="chip ml-2 !text-[10px]">{x.edition}</span>}</span>
+                  <span className="block truncate text-xs text-muted">{[x.owner, x.channel && x.channel !== x.owner ? x.channel : '', x.count ? `${x.count} tracks` : ''].filter(Boolean).join(' · ')} · {Math.round(Math.min(1, x.score) * 100)}% match</span></span>
+                <span className="btn btn-accent !py-1 text-xs">Import…</span>
+              </button>
+              <a className="p-1 text-muted hover:text-fg" href={x.url} target="_blank" rel="noreferrer" aria-label="Open on YouTube Music"><ExternalLink size={14} /></a>
+            </div>))}</div>}
+        </div>
       ) : (<>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-3">

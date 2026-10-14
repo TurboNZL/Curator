@@ -62,7 +62,7 @@ export function HomePage() {
 
   // pick up where you left off: the last thing played here that can be played again, with the rest of its album after it
   const last = useMemo(() => {
-    for (let i = listens.length - 1; i >= 0; i--) { const t = listens[i].trackId ? lib.trackById.get(listens[i].trackId!) : undefined; if (t?.file && listens[i].source === 'curator') return { t, at: listens[i].ts }; }
+    for (let i = listens.length - 1; i >= 0; i--) { const t = listens[i].trackId ? lib.trackById.get(listens[i].trackId!) : undefined; if (t?.file && listens[i].source === 'turbomusic') return { t, at: listens[i].ts }; }
     return null;
   }, [listens, lib]);
   const resume = () => {

@@ -5,7 +5,7 @@ import { TRACK_SORTS, sortTracks } from '../lib/trackSort.ts';
 import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Download, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';

@@ -2,7 +2,7 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
 import { BarChart3, Search, ArrowDown, ArrowUp, Link2, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { moveTrack, removeTrack } from '../lib/defaults.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';

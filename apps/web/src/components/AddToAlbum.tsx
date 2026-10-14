@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { newAlbumData } from '../lib/defaults.ts';
-import type { TrackData } from '@curator/core';
+import type { TrackData } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { defaultChoice, planAddToAlbum, type ReleaseChoice } from '../lib/albumOps.ts';
 import { useStore } from '../lib/store.ts';

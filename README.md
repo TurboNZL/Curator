@@ -10,6 +10,14 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 > The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Standard v1* UI style and colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
 
+## Run the server with Docker
+```
+mkdir turbomusic && cd turbomusic
+curl -fsSLO https://raw.githubusercontent.com/TurboNZL/turbomusic/main/docker-compose.yml
+docker compose up -d      # the log shows the address and the access token
+```
+The library lives in `./data` (set `TURBOMUSIC_DATA` in a `.env` file to use a folder on a big drive); update with `docker compose pull && docker compose up -d`. Moving an existing server: [docs/guides/MIGRATE_TO_DOCKER.md](docs/guides/MIGRATE_TO_DOCKER.md).
+
 ## Start here
 
 **[docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md)** is the plain-language way in: install the desktop app (nothing else needed), or set up a home server on a Raspberry Pi with one command. Every guide in `docs/` is also readable inside the app (Settings → Guides).
@@ -68,40 +76,40 @@ How it works: none of this is in this repository any more. The colours, UI style
 
 ## Running it
 
-**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/turbomusic/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/curator`. Details and what it does: [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md), [docs/guides/DEPLOY_PI.md](docs/guides/DEPLOY_PI.md).
+**On a Raspberry Pi** (one command, then open the address it prints): `curl -fsSL https://raw.githubusercontent.com/TurboNZL/turbomusic/main/scripts/install-pi.sh | sudo bash -s -- --data-dir /mnt/yourdrive/turbomusic`. Details and what it does: [docs/guides/GETTING_STARTED.md](docs/guides/GETTING_STARTED.md), [docs/guides/DEPLOY_PI.md](docs/guides/DEPLOY_PI.md).
 
 **From the source**, for development or any other machine: you need **Node 22.13+** and **pnpm** ([docs/development/TESTING.md](docs/development/TESTING.md) has nvm instructions). From the repo root:
 
 ```bash
 # once, and after each update (--ignore-scripts skips dependency install scripts; none are needed to run the server or build the web client)
-pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web
-pnpm --filter @curator/web build
+pnpm install --ignore-scripts --filter @turbomusic/core --filter @turbomusic/server --filter @turbomusic/web
+pnpm --filter @turbomusic/web build
 
 # start the server; it serves the built web client at /
 cd packages/server
-CURATOR_DATA_DIR=/path/to/data pnpm start
+TURBOMUSIC_DATA_DIR=/path/to/data pnpm start
 ```
 
-The server prints its address and a token (also in `<data dir>/token`). Open the address in a browser and paste the token in Settings → Server (leave the URL empty when the page is served by the server itself). Default port **47813**. For development run `pnpm --filter @curator/web dev`; it proxies `/api` to `CURATOR_SERVER` (default `http://localhost:47813`).
+The server prints its address and a token (also in `<data dir>/token`). Open the address in a browser and paste the token in Settings → Server (leave the URL empty when the page is served by the server itself). Default port **47813**. For development run `pnpm --filter @turbomusic/web dev`; it proxies `/api` to `TURBOMUSIC_SERVER` (default `http://localhost:47813`).
 
-**Desktop app:** `pnpm install --ignore-scripts --filter @curator/electron …`, `node apps/electron/node_modules/electron/install.js` once, then `pnpm --filter @curator/electron start` (details and installers in [docs/development/ELECTRON.md](docs/development/ELECTRON.md)). **Android:** download the APK from the newest [release](https://github.com/TurboNZL/turbomusic/releases), or build with Gradle ([docs/development/ANDROID.md](docs/development/ANDROID.md)).
+**Desktop app:** `pnpm install --ignore-scripts --filter @turbomusic/electron …`, `node apps/electron/node_modules/electron/install.js` once, then `pnpm --filter @turbomusic/electron start` (details and installers in [docs/development/ELECTRON.md](docs/development/ELECTRON.md)). **Android:** download the APK from the newest [release](https://github.com/TurboNZL/turbomusic/releases), or build with Gradle ([docs/development/ANDROID.md](docs/development/ANDROID.md)).
 
 **Server settings** (environment variables):
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `CURATOR_DATA_DIR` | `./data` | Where the database, files and token live (the external drive on a Pi). |
-| `CURATOR_PORT` / `CURATOR_HOST` | `47813` / `0.0.0.0` | Listen address. |
-| `CURATOR_TOKEN` | generated into `<data>/token` | The access token. |
-| `CURATOR_MAX_UPLOAD_MB` | `1024` | Largest single file accepted. |
-| `CURATOR_YTDLP`, `CURATOR_FFMPEG_DIR` | found on `PATH` | Tools for YouTube import and downloads. |
-| `CURATOR_YTDLP_COOKIES`, `CURATOR_YTDLP_ARGS` | none | A cookies file and extra arguments for yt-dlp ([docs/guides/YTDLP_COOKIES.md](docs/guides/YTDLP_COOKIES.md)). |
-| `CURATOR_WEB_DIR` | `apps/web/dist` | The client build to serve. |
-| `CURATOR_UPDATE` | auto | `0` hides the Update server button, `1` shows it outside systemd. |
+| `TURBOMUSIC_DATA_DIR` | `./data` | Where the database, files and token live (the external drive on a Pi). |
+| `TURBOMUSIC_PORT` / `TURBOMUSIC_HOST` | `47813` / `0.0.0.0` | Listen address. |
+| `TURBOMUSIC_TOKEN` | generated into `<data>/token` | The access token. |
+| `TURBOMUSIC_MAX_UPLOAD_MB` | `1024` | Largest single file accepted. |
+| `TURBOMUSIC_YTDLP`, `TURBOMUSIC_FFMPEG_DIR` | found on `PATH` | Tools for YouTube import and downloads. |
+| `TURBOMUSIC_YTDLP_COOKIES`, `TURBOMUSIC_YTDLP_ARGS` | none | A cookies file and extra arguments for yt-dlp ([docs/guides/YTDLP_COOKIES.md](docs/guides/YTDLP_COOKIES.md)). |
+| `TURBOMUSIC_WEB_DIR` | `apps/web/dist` | The client build to serve. |
+| `TURBOMUSIC_UPDATE` | auto | `0` hides the Update server button, `1` shows it outside systemd. |
 
-Desktop app only: `CURATOR_DESKTOP_PORT` (default 47814) and `CURATOR_SOFTWARE_RENDERING=1` (turn the GPU off, for diagnosing a driver).
+Desktop app only: `TURBOMUSIC_DESKTOP_PORT` (default 47814) and `TURBOMUSIC_SOFTWARE_RENDERING=1` (turn the GPU off, for diagnosing a driver).
 
-To bring an old library across: `CURATOR_DATA_DIR=… node --experimental-strip-types --disable-warning=ExperimentalWarning packages/server/src/cli-migrate.ts --db <old>/data/curator.db [--public <old>/public]` (idempotent).
+To bring an old library across: `TURBOMUSIC_DATA_DIR=… node --experimental-strip-types --disable-warning=ExperimentalWarning packages/server/src/cli-migrate.ts --db <old>/data/turbomusic.db [--public <old>/public]` (idempotent).
 
 ## Updating and releases
 

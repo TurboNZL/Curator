@@ -27,7 +27,7 @@ printf "audio-for-%s" "$(echo "$@" | tr -c 'a-z0-9' _)" > "$(dirname "$out")/vid
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'curator-acq-'));
+  dir = mkdtempSync(join(tmpdir(), 'turbomusic-acq-'));
   mkdirSync(join(dir, 'data', 'tmp'), { recursive: true });
   store = new Store(join(dir, 'data'));
 });
@@ -135,7 +135,7 @@ describe('YouTube bot check', () => {
     const job = [...a.jobs.values()][0];
     expect(job.state).toBe('failed');
     expect(job.error).toContain(BOT_HELP.slice(0, 40));
-    expect(job.error).toContain('CURATOR_YTDLP_COOKIES');
+    expect(job.error).toContain('TURBOMUSIC_YTDLP_COOKIES');
   });
   it('a 403 on the media is retried through the other clients until one gets through', async () => {
     const path = join(dir, 'f403-yt-dlp');
@@ -167,7 +167,7 @@ printf "audio" > "$(dirname "$2")/vid.mp3"
   });
   it('puts the configured cookies file on every call', async () => {
     store.push([track('t', 'https://youtu.be/x')]);
-    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(), ytdlpArgs: ytdlpArgs({ CURATOR_YTDLP_COOKIES: '/srv/cookies.txt', CURATOR_YTDLP_ARGS: '--js-runtimes node' }) });
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(), ytdlpArgs: ytdlpArgs({ TURBOMUSIC_YTDLP_COOKIES: '/srv/cookies.txt', TURBOMUSIC_YTDLP_ARGS: '--js-runtimes node' }) });
     a.enqueueMissing(); await a.drained();
     const argv = (await import('node:fs')).readFileSync(join(dir, 'argv.log'), 'utf8');
     expect(argv).toMatch(/^--cookies \/srv\/cookies\.txt --js-runtimes node /);
@@ -204,7 +204,7 @@ describe('dead links and progress', () => {
   it('reports how far a download is', async () => {
     const path = join(dir, 'progress-yt-dlp');
     writeFileSync(path, `#!/bin/sh
-echo "CURATOR_PROGRESS 500 1000 NA"
+echo "TURBOMUSIC_PROGRESS 500 1000 NA"
 echo "[ExtractAudio] Destination: x.mp3"
 while [ "$1" != "-o" ]; do shift; done
 printf "audio" > "$(dirname "$2")/vid.mp3"

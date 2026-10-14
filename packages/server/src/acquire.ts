@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { newId, type TrackData } from '@curator/core';
+import { newId, type TrackData } from '@turbomusic/core';
 import type { Store } from './db.ts';
 import { ingestFile } from './files.ts';
 import { mimeFor } from './migrate-legacy.ts';
@@ -60,7 +60,7 @@ export const FALLBACK_CLIENTS: string[][] = [
 
 export const FORBIDDEN_HELP = 'YouTube refused the media download (HTTP 403). Update yt-dlp first (yt-dlp -U, or pip/nightly; 2026.08.19 or newer is needed) and make sure a JavaScript runtime (Node 22 or Deno) is installed, then press “Download missing audio” again.';
 
-export const BOT_HELP = 'YouTube wants proof that this server is not a bot. Give yt-dlp a cookies file: set CURATOR_YTDLP_COOKIES (see docs/guides/YTDLP_COOKIES.md), then press “Download missing audio” again.';
+export const BOT_HELP = 'YouTube wants proof that this server is not a bot. Give yt-dlp a cookies file: set TURBOMUSIC_YTDLP_COOKIES (see docs/guides/YTDLP_COOKIES.md), then press “Download missing audio” again.';
 
 export class Acquirer {
   readonly jobs = new Map<string, Job>();
@@ -166,7 +166,7 @@ export class Acquirer {
   private exec(url: string, cwd: string, extra: string[] = [], job?: Job): Promise<void> {
     const args = [
       ...(this.o.ytdlpArgs ?? []), ...extra, '--retries', '3',
-      '--no-playlist', '--newline', '--progress-template', 'download:CURATOR_PROGRESS %(progress.downloaded_bytes)s %(progress.total_bytes)s %(progress.total_bytes_estimate)s', '-x', '--audio-format', 'mp3', '--audio-quality', '0',
+      '--no-playlist', '--newline', '--progress-template', 'download:TURBOMUSIC_PROGRESS %(progress.downloaded_bytes)s %(progress.total_bytes)s %(progress.total_bytes_estimate)s', '-x', '--audio-format', 'mp3', '--audio-quality', '0',
       '-o', join(cwd, '%(id)s.%(ext)s'),
       ...(this.o.ffmpegDir ? ['--ffmpeg-location', this.o.ffmpegDir] : []),
       '--', url, // `--` so a URL can never be read as an option
@@ -178,14 +178,14 @@ export class Acquirer {
         buf += d;
         const lines = buf.split('\n'); buf = lines.pop() ?? '';
         for (const line of lines) {
-          const m = /^CURATOR_PROGRESS\s+(\S+)\s+(\S+)\s+(\S+)/.exec(line);
+          const m = /^TURBOMUSIC_PROGRESS\s+(\S+)\s+(\S+)\s+(\S+)/.exec(line);
           if (m && job) { const done = Number(m[1]), total = Number(m[2]) || Number(m[3]); if (done >= 0 && total > 0) { job.stage = 'downloading'; job.percent = Math.min(100, Math.round((done / total) * 100)); } }
           else if (job && /^\[(ExtractAudio|Merger|FFmpeg\w*)\]/.test(line)) { job.stage = 'converting'; job.percent = 100; }
         }
       });
       child.stderr.on('data', (d) => { err = (err + d).slice(-2000); });
       child.on('error', (e: NodeJS.ErrnoException) =>
-        reject(new Error(e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set CURATOR_YTDLP.` : e.message)));
+        reject(new Error(e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set TURBOMUSIC_YTDLP.` : e.message)));
       child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`yt-dlp exited ${code}: ${err.trim().split('\n').pop()}`))));
     });
   }

@@ -1,12 +1,12 @@
 {
-  "name": "curator",
+  "name": "turbomusic",
   "private": true,
   "version": "0.0.0",
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build:web": "pnpm --filter @curator/web build",
-    "start": "pnpm --filter @curator/server start",
+    "build:web": "pnpm --filter @turbomusic/web build",
+    "start": "pnpm --filter @turbomusic/server start",
     "test": "pnpm -r test"
   }
 }

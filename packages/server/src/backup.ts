@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { recordSchema, RECORD_TABLES, sha256Hex, type SyncRecord } from '@curator/core';
+import { recordSchema, RECORD_TABLES, sha256Hex, type SyncRecord } from '@turbomusic/core';
 import type { Store } from './db.ts';
 import { filePath } from './files.ts';
 import { readTar, tarChunks, tarLength, type TarEntry } from './tar.ts';

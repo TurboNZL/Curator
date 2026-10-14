@@ -43,7 +43,7 @@ export async function startBeam(): Promise<boolean> {
   if (!(await shouldBeam())) return false;
   if (mode !== 'none') return true; // started while we checked
   const url = api().beamUrl();
-  const volume = Number(localStorage.getItem('curator.volume') ?? 0.8);
+  const volume = Number(localStorage.getItem('turbomusic.volume') ?? 0.8);
   if (nativeAudioAvailable()) {
     mode = 'native';
     // a new key every time: a live stream is never the same bytes twice

@@ -1,14 +1,14 @@
 import { useStore } from './store.ts';
 
 /**
- * Vibration feedback. In the Android app the phone's own haptic engine is used (`CuratorAndroid.haptic`: respects the system
+ * Vibration feedback. In the Android app the phone's own haptic engine is used (`TurboMusicAndroid.haptic`: respects the system
  * "touch feedback" setting and needs no permission); elsewhere `navigator.vibrate` where the browser has it (phones, not
  * desktops or iOS). Presses on buttons, links, tabs, rows and switches tick lightly by themselves (`startHaptics`); the
  * important moments (a vote, a long press) ask for a stronger one.
  */
 export type HapticKind = 'tap' | 'tick' | 'confirm' | 'reject' | 'heavy';
 interface HapticBridge { haptic?(kind: string): void }
-const bridge = () => (window as unknown as { CuratorAndroid?: HapticBridge }).CuratorAndroid;
+const bridge = () => (window as unknown as { TurboMusicAndroid?: HapticBridge }).TurboMusicAndroid;
 const PATTERNS: Record<HapticKind, number | number[]> = { tap: 8, tick: 4, confirm: [12, 30, 18], reject: [24, 40, 24], heavy: 28 };
 
 let last = 0;

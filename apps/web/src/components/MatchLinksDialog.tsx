@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Loader2, Search, SkipForward } from 'lucide-react';
 import { Cover } from './Cover.tsx';
 import type { MatchCandidate } from '../lib/api.ts';
@@ -6,7 +6,6 @@ import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { api, useStore } from '../lib/store.ts';
 import { Modal } from './forms.tsx';
-import { Select } from './Select.tsx';
 import { albumsWithoutLink, cacheMatches, cachedMatches, forgetMatches } from '../lib/matchCache.ts';
 
 interface Found { candidates: MatchCandidate[]; error?: string }
@@ -27,14 +26,11 @@ export function MatchLinksDialog({ albumId = '', onClose }: { albumId?: string; 
   const [pick, setPick] = useState(0);
   const asked = useRef('');
   const [manual, setManual] = useState('');
-  /** an album picked by hand from the whole library (the queue only holds albums that still have no link) */
-  const [chosen, setChosen] = useState('');
 
   // an album needs a link when it waits for one (Spotify import) or none of its tracks has a YouTube link yet
   const todo = albumId ? lib.albums.filter((a) => a.id === albumId) : albumsWithoutLink(lib);
   const queue = todo.filter((a) => !skipped.includes(a.id));
-  const current = (chosen ? lib.albums.find((a) => a.id === chosen) : undefined) ?? queue[0];
-  const albumOptions = useMemo(() => [...lib.albums].sort((a, b) => a.title.localeCompare(b.title)).map((a) => ({ value: a.id, label: a.title, hint: a.artistName })), [lib.albums]);
+  const current = queue[0];
 
   async function look(a: NonNullable<typeof current>, fresh = false) {
     asked.current = a.id; setPick(0);
@@ -68,12 +64,9 @@ export function MatchLinksDialog({ albumId = '', onClose }: { albumId?: string; 
   return (
     <Modal title="Find the YouTube Music album" onClose={onClose} wide footer={<button className="btn ml-auto" onClick={onClose}>Close</button>}>
       {!configured && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">This runs on your server (it needs yt-dlp to search). Connect one in Settings first.</div>}
-      {!albumId && lib.albums.length > 0 && <div className="space-y-1"><label className="text-xs uppercase tracking-wider text-muted">Album to look up</label>
-        <Select aria-label="Album to look up" searchable value={current?.id ?? ''} onChange={(v) => { setChosen(v); setFound(null); }} options={albumOptions} placeholder="Pick any album in your library" />
-        <p className="text-xs text-muted">Starts with the albums that have no link; pick any other album here to search for it instead.</p></div>}
-      {!current && <p className="text-sm text-muted">{todo.length ? 'You skipped every album that is waiting. Pick one from the list above.' : 'No album is waiting for a YouTube Music link. Pick any album from the list above to search for it.'}</p>}
+      {!current && <p className="text-sm text-muted">{todo.length ? 'You skipped every album that is waiting.' : 'No album is waiting for a YouTube Music link.'}</p>}
       {current && <>
-        <p className="text-sm text-muted">{albumId || chosen ? 'Looking up one album.' : `${queue.length} album${queue.length === 1 ? '' : 's'} without a YouTube Music link, one at a time.`} The server searches YouTube Music’s albums for “artist album” and checks the best results.</p>
+        <p className="text-sm text-muted">{queue.length} album{queue.length === 1 ? '' : 's'} {albumId ? 'to look up' : 'without a YouTube Music link'}, one at a time. The server searches YouTube Music’s albums for “artist album” and checks the best results.</p>
         <div className="flex items-center gap-3 rounded-theme border border-line p-3">
           <Cover hash={current.cover} seed={current.title} className="h-16 w-16 shrink-0" />
           <div className="min-w-0"><div className="truncate font-semibold">{current.title}</div><div className="truncate text-sm text-muted">{current.artistName} · {current.trackIds.length} track{current.trackIds.length === 1 ? '' : 's'}</div></div>
@@ -99,7 +92,7 @@ export function MatchLinksDialog({ albumId = '', onClose }: { albumId?: string; 
         <div className="flex flex-wrap items-center gap-2">
           <button className="btn btn-accent" disabled={!c || busy} onClick={() => edit({ kind: 'import-into-album', id: current.id, url: c!.url })}>Import…</button>
           <button className="btn" disabled={busy} onClick={() => void look(current, true)}><Search size={15} />Search again</button>
-          {!albumId && !chosen && queue.length > 1 && <button className="btn btn-ghost" onClick={() => setSkipped((s) => [...s, current.id])}>Skip<SkipForward size={14} className="ml-1" /></button>}
+          {!albumId && queue.length > 1 && <button className="btn btn-ghost" onClick={() => setSkipped((s) => [...s, current.id])}>Skip<SkipForward size={14} className="ml-1" /></button>}
         </div>
       </>}
     </Modal>

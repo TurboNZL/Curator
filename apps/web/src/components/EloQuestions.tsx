@@ -10,7 +10,7 @@ import { PreviewCard } from './PreviewCard.tsx';
 import { cn } from '../lib/cn.ts';
 
 const LABEL: Record<Question['kind'], string> = { duel: 'Head to head', triple: 'Best of three', benchmark: 'Top 10% check', love: 'Gut check' };
-const OPEN_KEY = 'curator.eloQuestionOpen';
+const OPEN_KEY = 'turbomusic.eloQuestionOpen';
 const wasOpen = () => { try { return localStorage.getItem(OPEN_KEY) === '1'; } catch { return false; } };
 
 /**

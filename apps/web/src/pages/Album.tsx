@@ -3,7 +3,7 @@ import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { statsPath } from '../lib/entityStats.ts';
 import { BarChart3, Disc, Download, FileAudio, Layers, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -96,7 +96,7 @@ export function AlbumPage() {
               ? <button className={`btn ${arranging ? 'btn-accent' : 'btn-ghost'}`} onClick={() => setArranging(!arranging)}><ListOrdered size={15} />{arranging ? 'Done' : 'Edit tracks'}</button>
               : <button className="btn btn-ghost" onClick={() => edit({ kind: 'release', id: view.id })}><ListOrdered size={15} />Edit release</button>}
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'upload', id: album.id })}><FileAudio size={15} />Add files</button>
-            <button className="btn btn-ghost" title="Import a YouTube album (a deluxe edition, say) into this one: songs it already has are not added twice" onClick={() => edit({ kind: 'import-into-album', id: album.id })}><Download size={15} />Import a release</button>
+            <button className="btn btn-ghost" title="Find this album on YouTube Music (or paste a link) and import it as a release: songs the album already has are not added twice" onClick={() => edit({ kind: 'import-into-album', id: album.id })}><Download size={15} />Import a release from YouTube Music</button>
             {singleTrackOf(lib, album) && <button className="btn btn-ghost" title="Every release holds just this one song" onClick={() => convert(album)}><Disc size={15} />Convert to single</button>}
             <KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
             <button data-menu-trigger className="btn btn-ghost !p-2" aria-label="More actions" aria-haspopup="menu" onClick={(e) => menu.toggle(e.currentTarget, 'album', itemsFor(album, ids), `Actions for ${album.title}`)}><MoreHorizontal size={16} /></button>

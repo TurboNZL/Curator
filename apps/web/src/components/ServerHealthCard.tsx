@@ -104,7 +104,7 @@ function StorageLocations() {
           <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-medium">{e.label}</span><span className="text-xs text-muted">{fmtBytes(e.freeBytes)} free of {fmtBytes(e.totalBytes)}{e.system && <span className="ml-1 text-warn">· system disk</span>}</span></div>
           <div className="break-all font-mono text-xs">{e.path}{e.moved && <span className="ml-1 text-muted">(linked from {e.link})</span>}</div>
           <div className="text-xs text-muted">{e.hint}</div>
-          <div className="flex flex-wrap gap-2"><input className="input min-w-0 flex-1" placeholder={`/mnt/hdd/curator/${e.kind} (an empty folder; it is created)`} value={target[e.kind] ?? ''} disabled={running} onChange={(ev) => setTarget((t) => ({ ...t, [e.kind]: ev.target.value }))} />
+          <div className="flex flex-wrap gap-2"><input className="input min-w-0 flex-1" placeholder={`/mnt/hdd/turbomusic/${e.kind} (an empty folder; it is created)`} value={target[e.kind] ?? ''} disabled={running} onChange={(ev) => setTarget((t) => ({ ...t, [e.kind]: ev.target.value }))} />
             <button className="btn" disabled={running || !(target[e.kind] ?? '').trim()} onClick={() => void move(e.kind)}>Move here</button></div>
         </div>))}
       {running && <div className="text-sm" role="status">Moving {info.job.kind}… {p && p.totalBytes ? `${fmtBytes(p.copiedBytes)} of ${fmtBytes(p.totalBytes)} (${p.files} files)` : ''}</div>}

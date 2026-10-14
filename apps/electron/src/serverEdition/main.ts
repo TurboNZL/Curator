@@ -42,7 +42,7 @@ function webDir() { return findWebDir(process.resourcesPath, join(here, '../../w
 
 /** Link each folder the wizard chose in place of the one inside the data folder (a junction on Windows: no admin rights needed). */
 function applyFolders(c: ServerEditionConfig) {
-  const base = loadConfig({ CURATOR_DATA_DIR: c.dataDir }); // creates the data folder and its three subfolders
+  const base = loadConfig({ TURBOMUSIC_DATA_DIR: c.dataDir }); // creates the data folder and its three subfolders
   for (const { kind, target } of folderPlan(c)) {
     let same = false;
     try { same = realpathSync(join(base.dataDir, kind)).toLowerCase() === resolve(target).toLowerCase(); } catch { /* not there yet */ }
@@ -56,9 +56,9 @@ async function startRuntime(): Promise<void> {
   applyFolders(c);
   const t = tools(c);
   process.env.PATH = pathWith(t, process.env.PATH); // yt-dlp finds Deno and ffmpeg here
-  const env: NodeJS.ProcessEnv = { ...process.env, CURATOR_DATA_DIR: c.dataDir, CURATOR_HOST: c.lan ? '0.0.0.0' : '127.0.0.1', CURATOR_PORT: String(c.port), CURATOR_WEB_DIR: webDir() ?? '', CURATOR_UPDATE: '0' };
-  if (isInstalled(t, TOOLS[0])) env.CURATOR_YTDLP = join(t, 'yt-dlp.exe');
-  if (isInstalled(t, TOOLS[1])) env.CURATOR_FFMPEG_DIR = t;
+  const env: NodeJS.ProcessEnv = { ...process.env, TURBOMUSIC_DATA_DIR: c.dataDir, TURBOMUSIC_HOST: c.lan ? '0.0.0.0' : '127.0.0.1', TURBOMUSIC_PORT: String(c.port), TURBOMUSIC_WEB_DIR: webDir() ?? '', TURBOMUSIC_UPDATE: '0' };
+  if (isInstalled(t, TOOLS[0])) env.TURBOMUSIC_YTDLP = join(t, 'yt-dlp.exe');
+  if (isInstalled(t, TOOLS[1])) env.TURBOMUSIC_FFMPEG_DIR = t;
   try { running = await startServer(loadConfig(env)); }
   catch (e) {
     const code = (e as NodeJS.ErrnoException).code;
@@ -108,7 +108,7 @@ function rebuildTray() {
   ]));
 }
 
-/** Rename the old "Music Curator Server" settings folder (the library too, if it was left inside it). The folder is in use, so this asks and the restart does it. */
+/** Rename the old "TurboMusic Server" settings folder (the library too, if it was left inside it). The folder is in use, so this asks and the restart does it. */
 async function moveToTurboMusic() {
   const plan = migrationInfo('server').plan;
   if (!plan?.needed) return;

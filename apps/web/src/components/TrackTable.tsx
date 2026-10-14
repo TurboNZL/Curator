@@ -14,7 +14,7 @@ import { ArtistLinks } from './ArtistLinks.tsx';
 import { Cover } from './Cover.tsx';
 import { fmtDate } from './SingleCard.tsx';
 import { statsPath } from '../lib/entityStats.ts';
-import type { SourceType } from '@curator/core';
+import type { SourceType } from '@turbomusic/core';
 
 /** Compact rows for ranking/editing lists. `list` is the playback order handed to the queue. */
 export function TrackTable({ tracks, queue, source, sourceId = null, numbered = false, showAlbum = true, covers = false, extra, below }: {

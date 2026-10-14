@@ -3,7 +3,7 @@ import { extname, join, normalize, sep } from 'node:path';
 import type {
   SyncRecord, RecordTable, Credit, ArtistData, AlbumData, ReleaseData, TrackData, PlaylistData,
   GroupData, NoteData, GenreData, RoleCategoryData, TimelineData, VoteData, PlaybackLogData, ProfileData,
-} from '@curator/core';
+} from '@turbomusic/core';
 import type { Store } from './db.ts';
 import { ingestFile } from './files.ts';
 

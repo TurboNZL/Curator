@@ -8,7 +8,7 @@ import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams } from 'react-router-dom';
 import { statsPath } from '../lib/entityStats.ts';
 import { BarChart3, Layers, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';

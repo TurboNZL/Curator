@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SyncRecord } from '@curator/core';
+import type { SyncRecord } from '@turbomusic/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { buildListens } from '../src/lib/listens.ts';
 import { computeListenStats } from '../src/lib/listenStats.ts';
@@ -39,7 +39,7 @@ describe('stats filters', () => {
     expect(applyFilter(lib, all, { ...DEFAULT_FILTER, skips: 'skipped' }).map((l) => l.id)).toEqual(['l2']);
     expect(applyFilter(lib, all, { ...DEFAULT_FILTER, libraryOnly: true })).toHaveLength(4);
     expect(applyFilter(lib, all, { ...DEFAULT_FILTER, platform: 'Android' }).map((l) => l.id)).toEqual(['s1']);
-    expect(platformsOf(all)).toEqual(['Curator', 'Android']);
+    expect(platformsOf(all)).toEqual(['TurboMusic', 'Android']);
   });
   it('time of day and weekdays/weekends (June 2026: the 6th and 7th are a weekend)', () => {
     expect(applyFilter(lib, all, { ...DEFAULT_FILTER, dayPart: 'night' }).map((l) => l.id)).toEqual(['l3']);
@@ -64,5 +64,5 @@ describe('stats filters', () => {
     expect(s.topTracks.find((r) => r.id === 't1')?.plays).toBe(2);
     expect(s.topArtists.find((r) => r.label === 'Zed')?.id).toBeNull();
   });
-  it('counts what is narrowing', () => { expect(activeCount(DEFAULT_FILTER)).toBe(0); expect(activeCount({ ...DEFAULT_FILTER, source: 'curator', text: 'a' })).toBe(2); });
+  it('counts what is narrowing', () => { expect(activeCount(DEFAULT_FILTER)).toBe(0); expect(activeCount({ ...DEFAULT_FILTER, source: 'turbomusic', text: 'a' })).toBe(2); });
 });

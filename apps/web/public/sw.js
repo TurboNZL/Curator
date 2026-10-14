@@ -3,7 +3,7 @@
  * the page, scripts and styles so the app opens with no network. /api/* is never touched.
  * Bump CACHE when this file's strategy changes; hashed /assets/* files never need busting.
  */
-const CACHE = 'curator-shell-v2'; // v2: drops the old logo that v1 kept forever
+const CACHE = 'turbomusic-shell-v2'; // v2: drops the old logo that v1 kept forever
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {

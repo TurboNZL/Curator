@@ -12,6 +12,6 @@
       ["apps/electron/build/icon.png", 512],
       ["apps/electron/build/icon-256.png", 256]
     ],
-    "android": { "res": "apps/android/app/src/main/res", "stat": "ic_stat_curator" }
+    "android": { "res": "apps/android/app/src/main/res", "stat": "ic_stat_turbomusic" }
   }
 }

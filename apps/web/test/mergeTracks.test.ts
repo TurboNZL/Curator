@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SyncRecord } from '@curator/core';
+import type { SyncRecord } from '@turbomusic/core';
 import { buildLibrary } from '../src/lib/library.ts';
 import { planMerge, suggestKeeper } from '../src/lib/mergeTracks.ts';
 import { allSpotifyUrls, linkFields, withLink } from '../src/lib/spotifyLinks.ts';

@@ -1,6 +1,6 @@
 # Trying the new web client with your own library
 
-Everything below runs on your own machine. Nothing here touches your old app or your old `curator.db` (it is only read).
+Everything below runs on your own machine. Nothing here touches your old app or your old `turbomusic.db` (it is only read).
 
 ## 0. What you need
 
@@ -25,39 +25,39 @@ node -v && pnpm -v
 
 For audio only (step 5) you also need **yt-dlp** and **ffmpeg**.
 
-**If `pnpm install` fails with symlink / EPERM / "operation not permitted" errors:** the folder is on a drive format that cannot hold symlinks (exFAT, some NTFS mounts). Copy the repo to your home folder (`cp -r` to `~/curator`) and run everything there. The data folder in step 2 can still live anywhere.
+**If `pnpm install` fails with symlink / EPERM / "operation not permitted" errors:** the folder is on a drive format that cannot hold symlinks (exFAT, some NTFS mounts). Copy the repo to your home folder (`cp -r` to `~/turbomusic`) and run everything there. The data folder in step 2 can still live anywhere.
 
 ## 1. Install and build (once, and after each update)
 From the repo root (quote the path if it has spaces):
 ```
-cd "/path/to/music-curator-main"
-pnpm install --ignore-scripts --filter @curator/core --filter @curator/server --filter @curator/web
-pnpm --filter @curator/web build
+cd "/path/to/turbomusic-main"
+pnpm install --ignore-scripts --filter @turbomusic/core --filter @turbomusic/server --filter @turbomusic/web
+pnpm --filter @turbomusic/web build
 ```
 (`--ignore-scripts` skips dependency install scripts; it used to matter because the removed legacy app's `youtube-dl-exec` postinstall failed.) The build ends with `✓ built in …s`.
 
 ## 2. Import your library into a fresh data folder
 Pick a folder for the new server's data (any path; later this is the external drive on the Pi).
-Your old database is `data/curator.db` inside the old app folder.
+Your old database is `data/turbomusic.db` inside the old app folder.
 
 Linux / macOS (bash):
 ```
 cd packages/server
-CURATOR_DATA_DIR=~/curator-data node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db "/path/to/old-app/data/curator.db"
+TURBOMUSIC_DATA_DIR=~/turbomusic-data node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db "/path/to/old-app/data/turbomusic.db"
 ```
 
 PowerShell (Windows):
 ```
 cd packages\server
-$env:CURATOR_DATA_DIR = "C:\curator-data"
-node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db "C:\path\to\old-app\data\curator.db"
+$env:TURBOMUSIC_DATA_DIR = "C:\turbomusic-data"
+node --experimental-strip-types --disable-warning=ExperimentalWarning src/cli-migrate.ts --db "C:\path\to\old-app\data\turbomusic.db"
 ```
 You should see a table of counts (444 tracks, 33 albums, 1950 votes for the library tested so far).
 It is safe to run again; it never duplicates anything.
 Add `--public <old-app>/public` only if you still have the old `public/uploads` folder (audio + images); it copies them in.
 
 ## 3. Start the server
-Same terminal, same `CURATOR_DATA_DIR` (bash: `CURATOR_DATA_DIR=~/curator-data pnpm start`):
+Same terminal, same `TURBOMUSIC_DATA_DIR` (bash: `TURBOMUSIC_DATA_DIR=~/turbomusic-data pnpm start`):
 ```
 pnpm start
 ```
@@ -85,10 +85,10 @@ Things worth trying:
 
 ## 5. Getting audio back (the old `uploads` folder is gone)
 Install **yt-dlp** and **ffmpeg** so the server can find them (or point at them):
-bash: `CURATOR_YTDLP=/path/to/yt-dlp CURATOR_DATA_DIR=~/curator-data pnpm start`. PowerShell, before `pnpm start`:
+bash: `TURBOMUSIC_YTDLP=/path/to/yt-dlp TURBOMUSIC_DATA_DIR=~/turbomusic-data pnpm start`. PowerShell, before `pnpm start`:
 ```
-$env:CURATOR_YTDLP = "C:\tools\yt-dlp.exe"       # only if it is not on PATH
-$env:CURATOR_FFMPEG_DIR = "C:\tools\ffmpeg\bin"  # folder containing ffmpeg.exe, only if not on PATH
+$env:TURBOMUSIC_YTDLP = "C:\tools\yt-dlp.exe"       # only if it is not on PATH
+$env:TURBOMUSIC_FFMPEG_DIR = "C:\tools\ffmpeg\bin"  # folder containing ffmpeg.exe, only if not on PATH
 ```
 Then in the app: **Settings → Audio → Download missing audio**, and **Progress** to watch it.
 Start small to check it works: the first run is the first real test of this code against YouTube.
@@ -99,4 +99,4 @@ Downloaded tracks get a play button and can be kept offline per album.
 - Blank page / 404 at `/`: you skipped the build in step 1, or your copy has no `apps/web` folder (re-download the current `main`).
 - "Wrong token": copy the token from `<data dir>/token` again.
 - Counts look wrong after migrating: tell me the numbers shown and which album/track looks off.
-- Run the automated checks: `pnpm --filter @curator/web test`, and `npx vitest run` inside `packages/core` and `packages/server`.
+- Run the automated checks: `pnpm --filter @turbomusic/web test`, and `npx vitest run` inside `packages/core` and `packages/server`.

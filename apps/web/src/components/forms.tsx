@@ -2,7 +2,7 @@ import { Select } from './Select.tsx';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { originFor } from '../lib/pointer.ts';
 import { FileAudio, ImagePlus, Plus, X } from 'lucide-react';
-import type { ArtistData, Credit, EraData } from '@curator/core';
+import type { ArtistData, Credit, EraData } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { AUDIO_ACCEPT, FEATURED_ROLE, hasLead, isFeatured, LEAD_ROLE } from '../lib/defaults.ts';
 import { saveAudio, saveImage } from '../lib/files.ts';

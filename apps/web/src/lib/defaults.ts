@@ -1,4 +1,4 @@
-import type { AlbumData, Credit, TrackData } from '@curator/core';
+import type { AlbumData, Credit, TrackData } from '@turbomusic/core';
 
 /** The role that makes a credit "the artist" of a track or album. Credits are the only place an artist is entered. */
 export const LEAD_ROLE = 'Lead artist';

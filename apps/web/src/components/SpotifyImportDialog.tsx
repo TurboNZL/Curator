@@ -2,7 +2,7 @@ import { withLink } from '../lib/spotifyLinks.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUp, Link2, ListMusic, Loader2, User } from 'lucide-react';
-import type { ArtistData } from '@curator/core';
+import type { ArtistData } from '@turbomusic/core';
 import { leadCredit, newAlbumData, newTrackData } from '../lib/defaults.ts';
 import type { SpotifyImportTrack, SpotifyList } from '../lib/api.ts';
 import { useLibraryLive } from '../lib/derive.ts';

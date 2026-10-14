@@ -31,7 +31,7 @@ describe('audio check (pure parts)', () => {
 });
 
 describe.skipIf(!hasFfmpeg)('audio check (real ffmpeg)', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'curator-audio-'));
+  const dir = mkdtempSync(join(tmpdir(), 'turbomusic-audio-'));
   const make = (name: string, lowRate: number | null, rate: string) => {
     const path = join(dir, name);
     // white noise has energy at every frequency, which is what "a real 320" looks like to this check; going through a lower sample

@@ -1,4 +1,4 @@
-import type { VoteData } from '@curator/core';
+import type { VoteData } from '@turbomusic/core';
 import { pickPair } from './pairing.ts';
 
 export interface Q { id: string; elo: number; comparisons: number; rating: number }
