@@ -1,4 +1,4 @@
-import type { ReleaseData, TrackData } from '@curator/core';
+import type { ReleaseData, TrackData } from '@turbomusic/core';
 import { appendTrack, leadArtistIds } from './defaults.ts';
 import type { Library } from './library.ts';
 

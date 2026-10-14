@@ -8,7 +8,7 @@ import { makePrimary } from '../lib/autofill.ts';
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { AlbumData, ArtistData, Credit, EraData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@curator/core';
+import type { AlbumData, ArtistData, Credit, EraData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@turbomusic/core';
 import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor, type EditTarget } from '../lib/editor.ts';

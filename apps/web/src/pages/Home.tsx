@@ -62,7 +62,7 @@ export function HomePage() {
 
   // pick up where you left off: the last thing played here that can be played again, with the rest of its album after it
   const last = useMemo(() => {
-    for (let i = listens.length - 1; i >= 0; i--) { const t = listens[i].trackId ? lib.trackById.get(listens[i].trackId!) : undefined; if (t?.file && listens[i].source === 'curator') return { t, at: listens[i].ts }; }
+    for (let i = listens.length - 1; i >= 0; i--) { const t = listens[i].trackId ? lib.trackById.get(listens[i].trackId!) : undefined; if (t?.file && listens[i].source === 'turbomusic') return { t, at: listens[i].ts }; }
     return null;
   }, [listens, lib]);
   const resume = () => {
@@ -90,7 +90,7 @@ export function HomePage() {
   const tryNew = useMemo(() => tryNewPlaylist(lib.tracks, heardTrackIds(listens), canPlay), [listens, lib, shuffleSeed]); // eslint-disable-line react-hooks/exhaustive-deps
   const newest = useMemo(() => [...lib.albums].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 12), [lib]);
   const month = useMemo(() => computeListenStats(listens, { from: Date.now() - 30 * 86_400_000 }), [listens]);
-  const days = useMemo(() => Array.from({ length: 30 }, (_, i) => { const d = new Date(Date.now() - (29 - i) * 86_400_000); return { label: i % 5 === 0 ? `${d.getDate()}/${d.getMonth() + 1}` : '', value: month.byDay.get(dayKey(d.getTime())) ?? 0 }; }), [month]);
+  const days = useMemo(() => Array.from({ length: 30 }, (_, i) => { const d = new Date(Date.now() - (29 - i) * 86_400_000); return { label: i % 5 === 0 || i === 29 ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '', full: d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }), value: month.byDay.get(dayKey(d.getTime())) ?? 0 }; }), [month]);
   const score = healthScore(lib);
 
   return (

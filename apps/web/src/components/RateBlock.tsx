@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Minus, Plus, ThumbsDown, ThumbsUp } from 'lucide-react';
-import type { VoteData } from '@curator/core';
+import type { VoteData } from '@turbomusic/core';
 import type { Track } from '../lib/derive.ts';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';

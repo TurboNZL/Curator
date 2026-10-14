@@ -5,9 +5,9 @@
  * A device is online while it holds an event stream (SSE). It posts its state whenever that changes; every stream
  * receives the device list. A command goes to the target's streams.
  */
-import { DEVICE_KINDS, type Command, type DeviceInfo, type DeviceKind, type PlaybackSnapshot, type ServerEvent } from '@curator/core';
-export { parseCommand, parseSnapshot } from '@curator/core';
-export type { Command, DeviceInfo, DeviceKind, PlaybackSnapshot, ServerEvent } from '@curator/core';
+import { DEVICE_KINDS, type Command, type DeviceInfo, type DeviceKind, type PlaybackSnapshot, type ServerEvent } from '@turbomusic/core';
+export { parseCommand, parseSnapshot } from '@turbomusic/core';
+export type { Command, DeviceInfo, DeviceKind, PlaybackSnapshot, ServerEvent } from '@turbomusic/core';
 
 type Sink = (event: ServerEvent) => void;
 const str = (v: unknown, max = 80) => (typeof v === 'string' ? v.slice(0, max) : '');

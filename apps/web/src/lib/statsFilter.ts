@@ -13,7 +13,7 @@ export interface StatsFilter {
   to: string;
   /** shortest play that counts; stats.fm counts 30 s */
   minMs: number;
-  source: 'all' | 'curator' | 'spotify';
+  source: 'all' | 'turbomusic' | 'spotify';
   skips: 'all' | 'played' | 'skipped';
   /** only plays of tracks that are in the library */
   libraryOnly: boolean;
@@ -71,7 +71,7 @@ export function applyFilter(lib: Library, listens: Listen[], f: StatsFilter): Li
   });
 }
 
-const KEY = 'curator.statsFilter';
+const KEY = 'turbomusic.statsFilter';
 export function loadFilter(): StatsFilter {
   try { return { ...DEFAULT_FILTER, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<StatsFilter>) }; } catch { return DEFAULT_FILTER; }
 }

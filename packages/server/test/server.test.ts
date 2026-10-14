@@ -16,8 +16,8 @@ const push = (records: unknown[]) =>
   app.request('/api/sync/push', { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify({ records }) });
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'curator-'));
-  const config = loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN } as never);
+  dir = mkdtempSync(join(tmpdir(), 'turbomusic-'));
+  const config = loadConfig({ TURBOMUSIC_DATA_DIR: dir, TURBOMUSIC_TOKEN: TOKEN } as never);
   store = new Store(config.dataDir);
   app = createApp(config, store);
 });
@@ -25,12 +25,12 @@ afterEach(() => { store.close(); rmSync(dir, { recursive: true, force: true }); 
 
 describe('config', () => {
   it('defaults to an obscure port and generates a persisted token', () => {
-    const d = mkdtempSync(join(tmpdir(), 'curator-cfg-'));
-    const a = loadConfig({ CURATOR_DATA_DIR: d } as never), b = loadConfig({ CURATOR_DATA_DIR: d } as never);
+    const d = mkdtempSync(join(tmpdir(), 'turbomusic-cfg-'));
+    const a = loadConfig({ TURBOMUSIC_DATA_DIR: d } as never), b = loadConfig({ TURBOMUSIC_DATA_DIR: d } as never);
     expect(a.port).toBe(47813);
     expect(a.token.length).toBeGreaterThan(20);
     expect(b.token).toBe(a.token);
-    expect(() => loadConfig({ CURATOR_DATA_DIR: d, CURATOR_PORT: '99999' } as never)).toThrow();
+    expect(() => loadConfig({ TURBOMUSIC_DATA_DIR: d, TURBOMUSIC_PORT: '99999' } as never)).toThrow();
     rmSync(d, { recursive: true, force: true });
   });
 });
@@ -117,7 +117,7 @@ describe('files', () => {
   });
 
   it('enforces the upload size cap', async () => {
-    const small = loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN, CURATOR_MAX_UPLOAD_MB: '0' } as never);
+    const small = loadConfig({ TURBOMUSIC_DATA_DIR: dir, TURBOMUSIC_TOKEN: TOKEN, TURBOMUSIC_MAX_UPLOAD_MB: '0' } as never);
     const a = createApp(small, store);
     const res = await a.request(`/api/files/${hash}`, { method: 'PUT', headers: auth, body: bytes });
     expect(res.status).toBe(413);
@@ -126,11 +126,11 @@ describe('files', () => {
 
 describe('web client hosting', () => {
   it('serves index.html with SPA fallback, assets safely, and keeps /api JSON', async () => {
-    const web = mkdtempSync(join(tmpdir(), 'curator-web-'));
+    const web = mkdtempSync(join(tmpdir(), 'turbomusic-web-'));
     mkdirSync(join(web, 'assets'));
     writeFileSync(join(web, 'index.html'), '<html>app</html>');
     writeFileSync(join(web, 'assets', 'a.js'), 'x');
-    const cfg = loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN, CURATOR_WEB_DIR: web } as never);
+    const cfg = loadConfig({ TURBOMUSIC_DATA_DIR: dir, TURBOMUSIC_TOKEN: TOKEN, TURBOMUSIC_WEB_DIR: web } as never);
     const a = createApp(cfg, store);
     expect(await (await a.request('/')).text()).toBe('<html>app</html>');
     expect(await (await a.request('/albums/123')).text()).toBe('<html>app</html>');
@@ -156,7 +156,7 @@ describe('update server', () => {
     writeFileSync(script, '#!/usr/bin/env bash\necho "args: $@"\necho step two\n');
     let exited = false;
     const { Updater } = await import('../src/update.ts');
-    const app2 = createApp(loadConfig({ CURATOR_DATA_DIR: dir, CURATOR_TOKEN: TOKEN } as never), store, undefined, undefined, undefined, new Updater({ script, restart: true, exit: () => { exited = true; }, exitDelayMs: 10 }));
+    const app2 = createApp(loadConfig({ TURBOMUSIC_DATA_DIR: dir, TURBOMUSIC_TOKEN: TOKEN } as never), store, undefined, undefined, undefined, new Updater({ script, restart: true, exit: () => { exited = true; }, exitDelayMs: 10 }));
     expect((await app2.request('/api/admin/update', { method: 'POST', headers: auth })).status).toBe(202);
     expect((await app2.request('/api/admin/update', { method: 'POST', headers: auth })).status).toBe(409);
     let st: { status: string; log: string[]; restarting: boolean } = { status: 'running', log: [], restarting: false };

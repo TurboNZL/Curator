@@ -173,3 +173,25 @@ export function timeSeries(s: Pick<ListenStats, 'byDay' | 'firstTs' | 'lastTs'>,
   }
   return { unit: 'month', points };
 }
+
+/** "12a", "3a", "12p", "3p"...: an hour of the day a person can read at a glance (the charts used bare numbers 0, 3, 6...) */
+export const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'a' : 'p'}`;
+
+export interface MonthBar { month: string; label: string; full: string; value: number }
+/**
+ * The last `count` calendar months ending at the latest month with data (or `now`), one bar each, a month with nothing is a zero bar
+ * (not skipped, so a gap looks like a gap). Labels carry the year on January and on the first bar: "Oct", "Nov", "Dec", "Jan 26".
+ */
+export function lastMonths<T extends { month: string }>(byMonth: T[], pick: (m: T) => number, count: number, now = Date.now()): MonthBar[] {
+  const known = new Map(byMonth.map((m) => [m.month, pick(m)]));
+  const endKey = byMonth.length ? byMonth[byMonth.length - 1].month : null;
+  const nowD = new Date(now);
+  let y = endKey ? Number(endKey.slice(0, 4)) : nowD.getFullYear(), m = endKey ? Number(endKey.slice(5)) - 1 : nowD.getMonth();
+  const out: MonthBar[] = [];
+  for (let i = 0; i < count; i++) {
+    const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+    out.unshift({ month: key, label: MONTHS[m], full: `${MONTHS[m]} ${y}`, value: known.get(key) ?? 0 });
+    if (--m < 0) { m = 11; y--; }
+  }
+  return out.map((b, i) => (i === 0 || b.month.endsWith('-01') ? { ...b, label: `${b.label} ${String(b.month.slice(2, 4))}` } : b));
+}

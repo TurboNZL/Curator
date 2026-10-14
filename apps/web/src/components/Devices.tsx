@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Cast, Check, Monitor, Music, Radio, Smartphone, Speaker, Unplug } from 'lucide-react';
-import type { DeviceInfo } from '@curator/core';
+import type { DeviceInfo } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { control, disconnect, localOnly, myId, pullFrom, pushTo, useConnect, useNotLocal } from '../lib/connect.ts';
 import { usePlayer } from '../lib/player.ts';

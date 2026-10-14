@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const PIN = 'curator.queuePinned';
+const PIN = 'turbomusic.queuePinned';
 const read = () => { try { return localStorage.getItem(PIN) === '1'; } catch { return false; } };
 
 /** Which player pop-ups are open. The mini queue can be pinned: it then stays open while you do other things. */

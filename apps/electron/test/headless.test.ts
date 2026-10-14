@@ -8,9 +8,9 @@ describe('headless server arguments', () => {
     expect(parseHeadlessArgs(['--data-dir'])).toEqual({ help: false });
   });
   it('flags beat the environment, which beats the default folder', () => {
-    expect(headlessEnv({ help: false, dataDir: '/a' }, { CURATOR_DATA_DIR: '/b' }, '/home/u').CURATOR_DATA_DIR).toBe('/a');
-    expect(headlessEnv({ help: false }, { CURATOR_DATA_DIR: '/b' }, '/home/u').CURATOR_DATA_DIR).toBe('/b');
-    expect(headlessEnv({ help: false }, {}, '/home/u').CURATOR_DATA_DIR).toBe('/home/u/music-curator-data');
-    expect(headlessEnv({ help: false, port: '1' }, {}, '/h').CURATOR_PORT).toBe('1');
+    expect(headlessEnv({ help: false, dataDir: '/a' }, { TURBOMUSIC_DATA_DIR: '/b' }, '/home/u').TURBOMUSIC_DATA_DIR).toBe('/a');
+    expect(headlessEnv({ help: false }, { TURBOMUSIC_DATA_DIR: '/b' }, '/home/u').TURBOMUSIC_DATA_DIR).toBe('/b');
+    expect(headlessEnv({ help: false }, {}, '/home/u').TURBOMUSIC_DATA_DIR).toBe('/home/u/turbomusic-data');
+    expect(headlessEnv({ help: false, port: '1' }, {}, '/h').TURBOMUSIC_PORT).toBe('1');
   });
 });

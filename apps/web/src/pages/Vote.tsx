@@ -1,7 +1,7 @@
 import { haptic } from '../lib/haptics.ts';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BarChart3, Check, Loader2, Pause, Play, Equal, SkipForward, Volume2 } from 'lucide-react';
-import type { VoteData } from '@curator/core';
+import type { VoteData } from '@turbomusic/core';
 import { useLibraryLive, type Track } from '../lib/derive.ts';
 import { buildListens } from '../lib/listens.ts';
 import { heardTrackIds, onlyHeard } from '../lib/heard.ts';
@@ -81,8 +81,8 @@ export function VotePage() {
   const fit = useFitHeight();
   const compact = useCompact(fit.height);
   // which class of track both sides come from ("top 10% against top 10%"); kept for next time
-  const [tier, setTierState] = useState<TierChoice>(() => { try { return { tier: 'any' as Tier, min: 7, max: 10, ...JSON.parse(localStorage.getItem('curator.rankTier') ?? '{}') }; } catch { return { tier: 'any', min: 7, max: 10 }; } });
-  const setTier = (t: TierChoice) => { setTierState(t); setPair(null); try { localStorage.setItem('curator.rankTier', JSON.stringify(t)); } catch { /* ignore */ } };
+  const [tier, setTierState] = useState<TierChoice>(() => { try { return { tier: 'any' as Tier, min: 7, max: 10, ...JSON.parse(localStorage.getItem('turbomusic.rankTier') ?? '{}') }; } catch { return { tier: 'any', min: 7, max: 10 }; } });
+  const setTier = (t: TierChoice) => { setTierState(t); setPair(null); try { localStorage.setItem('turbomusic.rankTier', JSON.stringify(t)); } catch { /* ignore */ } };
   // only tracks that were played at least once are ranked: ranking is about songs you know (the "Try something new" list on the home page is for the rest)
   const heard = useMemo(() => heardTrackIds(buildListens(lib)), [lib]);
   const { pool: knownPool, fellBack: noHistory } = useMemo(() => onlyHeard(lib.tracks, heard), [lib, heard]);

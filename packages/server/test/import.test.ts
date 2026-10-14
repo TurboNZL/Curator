@@ -10,7 +10,7 @@ import { cleanTitle, coverCandidates, Importer, parsePreview, pickItunesArtwork 
 import { filePath } from '../src/files.ts';
 
 let dir: string, store: Store;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'curator-imp-')); mkdirSync(join(dir, 'data', 'tmp'), { recursive: true }); store = new Store(join(dir, 'data')); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'turbomusic-imp-')); mkdirSync(join(dir, 'data', 'tmp'), { recursive: true }); store = new Store(join(dir, 'data')); });
 afterEach(() => { store.close(); rmSync(dir, { recursive: true, force: true }); });
 
 const PLAYLIST = {
@@ -69,7 +69,7 @@ function fakeYtdlp(json: object | null) {
   return path;
 }
 const appWith = (importer: Importer) => {
-  const cfg = loadConfig({ CURATOR_DATA_DIR: join(dir, 'data'), CURATOR_TOKEN: 'tok' } as never);
+  const cfg = loadConfig({ TURBOMUSIC_DATA_DIR: join(dir, 'data'), TURBOMUSIC_TOKEN: 'tok' } as never);
   return createApp(cfg, store, undefined, importer);
 };
 const post = (app: ReturnType<typeof createApp>, path: string, body: unknown) =>

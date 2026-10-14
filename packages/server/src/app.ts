@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { pushSchema, sha256Hex, type PullResponse } from '@curator/core';
+import { pushSchema, sha256Hex, type PullResponse } from '@turbomusic/core';
 import type { Config } from './config.ts';
 import { Store } from './db.ts';
 import { Acquirer } from './acquire.ts';
@@ -15,6 +15,7 @@ import { Soloist } from './soloist.ts';
 import { ImportError, Importer } from './import.ts';
 import { serveWeb } from './web.ts';
 import { Updater } from './update.ts';
+import { BundleUpdater } from './bundleUpdate.ts';
 import { SpotifyAccount, SpotifyError, oembed, parseRef, resolveLink } from './spotify.ts';
 import { streamSSE } from 'hono/streaming';
 import { ConnectHub, parseCommand, parseSnapshot } from './connect.ts';
@@ -39,7 +40,9 @@ export function createApp(
   acquirer = new Acquirer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs, ffmpegDir: config.ffmpegDir }),
   importer = new Importer({ dataDir: config.dataDir, store, ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   hub = new ConnectHub(),
-  updater = new Updater({ script: config.updateScript, restart: config.updateRestart, exit: () => process.exit(1) }),
+  updater: Pick<Updater, 'available' | 'restarts' | 'state' | 'start'> = config.installRoot
+    ? new BundleUpdater({ root: config.installRoot, token: config.githubToken, currentVersion: process.env.TURBOMUSIC_VERSION, exit: () => process.exit(1) })
+    : new Updater({ script: config.updateScript, restart: config.updateRestart, exit: () => process.exit(1) }),
   spotify = new SpotifyAccount(config.dataDir, { env: process.env }),
   matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
   mover = new StorageMover(config.dataDir),
@@ -93,7 +96,7 @@ export function createApp(
   // ---- Update server (update.ts): only offered when this is a service install of a git checkout ----
   app.get('/api/admin/update', (c) => c.json({ available: updater.available, restarts: updater.restarts, ...updater.state() }));
   app.post('/api/admin/update', (c) => {
-    if (!updater.available) return c.json({ error: 'This server cannot update itself (it is not a service install of the git checkout).' }, 404);
+    if (!updater.available) return c.json({ error: 'This server cannot update itself (it is not the self-contained install, nor a service install of the git checkout).' }, 404);
     if (!updater.start()) return c.json({ error: 'An update is already running.' }, 409);
     return c.json({ ok: true }, 202);
   });
@@ -322,7 +325,7 @@ export function createApp(
     const stream = readStream(snap.path);
     stream.on('close', () => rmSync(snap.path, { force: true }));
     return new Response(Readable.toWeb(stream) as unknown as ReadableStream, { headers: {
-      'Content-Type': 'application/vnd.sqlite3', 'Content-Length': String(snap.size), 'Content-Disposition': `attachment; filename="curator-database-${stamp()}.db"` } });
+      'Content-Type': 'application/vnd.sqlite3', 'Content-Length': String(snap.size), 'Content-Disposition': `attachment; filename="turbomusic-database-${stamp()}.db"` } });
   });
   app.post('/api/import/database', async (c) => {
     const mode = c.req.query('mode') === 'replace' ? 'replace' : 'merge';
@@ -342,7 +345,7 @@ export function createApp(
   app.get('/api/export/files', (c) => {
     const archive = filesArchive(config.dataDir, store);
     return new Response(Readable.toWeb(Readable.from(archive.chunks)) as unknown as ReadableStream, { headers: {
-      'Content-Type': 'application/x-tar', 'Content-Length': String(archive.length), 'Content-Disposition': `attachment; filename="curator-files-${stamp()}.tar"` } });
+      'Content-Type': 'application/x-tar', 'Content-Length': String(archive.length), 'Content-Disposition': `attachment; filename="turbomusic-files-${stamp()}.tar"` } });
   });
   app.post('/api/import/files', async (c) => {
     if (!c.req.raw.body) return c.json({ error: 'empty body' }, 400);

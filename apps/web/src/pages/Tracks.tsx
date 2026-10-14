@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../lib/derive.ts';
 import { FileAudio, Search as SearchIcon, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
 import { TRACK_SORTS, sortTracks } from '../lib/trackSort.ts';
@@ -49,13 +49,12 @@ export function TracksPage() {
         <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
         <button className="btn" onClick={() => edit({ kind: 'new-track', id: '' })}><Plus size={15} />New track</button>
         <button className="btn" onClick={() => edit({ kind: 'upload', id: '' })}><FileAudio size={15} />Add files</button>
-        {lib.tracks.some((t) => !t.youtubeMusicUrl) && <button className="btn" onClick={() => edit({ kind: 'match-links', id: '' })} title="Search YouTube Music for the albums that have no link yet, then import them one release at a time"><SearchIcon size={15} />Find YouTube albums</button>}
       </div>
       <ListToolbar scope="tracks" chips={chips} onChips={(c) => { setChips(c); setShown(PAGE); }} text={q} onText={(t) => { setQ(t); setShown(PAGE); }}
         sorts={TRACK_SORTS} sort={page.sort} dir={page.dir} onSort={(k) => { page.setSort(k); setShown(PAGE); }} onFlip={page.flip} view={page.view} onView={page.setView} />
       {page.view === 'grid'
         ? <SingleGrid tracks={tracks.slice(0, shown)} />
-        : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} queue={tracks} source="search" numbered /></div>}
+        : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} queue={tracks} source="search" numbered covers={!!q.trim() || chips.length > 0} /></div>}
       {shown < tracks.length && <div className="mt-4 text-center"><button className="btn" onClick={() => setShown(shown + PAGE)}>Show more ({tracks.length - shown} left)</button></div>}
     </div>
   );

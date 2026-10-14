@@ -1,9 +1,10 @@
+import { findDuplicates } from './duplicates.ts';
 import { hasLead } from './defaults.ts';
 import type { Library } from './library.ts';
 import { qualityOf } from './audioCheck.ts';
 
 export type HealthKind = 'album-source' | 'track' | 'album' | 'artist' | 'genre' | 'role' | 'release' | 'noteCategory';
-export interface HealthItem { kind: HealthKind; id: string; label: string; detail?: string; /** items that belong together (duplicates of one song) share a group */ group?: string }
+export interface HealthItem { kind: HealthKind; id: string; label: string; detail?: string; /** items that belong together (duplicates of one song) share a group */ group?: string; /** why a group was listed (duplicates) */ note?: string }
 export interface HealthCheck {
   id: string; title: string; why: string; items: HealthItem[];
   /** only for checks that are safe to fix in one click */
@@ -61,11 +62,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
   for (const x of lib.tracks) x.credits.forEach((c) => c.role.forEach((r) => usedRoles.add(r.toLowerCase())));
   for (const a of lib.albums) a.credits.forEach((c) => c.role.forEach((r) => usedRoles.add(r.toLowerCase())));
 
-  const dupes = new Map<string, typeof lib.tracks>();
-  for (const x of lib.tracks) { const k = `${songKey(x.title)}|${x.artistId}`; dupes.set(k, [...(dupes.get(k) ?? []), x]); }
-
   const ignored = ignoredDupes(lib);
-  const dupeGroups = [...dupes.entries()].filter(([, g]) => g.length > 1 && !isIgnoredDupe(ignored, g.map((x) => x.id)));
+  const dupeGroups = findDuplicates(lib).filter((g) => !isIgnoredDupe(ignored, g.ids));
   const lowQuality = lib.tracks.filter((x) => x.bitrate && parseInt(x.bitrate) > 0 && parseInt(x.bitrate) < 192);
 
   const fakes = lib.tracks.filter((x) => { const q = qualityOf(x); return q === 'transcode' || q === 'mismatch'; });
@@ -103,8 +101,8 @@ export function computeHealth(lib: Library): HealthCheck[] {
       items: lib.tracks.filter((x) => !x.allGenres.length).map((x) => t(x)) },
     { id: 'low-quality', title: 'Low bitrate tracks (under 192 kbps)', why: 'Worth replacing when a better source exists.',
       items: lowQuality.map((x) => t(x, x.bitrate ?? undefined)) },
-    { id: 'duplicates', title: 'Possible duplicate tracks', why: 'Same song and artist more than once, such as a single and the same song on its album. “Merge” folds them into one track: it keeps every Spotify link, the votes, plays and memories, and everything that used the others uses the survivor.', mergeGroups: true, notDuplicates: true,
-      items: dupeGroups.flatMap(([key, g]) => g.map((x) => ({ ...t(x, `${x.albumTitle ?? 'single'} · ${x.comparisons} comparisons${x.file ? ', has audio' : ''}`), group: key }))) },
+    { id: 'duplicates', title: 'Possible duplicate tracks', why: 'The same song more than once: a single and the same song on its album, a second artist credit, an accent or "&" spelt differently, a (Remastered) tag, the same Spotify or YouTube song, the same audio file, or a title one typo apart. Each group says why it was listed. “Merge” folds them into one track: it keeps every Spotify link, the votes, plays and memories, and everything that used the others uses the survivor.', mergeGroups: true, notDuplicates: true,
+      items: dupeGroups.flatMap((g) => g.ids.flatMap((id) => lib.trackById.get(id) ?? []).map((x) => ({ ...t(x, `${x.albumTitle ?? 'single'} · ${x.comparisons} comparisons${x.file ? ', has audio' : ''}`), group: g.key, note: g.reasons.join(' · ') }))) },
     { id: 'album-no-cover', title: 'Albums without a cover', why: 'Open the album and choose an image.',
       items: lib.albums.filter((a) => !a.cover).map((a) => ({ kind: 'album' as const, id: a.id, label: `${a.title} · ${a.artistName}` })) },
     { id: 'album-empty', title: 'Albums with no tracks', why: 'Probably left over from deleting tracks.',

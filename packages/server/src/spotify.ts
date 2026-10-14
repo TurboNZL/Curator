@@ -116,7 +116,7 @@ export class SpotifyAccount {
   private now: () => number;
   constructor(dataDir: string, o: { fetchImpl?: Fetch; now?: () => number; env?: NodeJS.ProcessEnv } = {}) {
     this.file = join(dataDir, 'spotify.json'); this.f = o.fetchImpl ?? fetch; this.now = o.now ?? Date.now;
-    this.envClient = o.env?.CURATOR_SPOTIFY_CLIENT_ID;
+    this.envClient = o.env?.TURBOMUSIC_SPOTIFY_CLIENT_ID;
   }
   private envClient?: string;
   private load(): SpotifyAuthState { try { return JSON.parse(readFileSync(this.file, 'utf8')) as SpotifyAuthState; } catch { return {}; } }

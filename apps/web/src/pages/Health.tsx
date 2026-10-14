@@ -15,7 +15,7 @@ import { useEditor } from '../lib/editor.ts';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
 import { withoutLegacyArtist } from '../lib/defaults.ts';
-import type { Credit } from '@curator/core';
+import type { Credit } from '@turbomusic/core';
 
 /** One album that is waiting for its YouTube link: paste it and the import-into-album screen opens already looked up. */
 function AlbumLinkRow({ item }: { item: HealthItem }) {
@@ -100,6 +100,7 @@ export function HealthPage() {
               {c.quick ? <QuickFix check={c} /> :
               c.mergeGroups ? <div className="max-h-[28rem] space-y-2 overflow-y-auto px-4 pb-3">{[...new Set(c.items.map((i) => i.group))].slice(0, 100).map((g) => { const group = c.items.filter((i) => i.group === g); return (
                 <div key={g} className="rounded-theme border border-line">
+                  {group[0]?.note && <div className="border-b border-line/60 px-3 py-1 text-xs text-muted">Looks like: {group[0].note}</div>}
                   {group.map((i) => <button key={i.id} className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-sm hover:bg-raised/60" onClick={() => openItem(i)}><span className="truncate">{i.label}</span>{i.detail && <span className="shrink-0 text-xs text-muted">{i.detail}</span>}</button>)}
                   <div className="flex justify-end gap-2 border-t border-line/60 px-3 py-1.5"><button className="btn btn-ghost !py-1 text-xs" title="These are different songs: stop listing them" onClick={() => updateProfile(lib, (p) => ({ ...p, settings: { ...p.settings, notDuplicates: [...ignoredDupes(lib), dupeSignature(group.map((i) => i.id))] } }))}><X size={13} />Not duplicates</button><button className="btn btn-accent !py-1 text-xs" onClick={() => edit({ kind: 'merge-tracks', id: group.map((i) => i.id).join(',') })}><GitMerge size={13} />Merge these {group.length}</button></div>
                 </div>); })}</div> :

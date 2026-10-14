@@ -1,4 +1,4 @@
-import type { Command, PlaybackSnapshot, PullResponse, SyncRecord } from '@curator/core';
+import type { Command, PlaybackSnapshot, PullResponse, SyncRecord } from '@turbomusic/core';
 import type { DeviceSettings } from './settings.ts';
 
 export class ApiError extends Error {
@@ -62,9 +62,9 @@ export class Api {
   get needsHeaderFetch() {
     if (!Object.keys(this.access).length) return false;
     // the desktop app puts the token on the requests itself (apps/electron/src/accessHeaders.ts): links work, and audio streams
-    if (typeof window !== 'undefined' && (window as unknown as { curatorDesktop?: { setAccess?: unknown } }).curatorDesktop?.setAccess) return false;
+    if (typeof window !== 'undefined' && (window as unknown as { turbomusicDesktop?: { setAccess?: unknown } }).turbomusicDesktop?.setAccess) return false;
     // the Android app does the same for the page's GET requests (AccessProxy.kt)
-    try { if (typeof window !== 'undefined' && (window as unknown as { CuratorAndroid?: { accessInjected?: () => boolean } }).CuratorAndroid?.accessInjected?.()) return false; } catch { /* old app */ }
+    try { if (typeof window !== 'undefined' && (window as unknown as { TurboMusicAndroid?: { accessInjected?: () => boolean } }).TurboMusicAndroid?.accessInjected?.()) return false; } catch { /* old app */ }
     try { return !!this.s.serverUrl && new URL(this.s.serverUrl, location.href).origin !== location.origin; } catch { return true; }
   }
   /** fetch a server link with the service token (and, same-origin, keep the cookie Access answers with) */

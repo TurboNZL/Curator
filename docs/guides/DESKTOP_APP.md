@@ -32,6 +32,13 @@ In the full edition the server module is installed. In the app-only edition it i
 - **Windows and AppImage:** the update downloads in the background and installs when you press *Restart to update* or close the app.
 - **.deb:** installing a package needs your administrator password. The app opens a terminal window that asks for it. If that cannot work on your system it shows a command to run yourself (`sudo apt install /path/to/file.deb`). The AppImage never needs a password.
 
+## Coming from the old name
+The app used to be called Music Curator, and an installed copy keeps its settings, library choice and window data in a folder with the old name (`Music Curator`, `Music Curator App` or `Music Curator Server`, in your user's app-data folder). Nothing breaks if you leave it. To move it to the new name, open **Settings → This app → Move to the TurboMusic folder** and press *Move now*. (The Windows server has the same step in its tray menu.) The card lists exactly what will be renamed first. Then:
+- Nothing is copied or deleted: the folder is **renamed**, so there is never a second copy of your library.
+- The app restarts to do it, because it cannot rename a folder it has open. If a step fails, everything is put back and the card says why.
+- A library you keep inside that folder (the default) is found at its new address automatically. A library you put on another drive is not touched.
+- The card disappears once it is done. Fresh installs start in the new folder and never see it.
+
 ## Window and graphics
 - **Settings → This app → Graphics start-up** chooses how the window is painted. "Automatic" tries several ways on its own and remembers the first that gives hardware acceleration. The line above it says what you got.
 - Optional theme-drawn window buttons and Discord status are in the same tab ([Discord status](DISCORD.md)).

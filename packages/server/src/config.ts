@@ -11,13 +11,17 @@ export interface Config {
   token: string;
   maxUploadBytes: number;
   ytdlp?: string;
-  /** extra yt-dlp arguments from CURATOR_YTDLP_COOKIES / CURATOR_YTDLP_ARGS, put before every call */
+  /** extra yt-dlp arguments from TURBOMUSIC_YTDLP_COOKIES / TURBOMUSIC_YTDLP_ARGS, put before every call */
   ytdlpArgs?: string[];
   ffmpegDir?: string;
   /** built web client to serve at `/`; unset/missing = API only */
   webDir?: string;
-  /** scripts/update.sh of the checkout this server runs from, when "Update server" may be offered (under systemd, or CURATOR_UPDATE=1) */
+  /** scripts/update.sh of the checkout this server runs from, when "Update server" may be offered (under systemd, or TURBOMUSIC_UPDATE=1) */
   updateScript?: string;
+  /** the folder of a self-contained install (scripts/install-server.sh): `app` links into `releases/`; "Update server" then downloads the newest release bundle */
+  installRoot?: string;
+  /** a read-only GitHub token, for updating from a private repository */
+  githubToken?: string;
   /** the server runs under a service manager that starts it again when it exits (systemd sets INVOCATION_ID) */
   updateRestart?: boolean;
 }
@@ -26,24 +30,26 @@ export interface Config {
 export const DEFAULT_PORT = 47813;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const dataDir = resolve(env.CURATOR_DATA_DIR ?? './data');
+  const dataDir = resolve(env.TURBOMUSIC_DATA_DIR ?? './data');
   mkdirSync(join(dataDir, 'files'), { recursive: true });
   mkdirSync(join(dataDir, 'tmp'), { recursive: true });
   mkdirSync(join(dataDir, 'cache'), { recursive: true });
 
-  const port = Number(env.CURATOR_PORT ?? DEFAULT_PORT);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`Invalid CURATOR_PORT: ${env.CURATOR_PORT}`);
+  const port = Number(env.TURBOMUSIC_PORT ?? DEFAULT_PORT);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error(`Invalid TURBOMUSIC_PORT: ${env.TURBOMUSIC_PORT}`);
 
   return {
     dataDir,
     port,
-    host: env.CURATOR_HOST ?? '0.0.0.0',
-    token: env.CURATOR_TOKEN ?? loadOrCreateToken(dataDir),
-    maxUploadBytes: Number(env.CURATOR_MAX_UPLOAD_MB ?? 1024) * 1024 * 1024,
-    ytdlp: env.CURATOR_YTDLP,
+    host: env.TURBOMUSIC_HOST ?? '0.0.0.0',
+    token: env.TURBOMUSIC_TOKEN ?? loadOrCreateToken(dataDir),
+    maxUploadBytes: Number(env.TURBOMUSIC_MAX_UPLOAD_MB ?? 1024) * 1024 * 1024,
+    ytdlp: env.TURBOMUSIC_YTDLP,
     ytdlpArgs: withCacheDir(ytdlpArgs(env), dataDir),
-    ffmpegDir: env.CURATOR_FFMPEG_DIR,
-    webDir: env.CURATOR_WEB_DIR ? resolve(env.CURATOR_WEB_DIR) : defaultWebDir(),
+    ffmpegDir: env.TURBOMUSIC_FFMPEG_DIR,
+    webDir: env.TURBOMUSIC_WEB_DIR ? resolve(env.TURBOMUSIC_WEB_DIR) : defaultWebDir(),
+    installRoot: env.TURBOMUSIC_INSTALL_ROOT ? resolve(env.TURBOMUSIC_INSTALL_ROOT) : undefined,
+    githubToken: env.TURBOMUSIC_GITHUB_TOKEN || undefined,
     updateScript: defaultUpdateScript(env),
     updateRestart: !!env.INVOCATION_ID,
   };
@@ -58,9 +64,9 @@ function loadOrCreateToken(dataDir: string): string {
   return token;
 }
 
-/** The checkout's update script, only when this looks like a service install (systemd) or CURATOR_UPDATE=1 asks for it. */
+/** The checkout's update script, only when this looks like a service install (systemd) or TURBOMUSIC_UPDATE=1 asks for it. */
 function defaultUpdateScript(env: NodeJS.ProcessEnv): string | undefined {
-  if (env.CURATOR_UPDATE === '0' || !(env.CURATOR_UPDATE === '1' || env.INVOCATION_ID)) return undefined;
+  if (env.TURBOMUSIC_UPDATE === '0' || !(env.TURBOMUSIC_UPDATE === '1' || env.INVOCATION_ID)) return undefined;
   const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
   const script = join(repo, 'scripts/update.sh');
   return existsSync(script) && existsSync(join(repo, '.git')) ? script : undefined;
@@ -82,13 +88,13 @@ export function withCacheDir(args: string[] | undefined, dataDir: string): strin
 }
 
 /**
- * `CURATOR_YTDLP_COOKIES=/path/cookies.txt` becomes `--cookies <path>` (YouTube asks some servers to prove they are
- * not a bot; a cookies file from a signed-in browser answers that). `CURATOR_YTDLP_ARGS` adds anything else, split on spaces.
+ * `TURBOMUSIC_YTDLP_COOKIES=/path/cookies.txt` becomes `--cookies <path>` (YouTube asks some servers to prove they are
+ * not a bot; a cookies file from a signed-in browser answers that). `TURBOMUSIC_YTDLP_ARGS` adds anything else, split on spaces.
  */
 export function ytdlpArgs(env: NodeJS.ProcessEnv): string[] | undefined {
   const args = [
-    ...(env.CURATOR_YTDLP_COOKIES ? ['--cookies', resolve(env.CURATOR_YTDLP_COOKIES)] : []),
-    ...(env.CURATOR_YTDLP_ARGS ? env.CURATOR_YTDLP_ARGS.split(/\s+/).filter(Boolean) : []),
+    ...(env.TURBOMUSIC_YTDLP_COOKIES ? ['--cookies', resolve(env.TURBOMUSIC_YTDLP_COOKIES)] : []),
+    ...(env.TURBOMUSIC_YTDLP_ARGS ? env.TURBOMUSIC_YTDLP_ARGS.split(/\s+/).filter(Boolean) : []),
   ];
   return args.length ? args : undefined;
 }

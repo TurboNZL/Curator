@@ -46,7 +46,7 @@ export function AlbumSuggestions() {
                   <div className="truncate text-xs text-muted">{[c.owner ?? c.channel, c.count ? `${c.count} tracks` : ''].filter(Boolean).join(' · ')} · {Math.round(Math.min(1, c.score) * 100)}% match</div></div>
                 <button className="btn btn-accent !py-1 text-xs" onClick={() => edit({ kind: 'import-into-album', id: a.id, url: c.url })}><Link2 size={13} />Import</button>
               </> : <span className="text-xs text-muted">{busy ? 'Searching…' : 'No result yet'}</span>}
-              <button className="btn !py-1 text-xs" onClick={() => edit({ kind: 'match-links', id: a.id })}>More</button>
+              <button className="btn !py-1 text-xs" onClick={() => edit({ kind: 'import-into-album', id: a.id })}>More</button>
             </div>);
         })}
       </div>

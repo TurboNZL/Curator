@@ -5,7 +5,7 @@ import { ALBUM_SORTS, sortAlbums } from '../lib/listSort.ts';
 import { usePageState } from '../lib/pageState.ts';
 import { useMemo, useState } from 'react';
 import { Download, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { usePlayer } from '../lib/player.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link } from 'react-router-dom';

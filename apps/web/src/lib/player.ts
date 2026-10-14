@@ -1,6 +1,6 @@
 import { PlayLog } from './playLog.ts';
 import { create } from 'zustand';
-import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@curator/core';
+import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@turbomusic/core';
 import { moveTrack } from './defaults.ts';
 import { audioSource, cancelPrefetch, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
@@ -45,6 +45,9 @@ interface PlayerState {
   /** shuffle what is queued by you / what is left of the album or list (rules keep pairs together) */
   shuffleQueued(): void;
   shuffleRest(): void;
+  /** what is playing keeps playing; the "Then" part (rest of the album or list) becomes this list, or this list is added to its end */
+  replaceRest(list: string[], source?: Source): void;
+  appendRest(list: string[]): void;
   /** the rest of the album or list becomes part of the user queue / is dropped */
   keepRest(): void;
   clearRest(): void;
@@ -368,7 +371,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   return {
     queue: { user: [], active: [], currentId: null }, history: [], source: { type: 'track', id: null },
-    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('curator.volume') ?? 0.8), engine: 'web', error: null, loading: false,
+    playing: false, time: 0, duration: 0, volume: Number(localStorage.getItem('turbomusic.volume') ?? 0.8), engine: 'web', error: null, loading: false,
 
     play(trackId, list, source = { type: 'track', id: null }) {
       const track = lib().trackById.get(trackId);
@@ -407,7 +410,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
-    setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('curator.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
+    setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('turbomusic.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
     enqueue(trackId, where = 'last') {
       const q = get().queue;
       set({ queue: { ...q, user: where === 'next' ? [trackId, ...q.user] : [...q.user, trackId] } });
@@ -425,6 +428,16 @@ export const usePlayer = create<PlayerState>((set, get) => {
     shuffleRest() { const q = get().queue; set({ queue: { ...q, active: shuffleWithRules(q.active, rules()) } }); },
     keepRest() { const q = get().queue; set({ queue: { ...q, user: [...q.user, ...q.active], active: [] } }); },
     clearRest() { set({ queue: { ...get().queue, active: [] } }); },
+    replaceRest(list, source) {
+      const q = get().queue;
+      if (!q.currentId) { if (list.length) get().play(list[0], list, source); return; } // nothing is playing: this is just a normal play
+      set({ source: source ?? get().source, queue: { ...q, active: list.filter((id) => id !== q.currentId) } });
+    },
+    appendRest(list) {
+      const q = get().queue;
+      if (!q.currentId) { if (list.length) get().play(list[0], list); return; }
+      set({ queue: { ...q, active: [...q.active, ...list.filter((id) => id !== q.currentId)] } });
+    },
     snapshot() {
       const s = get();
       return {

@@ -1,4 +1,4 @@
-import type { AudioCheck } from '@curator/core';
+import type { AudioCheck } from '@turbomusic/core';
 import type { Track } from './derive.ts';
 import { api, useStore } from './store.ts';
 

@@ -1,4 +1,4 @@
-import type { PlaybackRule, ProfileData } from '@curator/core';
+import type { PlaybackRule, ProfileData } from '@turbomusic/core';
 import type { Library } from './library.ts';
 import { useStore } from './store.ts';
 

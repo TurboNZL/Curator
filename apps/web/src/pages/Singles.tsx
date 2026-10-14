@@ -5,7 +5,7 @@ import { TRACK_SORTS, sortTracks } from '../lib/trackSort.ts';
 import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Download, FileAudio, Play, Plus, Shuffle } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { shuffleWithRules } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
 import { usePlayer } from '../lib/player.ts';
@@ -37,7 +37,7 @@ export function SinglesPage() {
       </div>
       <ListToolbar scope="singles" chips={chips} onChips={setChips} text={q} onText={setQ} placeholder="Search singles, or filter: artist, era, before…" sorts={TRACK_SORTS} sort={page.sort} dir={page.dir} onSort={page.setSort} onFlip={page.flip} view={page.view} onView={page.setView} />
       {!singles.length && <p className="text-sm text-muted">{lib.singles.length ? 'No singles match.' : 'No singles. A single is a track that is not on an album: make one with New single, or take a track off its album in the track editor.'}</p>}
-      {page.view === 'grid' ? <SingleGrid tracks={singles} /> : <div className="card overflow-hidden"><TrackTable tracks={singles} source="search" /></div>}
+      {page.view === 'grid' ? <SingleGrid tracks={singles} /> : <div className="card overflow-hidden"><TrackTable tracks={singles} source="search" covers /></div>}
     </div>
   );
 }

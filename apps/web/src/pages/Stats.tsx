@@ -4,7 +4,7 @@ import { Clock, Download, Flame, History, LayoutGrid, List, Upload, Users, SkipF
 import { useLibraryLive } from '../lib/derive.ts';
 import { computeStats } from '../lib/stats.ts';
 import { buildListens, type Listen } from '../lib/listens.ts';
-import { computeListenStats, dayKey, timeSeries, type ListenStats, type Range, type TopRow } from '../lib/listenStats.ts';
+import { computeListenStats, dayKey, hourLabel, lastMonths, timeSeries, type ListenStats, type Range, type TopRow } from '../lib/listenStats.ts';
 import { filterListens, filterRange, applyFilter, loadFilter, saveFilter, type StatsFilter } from '../lib/statsFilter.ts';
 import { statsPath } from '../lib/entityStats.ts';
 import { StatsFilters } from '../components/StatsFilters.tsx';
@@ -14,16 +14,14 @@ import { Area, Bars, Calendar, Donut, fmtHours, Heatgrid, Kpi, Panel, RankList }
 import { ExportHistoryDialog, ImportHistoryDialog } from '../components/HistoryTools.tsx';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const HOURS = Array.from({ length: 24 }, (_, h) => `${h}`);
+const HOURS = Array.from({ length: 24 }, (_, h) => hourLabel(h));
 const TABS = [{ id: 'overview', label: 'Overview' }, { id: 'top', label: 'Top' }, { id: 'activity', label: 'Activity' }, { id: 'history', label: 'History' }, { id: 'library', label: 'Library' }] as const;
 type Tab = (typeof TABS)[number]['id'];
 
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthLabel = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5)) - 1]} ${ym.slice(0, 4)}`;
 
 function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof useLibraryLive>; range: Range }) {
-  const months = s.byMonth.slice(-12);
+  const months = lastMonths(s.byMonth, (m) => m.newArtists, 12);
   const { unit, points: series } = useMemo(() => timeSeries(s, range), [s, range]);
   const daily = unit === 'day';
   const feature = s.topArtists[0];
@@ -46,7 +44,7 @@ function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof us
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {s.onThisDay.length > 0 && <Panel title="On this day"><ul className="space-y-1.5 text-sm">{s.onThisDay.map((d) => <li key={d.year} className="flex gap-3"><b className="w-12 shrink-0 tabular-nums">{d.year}</b><span className="min-w-0 truncate text-muted">{d.plays} play{d.plays === 1 ? '' : 's'}{d.top ? ` · ${d.top}` : ''}</span></li>)}</ul></Panel>}
-        <Panel title="New artists per month" right={<span className="text-xs text-muted">first time you played them · {months.length ? `${monthLabel(months[0].month)} to ${monthLabel(months[months.length - 1].month)}` : ''}</span>}><Bars data={months.map((m) => ({ label: monthLabel(m.month).slice(0, 3), value: m.newArtists }))} format={(n) => `${n} new`} height={110} /></Panel>
+        <Panel title="New artists per month" right={<span className="text-xs text-muted">first time you played them · {months[0].full} to {months[months.length - 1].full}</span>}><Bars data={months.map((m) => ({ label: m.label, full: m.full, value: m.value }))} format={(n) => `${n} new`} height={110} /></Panel>
       </div>
       {lib.logs.length === 0 && <p className="text-sm text-muted">Nothing to show yet. Play music, or import your listening history with the button above.</p>}
     </div>
@@ -55,8 +53,8 @@ function Overview({ s, lib, range }: { s: ListenStats; lib: ReturnType<typeof us
 
 function Top({ s, byTime, lib }: { s: ListenStats; byTime: boolean; lib: ReturnType<typeof useLibraryLive> }) {
   void lib;
-  const [view, setView] = useState<'grid' | 'list'>(() => { try { return localStorage.getItem('curator.statsTopView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } });
-  const choose = (v: 'grid' | 'list') => { setView(v); try { localStorage.setItem('curator.statsTopView', v); } catch { /* private window */ } };
+  const [view, setView] = useState<'grid' | 'list'>(() => { try { return localStorage.getItem('turbomusic.statsTopView') === 'list' ? 'list' : 'grid'; } catch { return 'grid'; } });
+  const choose = (v: 'grid' | 'list') => { setView(v); try { localStorage.setItem('turbomusic.statsTopView', v); } catch { /* private window */ } };
   const rows = (list: TopRow[], kind: 'artist' | 'album' | 'track') => [...list].sort((a, b) => (byTime ? b.ms - a.ms : b.plays - a.plays)).slice(0, 25).map((r) => ({ key: r.key, label: r.label, sub: r.sub, value: byTime ? r.ms : r.plays, extra: byTime ? `${r.plays.toLocaleString()} plays` : fmtHours(r.ms), to: r.id ? statsPath(kind, r.id) : undefined }));
   const unit = byTime ? fmtHours : (n: number) => n.toLocaleString();
   return (
@@ -84,7 +82,7 @@ function Activity({ s }: { s: ListenStats }) {
     <div className="space-y-4">
       <Panel title="Listening clock" right={<span className="text-xs text-muted">plays by weekday and hour</span>}><Heatgrid cells={s.clock} rows={WEEKDAYS} cols={HOURS} /></Panel>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Time of day" right={<span className="text-xs text-muted">busiest hour: {s.plays ? `${peak}:00` : '–'}</span>}><Bars data={s.byHour.map((v, h) => ({ label: h % 3 === 0 ? String(h) : '', value: v }))} format={fmtHours} highlight={s.plays ? peak : undefined} /></Panel>
+        <Panel title="Time of day" right={<span className="text-xs text-muted">busiest hour: {s.plays ? `${peak}:00` : '–'}</span>}><Bars data={s.byHour.map((v, h) => ({ label: h % 3 === 0 ? hourLabel(h) : '', full: hourLabel(h), value: v }))} format={fmtHours} highlight={s.plays ? peak : undefined} /></Panel>
         <Panel title="Day of the week"><Bars data={s.byWeekday.map((v, i) => ({ label: WEEKDAYS[i], value: v }))} format={(n) => `${n.toLocaleString()} plays`} highlight={s.byWeekday.indexOf(Math.max(...s.byWeekday))} /></Panel>
       </div>
       <Panel title="Calendar" right={<span className="text-xs text-muted">the last 12 months, darker = more listening</span>}><Calendar byDay={s.byDay} format={fmtHours} /></Panel>
@@ -107,7 +105,7 @@ const PAGE = 200;
 /** Every play as a timeline, newest first, grouped by day. */
 function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof useLibraryLive> }) {
   const [q, setQ] = useState('');
-  const [source, setSource] = useState<'all' | 'curator' | 'spotify'>('all');
+  const [source, setSource] = useState<'all' | 'turbomusic' | 'spotify'>('all');
   const [skips, setSkips] = useState<'all' | 'played' | 'skipped'>('all');
   const [on, setOn] = useState('');
   const [shown, setShown] = useState(PAGE);
@@ -136,7 +134,7 @@ function Timeline({ listens, lib }: { listens: Listen[]; lib: ReturnType<typeof 
         <input className="input !w-64 max-w-full" placeholder="Search your history…" value={q} onChange={(e) => { setQ(e.target.value); setShown(PAGE); }} />
         <input className="input !w-auto" type="date" aria-label="Jump to a day" value={on} onChange={(e) => { setOn(e.target.value); setShown(PAGE); }} />
         {on && <button className="btn btn-ghost" onClick={() => setOn('')}>All days</button>}
-        <select className="input !w-auto" value={source} onChange={(e) => { setSource(e.target.value as typeof source); setShown(PAGE); }}><option value="all">All sources</option><option value="curator">Played in TurboMusic</option><option value="spotify">From Spotify</option></select>
+        <select className="input !w-auto" value={source} onChange={(e) => { setSource(e.target.value as typeof source); setShown(PAGE); }}><option value="all">All sources</option><option value="turbomusic">Played in TurboMusic</option><option value="spotify">From Spotify</option></select>
         <select className="input !w-auto" value={skips} onChange={(e) => { setSkips(e.target.value as typeof skips); setShown(PAGE); }}><option value="all">Plays and skips</option><option value="played">Played through</option><option value="skipped">Skipped only</option></select>
         <span className="ml-auto text-xs text-muted">{rows.length.toLocaleString()} plays</span>
       </div>

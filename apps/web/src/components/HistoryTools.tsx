@@ -90,13 +90,13 @@ export function ExportHistoryDialog({ onClose }: { onClose: () => void }) {
   const lib = useLibraryLive();
   const [includeImported, setIncludeImported] = useState(false);
   const all = buildListens(lib);
-  const plays: ExportPlay[] = all.filter((l) => includeImported || l.source === 'curator').map((l) => ({ ts: l.ts, ms: l.ms, title: l.title, artist: l.artist, album: l.album, uri: l.uri, skipped: l.skipped, shuffle: l.shuffle, platform: l.platform === 'Curator' ? 'Curator' : l.platform, reasonStart: null, reasonEnd: l.reasonEnd }));
+  const plays: ExportPlay[] = all.filter((l) => includeImported || l.source === 'turbomusic').map((l) => ({ ts: l.ts, ms: l.ms, title: l.title, artist: l.artist, album: l.album, uri: l.uri, skipped: l.skipped, shuffle: l.shuffle, platform: l.platform === 'TurboMusic' ? 'TurboMusic' : l.platform, reasonStart: null, reasonEnd: l.reasonEnd }));
   const { entries, dropped } = exportSpotifyFormat(plays);
   const files = exportFiles(entries);
   return (
     <Modal title="Export history for stats.fm" onClose={onClose}
       footer={<><button className="btn" onClick={onClose}>Close</button>
-        <button className="btn btn-accent ml-auto" disabled={!entries.length} onClick={() => download('curator-streaming-history.zip', writeZip(files.map((f) => ({ name: `Spotify Extended Streaming History/${f.name}`, data: f.data }))), 'application/zip')}><Download size={15} />Download .zip</button></>}>
+        <button className="btn btn-accent ml-auto" disabled={!entries.length} onClick={() => download('turbomusic-streaming-history.zip', writeZip(files.map((f) => ({ name: `Spotify Extended Streaming History/${f.name}`, data: f.data }))), 'application/zip')}><Download size={15} />Download .zip</button></>}>
       <p className="text-sm text-muted">Writes your plays in the same format as Spotify's own “Extended streaming history”, so you can upload them to stats.fm (Import) or any tool that reads Spotify exports. Only plays of tracks that have a Spotify link can be matched there; the rest are left out.</p>
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5" checked={includeImported} onChange={(e) => setIncludeImported(e.target.checked)} /><span>Include the plays I imported from Spotify <span className="text-muted">(off: only what you played in TurboMusic, since stats.fm already has the rest from Spotify)</span></span></label>
       <div className="rounded-theme bg-raised p-3 text-sm"><b className="tabular-nums">{entries.length.toLocaleString()}</b> plays in {files.length} file{files.length === 1 ? '' : 's'} (one set per year, each under 11.8 MiB){dropped ? <span className="text-muted"> · {dropped.toLocaleString()} left out (no Spotify link)</span> : null}</div>

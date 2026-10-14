@@ -6,7 +6,7 @@ import { migrateLegacy } from './migrate-legacy.ts';
 
 const { values } = parseArgs({
   options: {
-    db: { type: 'string' },          // legacy data/curator.db
+    db: { type: 'string' },          // the old app's database file, data/<name>.db
     public: { type: 'string' },      // legacy public/ dir holding uploads/
     help: { type: 'boolean', short: 'h' },
   },
@@ -15,9 +15,9 @@ const { values } = parseArgs({
 if (values.help || !values.db) {
   console.log(`Import a legacy TurboMusic library into this server's data dir.
 
-  node --experimental-strip-types src/cli-migrate.ts --db <old>/data/curator.db --public <old>/public
+  node --experimental-strip-types src/cli-migrate.ts --db <old>/data/<name>.db --public <old>/public
 
-  Target data dir comes from CURATOR_DATA_DIR (default ./data). Safe to re-run: records and files are idempotent.
+  Target data dir comes from TURBOMUSIC_DATA_DIR (default ./data). Safe to re-run: records and files are idempotent.
   Without --public no audio/images are copied and tracks will have no file.`);
   process.exit(values.help ? 0 : 1);
 }

@@ -1,4 +1,4 @@
-import type { EraData } from '@curator/core';
+import type { EraData } from '@turbomusic/core';
 import type { Library } from './library.ts';
 
 type Field = 'albumIds' | 'trackIds';

@@ -1,6 +1,6 @@
 # Appearance
 
-How Curator looks is not decided in this repository. It is decided by **turbothemes** (the `themes/` folder of [github.com/TurboNZL/turboengine](https://github.com/TurboNZL/turboengine)), a small package that all of the owner's apps share, so they look consistent and the look can be improved without releasing an app.
+How TurboMusic looks is not decided in this repository. It is decided by **turbothemes** (the `themes/` folder of [github.com/TurboNZL/turboengine](https://github.com/TurboNZL/turboengine)), a small package that all of the owner's apps share, so they look consistent and the look can be improved without releasing an app.
 
 | Part | Where | Changes |
 |---|---|---|
@@ -19,7 +19,7 @@ The markup uses the hook classes (`.btn`, `.input`, `.card`, `.chip`, `.bt-windo
 - Automatically: Settings → Appearance → **Themes** looks for newer themes in the background (at most every six hours) and when you press the button. The setting "Look for newer themes automatically" turns it off; the engine then only uses the themes built into the installed app.
 - Themes are fetched from `themes/dist` of the public turboengine repository. If that repository is ever made private, paste a read-only GitHub token into the same card.
 - A downloaded set is kept on the device and used at the next start, until a newer engine (a new app build with a newer `turbothemes` dependency) brings newer built-in themes.
-- To take a new **engine**: `pnpm update turbothemes --filter @curator/web`, then commit the lockfile.
+- To take a new **engine**: `pnpm update turbothemes --filter @turbomusic/web`, then commit the lockfile.
 
 ## Fonts
 

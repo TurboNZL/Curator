@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
-import { BarChart3, Search, ArrowDown, ArrowUp, Link2, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
-import { shuffleWithRules } from '@curator/core';
+import { BarChart3, Search, ArrowDown, ArrowUp, Link2, ListEnd, ListStart, Pencil, Play, Plus, Shuffle, X } from 'lucide-react';
+import { shuffleWithRules } from '@turbomusic/core';
 import { moveTrack, removeTrack } from '../lib/defaults.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -17,6 +17,7 @@ import { KeepOffline } from '../components/KeepOffline.tsx';
 import { plural } from '../lib/cn.ts';
 import { PlaylistNote, withoutKey } from '../components/PlaylistNote.tsx';
 import { TrackTable } from '../components/TrackTable.tsx';
+import { useChunks } from '../lib/useChunks.ts';
 
 export function PlaylistsPage() {
   const lib = useLibrary();
@@ -26,21 +27,28 @@ export function PlaylistsPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState('');
   const [find, setFind] = useState('');
-  const PAGE = 100;
-  const [shown, setShown] = useState(PAGE);
-  useEffect(() => setShown(PAGE), [openId]);
+  const replaceRest = usePlayer((s) => s.replaceRest);
+  const appendRest = usePlayer((s) => s.appendRest);
+  const hasCurrent = usePlayer((s) => !!s.queue.currentId);
+  const deferredFind = useDeferredValue(find); // typing stays smooth: the lists below follow a moment later
   // playlists match by name, description, or a track or artist inside them
   const listed = useMemo(() => {
-    const f = find.trim().toLowerCase();
+    const f = deferredFind.trim().toLowerCase();
     if (!f) return lib.playlists;
     return lib.playlists.filter((p) => `${p.name} ${p.description ?? ''}`.toLowerCase().includes(f)
       || playlistTrackIds(lib, p).some((id) => { const t = lib.trackById.get(id); return !!t && `${t.title} ${t.artistName}`.toLowerCase().includes(f); }));
-  }, [lib, find]);
+  }, [lib, deferredFind]);
   const open = lib.playlists.find((p) => p.id === openId);
   const albumMode = !!open && isAlbumList(open);
-  const albums = open && albumMode ? playlistAlbums(lib, open) : [];
-  const tracks = open ? playlistTrackIds(lib, open).map((id) => lib.trackById.get(id)!) : [];
-  const playable = tracks.filter(canPlay).map((t) => t.id);
+  // derived once per playlist, not on every keystroke in the boxes below
+  const albums = useMemo(() => (open && albumMode ? playlistAlbums(lib, open) : []), [lib, open, albumMode]);
+  const tracks = useMemo(() => (open ? playlistTrackIds(lib, open).map((id) => lib.trackById.get(id)!) : []), [lib, open]);
+  const playable = useMemo(() => tracks.filter(canPlay).map((t) => t.id), [tracks]);
+  const offlineHashes = useMemo(() => tracks.flatMap((t) => (t.file ? [t.file] : [])), [tracks]);
+  // long lists are drawn a piece at a time (rows are heavy: rating, menu, note), so opening a big playlist does not freeze the page
+  const rows = useChunks(tracks.length, 40, openId);
+  const albumRows = useChunks(albums.length, 30, openId);
+  const cards = useChunks(listed.length, 48, deferredFind);
   const needle = adding.toLowerCase();
   const matches = adding.length > 1 && !albumMode ? lib.tracks.filter((t) => `${t.title} ${t.artistName}`.toLowerCase().includes(needle)).slice(0, 6) : [];
   const albumMatches = adding.length > 1 && albumMode ? lib.albums.filter((a) => !(open!.albumIds ?? []).includes(a.id) && `${a.title} ${a.artistName}`.toLowerCase().includes(needle)).slice(0, 6) : [];
@@ -53,12 +61,13 @@ export function PlaylistsPage() {
       {lib.playlists.length > 0 && <label className="relative block max-w-md"><Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
         <input className="input !pl-9" type="search" aria-label="Search playlists" placeholder="Search playlists, or a track or artist in them…" value={find} onChange={(e) => setFind(e.target.value)} /></label>}
       {find.trim() && !listed.length && <p className="text-sm text-muted">No playlist matches.</p>}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--grid-min), 9rem), 1fr))' }}>{listed.map((p) => { const c = playlistCount(lib, p); return (
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--grid-min), 9rem), 1fr))' }}>{listed.slice(0, cards.shown).map((p) => { const c = playlistCount(lib, p); return (
         <button key={p.id} onClick={() => setOpenId(p.id)} aria-pressed={openId === p.id} className="bt-tile bt-sel group text-left" data-selected={openId === p.id || undefined}>
           <PlaylistCover playlist={p} className="transition-transform group-hover:scale-[1.02]" />
           <div className="bt-cap-t mt-2 truncate text-sm font-medium">{p.name}</div>
           <div className="bt-cap text-xs text-muted">{isAlbumList(p) ? 'Albums · ' : ''}{plural(c.n, c.noun)}</div>
         </button>); })}</div>
+      {cards.left > 0 && <div ref={cards.sentinel} className="text-center"><button className="btn" onClick={cards.more}>Show more ({cards.left} left)</button></div>}
       {open && (
         <section className="space-y-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
@@ -70,9 +79,13 @@ export function PlaylistsPage() {
               <div className="flex flex-wrap gap-2 pt-1">
                 <button className="btn btn-accent" disabled={!playable.length} onClick={() => play(playable[0], playable, { type: 'playlist', id: open.id })}><Play size={16} fill="currentColor" />Play</button>
                 <button className="btn" disabled={!playable.length} onClick={() => { const s = shuffleWithRules(playable, lib.rules); play(s[0], s, { type: 'playlist', id: open.id }); }}><Shuffle size={16} />Shuffle</button>
+                {hasCurrent && <>
+                  <button className="btn" disabled={!playable.length} title="Keep playing the current track, then continue with this playlist instead of what was coming next" onClick={() => replaceRest(playable, { type: 'playlist', id: open.id })}><ListStart size={16} />Then: replace</button>
+                  <button className="btn btn-ghost" disabled={!playable.length} title="Add this playlist to the end of what is coming next" onClick={() => appendRest(playable)}><ListEnd size={16} />Add to Then</button>
+                </>}
                 <Link className="btn btn-ghost" to={statsPath('playlist', open.id)}><BarChart3 size={15} />Stats</Link>
                 <button className="btn btn-ghost" onClick={() => edit({ kind: 'playlist', id: open.id })}><Pencil size={15} />Edit</button>
-                <KeepOffline hashes={tracks.flatMap((t) => (t.file ? [t.file] : []))} />
+                <KeepOffline hashes={offlineHashes} />
               </div>
             </div>
           </div>
@@ -83,7 +96,7 @@ export function PlaylistsPage() {
               <button key={a.id} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-raised" onClick={() => { patch('playlists', open.id, { albumIds: [...ids, a.id] }); setAdding(''); }}><Cover hash={a.cover} seed={a.title} className="h-8 w-8 shrink-0" /><span className="min-w-0 truncate">{a.title} <span className="text-muted">· {a.artistName}</span></span></button>))}</div>}</div>
           {albumMode
             ? <div className="card divide-y divide-line/50 overflow-hidden">
-                {albums.map((a, i) => (
+                {albums.slice(0, albumRows.shown).map((a, i) => (
                   <div key={a.id} className="flex items-center gap-3 px-3 py-2">
                     <Link to={a.to} className="flex min-w-0 flex-1 items-center gap-3"><Cover hash={a.cover} seed={a.title} className="h-12 w-12 shrink-0" />
                       <span className="min-w-0"><span className="block truncate text-sm font-medium">{a.title}</span><span className="block truncate text-xs text-muted"><ArtistLinks leads={a.leads} /> · {plural(a.trackIds.length, 'track')}</span></span></Link>
@@ -93,13 +106,14 @@ export function PlaylistsPage() {
                   </div>))}
                 {!albums.length && <div className="px-3 py-4 text-sm text-muted">No albums yet. Search above, or use “Add to an album playlist…” in an album’s menu.</div>}
               </div>
-            : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, shown)} queue={tracks} source="playlist" sourceId={open.id} numbered below={(t) => <PlaylistNote playlistId={open.id} trackId={t.id} notes={open.trackNotes} />} extra={(t, i) => (
+            : <div className="card overflow-hidden"><TrackTable tracks={tracks.slice(0, rows.shown)} queue={tracks} source="playlist" sourceId={open.id} numbered below={(t) => <PlaylistNote playlistId={open.id} trackId={t.id} notes={open.trackNotes} />} extra={(t, i) => (
             <div className="flex">
               <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${t.title} up`} disabled={i === 0} onClick={() => patch('playlists', open.id, { trackIds: moveTrack(tracks.map((x) => x.id), i, i - 1) })}><ArrowUp size={15} /></button>
               <button className="p-1 text-muted hover:text-fg disabled:opacity-30" aria-label={`Move ${t.title} down`} disabled={i === tracks.length - 1} onClick={() => patch('playlists', open.id, { trackIds: moveTrack(tracks.map((x) => x.id), i, i + 1) })}><ArrowDown size={15} /></button>
               <button className="p-1 text-muted hover:text-bad" aria-label={`Remove ${t.title} from the playlist`} onClick={() => patch('playlists', open.id, { trackIds: removeTrack(open.trackIds, t.id), trackNotes: withoutKey(open.trackNotes, t.id) })}><X size={15} /></button>
             </div>)} /></div>}
-          {!albumMode && shown < tracks.length && <div className="text-center"><button className="btn" onClick={() => setShown(shown + PAGE)}>Show more ({tracks.length - shown} left)</button></div>}
+          {!albumMode && rows.left > 0 && <div ref={rows.sentinel} className="text-center"><button className="btn" onClick={rows.more}>Show more ({rows.left} left)</button></div>}
+          {albumMode && albumRows.left > 0 && <div ref={albumRows.sentinel} className="text-center"><button className="btn" onClick={albumRows.more}>Show more ({albumRows.left} left)</button></div>}
         </section>
       )}
       {!lib.playlists.length && <div className="flex items-center gap-2 text-sm text-muted"><Link2 size={14} />No playlists yet.</div>}

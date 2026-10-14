@@ -1,8 +1,9 @@
+import { canonicalPlatform } from './legacyNames.ts';
 import { allSpotifyIds } from './spotifyLinks.ts';
 import type { Library } from './library.ts';
 import { spotifyTrackId } from './spotify.ts';
 
-/** One play, from Curator's own player or imported from Spotify, with the track resolved to the library when it can be. */
+/** One play, from TurboMusic's own player or imported from Spotify, with the track resolved to the library when it can be. */
 export interface Listen {
   id: string;
   /** when it ended, ms */
@@ -23,7 +24,7 @@ export interface Listen {
   shuffle: boolean | null;
   platform: string | null;
   reasonEnd: string | null;
-  source: 'spotify' | 'curator';
+  source: 'spotify' | 'turbomusic';
 }
 
 const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/\(.*?\)|\[.*?\]/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -54,12 +55,12 @@ export function buildListens(lib: Library): Listen[] {
       const trackId = l.trackId || match(l.uri, l.name ?? '', l.artist ?? '');
       const t = trackId ? lib.trackById.get(trackId) : undefined;
       out.push({ id: l.id, ts: l.timestamp, ms: Math.round((l.duration ?? 0) * 1000), trackId: t?.id ?? null, artistId: t?.leads[0]?.id ?? null, albumId: t?.albumId ?? null, title: t?.title ?? l.name ?? '', artist: t ? (t.leads[0]?.name ?? t.artistName) : l.artist ?? '',
-        album: t?.albumTitle ?? l.album ?? '', uri: l.uri ?? null, skipped: !!l.isSkip, shuffle: l.shuffle ?? null, platform: l.platform ?? null, reasonEnd: l.reasonEnd ?? null, source: 'spotify' });
+        album: t?.albumTitle ?? l.album ?? '', uri: l.uri ?? null, skipped: !!l.isSkip, shuffle: l.shuffle ?? null, platform: canonicalPlatform(l.platform), reasonEnd: l.reasonEnd ?? null, source: 'spotify' });
     } else {
       const t = lib.trackById.get(l.trackId);
       if (!t) continue;
       out.push({ id: l.id, ts: l.timestamp, ms: Math.round((l.duration ?? 0) * 1000), trackId: t.id, artistId: t.leads[0]?.id ?? null, albumId: t.albumId ?? null, title: t.title, artist: t.leads[0]?.name ?? t.artistName, album: t.albumTitle ?? '',
-        uri: spotifyTrackId(t.spotifyUrl) ? `spotify:track:${spotifyTrackId(t.spotifyUrl)}` : null, skipped: !!l.isSkip, shuffle: null, platform: 'Curator', reasonEnd: null, source: 'curator' });
+        uri: spotifyTrackId(t.spotifyUrl) ? `spotify:track:${spotifyTrackId(t.spotifyUrl)}` : null, skipped: !!l.isSkip, shuffle: null, platform: 'TurboMusic', reasonEnd: null, source: 'turbomusic' });
     }
   }
   out.sort((a, b) => a.ts - b.ts);

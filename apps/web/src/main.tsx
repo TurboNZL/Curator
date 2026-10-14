@@ -1,3 +1,4 @@
+import './lib/legacyNames.ts'; // first: carries an old install's settings over before the store reads them
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

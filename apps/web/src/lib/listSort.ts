@@ -80,3 +80,37 @@ export function sortEras(rows: EraRow[], key: EraSort, dir: SortDir): EraRow[] {
     return s * n || text(a.era.name, b.era.name);
   });
 }
+
+/** What an era holds: albums and singles side by side, so they can be sorted as one list (by date, as a timeline). */
+export type EraItem = { kind: 'album'; id: string; album: Album } | { kind: 'single'; id: string; track: Track };
+export type EraItemSort = 'released' | 'title' | 'artist' | 'rating' | 'memories' | 'tracks';
+export const ERA_ITEM_SORTS: SortOption<EraItemSort>[] = [
+  { value: 'released', label: 'Release date', dir: 'asc' }, { value: 'title', label: 'Title', dir: 'asc' }, { value: 'artist', label: 'Artist', dir: 'asc' },
+  { value: 'rating', label: 'Rating', dir: 'desc' }, { value: 'memories', label: 'Memories', dir: 'desc' }, { value: 'tracks', label: 'Track count', dir: 'desc' },
+];
+const eraItem = {
+  title: (i: EraItem) => (i.kind === 'album' ? i.album.title : i.track.title),
+  artist: (i: EraItem) => (i.kind === 'album' ? i.album.artistName : i.track.artistName),
+  date: (i: EraItem) => (i.kind === 'album' ? i.album.releaseDate : i.track.releaseDate) ?? '',
+  rating: (i: EraItem) => (i.kind === 'album' ? i.album.rating : (i.track.effectiveRating > 0.001 ? i.track.effectiveRating : null)),
+  memories: (lib: Library, i: EraItem) => (i.kind === 'album' ? memoriesOf(lib, i.album.trackIds) : i.track.memories ?? 0),
+  tracks: (i: EraItem) => (i.kind === 'album' ? i.album.trackIds.length : 1),
+};
+/** Missing dates and ratings go last whichever way the column runs; ties keep the order they were added in (a stable sort), then fall back to the title. */
+export function sortEraItems(lib: Library, items: EraItem[], key: EraItemSort, dir: SortDir): EraItem[] {
+  const s = sign(dir);
+  return items.map((x, i) => ({ x, i })).sort((a, b) => {
+    if (key === 'released' && !eraItem.date(a.x) !== !eraItem.date(b.x)) return eraItem.date(a.x) ? -1 : 1;
+    if (key === 'rating' && (eraItem.rating(a.x) == null) !== (eraItem.rating(b.x) == null)) return eraItem.rating(a.x) == null ? 1 : -1;
+    let n = 0;
+    switch (key) {
+      case 'released': n = s * eraItem.date(a.x).localeCompare(eraItem.date(b.x)); break; // "2019" < "2019-05" < "2019-05-02"
+      case 'title': n = s * text(eraItem.title(a.x), eraItem.title(b.x)); break;
+      case 'artist': n = s * text(eraItem.artist(a.x), eraItem.artist(b.x)); break;
+      case 'rating': n = s * ((eraItem.rating(a.x) ?? 0) - (eraItem.rating(b.x) ?? 0)); break;
+      case 'memories': n = s * (eraItem.memories(lib, a.x) - eraItem.memories(lib, b.x)); break;
+      case 'tracks': n = s * (eraItem.tracks(a.x) - eraItem.tracks(b.x)); break;
+    }
+    return n || text(eraItem.title(a.x), eraItem.title(b.x)) || a.i - b.i;
+  }).map((e) => e.x);
+}

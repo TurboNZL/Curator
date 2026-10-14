@@ -1,10 +1,10 @@
 {
-  "name": "@curator/server",
+  "name": "@turbomusic/server",
   "version": "0.1.0",
   "license": "MIT",
   "private": true,
   "type": "module",
-  "bin": { "curator-server": "./src/index.ts" },
+  "bin": { "turbomusic-server": "./src/index.ts" },
   "scripts": {
     "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/index.ts",
     "dev": "node --watch --experimental-strip-types --disable-warning=ExperimentalWarning src/index.ts",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@curator/core": "workspace:*",
+    "@turbomusic/core": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "hono": "^4.6.14"
   },

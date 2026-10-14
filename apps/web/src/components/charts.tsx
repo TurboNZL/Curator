@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from '../lib/cn.ts';
 
 /**
@@ -8,14 +9,14 @@ import { cn } from '../lib/cn.ts';
 export const fmtHours = (ms: number) => { const m = Math.round(ms / 60000); return m >= 600 ? `${Math.round(m / 60).toLocaleString()} h` : m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
 
 /** Vertical bars with a label under each. `value` can be any unit; `format` makes the tooltip. */
-export function Bars({ data, format = String, height = 120, highlight }: { data: { label: string; value: number }[]; format?: (n: number) => string; height?: number; highlight?: number }) {
+export function Bars({ data, format = String, height = 120, highlight }: { data: { label: string; full?: string; value: number }[]; format?: (n: number) => string; height?: number; highlight?: number }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
     <div className="flex items-end gap-[3px]" style={{ height }} role="img" aria-label="Bar chart">
       {data.map((d, i) => (
-        <div key={i} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${d.label}: ${format(d.value)}`}>
+        <div key={i} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${d.full ?? d.label}: ${format(d.value)}`}>
           <div className={cn('w-full rounded-t-[3px] transition-[height] duration-500', i === highlight ? 'bg-accent' : 'bg-accent/55 group-hover:bg-accent')} style={{ height: `${Math.max(d.value ? 3 : 0, (d.value / max) * (height - 18))}px` }} />
-          <div className="mt-1 h-3 truncate text-center text-[9px] leading-3 text-muted">{d.label}</div>
+          <div className="relative mt-1 h-3 text-[9px] leading-3 text-muted"><span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap">{d.label}</span></div>
         </div>))}
     </div>
   );
@@ -61,7 +62,7 @@ export function Heatgrid({ cells, rows, cols, colEvery = 3 }: { cells: number[][
             {r.map((v, x) => <div key={x} className="aspect-square rounded-[3px] bg-accent" style={{ opacity: v ? 0.12 + 0.88 * (v / max) : 0.06 }} title={`${rows[y]} ${cols[x]}: ${v}`} />)}
           </div>
         </div>))}
-      <div className="flex gap-1"><span className="w-8 shrink-0" /><div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${cells[0]?.length ?? 1}, minmax(0, 1fr))` }}>{cols.map((c, i) => <span key={i} className="text-center text-[9px] text-muted">{i % colEvery === 0 ? c : ''}</span>)}</div></div>
+      <div className="flex gap-1"><span className="w-8 shrink-0" /><div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${cells[0]?.length ?? 1}, minmax(0, 1fr))` }}>{cols.map((c, i) => <span key={i} className="relative h-3 text-[9px] leading-3 text-muted"><span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap">{i % colEvery === 0 ? c : ''}</span></span>)}</div></div>
     </div>
   );
 }
@@ -128,7 +129,9 @@ export function RankList({ rows, unit, onPick }: { rows: { key: string; label: s
           <div className="absolute inset-y-0 left-0 bg-accent/12" style={{ width: `${(r.value / max) * 100}%` }} aria-hidden />
           <div className="relative flex items-center gap-3 px-2.5 py-1.5 text-sm">
             <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted">{i + 1}</span>
-            <span className="min-w-0 flex-1"><span className="block truncate font-medium">{r.label}</span>{r.sub && <span className="block truncate text-xs text-muted">{r.sub}</span>}</span>
+            {r.to
+              ? <Link to={r.to} className="min-w-0 flex-1 no-underline after:absolute after:inset-0 hover:[&_.rl]:underline"><span className="rl block truncate font-medium">{r.label}</span>{r.sub && <span className="block truncate text-xs text-muted">{r.sub}</span>}</Link>
+              : <span className="min-w-0 flex-1"><span className="block truncate font-medium">{r.label}</span>{r.sub && <span className="block truncate text-xs text-muted">{r.sub}</span>}</span>}
             {r.extra && <span className="hidden shrink-0 text-xs text-muted sm:block">{r.extra}</span>}
             <span className="shrink-0 text-xs font-semibold tabular-nums">{unit ? unit(r.value) : r.value}</span>
           </div>

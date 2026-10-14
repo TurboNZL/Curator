@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { newId, RECORD_TABLES, wins, type RecordTable, type SyncRecord } from '@curator/core';
+import { newId, RECORD_TABLES, wins, type RecordTable, type SyncRecord } from '@turbomusic/core';
 import { Api } from './api.ts';
 import { flushUploads, type CacheEntry } from './files.ts';
 import { getMeta, localDb, setMeta } from './idb.ts';

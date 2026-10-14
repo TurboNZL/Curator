@@ -1,4 +1,4 @@
-import type { TimelineData } from '@curator/core';
+import type { TimelineData } from '@turbomusic/core';
 import { useStore } from './store.ts';
 
 /** Append a journal entry (timeline is append-only on sync, so entries never conflict). */
