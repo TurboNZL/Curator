@@ -53,13 +53,14 @@ object NativeAudio {
         Item(o.getString("id"), o.optString("key", o.getString("id")), o.getString("url"), o.optString("title"), o.optString("artist"), o.optString("album"), o.optString("art").ifEmpty { null })
     }
 
-    private fun mediaItem(i: Item): MediaItem = MediaItem.Builder()
+    /** `withArt`: only the playing track and its two neighbours carry a cover link, so a track change does not make Media3 fetch a dozen covers over the tunnel while the next song is starting */
+    private fun mediaItem(i: Item, withArt: Boolean = true): MediaItem = MediaItem.Builder()
         .setMediaId(i.id)
         .setUri(i.url)
         .setCustomCacheKey(i.key) // files are addressed by content hash, so a replay comes from the on-phone cache
         .setMediaMetadata(MediaMetadata.Builder().setTitle(i.title).setArtist(i.artist).setAlbumTitle(i.album)
             .setIsPlayable(true).setIsBrowsable(false).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-            .apply { i.art?.let { setArtworkUri(android.net.Uri.parse(it)) } }.build())
+            .apply { if (withArt) i.art?.let { setArtworkUri(android.net.Uri.parse(it)) } }.build())
         .build()
 
     /** Runs `block` once the player is connected (connecting also starts the service). */
@@ -105,6 +106,7 @@ object NativeAudio {
         val currentId = o.getString("currentId")
         val at = items.indexOfFirst { it.id == currentId }
         if (at < 0) return
+        val near = items.filterIndexed { k, _ -> kotlin.math.abs(k - at) <= 1 }.map { it.id }.toSet()
         val hard = o.optBoolean("hard", false)
         val position = o.optLong("positionMs", 0L)
         val play = o.optBoolean("play", true)
@@ -113,10 +115,10 @@ object NativeAudio {
                 val index = c.currentMediaItemIndex
                 if (index + 1 < c.mediaItemCount) c.removeMediaItems(index + 1, c.mediaItemCount)
                 if (index > 0) c.removeMediaItems(0, index)
-                if (at > 0) c.addMediaItems(0, items.subList(0, at).map(::mediaItem))
-                if (at + 1 < items.size) c.addMediaItems(items.subList(at + 1, items.size).map(::mediaItem))
+                if (at > 0) c.addMediaItems(0, items.subList(0, at).map { mediaItem(it, it.id in near) })
+                if (at + 1 < items.size) c.addMediaItems(items.subList(at + 1, items.size).map { mediaItem(it, it.id in near) })
             } else {
-                c.setMediaItems(items.map(::mediaItem), at, position)
+                c.setMediaItems(items.map { mediaItem(it, it.id in near) }, at, position)
                 c.prepare()
                 if (play) c.play() else c.pause()
             }

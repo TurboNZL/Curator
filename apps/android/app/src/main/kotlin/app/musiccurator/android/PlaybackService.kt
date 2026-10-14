@@ -91,7 +91,7 @@ class PlaybackService : MediaLibraryService() {
         // The notification and lock-screen cover is fetched by the session's bitmap loader, whose default has no way to send the Access service token,
         // so behind Cloudflare Access it got the login page and no picture. It uses the player's own upstream (same headers) on its own thread.
         val artLoader = DataSourceBitmapLoader(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2)), upstream)
-        session = MediaLibrarySession.Builder(this, offered, Callback()).setSessionActivity(open).setBitmapLoader(artLoader).build()
+        session = MediaLibrarySession.Builder(this, offered, Callback()).setSessionActivity(open).setBitmapLoader(ArtLoader(artLoader)).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session

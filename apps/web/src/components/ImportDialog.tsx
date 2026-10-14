@@ -122,7 +122,7 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
         <button className="btn btn-accent" disabled={!url.trim() || !!busy || !configured} onClick={go}>{busy ? <Loader2 size={15} className="animate-spin" /> : null}{isLink(url) || !url.trim() ? 'Look up' : 'Search'}</button></div>;
 
   return (
-    <Modal title="Import from YouTube" onClose={onClose} footer={footer}>
+    <Modal title="Add from YouTube Music" onClose={onClose} footer={footer}>
       {!configured && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">Importing runs on your server. Connect one in Settings first.</div>}
       {done ? null : !pv ? (
         <>
