@@ -18,6 +18,10 @@ export interface Config {
   webDir?: string;
   /** scripts/update.sh of the checkout this server runs from, when "Update server" may be offered (under systemd, or TURBOMUSIC_UPDATE=1) */
   updateScript?: string;
+  /** the folder of a self-contained install (scripts/install-server.sh): `app` links into `releases/`; "Update server" then downloads the newest release bundle */
+  installRoot?: string;
+  /** a read-only GitHub token, for updating from a private repository */
+  githubToken?: string;
   /** the server runs under a service manager that starts it again when it exits (systemd sets INVOCATION_ID) */
   updateRestart?: boolean;
 }
@@ -44,6 +48,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ytdlpArgs: withCacheDir(ytdlpArgs(env), dataDir),
     ffmpegDir: env.TURBOMUSIC_FFMPEG_DIR,
     webDir: env.TURBOMUSIC_WEB_DIR ? resolve(env.TURBOMUSIC_WEB_DIR) : defaultWebDir(),
+    installRoot: env.TURBOMUSIC_INSTALL_ROOT ? resolve(env.TURBOMUSIC_INSTALL_ROOT) : undefined,
+    githubToken: env.TURBOMUSIC_GITHUB_TOKEN || undefined,
     updateScript: defaultUpdateScript(env),
     updateRestart: !!env.INVOCATION_ID,
   };
