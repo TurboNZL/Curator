@@ -10,13 +10,11 @@ It runs as a **web app** (desktop and phone browsers, installable as a PWA), as 
 
 > The original app (generated with Dyad) has been **removed** from the repository; it survives in the git history, in the migration tool for its database and in the *Standard v1* UI style and colours (see [Appearance](#appearance)). Everything described here is the code in `packages/` and `apps/`.
 
-## Run the server with Docker
+## Run the server (one folder, no root)
 ```
-mkdir turbomusic && cd turbomusic
-curl -fsSLO https://raw.githubusercontent.com/TurboNZL/turbomusic/main/docker-compose.yml
-docker compose up -d      # the log shows the address and the access token
+curl -fsSL https://raw.githubusercontent.com/TurboNZL/turbomusic/main/scripts/install-server.sh | bash -s -- --root /mnt/data/turbomusic
 ```
-The library lives in `./data` (set `TURBOMUSIC_DATA` in a `.env` file to use a folder on a big drive); update with `docker compose pull && docker compose up -d`. Moving an existing server: [docs/guides/MIGRATE_TO_DOCKER.md](docs/guides/MIGRATE_TO_DOCKER.md).
+Everything (the program, its own Node, ffmpeg, yt-dlp and the library) lives in that one folder; nothing is installed system-wide. It starts at boot as your own user service and updates from **Settings → Update server**. Moving an existing server: [docs/guides/MIGRATE_SERVER.md](docs/guides/MIGRATE_SERVER.md).
 
 ## Start here
 
