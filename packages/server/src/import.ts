@@ -1,4 +1,5 @@
 import { lookupAlbumDate } from './dates.ts';
+import { ytdlpFailure } from './ytdlpError.ts';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
@@ -177,7 +178,7 @@ export class Importer {
       child.stdout.on('data', (d) => { out += d; if (out.length > 20_000_000) child.kill(); });
       child.stderr.on('data', (d) => { err = (err + d).slice(-2000); });
       child.on('error', (e: NodeJS.ErrnoException) => { clearTimeout(timer); reject(new ImportError(500, e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set TURBOMUSIC_YTDLP.` : e.message)); });
-      child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve(out) : reject(new ImportError(502, `yt-dlp failed: ${err.trim().split('\n').pop() ?? code}`)); });
+      child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve(out) : reject(new ImportError(502, `yt-dlp failed: ${ytdlpFailure(err) || code}`)); });
     });
   }
 }
