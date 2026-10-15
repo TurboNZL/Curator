@@ -76,6 +76,15 @@ const run = (cmd: string, args: string[], spawnImpl: Spawn = spawn, env?: NodeJS
   child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve(out) : reject(new Error(out.trim().split('\n').pop() || `${cmd} exited ${code}`)); });
 });
 
+/**
+ * Where to run `pactl` from: the tools folder only when it really holds one (a bundled ffmpeg folder normally does not: pactl comes from the
+ * system package pulseaudio-utils), otherwise whatever is on PATH. Looking only in the tools folder made an installed pactl look missing.
+ */
+export function pactlCommand(toolsDir?: string): string {
+  if (toolsDir) { const own = join(toolsDir, 'pactl'); if (existsSync(own)) return own; }
+  return 'pactl';
+}
+
 export class Soloist {
   private readonly dir: string;
   private readonly d: SoloistDeps;
@@ -221,7 +230,7 @@ export class Soloist {
   }
 
   private launching = false;
-  private async pactl(args: string[]): Promise<string> { return this.d.pactl ? this.d.pactl(args) : run(this.d.ffmpegDir ? join(this.d.ffmpegDir, 'pactl') : 'pactl', args, this.d.spawnImpl, this.soloistEnv()); }
+  private async pactl(args: string[]): Promise<string> { return this.d.pactl ? this.d.pactl(args) : run(pactlCommand(this.d.ffmpegDir), args, this.d.spawnImpl, this.soloistEnv()); }
   /** Make sure the null sink Soloist plays into exists (created once per sound-server session). Beaming only works when it does. */
   async ensureSink(): Promise<void> {
     try {

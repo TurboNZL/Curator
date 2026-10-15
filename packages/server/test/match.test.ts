@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { editionOf, Matcher, parseAlbumSearch, scoreAlbum, thumbOf } from '../src/match.ts';
+import { editionOf, Matcher, parseAlbumSearch, scoreAlbum, thumbOf, albumThumb } from '../src/match.ts';
 
 const a = { id: 'al1', title: 'Take Care', artist: 'Drake', trackCount: 19 };
 
@@ -91,5 +91,16 @@ describe('thumbOf', () => {
     expect(thumbOf({ thumbnails: [{ url: 'https://i.ytimg.com/a.jpg', width: 120, height: 90 }, { url: 'https://i.ytimg.com/b.jpg', width: 640, height: 480 }] })).toBe('https://i.ytimg.com/b.jpg');
     expect(thumbOf({ thumbnail: 'https://i.ytimg.com/c.jpg' })).toBe('https://i.ytimg.com/c.jpg');
     expect(thumbOf({})).toBeUndefined();
+  });
+});
+
+describe('albumThumb', () => {
+  it('is the cover the importer would take first', () => {
+    const info = { thumbnails: [{ url: 'https://i.ytimg.com/vi/a/hqdefault.jpg', width: 480, height: 360 }, { url: 'https://lh3.googleusercontent.com/art=w544-h544-l90-rj', width: 544, height: 544 }] };
+    expect(albumThumb(info, [{ id: 'a' }])).toBe('https://lh3.googleusercontent.com/art=w300-h300-l90-rj');
+  });
+  it('falls back to the first track\'s picture, and to nothing', () => {
+    expect(albumThumb({}, [{ id: 'abc123' }])).toMatch(/^https:\/\/i\.ytimg\.com\/vi\/abc123\//);
+    expect(albumThumb({}, [])).toBeUndefined();
   });
 });

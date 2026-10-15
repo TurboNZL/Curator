@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { coverCandidates } from './import.ts';
 
 /**
  * Finds the YouTube Music album of an album that has no link yet, so it can be imported as a release (one at a time, with the usual
@@ -69,6 +70,15 @@ export const thumbOf = (e: any): string | undefined => {
   if (square) return square.replace(/=w\d+-h\d+/, '=w300-h300');
   return listed.sort((a, b) => b.size - a.size)[0]?.url;
 };
+/**
+ * The picture shown for an opened album page is the one the importer would pick first (`coverCandidates`: YouTube Music's own square art, then
+ * the playlist's thumbnails, then the first track's), so the result row and the album after the import show the same image. Google art links are
+ * asked for at 300 px, which is plenty for a result row.
+ */
+export function albumThumb(info: any, entries: any[]): string | undefined {
+  const best = coverCandidates(info, entries)[0];
+  return best ? best.replace(/=w\d+-h\d+/, '=w300-h300') : undefined;
+}
 const ownerOf = (e: any): string | undefined => {
   const h = typeof e?.uploader_id === 'string' && e.uploader_id ? e.uploader_id : typeof e?.channel_id === 'string' ? '' : '';
   const fromUrl = /youtube\.com\/(@[\w.-]+)/.exec(String(e?.uploader_url ?? e?.channel_url ?? ''))?.[1];
@@ -143,7 +153,7 @@ export class Matcher {
       const count = typeof info.playlist_count === 'number' ? info.playlist_count : typeof info.n_entries === 'number' ? info.n_entries : Array.isArray(info.entries) ? info.entries.length : null;
       const id = typeof info.id === 'string' && /^(OLAK5uy_|PL)/.test(info.id) ? info.id : c.url.split(/list=|browse\//).pop()!;
       const first = Array.isArray(info.entries) ? info.entries[0] : undefined;
-      return { url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }), owner: ownerOf(info) ?? c.owner, thumbnail: thumbOf(info) ?? thumbOf(first) ?? c.thumbnail, edition: editionOf(a.title, title) };
+      return { url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }), owner: ownerOf(info) ?? c.owner, thumbnail: albumThumb(info, Array.isArray(info.entries) ? info.entries : []) ?? thumbOf(info) ?? thumbOf(first) ?? c.thumbnail, edition: editionOf(a.title, title) };
     } catch { return c; }
   }
 
