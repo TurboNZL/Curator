@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Soloist, archiveName } from '../src/soloist.ts';
+import { Soloist, archiveName, pactlCommand } from '../src/soloist.ts';
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'turbomusic-soloist-')); });
@@ -163,3 +163,13 @@ describe('Soloist module', () => {
   });
 });
 void mkdirSync;
+
+describe('pactlCommand', () => {
+  it('uses the system pactl unless the tools folder really holds one', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tm-pactl-'));
+    expect(pactlCommand(undefined)).toBe('pactl');
+    expect(pactlCommand(dir)).toBe('pactl'); // the one-folder install points the tools folder at ffmpeg/yt-dlp only
+    writeFileSync(join(dir, 'pactl'), '#!/bin/sh\n');
+    expect(pactlCommand(dir)).toBe(join(dir, 'pactl'));
+  });
+});
