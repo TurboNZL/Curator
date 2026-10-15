@@ -3,7 +3,7 @@ import type { Library } from './library.ts';
 import { api } from './store.ts';
 
 /** Album-search results kept for a week, so the Health suggestions and the finder open instantly and importing needs no new search. */
-const KEY = 'turbomusic.matchCache2';
+const KEY = 'turbomusic.matchCache3';
 const WEEK = 7 * 24 * 3600_000;
 type Cache = Record<string, { at: number; candidates: MatchCandidate[] }>;
 
