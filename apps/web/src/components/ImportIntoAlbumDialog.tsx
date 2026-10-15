@@ -1,3 +1,4 @@
+import { CandidateArt } from './CandidateArt.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { Download, ExternalLink, Loader2, Search } from 'lucide-react';
 import { newTrackData, inheritFromAlbum } from '../lib/defaults.ts';
@@ -163,7 +164,7 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
           {hits && hits.length > 0 && <div className="space-y-1.5" aria-label="Search results">{hits.map((x) => (
             <div key={x.url} className="card flex items-center gap-2 px-3 py-2 text-sm">
               <button className="flex min-w-0 flex-1 items-center gap-3 text-left" disabled={!!busy} onClick={() => void lookUp(x.url)}>
-                {x.thumbnail ? <img src={x.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" /> : <span className="h-12 w-12 shrink-0 rounded-theme bg-raised" aria-hidden />}
+                {x.thumbnail || x.coverHash ? <CandidateArt c={x} className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" /> : <span className="h-12 w-12 shrink-0 rounded-theme bg-raised" aria-hidden />}
                 <span className="min-w-0 flex-1"><span className="block truncate font-medium">{x.title || 'Album'}{x.edition && <span className="chip ml-2 !text-[10px]">{x.edition}</span>}</span>
                   <span className="block truncate text-xs text-muted">{[x.owner, x.channel && x.channel !== x.owner ? x.channel : '', x.count ? `${x.count} tracks` : ''].filter(Boolean).join(' · ')} · {Math.round(Math.min(1, x.score) * 100)}% match</span></span>
                 <span className="btn btn-accent !py-1 text-xs">Import…</span>

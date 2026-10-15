@@ -104,3 +104,24 @@ describe('albumThumb', () => {
     expect(albumThumb({}, [])).toBeUndefined();
   });
 });
+
+describe('Matcher cover (same file as the import)', () => {
+  it('is asked for the importer\'s own candidate list and its hash is returned with the result', async () => {
+    const { Matcher } = await import('../src/match.ts');
+    const seen: string[][] = [];
+    const info = { id: 'OLAK5uy_x', title: 'Album', channel: 'Artist', playlist_count: 2, thumbnails: [{ url: 'https://lh3.googleusercontent.com/abc=w544-h544-l90-rj', width: 544, height: 544 }], entries: [{ id: 'v1' }, { id: 'v2' }] };
+    const m = new Matcher({ ytdlp: process.execPath, ytdlpArgs: ['-e', `console.log(${JSON.stringify(JSON.stringify(info))})`, '--'], cover: async (urls) => { seen.push(urls); return { hash: 'a'.repeat(64) }; } });
+    const r = await (m as any).resolve({ url: 'https://music.youtube.com/playlist?list=OLAK5uy_x', title: '', channel: '', count: null, score: 0 }, { id: '1', title: 'Album', artist: 'Artist' });
+    expect(r.coverHash).toBe('a'.repeat(64));
+    expect(seen[0][0]).toContain('googleusercontent.com');
+    expect(seen[0][0]).toContain('=w1200-h1200');
+  });
+  it('keeps working when the cover cannot be downloaded', async () => {
+    const { Matcher } = await import('../src/match.ts');
+    const info = { id: 'OLAK5uy_x', title: 'Album', channel: 'Artist', playlist_count: 1, entries: [{ id: 'v1' }] };
+    const m = new Matcher({ ytdlp: process.execPath, ytdlpArgs: ['-e', `console.log(${JSON.stringify(JSON.stringify(info))})`, '--'], cover: async () => { throw new Error('no'); } });
+    const r = await (m as any).resolve({ url: 'https://music.youtube.com/playlist?list=OLAK5uy_x', title: '', channel: '', count: null, score: 0 }, { id: '1', title: 'Album', artist: 'Artist' });
+    expect(r.coverHash).toBeUndefined();
+    expect(r.title).toBe('Album');
+  });
+});

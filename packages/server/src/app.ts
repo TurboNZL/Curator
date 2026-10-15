@@ -44,7 +44,7 @@ export function createApp(
     ? new BundleUpdater({ root: config.installRoot, token: config.githubToken, currentVersion: process.env.TURBOMUSIC_VERSION, exit: () => process.exit(1) })
     : new Updater({ script: config.updateScript, restart: config.updateRestart, exit: () => process.exit(1) }),
   spotify = new SpotifyAccount(config.dataDir, { env: process.env }),
-  matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs }),
+  matcher = new Matcher({ ytdlp: config.ytdlp, ytdlpArgs: config.ytdlpArgs, cover: (urls) => importer.fetchFirstCover(urls) }),
   mover = new StorageMover(config.dataDir),
   soloist = new Soloist(config.dataDir, { ffmpegDir: config.ffmpegDir }),
   lyricsFinder = new LyricsFinder(),

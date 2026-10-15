@@ -1,3 +1,4 @@
+import { CandidateArt } from './CandidateArt.tsx';
 import { cleanAlbumTitle, cleanArtistName, genresFor, matchArtist } from '../lib/autofill.ts';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -131,7 +132,7 @@ export function ImportDialog({ onClose, singleFirst = false }: { onClose: () => 
         {hits && !hits.length && !error && <div className="rounded-theme bg-warn/15 p-3 text-sm text-warn">No album found. Try the artist and the album name, or paste a link.</div>}
         {hits && hits.length > 0 && <div className="space-y-1.5" aria-label="Search results">{hits.map((c) => (
           <button key={c.url} type="button" className="flex w-full items-center gap-3 rounded-theme border border-line p-2 text-left hover:border-accent" onClick={() => { setUrl(c.url); void lookUp(c.url); }}>
-            {c.thumbnail ? <img src={c.thumbnail} alt="" className="h-12 w-12 shrink-0 rounded-theme object-cover" /> : <div className="h-12 w-12 shrink-0 rounded-theme bg-raised" />}
+            {c.thumbnail || c.coverHash ? <CandidateArt c={c} className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" /> : <div className="h-12 w-12 shrink-0 rounded-theme bg-raised" />}
             <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{c.title}{c.edition ? ` · ${c.edition}` : ''}</span><span className="block truncate text-xs text-muted">{c.owner ?? c.channel}{c.count ? ` · ${c.count} tracks` : ''}</span></span>
             <span className="text-xs text-muted">{Math.round(c.score * 100)}%</span></button>))}</div>}
         </>
