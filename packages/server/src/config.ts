@@ -91,9 +91,15 @@ export function withCacheDir(args: string[] | undefined, dataDir: string): strin
  * `TURBOMUSIC_YTDLP_COOKIES=/path/cookies.txt` becomes `--cookies <path>` (YouTube asks some servers to prove they are
  * not a bot; a cookies file from a signed-in browser answers that). `TURBOMUSIC_YTDLP_ARGS` adds anything else, split on spaces.
  */
-export function ytdlpArgs(env: NodeJS.ProcessEnv): string[] | undefined {
+export function ytdlpArgs(env: NodeJS.ProcessEnv, opts: { exists?: (path: string) => boolean; warn?: (message: string) => void } = {}): string[] | undefined {
+  const exists = opts.exists ?? existsSync;
+  const cookies = env.TURBOMUSIC_YTDLP_COOKIES ? resolve(env.TURBOMUSIC_YTDLP_COOKIES) : '';
+  // yt-dlp writes cookies back when it exits, so a path whose folder is gone makes it crash with a bare "[PYI-n:ERROR] Failed to execute script"
+  // (FileNotFoundError). A missing file is skipped, loudly, instead: the server keeps working and says what to fix.
+  const usable = cookies && exists(cookies);
+  if (cookies && !usable) (opts.warn ?? console.warn)(`TURBOMUSIC_YTDLP_COOKIES points at ${cookies}, which does not exist, so yt-dlp runs WITHOUT cookies. Fix the path in settings.env and restart.`);
   const args = [
-    ...(env.TURBOMUSIC_YTDLP_COOKIES ? ['--cookies', resolve(env.TURBOMUSIC_YTDLP_COOKIES)] : []),
+    ...(usable ? ['--cookies', cookies] : []),
     ...(env.TURBOMUSIC_YTDLP_ARGS ? env.TURBOMUSIC_YTDLP_ARGS.split(/\s+/).filter(Boolean) : []),
   ];
   return args.length ? args : undefined;

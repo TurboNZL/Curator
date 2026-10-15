@@ -167,12 +167,19 @@ printf "audio" > "$(dirname "$2")/vid.mp3"
   });
   it('puts the configured cookies file on every call', async () => {
     store.push([track('t', 'https://youtu.be/x')]);
-    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(), ytdlpArgs: ytdlpArgs({ TURBOMUSIC_YTDLP_COOKIES: '/srv/cookies.txt', TURBOMUSIC_YTDLP_ARGS: '--js-runtimes node' }) });
+    const a = new Acquirer({ dataDir: join(dir, 'data'), store, ytdlp: fakeYtdlp(), ytdlpArgs: ytdlpArgs({ TURBOMUSIC_YTDLP_COOKIES: '/srv/cookies.txt', TURBOMUSIC_YTDLP_ARGS: '--js-runtimes node' }, { exists: () => true }) });
     a.enqueueMissing(); await a.drained();
     const argv = (await import('node:fs')).readFileSync(join(dir, 'argv.log'), 'utf8');
     expect(argv).toMatch(/^--cookies \/srv\/cookies\.txt --js-runtimes node /);
   });
   it('builds no arguments when nothing is configured', () => { expect(ytdlpArgs({})).toBeUndefined(); });
+  it('skips a cookies file that does not exist, with a warning, instead of letting yt-dlp crash on it', () => {
+    const warnings: string[] = [];
+    const args = ytdlpArgs({ TURBOMUSIC_YTDLP_COOKIES: '/gone/cookies.txt', TURBOMUSIC_YTDLP_ARGS: '--js-runtimes node' }, { exists: () => false, warn: (m) => warnings.push(m) });
+    expect(args).toEqual(['--js-runtimes', 'node']);
+    expect(warnings[0]).toContain('/gone/cookies.txt');
+    expect(ytdlpArgs({ TURBOMUSIC_YTDLP_COOKIES: '/gone/cookies.txt' }, { exists: () => false, warn: () => {} })).toBeUndefined();
+  });
 });
 
 describe('dead links and progress', () => {
