@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { ytdlpFailure } from './ytdlpError.ts';
 import { coverCandidates } from './import.ts';
 
 /**
@@ -169,7 +170,7 @@ export class Matcher {
       child.stdout.on('data', (d) => { out += d; if (out.length > 5_000_000) child.kill(); });
       child.stderr.on('data', (d) => { err = (err + d).slice(-1500); });
       child.on('error', (e: NodeJS.ErrnoException) => { clearTimeout(timer); reject(new Error(e.code === 'ENOENT' ? 'yt-dlp is not installed on the server' : e.message)); });
-      child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve(out) : reject(new Error(`yt-dlp failed: ${err.trim().split('\n').pop() ?? code}`)); });
+      child.on('close', (code) => { clearTimeout(timer); code === 0 ? resolve(out) : reject(new Error(`yt-dlp failed: ${ytdlpFailure(err) || code}`)); });
     });
   }
 }

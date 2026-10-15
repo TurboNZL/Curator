@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { ytdlpFailure } from './ytdlpError.ts';
 import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { newId, type TrackData } from '@turbomusic/core';
@@ -186,7 +187,7 @@ export class Acquirer {
       child.stderr.on('data', (d) => { err = (err + d).slice(-2000); });
       child.on('error', (e: NodeJS.ErrnoException) =>
         reject(new Error(e.code === 'ENOENT' ? `yt-dlp not found (${this.o.ytdlp ?? 'yt-dlp'}). Install it or set TURBOMUSIC_YTDLP.` : e.message)));
-      child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`yt-dlp exited ${code}: ${err.trim().split('\n').pop()}`))));
+      child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`yt-dlp exited ${code}: ${ytdlpFailure(err)}`))));
     });
   }
 }
