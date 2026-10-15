@@ -12,6 +12,7 @@ export interface AlbumCandidate {
   url: string; title: string; channel: string; /** tracks in the playlist when YouTube said */ count: number | null; score: number;
   /** the uploader's handle (`@Drake`) when YouTube gave one */ owner?: string;
   /** a cover picture of the playlist */ thumbnail?: string;
+  /** the same picture as a file already on this server (what the importer would download), so the client shows that file, not a hotlink */ coverHash?: string;
   /** what makes this edition differ from the album's own title ("deluxe edition"), '' for the plain album */ edition?: string;
 }
 export interface AlbumMatchResult { id: string; candidates: AlbumCandidate[]; error?: string }
@@ -115,8 +116,8 @@ export function parseAlbumSearch(info: unknown, a: MatchAlbum): AlbumCandidate[]
 }
 
 export class Matcher {
-  private o: { ytdlp?: string; ytdlpArgs?: string[] };
-  constructor(o: { ytdlp?: string; ytdlpArgs?: string[] } = {}) { this.o = o; }
+  private o: { ytdlp?: string; ytdlpArgs?: string[]; /** downloads the first working cover link into the file store (the importer's own routine) */ cover?: (urls: string[]) => Promise<{ hash: string }> };
+  constructor(o: { ytdlp?: string; ytdlpArgs?: string[]; cover?: (urls: string[]) => Promise<{ hash: string }> } = {}) { this.o = o; }
 
   /**
    * Candidate albums for one album, best first. YouTube Music's album search gives links; each of the first few is opened (a flat read,
@@ -153,7 +154,10 @@ export class Matcher {
       const count = typeof info.playlist_count === 'number' ? info.playlist_count : typeof info.n_entries === 'number' ? info.n_entries : Array.isArray(info.entries) ? info.entries.length : null;
       const id = typeof info.id === 'string' && /^(OLAK5uy_|PL)/.test(info.id) ? info.id : c.url.split(/list=|browse\//).pop()!;
       const first = Array.isArray(info.entries) ? info.entries[0] : undefined;
-      return { url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }), owner: ownerOf(info) ?? c.owner, thumbnail: albumThumb(info, Array.isArray(info.entries) ? info.entries : []) ?? thumbOf(info) ?? thumbOf(first) ?? c.thumbnail, edition: editionOf(a.title, title) };
+      // the importer has the SERVER download the first cover link that works and shows that stored file; do the same here, so the row and the imported album are the same file (a browser hotlinking Google's host can be served something else)
+      let coverHash: string | undefined;
+      if (this.o.cover) { try { coverHash = (await this.o.cover(coverCandidates(info, Array.isArray(info.entries) ? info.entries : []))).hash; } catch { /* keep the link */ } }
+      return { coverHash, url: /^(OLAK5uy_|PL)/.test(id) ? urlOf(id) : c.url, title, channel, count, score: scoreAlbum(a, { id, title, channel, count }), owner: ownerOf(info) ?? c.owner, thumbnail: albumThumb(info, Array.isArray(info.entries) ? info.entries : []) ?? thumbOf(info) ?? thumbOf(first) ?? c.thumbnail, edition: editionOf(a.title, title) };
     } catch { return c; }
   }
 

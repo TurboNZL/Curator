@@ -1,3 +1,4 @@
+import { CandidateArt } from './CandidateArt.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Loader2, Search, SkipForward } from 'lucide-react';
 import { Cover } from './Cover.tsx';
@@ -81,7 +82,7 @@ export function MatchLinksDialog({ albumId = '', onClose }: { albumId?: string; 
         {found && found.candidates.length > 0 && <div role="radiogroup" aria-label="Results" className="space-y-1.5">{found.candidates.map((x, k) => (
           <div key={x.url} data-selected={pick === k || undefined} className="card bt-sel flex items-center gap-2 px-3 py-2 text-sm">
             <button role="radio" aria-checked={pick === k} className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setPick(k)}>
-              {x.thumbnail ? <img src={x.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" /> : <span className="h-12 w-12 shrink-0 rounded-theme bg-raised" aria-hidden />}
+              {x.thumbnail || x.coverHash ? <CandidateArt c={x} className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" /> : <span className="h-12 w-12 shrink-0 rounded-theme bg-raised" aria-hidden />}
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{x.title || 'Album'}{x.edition && <span className="chip ml-2 !text-[10px]">{x.edition}</span>}</span>
                 <span className="block truncate text-xs text-muted">{[x.owner, x.channel && x.channel !== x.owner ? x.channel : '', x.count ? `${x.count} tracks` : ''].filter(Boolean).join(' · ')} <span className={badge(x.score)}>{Math.round(Math.min(1, x.score) * 100)}% match</span></span>

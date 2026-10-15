@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link2, Loader2, RefreshCw } from 'lucide-react';
+import { CandidateArt } from './CandidateArt.tsx';
 import { Cover } from './Cover.tsx';
 import { useLibraryLive } from '../lib/derive.ts';
 import { useEditor } from '../lib/editor.ts';
@@ -41,7 +42,7 @@ export function AlbumSuggestions() {
               <Cover hash={a.cover} seed={a.title} className="h-12 w-12 shrink-0" />
               <div className="min-w-0 flex-1 basis-40"><div className="truncate font-medium">{a.title}</div><div className="truncate text-xs text-muted">{a.artistName} · {a.trackIds.length} track{a.trackIds.length === 1 ? '' : 's'}</div></div>
               {c ? <>
-                {c.thumbnail && <img src={c.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" />}
+                {(c.thumbnail || c.coverHash) && <CandidateArt c={c} className="h-12 w-12 shrink-0 rounded-theme bg-raised object-cover" />}
                 <div className="min-w-0 flex-1 basis-44"><div className="truncate">{c.title}{c.edition && <span className="chip ml-2 !text-[10px]">{c.edition}</span>}</div>
                   <div className="truncate text-xs text-muted">{[c.owner ?? c.channel, c.count ? `${c.count} tracks` : ''].filter(Boolean).join(' · ')} · {Math.round(Math.min(1, c.score) * 100)}% match</div></div>
                 <button className="btn btn-accent !py-1 text-xs" onClick={() => edit({ kind: 'import-into-album', id: a.id, url: c.url })}><Link2 size={13} />Import</button>
