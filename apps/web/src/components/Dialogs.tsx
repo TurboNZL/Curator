@@ -1,6 +1,7 @@
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { leaveRemoved } from '../lib/leave.ts';
 import { Check, FileAudio, Plus } from 'lucide-react';
 import type { ArtistData, Credit, PlaylistData } from '@turbomusic/core';
 import { useLibrary } from '../lib/derive.ts';
@@ -34,6 +35,7 @@ export function NewArtistDialog({ onClose }: { onClose: () => void }) {
 
 /** Create or edit a playlist: name, description, cover. */
 export function PlaylistDialog({ playlistId, onClose }: { playlistId?: string; onClose: () => void }) {
+  const nav = useNavigate();
   const lib = useLibrary();
   const { put, patch, remove } = useStore();
   const existing = playlistId ? lib.playlists.find((p) => p.id === playlistId) : undefined;
@@ -50,7 +52,7 @@ export function PlaylistDialog({ playlistId, onClose }: { playlistId?: string; o
   };
   return (
     <Modal title={existing ? 'Edit playlist' : 'New playlist'} onClose={onClose} footer={<>
-      {existing && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${existing.name}”? The tracks stay in your library.`)) { remove('playlists', existing.id); onClose(); } }}>Delete</button>}
+      {existing && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${existing.name}”? The tracks stay in your library.`)) { remove('playlists', existing.id); onClose(); leaveRemoved(nav, 'playlist', existing.id, { fallback: '/playlists' }); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!name.trim()} onClick={save}>{existing ? 'Save' : 'Create'}</button></div></>}>
       <ImagePicker hash={cover} onChange={setCover} seed={name || 'playlist'} />
       <p className="-mt-2 text-xs text-muted">Leave the picture empty and the playlist shows a mosaic of the covers of its first four {kind === 'albums' ? 'albums' : 'tracks'}.</p>

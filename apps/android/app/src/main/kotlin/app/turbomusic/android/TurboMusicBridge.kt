@@ -30,7 +30,8 @@ class TurboMusicBridge(private val context: Context, private val view: View) {
     @JavascriptInterface fun termuxStatus(): String = Termux.status(context)
     /** the one line to paste into Termux, once */
     @JavascriptInterface fun termuxOneTimeLine(): String = Termux.oneTimeLine(context)
-    @JavascriptInterface fun termuxCopyLine() { Termux.copy(context, Termux.oneTimeLine(context)) }
+    // bridge calls arrive on a background thread; the clipboard is set on the main one, and the line ends in a newline so pasting it runs it
+    @JavascriptInterface fun termuxCopyLine() { view.post { Termux.copy(context, Termux.oneTimeLine(context) + "\n") } }
     @JavascriptInterface fun termuxOpenTermux(): Boolean = Termux.openTermux(context)
     @JavascriptInterface fun termuxOpenInstallPage() = Termux.openInstallPage(context)
     @JavascriptInterface fun termuxRequestPermission() { (context as? android.app.Activity)?.let { a -> view.post { Termux.requestPermission(a) } } }

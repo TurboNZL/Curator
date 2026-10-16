@@ -59,6 +59,15 @@ interface PlayerState {
   applyEq(): void;
 }
 
+/**
+ * Connect (lib/connect.ts) fills these in. While this device is only the remote of another one, starting or queueing a track has to
+ * happen there, not here; a hook returns true when it took the action over.
+ */
+export const remoteHooks: {
+  play?: (trackId: string, list: string[], source: Source) => boolean;
+  enqueue?: (trackId: string, where: 'next' | 'last') => boolean;
+} = {};
+
 let audio: HTMLAudioElement | null = null;
 /** crossfade (see lib/crossfadeMath.ts): the second <audio> element, the next track loaded into it, and the fade in progress */
 let spare: HTMLAudioElement | null = null;
@@ -479,6 +488,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     play(trackId, list, source = { type: 'track', id: null }) {
       const track = lib().trackById.get(trackId);
       if (!track || (!track.file && !spotifyCan(track))) { set({ error: 'This track has no audio file yet', source }); return; }
+      if (remoteHooks.play?.(trackId, list, source)) return;
       const ordered = list;
       const prev = get().queue.currentId;
       if (prev) logPlay(true);
@@ -517,6 +527,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
     setVolume(v) { setBeamVolume(v); if (!fade) el().volume = v; /* while fading, the fade sets both volumes from this one */ if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('turbomusic.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
     enqueue(trackId, where = 'last') {
+      if (remoteHooks.enqueue?.(trackId, where)) return;
       const q = get().queue;
       set({ queue: { ...q, user: where === 'next' ? [trackId, ...q.user] : [...q.user, trackId] } });
     },

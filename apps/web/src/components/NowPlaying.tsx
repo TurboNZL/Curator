@@ -90,25 +90,25 @@ export function NowPlaying() {
   const hidden = idle;
 
   return (
-    <div className={cn('bt-now fixed inset-0 z-[90] flex flex-col overflow-hidden bg-black text-white', hidden && 'cursor-none')} role="dialog" aria-modal="true" aria-label="Now playing" onMouseMove={wake} onTouchStart={wake} onClick={() => saver && setSaver(false)}>
+    <div className={cn('bt-now fixed inset-x-0 top-0 z-[90] flex h-[100dvh] flex-col overflow-hidden bg-black text-white', hidden && 'cursor-none')} role="dialog" aria-modal="true" aria-label="Now playing" onMouseMove={wake} onTouchStart={wake} onClick={() => saver && setSaver(false)}>
       {cover && <div className="absolute inset-0 scale-125 bg-cover bg-center opacity-60 blur-3xl" style={{ backgroundImage: `url(${cover})` }} aria-hidden />}
       <div className="absolute inset-0 bg-black/40" aria-hidden />
-      <header className={cn('relative z-10 flex items-center gap-2 p-4 transition-opacity duration-500', hidden && 'pointer-events-none opacity-0')}>
+      <header className={cn('relative z-10 flex items-center gap-2 p-3 transition-opacity duration-500', hidden && 'pointer-events-none opacity-0')}>
         <button className="btn !border-0 !bg-white/10 !text-white" onClick={() => setNow(false)} aria-label="Close"><X size={18} /></button>
         <div className="ml-auto flex gap-2">
-          <button className={cn('btn !border-0 !text-white', showLyrics && !saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={showLyrics} title="Lyrics (L)" onClick={pickLyrics}><Mic2 size={16} />Lyrics</button>
-          <button className={cn('btn !border-0 !text-white', saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={saver} title="Screensaver (S)" onClick={() => setSaver((x) => !x)}><Moon size={16} />Screensaver</button>
+          <button className={cn('btn !border-0 !text-white', showLyrics && !saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={showLyrics} title="Lyrics (L)" onClick={pickLyrics}><Mic2 size={16} /><span className="max-sm:hidden">Lyrics</span></button>
+          <button className={cn('btn !border-0 !text-white', saver ? '!bg-white/25' : '!bg-white/10')} aria-pressed={saver} title="Screensaver (S)" onClick={() => setSaver((x) => !x)}><Moon size={16} /><span className="max-sm:hidden">Screensaver</span></button>
           <button className="btn !border-0 !bg-white/10 !text-white" title="Full screen" aria-label="Full screen" onClick={toggleFull}>{full ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
         </div>
       </header>
-      <main className={cn('relative z-10 flex min-h-0 flex-1 items-center justify-center gap-8 px-6 pb-4 max-md:flex-col md:gap-14 md:px-12', saver && 'justify-center')}>
-        <div className={cn('shrink-0', saver ? 'bt-drift w-[min(78vmin,44rem)]' : showLyrics ? 'w-[min(34vh,22rem)] md:w-[min(46vh,28rem)]' : 'w-[min(60vh,34rem)]')}>
+      <main className={cn('relative z-10 flex min-h-0 flex-1 items-center justify-center gap-8 px-6 pb-4 max-md:flex-col max-md:gap-3 max-md:px-4 max-md:pb-2 md:gap-14 md:px-12', saver && 'justify-center')}>
+        <div className={cn('shrink-0', saver ? 'bt-drift w-[min(78vmin,44rem)]' : showLyrics ? 'w-[min(30vh,62vw,22rem)] md:w-[min(46vh,28rem)]' : 'w-[min(50vh,calc(100vw-2rem),34rem)] md:w-[min(60vh,34rem)]')}>
           {cover ? <img src={cover} alt="" className="aspect-square w-full rounded-2xl object-cover shadow-2xl" draggable={false} /> : <div className="aspect-square w-full rounded-2xl bg-white/10" />}
-          {!saver && <div className="mt-4 min-w-0 text-center md:text-left"><div className="truncate text-2xl font-bold md:text-3xl">{track.title}</div>
+          {!saver && <div className="mt-2 min-w-0 text-center md:mt-4 md:text-left"><div className="truncate text-2xl font-bold md:text-3xl">{track.title}</div>
             <div className="truncate text-base text-white/70"><ArtistLinks leads={track.leads} featured={track.featured} className="hover:underline" />{track.albumTitle && <> · <Link to={track.albumId ? `/albums/${track.albumId}` : '#'} onClick={() => setNow(false)} className="hover:underline">{track.albumTitle}</Link></>}</div></div>}
         </div>
         {showLyrics && !saver && (
-          <div ref={listRef} className="relative h-full min-h-0 w-full max-w-2xl flex-1 overflow-y-auto scroll-smooth py-[30vh] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_82%,transparent)]" aria-label="Lyrics">
+          <div ref={listRef} className="relative min-h-0 w-full max-w-2xl flex-1 overflow-y-auto scroll-smooth py-[20vh] md:h-full md:py-[30vh] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_82%,transparent)]" aria-label="Lyrics">
             {lyrics.state === 'loading' && <p className="text-center text-white/60">Looking for lyrics…</p>}
             {(lyrics.state === 'none' || lyrics.state === 'error') && <p className="text-center text-white/60">{lyrics.message ?? 'No lyrics found for this track.'}</p>}
             {lyrics.state === 'ready' && lyrics.instrumental && !lines && !plain && <p className="text-center text-white/60">Instrumental.</p>}
@@ -125,7 +125,7 @@ export function NowPlaying() {
           </div>)}
       </main>
       {saver && <div className="pointer-events-none absolute bottom-6 left-6 z-10 max-w-[60vw] opacity-80"><div className="truncate text-lg font-semibold">{track.title}</div><div className="truncate text-sm text-white/70">{track.artistName}</div></div>}
-      <footer className={cn('relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-2 p-4 transition-opacity duration-500', (hidden || saver) && 'pointer-events-none opacity-0')}>
+      <footer className={cn('relative z-10 mx-auto flex w-full max-w-3xl shrink-0 flex-col gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] transition-opacity duration-500', (hidden || saver) && 'pointer-events-none opacity-0')}>
         <div className="flex items-center gap-2 text-xs tabular-nums text-white/70">
           <span className="w-10 text-right">{fmtTime(v.time)}</span>
           <input type="range" aria-label="Seek" className="bt-range bt-hit flex-1" style={{ '--p': `${v.duration > 0 ? Math.min(100, (v.time / v.duration) * 100) : 0}%` } as React.CSSProperties} min={0} max={v.duration || 1} step={0.1} value={v.time} onChange={(e) => v.seek(Number(e.target.value))} />

@@ -12,6 +12,8 @@ import { api, useStore } from '../lib/store.ts';
 import { getLibrary } from '../lib/derive.ts';
 import { convertToSingleNow } from './entityMenus.tsx';
 import { useNavigate } from 'react-router-dom';
+import { leaveRemoved } from '../lib/leave.ts';
+import { statsPath } from '../lib/entityStats.ts';
 import { Field, Modal } from './forms.tsx';
 import { Select } from './Select.tsx';
 import { foldIntoRelease, siblingDate } from '../lib/releaseOps.ts';
@@ -135,7 +137,7 @@ export function ImportIntoAlbumDialog({ albumId, initialUrl, onClose }: { albumI
         single = a ? convertToSingleNow(fresh, a) : null;
       }
       if (download && needDownload.length) { await syncNow(); await api().acquire(needDownload).catch(() => undefined); }
-      if (single && !coverNote) { onClose(); nav('/singles'); return; }
+      if (single && !coverNote) { onClose(); leaveRemoved(nav, 'album', album.id, { to: statsPath('track', single), fallback: '/singles' }); return; }
       if (coverNote) { setDone(`Imported, but the cover could not be fetched: ${coverNote}`); setBusy(null); return; }
       onClose();
     } catch (e) { setError((e as Error).message); setBusy(null); }

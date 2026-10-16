@@ -18,6 +18,8 @@ export interface DeviceInfo { id: string; name: string; kind: DeviceKind; state:
 export type Command =
   | { type: 'play' } | { type: 'pause' } | { type: 'toggle' } | { type: 'next' } | { type: 'prev' }
   | { type: 'seek'; time: number } | { type: 'volume'; value: number }
+  /** put a track in the receiving device's queue: right after the current one, or at the end of what you queued */
+  | { type: 'enqueue'; trackId: string; where: 'next' | 'last' }
   /** start playing this snapshot on the receiving device */
   | { type: 'transfer'; snapshot: PlaybackSnapshot }
   /** ask the receiving device to publish its state right now */
@@ -54,6 +56,7 @@ export function parseCommand(raw: unknown): Command | null {
     case 'play': case 'pause': case 'toggle': case 'next': case 'prev': case 'report': return { type: o.type };
     case 'seek': return Number.isFinite(o.time) ? { type: 'seek', time: Math.max(0, o.time) } : null;
     case 'volume': return Number.isFinite(o.value) ? { type: 'volume', value: Math.min(1, Math.max(0, o.value)) } : null;
+    case 'enqueue': return typeof o.trackId === 'string' && o.trackId ? { type: 'enqueue', trackId: o.trackId.slice(0, 80), where: o.where === 'next' ? 'next' : 'last' } : null;
     case 'transfer': { const s = parseSnapshot(o.snapshot); return s ? { type: 'transfer', snapshot: s } : null; }
     default: return null;
   }

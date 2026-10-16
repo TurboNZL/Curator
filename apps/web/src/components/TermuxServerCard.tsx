@@ -46,6 +46,8 @@ export function TermuxServerCard() {
             <button className="btn" disabled={!status.termuxInstalled} onClick={() => { termux.copyLine(); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy the line'}</button>
             <button className="btn" disabled={!status.termuxInstalled} onClick={() => termux.openTermux()}>Open Termux</button>
           </div>
+          <p className="text-xs text-muted">Nothing pasted? Press and hold the line below to select it, copy it yourself, and paste it in Termux. It ends with “Done: TurboMusic can now run the server” when it worked.</p>
+          <textarea readOnly rows={3} className="input w-full font-mono text-xs" value={termux.oneTimeLine()} onFocus={(e) => e.currentTarget.select()} aria-label="The line to paste in Termux" />
         </Step>
         <Step n={3} title="Let this app run commands in Termux" done={status.granted}>
           <button className="btn" disabled={!status.termuxInstalled || status.granted} onClick={() => { termux.requestPermission(); window.setTimeout(refresh, 1200); }}>{status.granted ? 'Allowed' : 'Allow'}</button>

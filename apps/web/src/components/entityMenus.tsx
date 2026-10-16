@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { leaveRemoved } from '../lib/leave.ts';
 import { playlistTrackIds } from '../lib/playlists.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { statsPath } from '../lib/entityStats.ts';
@@ -54,8 +55,9 @@ export function useConvertToSingle() {
     if (!plan) return false;
     const t = lib.trackById.get(plan.trackId)!;
     if (!confirm(`Turn “${album.title}” into a single?\n\n“${t.title}” keeps its cover, credits and genres and leaves the album. The album and its ${plan.removeReleaseIds.length} release${plan.removeReleaseIds.length === 1 ? '' : 's'} are deleted (other releases' covers are lost).`)) return true;
-    convertToSingleNow(lib, album);
-    nav('/singles');
+    const single = convertToSingleNow(lib, album);
+    // the album's page is gone: the single's page replaces it (nothing happens when this was done from a list)
+    leaveRemoved(nav, 'album', album.id, { to: single ? statsPath('track', single) : null, fallback: '/singles' });
     return true;
   };
 }

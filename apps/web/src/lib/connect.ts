@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
-import type { Command, DeviceInfo, DeviceKind, PlaybackSnapshot, ServerEvent } from '@turbomusic/core';
-import { usePlayer } from './player.ts';
+import { pushHistory, startTrack, type Command, type DeviceInfo, type DeviceKind, type PlaybackSnapshot, type ServerEvent, type SourceType } from '@turbomusic/core';
+import { remoteHooks, usePlayer } from './player.ts';
 import { desktop } from './settings.ts';
 import { guessDeviceName as guess, positionNow } from './connectPure.ts';
 export { positionNow };
@@ -34,6 +34,19 @@ export const myName = () => useStore.getState().settings.deviceName.trim() || gu
 export const myId = () => useStore.getState().settings.deviceId;
 
 const remoteDevice = () => { const { remoteId, devices } = useConnect.getState(); return remoteId ? devices.find((d) => d.id === remoteId) : undefined; };
+
+/**
+ * Show the effect of a command at once, before the device's own report comes back (about a quarter of a second to a second later);
+ * without this the seek bar and the play button snap back to the old state and jump forward again.
+ */
+function predict(to: string, change: (s: PlaybackSnapshot, now: number) => PlaybackSnapshot) {
+  const { devices, receivedAt } = useConnect.getState();
+  const d = devices.find((x) => x.id === to);
+  if (!d?.state) return;
+  const now = Date.now();
+  const state = change({ ...d.state, position: positionNow(d, receivedAt, now) }, now);
+  useConnect.setState({ devices: devices.map((x) => (x.id === to ? { ...x, state } : x)), receivedAt: { ...receivedAt, [to]: now } });
+}
 
 /** Send to a device; if it has gone, drop out of remote mode instead of pretending. */
 async function send(to: string, command: Command) {
@@ -122,6 +135,36 @@ export function useNotLocal(): boolean {
   return !!remoteId || chosen || engine === 'spotify';
 }
 
+/** Play or pause whatever the player bar shows: this device's player, or the device being controlled. The space bar and the media keys use it. */
+export function togglePlayback() {
+  const r = remoteDevice();
+  if (!r) { usePlayer.getState().toggle(); return; }
+  predict(r.id, (s) => ({ ...s, playing: !s.playing }));
+  void send(r.id, { type: 'toggle' });
+}
+
+// While this device only controls another one, playing or queueing a track happens on that device.
+remoteHooks.play = (trackId, list, source) => {
+  const r = remoteDevice();
+  if (!r) return false;
+  const before = r.state;
+  const queue = startTrack(before?.queue ?? { user: [], active: [], currentId: null }, trackId, list, getLibrary().rules, source.type as SourceType);
+  const snapshot: PlaybackSnapshot = {
+    trackId: queue.currentId, queue, source, history: pushHistory(before?.history ?? [], before?.trackId ?? null),
+    position: 0, duration: 0, playing: true, volume: before?.volume ?? usePlayer.getState().volume,
+  };
+  predict(r.id, (s) => ({ ...snapshot, duration: 0, volume: s.volume }));
+  void send(r.id, { type: 'transfer', snapshot });
+  return true;
+};
+remoteHooks.enqueue = (trackId, where) => {
+  const r = remoteDevice();
+  if (!r) return false;
+  predict(r.id, (s) => ({ ...s, queue: { ...s.queue, user: where === 'next' ? [trackId, ...s.queue.user] : [...s.queue.user, trackId] } }));
+  void send(r.id, { type: 'enqueue', trackId, where });
+  return true;
+};
+
 /** "This device" while controlling another: bring its playback here. */
 async function pullFromRemoteOrNothing() { const r = remoteDevice(); if (r) await pullFrom(r.id); }
 
@@ -139,8 +182,9 @@ export function usePlaybackView() {
   const cmd = (c: Command) => () => void send(remote.id, c);
   return {
     remote, loading: false, trackId: s?.trackId ?? null, playing, time: positionNow(remote, receivedAt), duration: s?.duration ?? 0, volume: s?.volume ?? 0.8,
-    toggle: cmd({ type: 'toggle' }), next: cmd({ type: 'next' }), prev: cmd({ type: 'prev' }),
-    seek: (t: number) => void send(remote.id, { type: 'seek', time: t }), setVolume: (v: number) => void send(remote.id, { type: 'volume', value: v }),
+    toggle: togglePlayback, next: cmd({ type: 'next' }), prev: cmd({ type: 'prev' }),
+    seek: (t: number) => { predict(remote.id, (x) => ({ ...x, position: t })); void send(remote.id, { type: 'seek', time: t }); },
+    setVolume: (v: number) => { predict(remote.id, (x) => ({ ...x, volume: v })); void send(remote.id, { type: 'volume', value: v }); },
   };
 }
 
@@ -154,6 +198,7 @@ function onCommand(c: Command) {
     case 'prev': p.prev(); break;
     case 'seek': p.seek(c.time); break;
     case 'volume': p.setVolume(c.value); break;
+    case 'enqueue': p.enqueue(c.trackId, c.where); break;
     case 'transfer': useConnect.setState({ remoteId: null }); p.restore(c.snapshot, { play: true }); break;
     case 'report': break;
   }
