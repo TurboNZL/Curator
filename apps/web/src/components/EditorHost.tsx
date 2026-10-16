@@ -1,4 +1,4 @@
-import { planMergeReleases, siblingDate } from '../lib/releaseOps.ts';
+import { planMergeReleases, releaseDateQuery, siblingDate } from '../lib/releaseOps.ts';
 import { DateLookup } from './DateLookup.tsx';
 import { FindDatesDialog } from './FindDatesDialog.tsx';
 import { MergeTracksDialog } from './MergeTracksDialog.tsx';
@@ -28,6 +28,7 @@ import { removeCoverFromAlbum } from '../lib/coverOps.ts';
 import { saveRules } from '../lib/profile.ts';
 import { eraPatches } from '../lib/eraOps.ts';
 import { AudioPicker, CreditsEditor, FeaturedEditor, EntityPicker, EraPicker, Field, ImagePicker, Modal, TagInput, TrackPicker } from './forms.tsx';
+import { CrossfadePick } from './CrossfadeCard.tsx';
 import { AddToPlaylistDialog, AddAlbumToPlaylistDialog, NewArtistDialog, PlaylistDialog, UploadDialog } from './Dialogs.tsx';
 import { AddToAlbumDialog, ReleaseChoicePicker } from './AddToAlbum.tsx';
 
@@ -71,6 +72,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const [after, setAfter] = useState<string | null>(rule?.trackBId ?? null);
   const [first, setFirst] = useState(rule?.playFirstOnShuffle ?? true);
   const [albumOnly, setAlbumOnly] = useState(rule?.applyToAlbumSource ?? false);
+  const [fadeSec, setFadeSec] = useState<number | null>(rule?.crossfadeSec ?? null);
   const [albumSel, setAlbumSel] = useState(track?.albumId ?? '');
   const [eraIds, setEraIds] = useState<string[]>(() => (track?.albumId ? [] : track?.eraIds ?? []));
   const [choice, setChoice] = useState<ReleaseChoice>({ releaseIds: [], newRelease: false });
@@ -111,8 +113,8 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
     }
     // playback rule lives on the profile: replace this track's rule
     const others = lib.rules.filter((r) => r.trackAId !== id);
-    const rules: PlaybackRule[] = after ? [...others, { trackAId: id, trackBId: after, playFirstOnShuffle: first, applyToAlbumSource: albumOnly }] : others;
-    if (rules.length !== lib.rules.length || after !== (rule?.trackBId ?? null) || first !== (rule?.playFirstOnShuffle ?? true) || albumOnly !== (rule?.applyToAlbumSource ?? false)) {
+    const rules: PlaybackRule[] = after ? [...others, { trackAId: id, trackBId: after, playFirstOnShuffle: first, applyToAlbumSource: albumOnly, crossfadeSec: fadeSec }] : others;
+    if (rules.length !== lib.rules.length || after !== (rule?.trackBId ?? null) || first !== (rule?.playFirstOnShuffle ?? true) || albumOnly !== (rule?.applyToAlbumSource ?? false) || fadeSec !== (rule?.crossfadeSec ?? null)) {
       saveRules(lib, rules);
     }
     onClose();
@@ -158,7 +160,8 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
         <div className="text-sm font-medium">Playback rule: play another track right after this one</div>
         <TrackPicker value={after} onChange={setAfter} exclude={id} />
         {after && <><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={first} onChange={(e) => setFirst(e.target.checked)} />Keep them together when shuffling</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={albumOnly} onChange={(e) => setAlbumOnly(e.target.checked)} />Only when playing from an album</label></>}
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={albumOnly} onChange={(e) => setAlbumOnly(e.target.checked)} />Only when playing from an album</label>
+          <div className="flex items-center gap-2 text-sm">Crossfade into it <CrossfadePick value={fadeSec} onChange={setFadeSec} /></div></>}
       </div>
     </Modal>
   );
@@ -436,6 +439,7 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
   const [r, setR] = useState<ReleaseData | null>(() => existing ? { ...existing } : album ? { albumId: album.id, title: '', cover: null, releaseDate: siblingDate(lib.releases.filter((x) => x.albumId === album.id), album.defaultReleaseId), trackIds: [...album.trackIds] } : null);
   if (!r || !album) return null;
   const live = r.trackIds.filter((id) => lib.trackById.has(id));
+  const lookup = releaseDateQuery(lib, { albumId: album.id, trackIds: live });
   const save = () => {
     if (added.length) { const raw = useStore.getState().rows.albums.get(album.id)?.data as AlbumData | undefined; patch('albums', album.id, { covers: [...new Set([...(raw?.covers ?? []), ...added])] }); }
     const name = r.title.trim();
@@ -459,7 +463,8 @@ function ReleaseDialog({ releaseId, albumId, onClose }: { releaseId?: string; al
         <Select value={r.title} onChange={(v) => setR({ ...r, title: v })} searchable placeholder={`Same as the album (${album.title})`}
           options={[{ value: '', label: `Same as the album (${album.title})` }, ...[...lib.releaseNames].sort((a, b) => a.name.localeCompare(b.name)).map((n) => ({ value: n.name, label: n.name }))]}
           creatable={{ label: (n) => `Create name: “${n}”`, create: (n) => n }} /></Field>
-      <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} /></Field>
+      <Field label="Release date"><input type="date" className="input" value={r.releaseDate ?? ''} onChange={(e) => setR({ ...r, releaseDate: e.target.value || null })} />
+        <DateLookup title={lookup.album} artist={lookup.artist} onFound={(d) => setR({ ...r, releaseDate: d })} /></Field>
       <div className="space-y-1"><div className="text-sm text-muted">Tracklist ({live.length})</div>
         {live.map((id, i) => (
           <div key={id} className="flex items-center gap-2 rounded-theme bg-raised px-3 py-1.5 text-sm"><span className="w-5 text-right text-xs text-muted">{i + 1}</span><span className="min-w-0 flex-1 truncate">{lib.trackById.get(id)!.title}</span>

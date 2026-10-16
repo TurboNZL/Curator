@@ -2,6 +2,7 @@ import { getLibrary } from '../lib/derive.ts';
 import { speedTest, type SpeedLine } from '../lib/speedTest.ts';
 import { haptic } from '../lib/haptics.ts';
 import { EqualizerCard } from '../components/EqualizerCard.tsx';
+import { CrossfadeCard } from '../components/CrossfadeCard.tsx';
 import { guessDeviceName } from '../lib/connect.ts';
 import { desktop } from '../lib/settings.ts';
 import { useEffect, useState } from 'react';
@@ -153,6 +154,8 @@ export function SettingsPage() {
 
       {tab === 'playback' && <>
       <Section title="Sound (equalizer)"><EqualizerCard /></Section>
+
+      <Section title="Crossfade"><CrossfadeCard /></Section>
 
       <Section title="Playback rules"><PlaybackRules /></Section>
 

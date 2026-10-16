@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newId, applyVote, replayVotes, balancedRatings, startTrack, advance, shuffleWithRules, wins } from '../src';
+import { newId, applyVote, replayVotes, balancedRatings, startTrack, advance, shuffleWithRules, wins, crossfadeFor } from '../src';
 
 describe('ids', () => {
   it('are unique and time-sortable', () => {
@@ -44,6 +44,24 @@ describe('elo', () => {
     expect(out.get('x')).toBe(10);
     expect(out.get('y')).toBe(4); // scaled 0, floored to 4
     expect(out.get('z')).toBeCloseTo(5.0, 1); // untouched track sits mid-range
+  });
+});
+
+describe('crossfade rules', () => {
+  const base = { trackAId: 'a', trackBId: 'b', playFirstOnShuffle: true, applyToAlbumSource: false };
+  it('uses the device setting unless the rule for that exact pair sets its own', () => {
+    expect(crossfadeFor([base], 'a', 'b', 4)).toBe(4);
+    expect(crossfadeFor([{ ...base, crossfadeSec: 8 }], 'a', 'b', 4)).toBe(8);
+    expect(crossfadeFor([{ ...base, crossfadeSec: 0 }], 'a', 'b', 4)).toBe(0); // 0 = cut, even with a device crossfade
+    expect(crossfadeFor([{ ...base, crossfadeSec: 8 }], 'a', 'c', 4)).toBe(4); // a different next track: not this rule's pair
+    expect(crossfadeFor([{ ...base, crossfadeSec: null }], 'a', 'b', 4)).toBe(4);
+  });
+  it('honours album-only rules and clamps nonsense', () => {
+    expect(crossfadeFor([{ ...base, applyToAlbumSource: true, crossfadeSec: 9 }], 'a', 'b', 2, 'playlist')).toBe(2);
+    expect(crossfadeFor([{ ...base, applyToAlbumSource: true, crossfadeSec: 9 }], 'a', 'b', 2, 'album')).toBe(9);
+    expect(crossfadeFor([{ ...base, crossfadeSec: 99 }], 'a', 'b', 0)).toBe(12);
+    expect(crossfadeFor([], 'a', 'b', -3)).toBe(0);
+    expect(crossfadeFor([], 'a', 'b', Number.NaN)).toBe(0);
   });
 });
 

@@ -3,7 +3,7 @@ import { CalendarCheck, Loader2 } from 'lucide-react';
 import type { DateAnswerRes } from '../lib/api.ts';
 import { useLibrary } from '../lib/derive.ts';
 import { api, useStore } from '../lib/store.ts';
-import { siblingDate } from '../lib/releaseOps.ts';
+import { releaseDateQuery, siblingDate } from '../lib/releaseOps.ts';
 import { Modal } from './forms.tsx';
 
 interface Row { releaseId: string; label: string; date: string; source: string; on: boolean }
@@ -39,8 +39,9 @@ export function FindDatesDialog({ onClose }: { onClose: () => void }) {
     }
     setRows(found);
     if (!online || !configured) { setMissed(ask.map((r) => `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? ''}`)); setProgress(null); return; }
-    // one request per album, not per release: several releases of an album share the answer
-    const albums = [...new Set(ask.map((r) => r.albumId))].flatMap((id) => { const a = lib.albumById.get(id); return a ? [{ id, album: a.title, artist: a.leads[0]?.name ?? a.artistName }] : []; });
+    // one request per question: several releases of an album share the album's answer, a one-song release asks like a single
+    const key = (r: (typeof undated)[number]) => { const q = releaseDateQuery(lib, r); return q.single ? `r:${r.id}` : `a:${r.albumId}`; };
+    const albums = [...new Map(ask.map((r) => [key(r), r])).entries()].flatMap(([id, r]) => { const q = releaseDateQuery(lib, r); return q.album ? [{ id, album: q.album, artist: q.artist }] : []; });
     setProgress({ done: 0, total: albums.length });
     const answers = new Map<string, DateAnswerRes | null>();
     try {
@@ -48,10 +49,10 @@ export function FindDatesDialog({ onClose }: { onClose: () => void }) {
         const { results } = await api().releaseDates(albums.slice(i, i + BATCH));
         for (const x of results) answers.set(x.id, x.answer);
         setProgress({ done: Math.min(albums.length, i + BATCH), total: albums.length });
-        setRows([...found, ...ask.flatMap((r) => { const a = answers.get(r.albumId); return a ? [{ releaseId: r.id, label: `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? ''}`, date: a.date, source: SOURCE[a.source], on: true }] : []; })]);
+        setRows([...found, ...ask.flatMap((r) => { const a = answers.get(key(r)); return a ? [{ releaseId: r.id, label: `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? ''}`, date: a.date, source: SOURCE[a.source], on: true }] : []; })]);
       }
     } catch (e) { setError((e as Error).message === 'Failed to fetch' ? 'Cannot reach the server.' : (e as Error).message); }
-    setMissed(ask.filter((r) => !answers.get(r.albumId)).map((r) => `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? ''}`));
+    setMissed(ask.filter((r) => !answers.get(key(r))).map((r) => `${r.title} · ${lib.albumById.get(r.albumId)?.title ?? ''}`));
   }
   const running = !!progress && progress.done < progress.total && !error && !stop.current;
   const apply = () => { const picked = rows.filter((r) => r.on); for (const r of picked) patch('releases', r.releaseId, { releaseDate: r.date }); setSaved(picked.length); };
@@ -67,7 +68,7 @@ export function FindDatesDialog({ onClose }: { onClose: () => void }) {
         <button className="btn btn-accent" disabled={running || !undated.length} onClick={() => void run()}>{running ? <Loader2 size={15} className="animate-spin" /> : <CalendarCheck size={15} />}{rows.length ? 'Search again' : 'Find dates'}</button>
         {running && <button className="btn" onClick={() => { stop.current = true; setProgress((p) => (p ? { ...p } : p)); }}>Stop</button>}
         <label className="flex items-center gap-1.5 text-sm text-muted"><input type="checkbox" checked={online} disabled={!configured} onChange={(e) => setOnline(e.target.checked)} />Also look online</label>
-        {progress && <span className="text-sm text-muted" role="status">{progress.done}/{progress.total} albums asked</span>}
+        {progress && <span className="text-sm text-muted" role="status">{progress.done}/{progress.total} searches made</span>}
       </div>
       {error && <div className="rounded-theme bg-bad/15 p-3 text-sm text-bad">{error}</div>}
       {rows.length > 0 && <div className="max-h-80 divide-y divide-line/60 overflow-y-auto rounded-theme border border-line">

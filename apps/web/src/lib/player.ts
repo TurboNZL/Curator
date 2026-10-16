@@ -1,13 +1,14 @@
 import { PlayLog } from './playLog.ts';
 import { create } from 'zustand';
-import { advance, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@turbomusic/core';
+import { advance, crossfadeFor, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@turbomusic/core';
 import { moveTrack } from './defaults.ts';
 import { audioSource, cancelPrefetch, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
 import { BEAM_ID, beamActive, beamFailed, setBeamVolume } from './beam.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
-import { resumeEq, setEq } from './eq.ts';
+import { addEqElement, resumeEq, setEq } from './eq.ts';
+import { fadeGains, fadeLength, shouldFade, shouldPrepare } from './crossfadeMath.ts';
 import { eqConfig } from './eqConfig.ts';
 import { isFlat } from './eqPresets.ts';
 import { refreshSpotifyStatus, spotifyCan, spotifyEngine, spotifyUriOf } from './spotifyPlayer.ts';
@@ -59,6 +60,13 @@ interface PlayerState {
 }
 
 let audio: HTMLAudioElement | null = null;
+/** crossfade (see lib/crossfadeMath.ts): the second <audio> element, the next track loaded into it, and the fade in progress */
+let spare: HTMLAudioElement | null = null;
+let prep: { id: string; el: HTMLAudioElement; url: string; local: boolean } | null = null;
+let prepSeq = 0;
+let prepFailed: string | null = null;
+let fading = false; // a fade is being started (the spare is being asked to play)
+let fade: { out: HTMLAudioElement; outUrl: string | null; timer: ReturnType<typeof setInterval> } | null = null;
 let loadSeq = 0;
 let objectUrl: string | null = null;
 /** where to jump to once the next track's metadata is known (a hand-over from another device) */
@@ -85,31 +93,125 @@ const playLog = new PlayLog();
 const rules = () => lib().rules;
 
 export const usePlayer = create<PlayerState>((set, get) => {
-  const el = () => {
-    if (audio) return audio;
-    audio = new Audio();
-    audio.preload = 'auto';
-    audio.crossOrigin = 'anonymous'; // the equaliser reads the sound; the server answers with CORS headers
-    audio.addEventListener('play', resumeEq);
-    audio.addEventListener('playing', () => { playLog.started(); set({ loading: false }); preloadSoon(); });
-    audio.addEventListener('waiting', () => { if (!native && audio!.getAttribute('src')) set({ loading: true }); });
-    audio.addEventListener('loadeddata', () => { if (!audio!.paused) return; set({ loading: false }); });
-    audio.addEventListener('timeupdate', () => { if (!native) set({ time: audio!.currentTime }); });
-    audio.addEventListener('progress', () => preloadSoon());
-    audio.addEventListener('durationchange', () => !native && set({ duration: Number.isFinite(audio!.duration) ? audio!.duration : 0 }));
-    audio.addEventListener('play', () => { if (!native) set({ playing: true }); });
-    audio.addEventListener('pause', () => { if (!native && audio!.getAttribute('src')) set({ playing: false }); }); // a pause that clears the source is a track change
-    audio.addEventListener('ended', () => { if (native) return; logPlay(false); get().next(); });
-    audio.addEventListener('error', () => {
-      if (!audio!.getAttribute('src')) return;
-      const code = audio!.error?.code;
+  /** One player element. The player owns two (the playing one and a spare for crossfading); only the live one reports to the state. */
+  const makeDeck = () => {
+    const a = new Audio();
+    a.preload = 'auto';
+    a.crossOrigin = 'anonymous'; // the equaliser reads the sound; the server answers with CORS headers
+    const live = () => a === audio;
+    addEqElement(a);
+    a.addEventListener('play', resumeEq);
+    a.addEventListener('playing', () => { if (!live()) return; playLog.started(); set({ loading: false }); preloadSoon(); });
+    a.addEventListener('waiting', () => { if (live() && !native && a.getAttribute('src')) set({ loading: true }); });
+    a.addEventListener('loadeddata', () => { if (!live() || !a.paused) return; set({ loading: false }); });
+    a.addEventListener('timeupdate', () => { if (!live() || native) return; set({ time: a.currentTime }); tickCrossfade(); });
+    a.addEventListener('progress', () => { if (live()) preloadSoon(); });
+    a.addEventListener('durationchange', () => live() && !native && set({ duration: Number.isFinite(a.duration) ? a.duration : 0 }));
+    a.addEventListener('play', () => { if (live() && !native) set({ playing: true }); });
+    a.addEventListener('pause', () => { if (live() && !native && a.getAttribute('src')) set({ playing: false }); }); // a pause that clears the source is a track change
+    a.addEventListener('ended', () => { if (!live() || native) return; logPlay(false); get().next(); });
+    a.addEventListener('error', () => {
+      if (!live() || !a.getAttribute('src')) return;
+      const code = a.error?.code;
       set({ error: `Could not load this track${code ? ` (media error ${code})` : ''}`, playing: false, loading: false });
     });
-    audio.volume = get().volume;
-    const eq = useStore.getState().settings;
-    setEq(audio, eqConfig(eq));
+    a.volume = get().volume;
+    return a;
+  };
+  const el = () => {
+    if (audio) return audio;
+    audio = makeDeck();
+    setEq(audio, eqConfig(useStore.getState().settings));
     return audio;
   };
+
+  // ---- crossfade -------------------------------------------------------------------------------------------------------------------
+  // Only for tracks the page itself plays (not the Android app's own player, not Spotify), and only for changes that happen by themselves
+  // (a track running out). Next/Previous/choosing a track still cut at once. A track's rule can set its own length (core `crossfadeFor`).
+
+  /** Stop the outgoing track at once; the one that was fading in takes the full volume. */
+  function endFade() {
+    if (!fade) return;
+    const f = fade; fade = null; clearInterval(f.timer);
+    f.out.pause(); f.out.removeAttribute('src'); f.out.load();
+    if (f.outUrl) URL.revokeObjectURL(f.outUrl);
+    spare = f.out;
+    if (audio) audio.volume = get().volume;
+  }
+  /** Forget the next track that was loaded into the spare. */
+  function dropPrep() {
+    prepSeq++;
+    if (!prep) return;
+    const p = prep; prep = null;
+    p.el.pause(); p.el.removeAttribute('src'); p.el.load();
+    if (p.local) URL.revokeObjectURL(p.url);
+  }
+  /** What will play after the current track and how long the change should fade; null = a plain change. */
+  function crossfadePlan(): { nextId: string; wanted: number } | null {
+    const q = get().queue;
+    if (!q.currentId || native || spotifyEngine.active() || nativeAudioAvailable()) return null;
+    const next = advance(q, rules(), get().source.type).currentId;
+    if (!next || next === q.currentId || !lib().trackById.get(next)?.file) return null; // no next track, or one only Spotify / nothing can play: the normal path decides
+    const wanted = crossfadeFor(rules(), q.currentId, next, useStore.getState().settings.crossfade, get().source.type);
+    return wanted > 0 ? { nextId: next, wanted } : null;
+  }
+  async function prepare(id: string) {
+    dropPrep();
+    const file = lib().trackById.get(id)?.file;
+    if (!file) return;
+    const seq = prepSeq, loads = loadSeq;
+    try {
+      const { url, local } = await audioSource(file);
+      if (seq !== prepSeq || loads !== loadSeq || fade) { if (local) URL.revokeObjectURL(url); return; }
+      const b = spare ??= makeDeck();
+      b.volume = 0; b.src = url; b.load();
+      prep = { id, el: b, url, local };
+    } catch { prepFailed = id; }
+  }
+  async function startFade(nextId: string, wanted: number) {
+    const out = audio, p = prep;
+    if (!out || !p || p.id !== nextId || fading || fade || !Number.isFinite(out.duration)) return;
+    const len = fadeLength(wanted, out.duration, out.duration - out.currentTime);
+    if (!len) return;
+    fading = true;
+    const loads = loadSeq;
+    try {
+      p.el.volume = 0;
+      await p.el.play();
+    } catch { prepFailed = nextId; dropPrep(); fading = false; return; } // the browser would not start it (autoplay rules): a plain change instead
+    fading = false;
+    const q = get().queue, nq = advance(q, rules(), get().source.type);
+    if (loads !== loadSeq || audio !== out || prep !== p || nq.currentId !== nextId) { if (prep === p) dropPrep(); return; } // the user did something meanwhile
+    // the change itself, as next() makes it when a track ends
+    logPlay(false);
+    set({ history: pushHistory(get().history, q.currentId) });
+    playLog.begin(nextId);
+    const outUrl = objectUrl;
+    objectUrl = p.local ? p.url : null;
+    prep = null; spare = null;
+    audio = p.el;
+    set({ queue: nq, time: 0, duration: Number.isFinite(p.el.duration) ? p.el.duration : 0, error: null, loading: false, playing: true });
+    playLog.started(nextId);
+    updateMediaSession(nextId);
+    const t0 = performance.now(), inc = p.el;
+    const timer = setInterval(() => {
+      const progress = (performance.now() - t0) / (len * 1000), g = fadeGains(progress), v = get().volume;
+      out.volume = Math.min(1, Math.max(0, g.out * v)); inc.volume = Math.min(1, Math.max(0, g.in * v));
+      if (progress >= 1) endFade();
+    }, 40);
+    fade = { out, outUrl, timer };
+  }
+  /** Called as the playing track reports its time: load the next track a few seconds ahead, then start the fade. */
+  function tickCrossfade() {
+    const a = audio;
+    if (!a || fade || fading || a.paused || !get().playing || !Number.isFinite(a.duration) || a.duration <= 0) return;
+    const plan = crossfadePlan();
+    if (!plan) { if (prep) dropPrep(); return; }
+    const remaining = a.duration - a.currentTime;
+    if (!shouldPrepare(plan.wanted, remaining) || prepFailed === plan.nextId) return;
+    if (!prep || prep.id !== plan.nextId) { void prepare(plan.nextId); return; }
+    if (shouldFade(plan.wanted, remaining) && prep.el.readyState >= 3) void startFade(plan.nextId, plan.wanted);
+  }
 
   /** playbackLogs are append-only; skips are logged too so stats can tell them apart */
   const position = () => (spotifyEngine.active() || native ? get().time : audio?.currentTime ?? get().time);
@@ -181,6 +283,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
   function load(trackId: string | null, autoStart = true) {
     const seq = ++loadSeq; // a newer load supersedes one still resolving its source
+    endFade(); dropPrep(); prepFailed = null;
     if (!trackId) {
       playLog.clear();
       cancelPrefetch();
@@ -385,13 +488,14 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
     toggle() {
       if (!get().queue.currentId) return;
+      if (get().playing) endFade();
       if (spotifyEngine.active()) { if (get().playing) { void spotifyEngine.pause(); set({ playing: false }); } else { void spotifyEngine.resume(); set({ playing: true }); } return; }
       if (native) { if (get().playing) { nativeAudio.pause(); set({ playing: false }); } else { nativeAudio.play(); set({ playing: true }); } return; }
       const a = el();
       if (a.paused) void a.play(); else a.pause();
     },
 
-    pause() { if (spotifyEngine.active()) { void spotifyEngine.pause(); set({ playing: false }); } else if (native) { nativeAudio.pause(); set({ playing: false }); } else if (audio) audio.pause(); },
+    pause() { endFade(); if (spotifyEngine.active()) { void spotifyEngine.pause(); set({ playing: false }); } else if (native) { nativeAudio.pause(); set({ playing: false }); } else if (audio) audio.pause(); },
 
     next() {
       const q = get().queue;
@@ -401,6 +505,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     prev() {
+      endFade();
       const h = get().history;
       if (position() > 3 || !h.length) { if (spotifyEngine.active()) { void spotifyEngine.seek(0); set({ time: 0 }); } else if (native) { nativeAudio.seek(0); set({ time: 0 }); } else el().currentTime = 0; return; }
       const id = h[h.length - 1];
@@ -410,7 +515,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     seek(t) { if (spotifyEngine.active()) void spotifyEngine.seek(t * 1000); else if (native) nativeAudio.seek(t); else el().currentTime = t; set({ time: t }); },
-    setVolume(v) { setBeamVolume(v); el().volume = v; if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('turbomusic.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
+    setVolume(v) { setBeamVolume(v); if (!fade) el().volume = v; /* while fading, the fade sets both volumes from this one */ if (spotifyEngine.active() && !beamActive()) void spotifyEngine.volume(v); /* a beamed stream is turned down here at once; Soloist's own volume is set in Settings > Spotify */ nativeAudio.volume(v); try { localStorage.setItem('turbomusic.volume', String(v)); } catch { /* ignore */ } set({ volume: v }); },
     enqueue(trackId, where = 'last') {
       const q = get().queue;
       set({ queue: { ...q, user: where === 'next' ? [trackId, ...q.user] : [...q.user, trackId] } });

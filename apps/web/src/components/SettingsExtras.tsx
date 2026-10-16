@@ -7,6 +7,7 @@ import { saveDefaultImage, defaultImage, saveRules } from '../lib/profile.ts';
 import { useEditor } from '../lib/editor.ts';
 import { akaLine } from '../lib/autofill.ts';
 import { ImagePicker, TrackPicker } from './forms.tsx';
+import { CrossfadePick } from './CrossfadeCard.tsx';
 
 /** Every "play B right after A" rule in one place (they can also be set from a track's editor). */
 export function PlaybackRules() {
@@ -22,14 +23,15 @@ export function PlaybackRules() {
   };
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted">When track A plays, track B is queued right after it. {lib.rules.length} rule{lib.rules.length === 1 ? '' : 's'}.</p>
+      <p className="text-sm text-muted">When track A plays, track B is queued right after it, and the change can have its own crossfade. {lib.rules.length} rule{lib.rules.length === 1 ? '' : 's'}.</p>
       {lib.rules.map((r, i) => (
         <div key={`${r.trackAId}`} className="space-y-1 rounded-theme border border-line p-3 text-sm">
           <div className="flex items-center gap-2"><span className="min-w-0 flex-1 truncate">{title(r.trackAId)}</span><ArrowRight size={14} className="shrink-0 text-muted" /><span className="min-w-0 flex-1 truncate">{title(r.trackBId)}</span>
             <button className="p-1 text-muted hover:text-bad" aria-label="Delete rule" onClick={() => saveRules(lib, lib.rules.filter((_, j) => j !== i))}><X size={15} /></button></div>
           <div className="flex flex-wrap gap-4 text-xs text-muted">
             <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.playFirstOnShuffle} onChange={(e) => setRule(i, { playFirstOnShuffle: e.target.checked })} />Keep together when shuffling</label>
-            <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.applyToAlbumSource} onChange={(e) => setRule(i, { applyToAlbumSource: e.target.checked })} />Only when playing from an album</label></div>
+            <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.applyToAlbumSource} onChange={(e) => setRule(i, { applyToAlbumSource: e.target.checked })} />Only when playing from an album</label>
+            <span className="flex items-center gap-1.5">Crossfade <CrossfadePick className="w-52" value={r.crossfadeSec} onChange={(v) => setRule(i, { crossfadeSec: v })} /></span></div>
         </div>))}
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-start">
         <TrackPicker value={a} onChange={setA} /><ArrowRight size={16} className="mt-2.5 hidden text-muted sm:block" /><TrackPicker value={b} onChange={setB} exclude={a ?? undefined} />

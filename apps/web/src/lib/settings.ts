@@ -39,6 +39,8 @@ export interface DeviceSettings {
   eqBass: number;
   eqBands: number[];
   eqPreamp: number;
+  /** crossfade between tracks, in seconds (0 = off); a playback rule can set its own for one pair of tracks */
+  crossfade: number;
   /** Spotify Connect device this app sends tracks to (id from the account's device list; '' = none) and its name for display */
   spotifyDeviceId: string;
   spotifyDeviceName: string;
@@ -101,10 +103,11 @@ export function loadSettings(): DeviceSettings {
   let saved: Partial<DeviceSettings> = {};
   try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { /* storage blocked */ }
   const s: DeviceSettings = {
-    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'auto', ui: 'auto', layout: 'side', themeUpdates: true, themesToken: '', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
+    deviceId: newId(), deviceName: '', serverUrl: '', token: '', cfAccessId: '', cfAccessSecret: '', theme: 'auto', ui: 'auto', layout: 'side', themeUpdates: true, themesToken: '', glass: 'regular', wallpaper: false, wallpaperDarkness: 0.45, wallpaperCustom: false, storageLimitOn: false, storageLimitMb: 2048, evictOldest: false, eqOn: false, eqBass: 4, eqBands: cleanBands([]), eqPreamp: 0, crossfade: 0, haptics: true, spotifyDeviceId: '', spotifyDeviceName: '', spotifyAuto: true, spotifySdk: false, spotifyBeam: true, ...saved,
   };
   s.eqBands = cleanBands(s.eqBands);
   s.eqPreamp = Math.min(12, Math.max(-12, Number(s.eqPreamp) || 0));
+  s.crossfade = Math.min(12, Math.max(0, Number(s.crossfade) || 0));
   // the first version's look was called "dyad" for a few builds
   if (s.ui === 'dyad') s.ui = 'toolbar';
   // before layouts existed, the first-version look also meant its toolbar arrangement

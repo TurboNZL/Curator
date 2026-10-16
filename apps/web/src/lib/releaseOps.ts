@@ -11,6 +11,17 @@ export function siblingDate(releases: Pick<Rel, 'id' | 'releaseDate'>[], default
   return others.find((r) => r.id === defaultReleaseId)?.releaseDate ?? [...others].map((r) => r.releaseDate!).sort()[0] ?? null;
 }
 
+/**
+ * What to ask the date services about a release. A release of ONE song is looked up like a single (the song's title by its lead
+ * artist); a longer one by its album title and lead artist. `tracks` is the release's tracklist (ids that no longer exist are ignored).
+ */
+export function releaseDateQuery(lib: Library, r: Pick<Rel, 'albumId' | 'trackIds'>): { album: string; artist: string; single: boolean } {
+  const album = lib.albumById.get(r.albumId);
+  const live = r.trackIds.map((id) => lib.trackById.get(id)).filter((t): t is NonNullable<typeof t> => !!t);
+  if (live.length === 1) return { album: live[0].title, artist: live[0].leads[0]?.name ?? live[0].artistName, single: true };
+  return { album: album?.title ?? '', artist: album?.leads[0]?.name ?? album?.artistName ?? '', single: false };
+}
+
 export interface ReleaseMergePlan {
   /** what the surviving release becomes */
   keepPatch: { trackIds: string[]; releaseDate: string | null; cover: string | null; tags: string[] };
