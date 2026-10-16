@@ -6,6 +6,7 @@ import { ERA_ITEM_SORTS, ERA_SORTS, eraRows, sortEraItems, sortEras, type EraIte
 import { usePageState } from '../lib/pageState.ts';
 import { canPlay } from '../lib/spotifyPlayer.ts';
 import { Link, useParams } from 'react-router-dom';
+import { idChip, searchHref } from '../lib/searchUrl.ts';
 import { statsPath } from '../lib/entityStats.ts';
 import { BarChart3, Layers, MoreHorizontal, Pencil, Play, Plus, Shuffle } from 'lucide-react';
 import { shuffleWithRules } from '@turbomusic/core';
@@ -91,6 +92,8 @@ export function EraPage() {
   const singles = items.flatMap((i) => (i.kind === 'single' ? [i.track] : []));
   const total = { albums: era.albumIds.filter((x) => lib.albumById.has(x)).length, singles: era.trackIds.filter((x) => lib.trackById.has(x)).length };
   const playlists = era.playlistIds.flatMap((id) => lib.playlists.find((p) => p.id === id) ?? []);
+  // a link to the search page with this era as a chip, listing only that kind
+  const where = (kind: 'albums' | 'singles' | 'tracks') => searchHref({ kind, chips: [idChip('era', era.id, era.name)] });
   const ids = items.flatMap((i) => (i.kind === 'album' ? i.album.trackIds : [i.track.id])).filter((t) => canPlay(lib.trackById.get(t)));
   const singleIds = singles.filter(canPlay).map((t) => t.id);
   const cover = era.cover || albums.find((a) => a.cover)?.cover || null;
@@ -100,16 +103,16 @@ export function EraPage() {
         <Cover hash={cover} seed={era.name} className="w-40 shrink-0 sm:w-48" />
         <div className="min-w-0 space-y-2"><div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted"><Layers size={13} />Era</div>
           <h1 className="text-3xl font-bold">{era.name}</h1>
-          <div className="text-sm text-muted">{plural(total.albums, 'album')} · {plural(total.singles, 'single')}{playlists.length > 0 && ` · ${plural(playlists.length, 'playlist')}`}</div>
+          <div className="text-sm text-muted"><Link className="hover:text-fg hover:underline" to={where('albums')}>{plural(total.albums, 'album')}</Link> · <Link className="hover:text-fg hover:underline" to={where('singles')}>{plural(total.singles, 'single')}</Link>{playlists.length > 0 && ` · ${plural(playlists.length, 'playlist')}`}</div>
           {era.description && <p className="max-w-prose text-sm">{era.description}</p>}
           <div className="flex gap-2 pt-1">
             <button className="btn btn-accent" disabled={!ids.length} onClick={() => play(ids[0], ids, { type: 'search', id: null })}><Play size={16} fill="currentColor" />Play</button>
             <button className="btn" disabled={!ids.length} onClick={() => { const s = shuffleWithRules(ids, lib.rules); play(s[0], s, { type: 'search', id: null }); }}><Shuffle size={15} />Shuffle</button>
-            <Link className="btn btn-ghost" to={`/tracks?era=${era.id}`}><Layers size={15} />Tracks in this era</Link>
+            <Link className="btn btn-ghost" to={where('tracks')}><Layers size={15} />Tracks in this era</Link>
             <Link className="btn btn-ghost" to={statsPath('era', era.id)}><BarChart3 size={15} />Stats</Link>
             <button className="btn btn-ghost" onClick={() => edit({ kind: 'era', id: era.id })}><Pencil size={15} />Edit</button></div></div>
       </div>
-      {total.albums + total.singles > 0 && <section className="space-y-3"><h2 className="text-lg font-semibold">Albums and singles</h2>
+      {total.albums + total.singles > 0 && <section className="space-y-3"><h2 className="text-lg font-semibold"><Link to={where('albums')} className="hover:underline" title="Search this era's albums">Albums</Link> and <Link to={where('singles')} className="hover:underline" title="Search this era's singles">singles</Link></h2>
         <ListToolbar scope="albums" chips={chips} onChips={setChips} text={q} onText={setQ} placeholder="Search this era, or filter: artist, genre, before…" sorts={ERA_ITEM_SORTS} sort={page.sort} dir={page.dir} onSort={page.setSort} onFlip={page.flip} view={page.view} onView={page.setView} />
         {!items.length && <p className="text-sm text-muted">Nothing here matches.</p>}
         {page.view === 'grid'

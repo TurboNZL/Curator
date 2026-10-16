@@ -56,6 +56,9 @@ describe('ConnectHub', () => {
   it('validates what clients send', () => {
     expect(parseCommand({ type: 'seek', time: -5 })).toEqual({ type: 'seek', time: 0 });
     expect(parseCommand({ type: 'volume', value: 7 })).toEqual({ type: 'volume', value: 1 });
+    expect(parseCommand({ type: 'enqueue', trackId: 't1', where: 'next' })).toEqual({ type: 'enqueue', trackId: 't1', where: 'next' });
+    expect(parseCommand({ type: 'enqueue', trackId: 't1', where: 'x' })).toEqual({ type: 'enqueue', trackId: 't1', where: 'last' });
+    expect(parseCommand({ type: 'enqueue', trackId: '' })).toBeNull();
     expect(parseCommand({ type: 'rm -rf' })).toBeNull();
     expect(parseCommand({ type: 'transfer', snapshot: 'x' })).toBeNull();
     expect(parseSnapshot({ queue: { user: ['a', 5, null] }, position: 'x' })?.queue.user).toEqual(['a']);

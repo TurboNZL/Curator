@@ -4,7 +4,11 @@ import { ArrowLeft, ArrowRight, BarChart3, Compass, Stethoscope, Disc, Disc3, Do
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { effectiveUi } from 'turbothemes';
 import { usePlayer } from '../lib/player.ts';
+import { togglePlayback } from '../lib/connect.ts';
 import { cn } from '../lib/cn.ts';
+import { FilterBar } from './FilterBar.tsx';
+import { splitTyped, type Chip } from '../lib/filters.ts';
+import { parseSearch, searchHref } from '../lib/searchUrl.ts';
 import { useStore } from '../lib/store.ts';
 import { useEditor, type EditTarget } from '../lib/editor.ts';
 import { EditorHost } from './EditorHost.tsx';
@@ -160,6 +164,21 @@ export function Layout() {
   const matches = [useMatch('/albums/:id'), useMatch('/artists/:id'), useMatch('/eras/:id')];
   const wide = matches.some(Boolean);
   const [q, setQ] = useState('');
+  const [chips, setChips] = useState<Chip[]>([]);
+  // on the search page the bar shows what the address says (a link from an artist page arrives with its chips already on)
+  const onSearchPage = pathname === '/search';
+  const searchKind = onSearchPage ? parseSearch(new URLSearchParams(location.search)).kind : 'all';
+  useEffect(() => {
+    if (!onSearchPage) return;
+    const s = parseSearch(new URLSearchParams(location.search));
+    setQ(s.q); setChips(s.chips);
+  }, [onSearchPage, location.search]);
+  // words typed so far, without a half-typed `artist: ke`
+  const words = () => (splitTyped(q) ? '' : q);
+  const changeChips = (next: Chip[]) => {
+    setChips(next);
+    if (onSearchPage || next.length) nav(searchHref({ q: words(), chips: next, kind: searchKind }), { replace: onSearchPage });
+  };
   const ui = useStore((s) => s.settings.ui);
   const layout = useStore((s) => s.settings.layout);
   const toolbar = layout === 'toolbar', topbar = layout === 'topbar', dock = layout === 'dock';
@@ -167,18 +186,27 @@ export function Layout() {
   const logo = ui === 'lgux' ? '/icon-lg.svg' : '/icon.svg'; // LG UX 5.0 has its own (candy) logo
   const sideNav = toolbar ? LIBRARY.map((to) => NAV.find((n) => n.to === to)!) : NAV;
   const topNav = toolbar ? NAV.filter((n) => !LIBRARY.includes(n.to) && n.to !== '/settings') : topbar ? NAV : [];
-  const toggle = usePlayer((s) => s.toggle);
   const hasPlayer = usePlayer((s) => !!s.queue.currentId);
-  // space = play/pause, unless typing in a field or pressing a button
+  // Space always plays/pauses (also the device being controlled), except while typing text. It wins over the focused button's own
+  // Space-to-click and over the list navigation, so it runs first (capture) and the matching key-up is swallowed too.
   useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement;
-      if (e.code !== 'Space' || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(el.tagName) || el.isContentEditable) return;
-      e.preventDefault(); toggle();
+    const typing = (el: HTMLElement | null) => {
+      if (!el) return false;
+      if (el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true;
+      if (el.tagName !== 'INPUT') return false;
+      return !['checkbox', 'radio', 'range', 'button', 'submit', 'reset', 'file', 'color', 'image'].includes((el as HTMLInputElement).type);
     };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [toggle]);
+    let swallow = false;
+    const down = (e: KeyboardEvent) => {
+      if ((e.code !== 'Space' && e.key !== ' ') || e.ctrlKey || e.metaKey || e.altKey || typing(e.target as HTMLElement | null) || (e.target as HTMLElement | null)?.closest?.('[role="listbox"],[role="menu"]')) return;
+      e.preventDefault(); e.stopPropagation();
+      if (e.repeat) return;
+      swallow = true; togglePlayback();
+    };
+    const up = (e: KeyboardEvent) => { if (swallow && (e.code === 'Space' || e.key === ' ')) { swallow = false; e.preventDefault(); e.stopPropagation(); } };
+    window.addEventListener('keydown', down, true); window.addEventListener('keyup', up, true);
+    return () => { window.removeEventListener('keydown', down, true); window.removeEventListener('keyup', up, true); };
+  }, []);
   return (
     <div className="flex h-full flex-col">
       <WindowFrame />
@@ -196,7 +224,7 @@ export function Layout() {
           <div className="mt-auto"><SyncDot /></div>
         </aside>}
         <main ref={mainRef} className={cn('min-w-0 flex-1 overflow-y-auto overflow-x-hidden', hasPlayer && 'has-player')}>
-          <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (q.trim()) nav(`/search?q=${encodeURIComponent(q.trim())}`); }}>
+          <form className="bt-top bt-shell sticky top-0 z-10 p-3 backdrop-blur" onSubmit={(e) => { e.preventDefault(); if (words().trim() || chips.length) nav(searchHref({ q: words(), chips, kind: searchKind })); }}>
             <div className="bt-topin relative mx-auto flex max-w-3xl items-center gap-3">
               <div className={cn('flex shrink-0 items-center gap-2 font-bold', !noSide && 'md:hidden')}><img src={logo} alt="TurboMusic" width={28} height={28} className="h-7 w-7 shrink-0" draggable={false} />{topbar && <span className="hidden md:inline">TurboMusic</span>}</div>
               <div className={cn(!noSide && 'md:hidden')}><SyncDot /></div>
@@ -207,9 +235,8 @@ export function Layout() {
                 <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Back" title="Back" disabled={!canBack} onClick={() => nav(-1)}><ArrowLeft size={17} /></button>
                 <button type="button" className="btn btn-ghost !p-1.5 disabled:opacity-30" aria-label="Forward" title="Forward" disabled={!canForward} onClick={() => nav(1)}><ArrowRight size={17} /></button>
               </div>
-              <div className="bt-search relative flex-1">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted" />
-              <input className="input pl-9" placeholder="Search tracks, albums, artists" value={q} onChange={(e) => setQ(e.target.value)} />
+              <div className="bt-search relative flex min-w-0 flex-1">
+                <FilterBar scope="tracks" chips={chips} onChips={changeChips} text={q} onText={setQ} placeholder="Search, or filter: artist, era, before…" />
               </div>
               {!hasPlayer && <VolumeButton />}
               <DevicesMenu />

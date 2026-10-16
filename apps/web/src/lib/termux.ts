@@ -26,7 +26,7 @@ export const termuxSupported = () => isAndroidApp() && !!bridge();
 export const termuxStatus = (): TermuxStatus | null => { try { return JSON.parse(bridge()!.termuxStatus()) as TermuxStatus; } catch { return null; } };
 export const termux = {
   oneTimeLine: () => bridge()?.termuxOneTimeLine() ?? '',
-  copyLine: () => bridge()?.termuxCopyLine(),
+  copyLine: () => { bridge()?.termuxCopyLine(); try { void navigator.clipboard?.writeText(`${bridge()?.termuxOneTimeLine() ?? ''}\n`).catch(() => undefined); } catch { /* the app's own copy is the main route */ } },
   openTermux: () => bridge()?.termuxOpenTermux() ?? false,
   openInstallPage: () => bridge()?.termuxOpenInstallPage(),
   requestPermission: () => bridge()?.termuxRequestPermission(),

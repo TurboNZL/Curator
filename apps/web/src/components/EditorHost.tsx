@@ -8,6 +8,7 @@ import { makePrimary } from '../lib/autofill.ts';
 import { Select, albumOptions } from './Select.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { leaveRemoved } from '../lib/leave.ts';
 import type { AlbumData, ArtistData, Credit, EraData, GroupData, ReleaseData, GroupMemberData, PlaybackRule, ProfileData, TrackData } from '@turbomusic/core';
 import { resolveEntity } from '../lib/entities.ts';
 import { useLibrary } from '../lib/derive.ts';
@@ -58,6 +59,7 @@ const raw = <T,>(table: 'tracks' | 'albums' | 'artists', id: string) => useStore
 const numOrNull = (s: string) => (s.trim() === '' || Number.isNaN(Number(s)) ? null : Number(s));
 
 function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
+  const nav = useNavigate();
   const lib = useLibrary();
   const { put, patch, remove } = useStore();
   const ensureGenres = useEnsureGenres();
@@ -122,7 +124,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
 
   return (
     <Modal title="Edit track" onClose={onClose} footer={<>
-      <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${track.title}”? Its votes stay in the history.`)) { remove('tracks', id); onClose(); } }}>Delete</button>
+      <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${track.title}”? Its votes stay in the history.`)) { remove('tracks', id); onClose(); leaveRemoved(nav, 'track', id, { fallback: '/tracks' }); } }}>Delete</button>
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!canSave} onClick={save}>Save</button></div></>}>
       <Field label="Title"><input className="input" value={t.title ?? ''} onChange={(e) => set('title', e.target.value)} /></Field>
       <Field label="Album" hint="Cover, genres and (if ticked below) credits come from the album. Moving a track puts it last on the new album.">
@@ -161,7 +163,7 @@ function TrackEditor({ id, onClose }: { id: string; onClose: () => void }) {
         <TrackPicker value={after} onChange={setAfter} exclude={id} />
         {after && <><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={first} onChange={(e) => setFirst(e.target.checked)} />Keep them together when shuffling</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={albumOnly} onChange={(e) => setAlbumOnly(e.target.checked)} />Only when playing from an album</label>
-          <div className="flex items-center gap-2 text-sm">Crossfade into it <CrossfadePick value={fadeSec} onChange={setFadeSec} /></div></>}
+          <div className="space-y-1 text-sm"><div>Crossfade into it</div><CrossfadePick value={fadeSec} onChange={setFadeSec} /></div></>}
       </div>
     </Modal>
   );
@@ -187,7 +189,7 @@ function AlbumEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const inherited = albumCover({ ...a, coverPicked: false }, mine, defaultRelease(lib, album));
   return (
     <Modal title="Edit album" onClose={onClose} footer={<>
-      <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${album.title}”? Its tracks stay in your library.`)) { remove('albums', id); onClose(); nav('/albums'); } }}>Delete</button>
+      <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${album.title}”? Its tracks stay in your library.`)) { remove('albums', id); onClose(); leaveRemoved(nav, 'album', id, { fallback: '/albums' }); } }}>Delete</button>
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" disabled={!hasLead(credits)} onClick={() => {
         const { artistId: _legacy, ...rest } = a;
         ensureGenres(a.genres ?? []); ensureRoles(credits); put('albums', { ...rest, credits, eraId: null }, id);
@@ -223,7 +225,7 @@ function ArtistEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const used = lib.tracks.filter((t) => t.credits.some((c) => c.artistId === id)).length + lib.albums.filter((x) => x.credits.some((c) => c.artistId === id)).length;
   return (
     <Modal title="Edit artist" onClose={onClose} footer={<>
-      <button className="btn text-bad" disabled={used > 0} title={used ? 'Still credited on tracks or albums' : ''} onClick={() => { if (confirm(`Delete ${artist.name}?`)) { remove('artists', id); onClose(); nav('/artists'); } }}>Delete</button>
+      <button className="btn text-bad" disabled={used > 0} title={used ? 'Still credited on tracks or albums' : ''} onClick={() => { if (confirm(`Delete ${artist.name}?`)) { remove('artists', id); onClose(); leaveRemoved(nav, 'artist', id, { fallback: '/artists' }); } }}>Delete</button>
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-accent" onClick={() => {
         put('artists', { ...a, name: a.name.trim() || artist.name }, id); onClose();
       }}>Save</button></div></>}>
@@ -346,6 +348,7 @@ function NewTrackDialog({ albumId, onClose }: { albumId: string; onClose: () => 
 const NEW_CATEGORY = 'new:';
 
 function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: string; onClose: () => void }) {
+  const nav = useNavigate();
   const lib = useLibrary();
   const { put, remove } = useStore();
   const existing = noteId ? lib.groups.find((g) => g.id === noteId) : undefined;
@@ -373,7 +376,7 @@ function NoteDialog({ noteId, initial, onClose }: { noteId?: string; initial?: s
   const categories = [...lib.noteCategories].sort((a, b) => a.name.localeCompare(b.name));
   return (
     <Modal title={noteId ? 'Edit note' : 'New note'} onClose={onClose} footer={<>
-      {noteId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', noteId); pruneCategories(null); onClose(); } }}>Delete</button>}
+      {noteId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete “${g.name}”?`)) { remove('groups', noteId); pruneCategories(null); onClose(); leaveRemoved(nav, 'note', noteId, { fallback: '/notes' }); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-accent" disabled={!ok} onClick={() => {
           const { type: _old, ...rest } = g;
@@ -511,7 +514,7 @@ function EraDialog({ eraId, onClose }: { eraId?: string; onClose: () => void }) 
   };
   return (
     <Modal title={eraId ? 'Edit era' : 'New era'} onClose={onClose} footer={<>
-      {eraId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete the era “${e.name}”? Everything in it stays in your library.`)) { remove('eras', eraId); onClose(); nav('/eras'); } }}>Delete</button>}
+      {eraId && <button className="btn text-bad" onClick={() => { if (confirm(`Delete the era “${e.name}”? Everything in it stays in your library.`)) { remove('eras', eraId); onClose(); leaveRemoved(nav, 'era', eraId, { fallback: '/eras' }); } }}>Delete</button>}
       <div className="ml-auto flex gap-2"><button className="btn btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn btn-accent" disabled={!e.name.trim()} onClick={save}>Save</button></div></>}>
       <ImagePicker hash={e.cover} onChange={(h) => setE({ ...e, cover: h })} seed={e.name || 'era'} />
