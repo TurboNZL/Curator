@@ -19,6 +19,10 @@ export function TermuxServerCard() {
   const { status, up, refresh } = useTermux();
   const { settings, updateSettings, syncNow } = useStore();
   const [copied, setCopied] = useState(false);
+  // the pasted line changes a file inside Termux, which this app cannot look at: the user says when it has been done
+  const [lineDone, setLineDoneState] = useState(() => { try { return localStorage.getItem('turbomusic.termuxLineDone') === '1'; } catch { return false; } });
+  const setLineDone = (v: boolean) => { setLineDoneState(v); try { localStorage.setItem('turbomusic.termuxLineDone', v ? '1' : '0'); } catch { /* not remembered */ } };
+  const [asked, setAsked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!termuxSupported() || !status) return null;
 
@@ -40,17 +44,21 @@ export function TermuxServerCard() {
           <p className="text-xs text-muted">Install Termux from <b>F-Droid</b> or its GitHub releases (not the Play Store version, which is abandoned).</p>
           {!status.termuxInstalled && <button className="btn" onClick={() => termux.openInstallPage()}>Open the Termux page (F-Droid)</button>}
         </Step>
-        <Step n={2} title="One-time step in Termux" done={status.granted && !failed?.includes('one-time')}>
+        <Step n={2} title="One-time step in Termux" done={lineDone && !failed?.includes('one-time')}>
           <p className="text-xs text-muted">Termux only takes commands from other apps after you switch that on inside Termux. Copy the line, open Termux, paste it (long-press → Paste), press Enter. Then come back.</p>
           <div className="flex flex-wrap gap-2">
             <button className="btn" disabled={!status.termuxInstalled} onClick={() => { termux.copyLine(); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy the line'}</button>
             <button className="btn" disabled={!status.termuxInstalled} onClick={() => termux.openTermux()}>Open Termux</button>
           </div>
           <p className="text-xs text-muted">Nothing pasted? Press and hold the line below to select it, copy it yourself, and paste it in Termux. It ends with “Done: TurboMusic can now run the server” when it worked.</p>
+          <button className="btn" disabled={!status.termuxInstalled} onClick={() => setLineDone(!lineDone)} aria-pressed={lineDone}>{lineDone ? 'Done ✓ (tap to undo)' : 'I ran it and saw “Done”'}</button>
           <textarea readOnly rows={3} className="input w-full font-mono text-xs" value={termux.oneTimeLine()} onFocus={(e) => e.currentTarget.select()} aria-label="The line to paste in Termux" />
         </Step>
         <Step n={3} title="Let this app run commands in Termux" done={status.granted}>
-          <button className="btn" disabled={!status.termuxInstalled || status.granted} onClick={() => { termux.requestPermission(); window.setTimeout(refresh, 1200); }}>{status.granted ? 'Allowed' : 'Allow'}</button>
+          <button className="btn" disabled={!status.termuxInstalled || status.granted} onClick={() => { setAsked(true); termux.requestPermission(); window.setTimeout(refresh, 1200); window.setTimeout(refresh, 4000); }}>{status.granted ? 'Allowed' : 'Allow'}</button>
+          {!status.granted && status.permissionKnown === false && status.termuxInstalled && <p className="text-xs text-warn">Android does not know Termux’s permission yet, which happens when Termux was installed after this app. Uninstall this app and install it again (your library is on the server, so nothing is lost), then come back to this step.</p>}
+          {!status.granted && asked && status.permissionKnown !== false && <div className="space-y-1.5"><p className="text-xs text-muted">No pop-up, or you refused it? Open this app’s settings, go to Permissions (or “Additional permissions”), and switch on “Run commands in Termux environment”. Then come back; this step ticks by itself.</p>
+            <button className="btn" onClick={() => termux.openAppSettings()}>Open this app’s settings</button></div>}
         </Step>
         <Step n={4} title="Install and start the server" done={false}>
           <p className="text-xs text-muted">Termux downloads Node, ffmpeg and yt-dlp and the server (a few minutes, a few hundred MB). The app tells you when it is up.</p>

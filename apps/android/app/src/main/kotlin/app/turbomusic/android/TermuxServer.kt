@@ -77,7 +77,18 @@ object Termux {
         ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(F_DROID)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    fun requestPermission(activity: Activity) { activity.requestPermissions(arrayOf(PERMISSION), ASK_CODE) }
+    /**
+     * Does Android know Termux's RUN_COMMAND permission? It only resolves a permission that another app declares when this app is
+     * installed AFTER that app; if Termux came second, the permission is unknown here and asking does nothing, ever (reinstalling this app fixes it).
+     */
+    fun permissionKnown(ctx: Context): Boolean = try { ctx.packageManager.getPermissionInfo(PERMISSION, 0); true } catch (e: PackageManager.NameNotFoundException) { false }
+
+    fun requestPermission(activity: Activity) { if (permissionKnown(activity)) activity.requestPermissions(arrayOf(PERMISSION), ASK_CODE) }
+
+    /** This app's page in Android's settings: after a refused (or twice refused) request, the permission can only be switched on there. */
+    fun openAppSettings(ctx: Context) {
+        ctx.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${ctx.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
 
     /** Runs a script in Termux in the background (no terminal window). The answer (exit code, output) comes back to [TermuxResultReceiver]. */
     fun run(ctx: Context, label: String, script: String): Boolean {
@@ -124,7 +135,7 @@ object Termux {
     /** what the page needs to draw the module's card */
     fun status(ctx: Context): String {
         val p = ServerPrefs(ctx)
-        return JSONObject().put("termuxInstalled", installed(ctx)).put("granted", granted(ctx)).put("module", p.termuxInstalled)
+        return JSONObject().put("termuxInstalled", installed(ctx)).put("granted", granted(ctx)).put("permissionKnown", permissionKnown(ctx)).put("module", p.termuxInstalled)
             .put("port", TermuxScripts.PORT).put("token", p.termuxToken).put("autoStart", p.termuxAutoStart).put("wake", p.termuxWake)
             .put("result", runCatching { JSONObject(p.termuxResult.ifEmpty { "{}" }) }.getOrDefault(JSONObject())).toString()
     }
