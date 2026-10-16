@@ -4,6 +4,21 @@ export interface PlaybackRule {
   playFirstOnShuffle: boolean;
   /** only apply when the track was started from an album */
   applyToAlbumSource: boolean;
+  /**
+   * Crossfade for this A -> B change, in seconds. Missing/null = use the device's crossfade setting, 0 = no crossfade (a plain cut or
+   * gapless), a number = fade A out and B in over that long.
+   */
+  crossfadeSec?: number | null;
+}
+
+export const MAX_CROSSFADE_SEC = 12;
+const clampFade = (n: number) => Math.min(MAX_CROSSFADE_SEC, Math.max(0, n));
+
+/** How long the change from `fromId` to `toId` should crossfade: the rule for that pair if it sets one, else the device's setting. */
+export function crossfadeFor(rules: PlaybackRule[], fromId: string, toId: string, deviceSec: number, source?: SourceType): number {
+  const rule = ruleFor(rules, fromId, source);
+  if (rule && rule.trackBId === toId && typeof rule.crossfadeSec === 'number' && Number.isFinite(rule.crossfadeSec)) return clampFade(rule.crossfadeSec);
+  return clampFade(Number.isFinite(deviceSec) ? deviceSec : 0);
 }
 
 export type SourceType = 'album' | 'playlist' | 'track' | 'shuffle' | 'search';

@@ -12,13 +12,22 @@ const Q = 1.1;
 
 interface Graph { ctx: AudioContext; bands: BiquadFilterNode[]; low: BiquadFilterNode; pre: GainNode; limiter: DynamicsCompressorNode }
 let graph: Graph | null = null;
+/** every <audio> element the player owns (there are two while crossfading); each feeds the same chain once the graph exists */
+const elements = new Set<HTMLAudioElement>();
+const routed = new Set<HTMLAudioElement>();
+function route(el: HTMLAudioElement) {
+  if (!graph || routed.has(el)) return;
+  routed.add(el); // createMediaElementSource works once per element
+  graph.ctx.createMediaElementSource(el).connect(graph.bands[0]);
+}
+/** Tell the equaliser about another player element so its sound goes through the same chain. */
+export function addEqElement(el: HTMLAudioElement) { elements.add(el); route(el); }
 
 export function setEq(el: HTMLAudioElement, cfg: EqConfig) {
   const flat = isFlat(cfg);
   if (!graph) {
     if (flat || typeof AudioContext === 'undefined') return; // never touch the sound until it is wanted
     const ctx = new AudioContext();
-    const src = ctx.createMediaElementSource(el);
     const bands = EQ_FREQS.map((hz, i) => {
       const f = ctx.createBiquadFilter();
       f.type = i === 0 ? 'lowshelf' : i === EQ_FREQS.length - 1 ? 'highshelf' : 'peaking';
@@ -30,10 +39,12 @@ export function setEq(el: HTMLAudioElement, cfg: EqConfig) {
     const pre = ctx.createGain();
     const limiter = ctx.createDynamicsCompressor();
     limiter.knee.value = 4; limiter.attack.value = 0.003; limiter.release.value = 0.2;
-    let node: AudioNode = src;
-    for (const f of [...bands, low, pre, limiter]) { node.connect(f); node = f; }
+    let node: AudioNode = bands[0];
+    for (const f of [...bands.slice(1), low, pre, limiter]) { node.connect(f); node = f; }
     limiter.connect(ctx.destination);
     graph = { ctx, bands, low, pre, limiter };
+    elements.add(el);
+    for (const e of elements) route(e);
   }
   const g = graph;
   const t = g.ctx.currentTime;

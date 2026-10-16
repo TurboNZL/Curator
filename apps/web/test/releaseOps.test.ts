@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SyncRecord } from '@turbomusic/core';
 import { buildLibrary } from '../src/lib/library.ts';
-import { allReleaseTags, foldIntoRelease, planMergeReleases, siblingDate } from '../src/lib/releaseOps.ts';
+import { allReleaseTags, foldIntoRelease, planMergeReleases, releaseDateQuery, siblingDate } from '../src/lib/releaseOps.ts';
 
 const rec = (table: string, id: string, data: object): SyncRecord => ({ table: table as never, id, updatedAt: 1, deviceId: 'd', deleted: false, data: data as never });
 const rows = (...rs: SyncRecord[]) => {
@@ -21,6 +21,11 @@ const lib = buildLibrary(rows(
 ));
 
 describe('release operations', () => {
+  it('a one-song release is looked up like a single, a longer one by its album', () => {
+    expect(releaseDateQuery(lib, { albumId: 'al', trackIds: ['3'] })).toEqual({ album: 'Three', artist: 'A', single: true });
+    expect(releaseDateQuery(lib, { albumId: 'al', trackIds: ['3', 'gone'] }).single).toBe(true); // a missing track does not count
+    expect(releaseDateQuery(lib, { albumId: 'al', trackIds: ['1', '2'] })).toEqual({ album: 'Album', artist: 'A', single: false });
+  });
   it('a new release starts with the date the album already has', () => {
     expect(siblingDate(lib.releases, 'yt')).toBe('2026-09-05');
     expect(siblingDate(lib.releases, 'yt', 'sp')).toBeNull();
