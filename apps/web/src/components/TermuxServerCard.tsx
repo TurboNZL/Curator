@@ -23,6 +23,7 @@ export function TermuxServerCard() {
   const [lineDone, setLineDoneState] = useState(() => { try { return localStorage.getItem('turbomusic.termuxLineDone') === '1'; } catch { return false; } });
   const setLineDone = (v: boolean) => { setLineDoneState(v); try { localStorage.setItem('turbomusic.termuxLineDone', v ? '1' : '0'); } catch { /* not remembered */ } };
   const [asked, setAsked] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!termuxSupported() || !status) return null;
 
@@ -44,7 +45,7 @@ export function TermuxServerCard() {
           <p className="text-xs text-muted">Install Termux from <b>F-Droid</b> or its GitHub releases (not the Play Store version, which is abandoned).</p>
           {!status.termuxInstalled && <button className="btn" onClick={() => termux.openInstallPage()}>Open the Termux page (F-Droid)</button>}
         </Step>
-        <Step n={2} title="One-time step in Termux" done={lineDone && !failed?.includes('one-time')}>
+        <Step n={2} title="One-time step in Termux" done={!!status.verified || (lineDone && !failed?.includes('one-time'))}>
           <p className="text-xs text-muted">Termux only takes commands from other apps after you switch that on inside Termux. Copy the line, open Termux, paste it (long-press → Paste), press Enter. Then come back.</p>
           <div className="flex flex-wrap gap-2">
             <button className="btn" disabled={!status.termuxInstalled} onClick={() => { termux.copyLine(); setCopied(true); }}>{copied ? 'Copied ✓' : 'Copy the line'}</button>
@@ -54,17 +55,21 @@ export function TermuxServerCard() {
           <button className="btn" disabled={!status.termuxInstalled} onClick={() => setLineDone(!lineDone)} aria-pressed={lineDone}>{lineDone ? 'Done ✓ (tap to undo)' : 'I ran it and saw “Done”'}</button>
           <textarea readOnly rows={3} className="input w-full font-mono text-xs" value={termux.oneTimeLine()} onFocus={(e) => e.currentTarget.select()} aria-label="The line to paste in Termux" />
         </Step>
-        <Step n={3} title="Let this app run commands in Termux" done={status.granted}>
-          <button className="btn" disabled={!status.termuxInstalled || status.granted} onClick={() => { setAsked(true); termux.requestPermission(); window.setTimeout(refresh, 1200); window.setTimeout(refresh, 4000); }}>{status.granted ? 'Allowed' : 'Allow'}</button>
-          {!status.granted && status.permissionKnown === false && status.termuxInstalled && <p className="text-xs text-warn">Android does not know Termux’s permission yet, which happens when Termux was installed after this app. Uninstall this app and install it again (your library is on the server, so nothing is lost), then come back to this step.</p>}
-          {!status.granted && asked && status.permissionKnown !== false && <div className="space-y-1.5"><p className="text-xs text-muted">No pop-up, or you refused it? Open this app’s settings, go to Permissions (or “Additional permissions”), and switch on “Run commands in Termux environment”. Then come back; this step ticks by itself.</p>
+        <Step n={3} title="Let this app run commands in Termux" done={status.granted || !!status.verified}>
+          <button className="btn" disabled={!status.termuxInstalled || status.granted || !!status.verified} onClick={() => { setAsked(true); termux.requestPermission(); window.setTimeout(refresh, 1200); window.setTimeout(refresh, 4000); }}>{status.granted || status.verified ? 'Allowed' : 'Allow'}</button>
+          {!status.verified && <><button className="btn ml-2" disabled={!status.termuxInstalled} onClick={() => { setChecked(true); act(termux.check); window.setTimeout(refresh, 2500); }}>Test</button>
+            <p className="text-xs text-muted">“Test” runs a harmless command in Termux. If it works, steps 2 and 3 are both done, whatever Android’s permission list says. If you are unsure whether the Allow switch took effect, just press Test.</p></>}
+          {status.verified && <p className="text-xs text-good">Tested: this app can run commands in Termux.</p>}
+          {!status.verified && !status.granted && status.termuxInstalled && (checked || asked) && <div className="space-y-1.5"><p className="text-xs text-muted">If Test fails: open this app’s settings, go to Permissions (or “Additional permissions”), and switch on “Run commands in Termux environment”; then press Test again. If that entry is not listed, update Termux (the F-Droid or GitHub build) and open it once.</p>
             <button className="btn" onClick={() => termux.openAppSettings()}>Open this app’s settings</button></div>}
         </Step>
         <Step n={4} title="Install and start the server" done={false}>
           <p className="text-xs text-muted">Termux downloads Node, ffmpeg and yt-dlp and the server (a few minutes, a few hundred MB). The app tells you when it is up.</p>
-          <button className="btn btn-accent" disabled={!status.termuxInstalled || !status.granted} onClick={() => act(termux.install)}>Install the server</button>
+          <button className="btn btn-accent" disabled={!status.termuxInstalled || !(status.granted || status.verified)} onClick={() => act(termux.install)}>Install the server</button>
         </Step>
       </ol>}
+
+      {!status.module && status.termuxInstalled && <p className="text-xs text-muted">What Android reports: Termux {status.version || '?'} · Android API {status.sdk ?? '?'} · Termux declares the permission: {status.declared === undefined ? '?' : status.declared ? 'yes' : 'no'} · listed by Android: {status.permissionKnown === undefined ? '?' : status.permissionKnown ? 'yes' : 'no'} · granted: {status.granted ? 'yes' : 'no'} · tested: {status.verified ? 'yes' : 'no'}</p>}
 
       {status.module && <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">

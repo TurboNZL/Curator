@@ -6,7 +6,7 @@ import { isAndroidApp } from './native.ts';
  * The bridge returns JSON strings; this file turns them into plain values and polls the module's own address to tell whether it is up.
  */
 interface Bridge {
-  termuxStatus(): string; termuxOneTimeLine(): string; termuxCopyLine(): void; termuxOpenTermux(): boolean; termuxOpenInstallPage(): void; termuxRequestPermission(): void; termuxOpenAppSettings?(): void;
+  termuxStatus(): string; termuxOneTimeLine(): string; termuxCopyLine(): void; termuxOpenTermux(): boolean; termuxOpenInstallPage(): void; termuxRequestPermission(): void; termuxOpenAppSettings?(): void; termuxCheck?(): boolean;
   termuxInstall(): boolean; termuxStart(): boolean; termuxStop(): boolean; termuxRemove(deleteLibrary: boolean): boolean; termuxSetOptions(autoStart: boolean, wake: boolean): void;
 }
 const bridge = (): Bridge | null => {
@@ -18,7 +18,9 @@ export interface TermuxResult { label?: string; state?: 'running' | 'done' | 'fa
 export interface TermuxStatus {
   /** Termux is installed on the phone */ termuxInstalled: boolean;
   /** Android has been told to let this app run commands in Termux */ granted: boolean;
-  /** Android knows Termux's permission at all (false when Termux was installed after this app: it must be reinstalled; absent in older apps) */ permissionKnown?: boolean;
+  /** diagnostics only: Android's permission list shows Termux's permission (never a reason to stop; absent in older apps) */ permissionKnown?: boolean;
+  /** Termux itself declares the permission */ declared?: boolean; version?: string; sdk?: number;
+  /** a command has really run in Termux: the permission and Termux's switch both work */ verified?: boolean;
   /** the module was installed from this app */ module: boolean;
   port: number; token: string; autoStart: boolean; wake: boolean; result: TermuxResult;
 }
@@ -31,6 +33,7 @@ export const termux = {
   openTermux: () => bridge()?.termuxOpenTermux() ?? false,
   openInstallPage: () => bridge()?.termuxOpenInstallPage(),
   requestPermission: () => bridge()?.termuxRequestPermission(),
+  check: () => bridge()?.termuxCheck?.() ?? false,
   openAppSettings: () => bridge()?.termuxOpenAppSettings?.(),
   install: () => bridge()?.termuxInstall() ?? false,
   start: () => bridge()?.termuxStart() ?? false,
@@ -52,6 +55,7 @@ export async function termuxServerUp(port: number, ms = 1500): Promise<boolean> 
 export function explainTermuxFailure(r: TermuxResult): string {
   const text = `${r.err ?? ''} ${r.out ?? ''}`.toLowerCase();
   if (/allow-external-apps|not allowed|external apps/.test(text)) return 'Termux has not been told to accept commands from other apps. Do the one-time step: copy the line, paste it in Termux, press Enter.';
+  if (/requires permission|securityexception|permission denied/.test(text)) return 'Android has not allowed this app to run commands in Termux yet. Press “Allow”, or switch it on in this app’s settings, then press “Test”.';
   if (/permission/.test(text)) return 'Android has not allowed this app to run commands in Termux yet. Press “Allow”.';
   if (/no server bundle/.test(text)) return 'No release has a server bundle for Termux yet (the next release will).';
   if (/too old/.test(text)) return 'Termux installed a Node version that is too old. Open Termux and run: pkg upgrade';
@@ -81,7 +85,7 @@ export function useTermux(everyMs = 2500) {
 export function startTermuxServerIfWanted(): void {
   if (!termuxSupported()) return;
   const s = termuxStatus();
-  if (!s?.module || !s.autoStart || !s.termuxInstalled || !s.granted) return;
+  if (!s?.module || !s.autoStart || !s.termuxInstalled || !(s.granted || s.verified)) return;
   // a command we sent a moment ago may still be starting up: leave it alone for two minutes
   void termuxServerUp(s.port).then((up) => { if (!up && (s.result.state !== 'running' || Date.now() - (s.result.at ?? 0) > 120_000)) termux.start(); });
 }
