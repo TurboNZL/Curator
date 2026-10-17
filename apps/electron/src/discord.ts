@@ -106,7 +106,7 @@ export class DiscordPresence {
       const sockets = findSockets();
       this.detail = sockets.length
         ? `Found Discord at ${sockets[0]} but could not talk to it${e instanceof Error && e.message ? ` (${e.message})` : ''}. Is it the same user, and not a second Discord program?`
-        : `No Discord found: no discord-ipc socket in ${socketFolders().join(', ') || 'the named pipes'}. Start Discord's desktop program (a browser tab does not count).`;
+        : `No Discord found: no discord-ipc socket in ${socketFolders().join(', ') || 'the named pipes'}. Start Discord's desktop program (a browser tab does not count unless arRPC is running: see the Discord guide).`;
       this.retry();
     });
   }
