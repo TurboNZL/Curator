@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newId, applyVote, replayVotes, balancedRatings, startTrack, advance, shuffleWithRules, wins, crossfadeFor } from '../src';
+import { newId, applyVote, replayVotes, balancedRatings, startTrack, advance, shuffleWithRules, wins, crossfadeFor, crossfadeShiftFor } from '../src';
 
 describe('ids', () => {
   it('are unique and time-sortable', () => {
@@ -96,5 +96,20 @@ describe('sync conflict rule', () => {
     expect(wins({ updatedAt: 2, deviceId: 'a' }, { updatedAt: 1, deviceId: 'z' })).toBe(true);
     expect(wins({ updatedAt: 1, deviceId: 'a' }, { updatedAt: 2, deviceId: 'a' })).toBe(false);
     expect(wins({ updatedAt: 1, deviceId: 'b' }, { updatedAt: 1, deviceId: 'a' })).toBe(true);
+  });
+});
+
+describe('crossfade shift', () => {
+  const base = { trackAId: 'a', trackBId: 'b', playFirstOnShuffle: true, applyToAlbumSource: false };
+  it('is 0 unless the pair\'s rule moves the fade', () => {
+    expect(crossfadeShiftFor([], 'a', 'b')).toBe(0);
+    expect(crossfadeShiftFor([base], 'a', 'b')).toBe(0);
+    expect(crossfadeShiftFor([{ ...base, crossfadeShiftSec: 2.5 }], 'a', 'b')).toBe(2.5);
+    expect(crossfadeShiftFor([{ ...base, crossfadeShiftSec: 2.5 }], 'a', 'c')).toBe(0);
+  });
+  it('is clamped to 0..12 and ignores junk', () => {
+    expect(crossfadeShiftFor([{ ...base, crossfadeShiftSec: 99 }], 'a', 'b')).toBe(12);
+    expect(crossfadeShiftFor([{ ...base, crossfadeShiftSec: -3 }], 'a', 'b')).toBe(0);
+    expect(crossfadeShiftFor([{ ...base, crossfadeShiftSec: Number.NaN }], 'a', 'b')).toBe(0);
   });
 });

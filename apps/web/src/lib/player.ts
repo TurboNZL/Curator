@@ -1,6 +1,6 @@
 import { PlayLog } from './playLog.ts';
 import { create } from 'zustand';
-import { advance, crossfadeFor, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@turbomusic/core';
+import { advance, crossfadeFor, crossfadeShiftFor, newId, pushHistory, type PlaybackSnapshot, shuffleWithRules, startTrack, type PlaybackLogData, type QueueState, type SourceType } from '@turbomusic/core';
 import { moveTrack } from './defaults.ts';
 import { audioSource, cancelPrefetch, imageSource, localAudio, prefetchAudio, streamUrl } from './files.ts';
 import { nativeAudio, nativeAudioAvailable, type NativeEvent, type NativeItem } from './nativeAudio.ts';
@@ -8,7 +8,7 @@ import { BEAM_ID, beamActive, beamFailed, setBeamVolume } from './beam.ts';
 import { getLibrary } from './derive.ts';
 import { useStore } from './store.ts';
 import { addEqElement, resumeEq, setEq } from './eq.ts';
-import { fadeGains, fadeLength, shouldFade, shouldPrepare } from './crossfadeMath.ts';
+import { clampShift, fadeGains, fadeLength, shouldFade, shouldPrepare } from './crossfadeMath.ts';
 import { eqConfig } from './eqConfig.ts';
 import { isFlat } from './eqPresets.ts';
 import { refreshSpotifyStatus, spotifyCan, spotifyEngine, spotifyUriOf } from './spotifyPlayer.ts';
@@ -156,13 +156,13 @@ export const usePlayer = create<PlayerState>((set, get) => {
     if (p.local) URL.revokeObjectURL(p.url);
   }
   /** What will play after the current track and how long the change should fade; null = a plain change. */
-  function crossfadePlan(): { nextId: string; wanted: number } | null {
+  function crossfadePlan(): { nextId: string; wanted: number; shift: number } | null {
     const q = get().queue;
     if (!q.currentId || native || spotifyEngine.active() || nativeAudioAvailable()) return null;
     const next = advance(q, rules(), get().source.type).currentId;
     if (!next || next === q.currentId || !lib().trackById.get(next)?.file) return null; // no next track, or one only Spotify / nothing can play: the normal path decides
     const wanted = crossfadeFor(rules(), q.currentId, next, useStore.getState().settings.crossfade, get().source.type);
-    return wanted > 0 ? { nextId: next, wanted } : null;
+    return wanted > 0 ? { nextId: next, wanted, shift: crossfadeShiftFor(rules(), q.currentId, next, get().source.type) } : null;
   }
   async function prepare(id: string) {
     dropPrep();
@@ -177,10 +177,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
       prep = { id, el: b, url, local };
     } catch { prepFailed = id; }
   }
-  async function startFade(nextId: string, wanted: number) {
+  async function startFade(nextId: string, wanted: number, shift: number) {
     const out = audio, p = prep;
     if (!out || !p || p.id !== nextId || fading || fade || !Number.isFinite(out.duration)) return;
-    const len = fadeLength(wanted, out.duration, out.duration - out.currentTime);
+    const len = fadeLength(wanted, out.duration, out.duration - out.currentTime - clampShift(shift, out.duration)); // the fade has to fit before the shifted end
     if (!len) return;
     fading = true;
     const loads = loadSeq;
@@ -216,10 +216,10 @@ export const usePlayer = create<PlayerState>((set, get) => {
     if (!a || fade || fading || a.paused || !get().playing || !Number.isFinite(a.duration) || a.duration <= 0) return;
     const plan = crossfadePlan();
     if (!plan) { if (prep) dropPrep(); return; }
-    const remaining = a.duration - a.currentTime;
-    if (!shouldPrepare(plan.wanted, remaining) || prepFailed === plan.nextId) return;
+    const remaining = a.duration - a.currentTime, shift = clampShift(plan.shift, a.duration);
+    if (!shouldPrepare(plan.wanted, remaining, shift) || prepFailed === plan.nextId) return;
     if (!prep || prep.id !== plan.nextId) { void prepare(plan.nextId); return; }
-    if (shouldFade(plan.wanted, remaining) && prep.el.readyState >= 3) void startFade(plan.nextId, plan.wanted);
+    if (shouldFade(plan.wanted, remaining, shift) && prep.el.readyState >= 3) void startFade(plan.nextId, plan.wanted, shift);
   }
 
   /** playbackLogs are append-only; skips are logged too so stats can tell them apart */
