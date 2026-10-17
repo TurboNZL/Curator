@@ -54,6 +54,11 @@ class ServerPrefs(context: Context) {
         get() = p.getBoolean("termuxWake", false)
         set(v) { p.edit().putBoolean("termuxWake", v).apply() }
     /** the last thing Termux was asked to do and how it went (JSON) */
+    /** a harmless command has run in Termux through RUN_COMMAND: proves the permission AND Termux's allow-external-apps switch */
+    var termuxVerified: Boolean
+        get() = p.getBoolean("termuxVerified", false)
+        set(v) { p.edit().putBoolean("termuxVerified", v).apply() }
+
     var termuxResult: String
         get() = p.getString("termuxResult", "") ?: ""
         set(v) { p.edit().putString("termuxResult", v).apply() }

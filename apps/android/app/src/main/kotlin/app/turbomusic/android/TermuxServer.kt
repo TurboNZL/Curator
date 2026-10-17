@@ -77,13 +77,30 @@ object Termux {
         ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(F_DROID)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    /**
-     * Does Android know Termux's RUN_COMMAND permission? It only resolves a permission that another app declares when this app is
-     * installed AFTER that app; if Termux came second, the permission is unknown here and asking does nothing, ever (reinstalling this app fixes it).
-     */
-    fun permissionKnown(ctx: Context): Boolean = try { ctx.packageManager.getPermissionInfo(PERMISSION, 0); true } catch (e: PackageManager.NameNotFoundException) { false }
+    /** Termux's version name (for the diagnostics line), or "" */
+    fun version(ctx: Context): String = try { ctx.packageManager.getPackageInfo(PACKAGE, 0).versionName ?: "" } catch (e: Exception) { "" }
 
-    fun requestPermission(activity: Activity) { if (permissionKnown(activity)) activity.requestPermissions(arrayOf(PERMISSION), ASK_CODE) }
+    /**
+     * Does Termux itself declare RUN_COMMAND? Read from Termux's own package info, which does not depend on how Android resolves permissions
+     * between apps (an earlier version of this check guessed that the install order mattered; nothing documents that, and it blocked the user).
+     */
+    fun declared(ctx: Context): Boolean = try {
+        @Suppress("DEPRECATION")
+        val info = ctx.packageManager.getPackageInfo(PACKAGE, PackageManager.GET_PERMISSIONS)
+        info.permissions?.any { it.name == PERMISSION } == true
+    } catch (e: Exception) { false }
+
+    /** Android's own registry knows the permission, or Termux declares it. Only for the diagnostics line: never a reason to refuse to try. */
+    fun permissionKnown(ctx: Context): Boolean = try { ctx.packageManager.getPermissionInfo(PERMISSION, 0); true } catch (e: PackageManager.NameNotFoundException) { declared(ctx) }
+
+    /** Always asks: if Android has nothing to show it answers "denied" at once, and the page then points at the settings page and the test button. */
+    fun requestPermission(activity: Activity) { activity.requestPermissions(arrayOf(PERMISSION), ASK_CODE) }
+
+    /**
+     * Runs `echo` in Termux. If it comes back, the permission is granted and Termux accepts outside commands: everything the first two steps
+     * need, proven by doing it rather than by guessing from Android's permission lists.
+     */
+    fun check(ctx: Context): Boolean = run(ctx, "check", "echo turbomusic-ok")
 
     /** This app's page in Android's settings: after a refused (or twice refused) request, the permission can only be switched on there. */
     fun openAppSettings(ctx: Context) {
@@ -135,7 +152,7 @@ object Termux {
     /** what the page needs to draw the module's card */
     fun status(ctx: Context): String {
         val p = ServerPrefs(ctx)
-        return JSONObject().put("termuxInstalled", installed(ctx)).put("granted", granted(ctx)).put("permissionKnown", permissionKnown(ctx)).put("module", p.termuxInstalled)
+        return JSONObject().put("termuxInstalled", installed(ctx)).put("granted", granted(ctx)).put("permissionKnown", permissionKnown(ctx)).put("declared", declared(ctx)).put("version", version(ctx)).put("verified", p.termuxVerified).put("sdk", android.os.Build.VERSION.SDK_INT).put("module", p.termuxInstalled)
             .put("port", TermuxScripts.PORT).put("token", p.termuxToken).put("autoStart", p.termuxAutoStart).put("wake", p.termuxWake)
             .put("result", runCatching { JSONObject(p.termuxResult.ifEmpty { "{}" }) }.getOrDefault(JSONObject())).toString()
     }
@@ -152,6 +169,9 @@ class TermuxResultReceiver : BroadcastReceiver() {
             o.put("state", if (exit == 0 && (internal == -1 || internal == 0)) "done" else "failed").put("exit", exit)
                 .put("out", (r.getString("stdout") ?: "").takeLast(600)).put("err", ((r.getString("stderr") ?: "") + (r.getString("errmsg") ?: "")).takeLast(600))
         }
-        ServerPrefs(context).termuxResult = o.toString()
+        val prefs = ServerPrefs(context)
+        prefs.termuxResult = o.toString()
+        // any command that ran proves the permission and Termux's switch; the test command is simply the cheapest one
+        if (o.optString("state") == "done") prefs.termuxVerified = true
     }
 }

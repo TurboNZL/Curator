@@ -36,6 +36,8 @@ class TurboMusicBridge(private val context: Context, private val view: View) {
     @JavascriptInterface fun termuxOpenInstallPage() = Termux.openInstallPage(context)
     @JavascriptInterface fun termuxOpenAppSettings() { view.post { Termux.openAppSettings(context) } }
     @JavascriptInterface fun termuxRequestPermission() { (context as? android.app.Activity)?.let { a -> view.post { Termux.requestPermission(a) } } }
+    /** runs a harmless command in Termux to prove the permission and the Termux switch work */
+    @JavascriptInterface fun termuxCheck(): Boolean = Termux.check(context)
     @JavascriptInterface fun termuxInstall(): Boolean = Termux.install(context)
     @JavascriptInterface fun termuxStart(): Boolean = Termux.start(context)
     @JavascriptInterface fun termuxStop(): Boolean = Termux.stop(context)
