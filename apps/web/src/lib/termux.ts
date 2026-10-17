@@ -6,7 +6,7 @@ import { isAndroidApp } from './native.ts';
  * The bridge returns JSON strings; this file turns them into plain values and polls the module's own address to tell whether it is up.
  */
 interface Bridge {
-  termuxStatus(): string; termuxOneTimeLine(): string; termuxCopyLine(): void; termuxOpenTermux(): boolean; termuxOpenInstallPage(): void; termuxRequestPermission(): void;
+  termuxStatus(): string; termuxOneTimeLine(): string; termuxCopyLine(): void; termuxOpenTermux(): boolean; termuxOpenInstallPage(): void; termuxRequestPermission(): void; termuxOpenAppSettings?(): void;
   termuxInstall(): boolean; termuxStart(): boolean; termuxStop(): boolean; termuxRemove(deleteLibrary: boolean): boolean; termuxSetOptions(autoStart: boolean, wake: boolean): void;
 }
 const bridge = (): Bridge | null => {
@@ -18,6 +18,7 @@ export interface TermuxResult { label?: string; state?: 'running' | 'done' | 'fa
 export interface TermuxStatus {
   /** Termux is installed on the phone */ termuxInstalled: boolean;
   /** Android has been told to let this app run commands in Termux */ granted: boolean;
+  /** Android knows Termux's permission at all (false when Termux was installed after this app: it must be reinstalled; absent in older apps) */ permissionKnown?: boolean;
   /** the module was installed from this app */ module: boolean;
   port: number; token: string; autoStart: boolean; wake: boolean; result: TermuxResult;
 }
@@ -30,6 +31,7 @@ export const termux = {
   openTermux: () => bridge()?.termuxOpenTermux() ?? false,
   openInstallPage: () => bridge()?.termuxOpenInstallPage(),
   requestPermission: () => bridge()?.termuxRequestPermission(),
+  openAppSettings: () => bridge()?.termuxOpenAppSettings?.(),
   install: () => bridge()?.termuxInstall() ?? false,
   start: () => bridge()?.termuxStart() ?? false,
   stop: () => bridge()?.termuxStop() ?? false,
