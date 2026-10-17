@@ -6,6 +6,7 @@ import { effectiveUi } from 'turbothemes';
 import { usePlayer } from '../lib/player.ts';
 import { togglePlayback } from '../lib/connect.ts';
 import { cn } from '../lib/cn.ts';
+import { usePageDirection } from '../lib/pageDirection.ts';
 import { FilterBar } from './FilterBar.tsx';
 import { splitTyped, type Chip } from '../lib/filters.ts';
 import { parseSearch, searchHref } from '../lib/searchUrl.ts';
@@ -186,6 +187,11 @@ export function Layout() {
   const logo = ui === 'lgux' ? '/icon-lg.svg' : '/icon.svg'; // LG UX 5.0 has its own (candy) logo
   const sideNav = toolbar ? LIBRARY.map((to) => NAV.find((n) => n.to === to)!) : NAV;
   const topNav = toolbar ? NAV.filter((n) => !LIBRARY.includes(n.to) && n.to !== '/settings') : topbar ? NAV : [];
+  // a page slides in from the side it sits on in the navigation (TurboKeep's tab switch, the engine's `motion` module); pages outside the nav (search...) keep the previous position
+  const navIdx = NAV.findIndex((n) => (n.to === '/' ? pathname === '/' : pathname === n.to || pathname.startsWith(`${n.to}/`)));
+  const lastIdx = useRef(Math.max(0, navIdx));
+  if (navIdx >= 0) lastIdx.current = navIdx;
+  const pageDir = usePageDirection(lastIdx.current, pathname);
   const hasPlayer = usePlayer((s) => !!s.queue.currentId);
   // Space always plays/pauses (also the device being controlled), except while typing text. It wins over the focused button's own
   // Space-to-click and over the list navigation, so it runs first (capture) and the matching key-up is swallowed too.
@@ -244,7 +250,7 @@ export function Layout() {
               {toolbar && <NavLink to="/settings" className="btn btn-ghost bt-add hidden !p-2 md:inline-flex" aria-label="Settings" title="Settings"><Settings size={18} /></NavLink>}
             </div>
           </form>
-          <div className={cn('bt-content mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className="bt-page"><Outlet /></div></div>
+          <div className={cn('bt-content mx-auto p-4 md:p-6', wide ? 'max-w-[96rem]' : 'max-w-6xl')}><div key={pathname} className={cn('bt-page', pageDir)}><Outlet /></div></div>
         </main>
       </div>
       <PlayerBar />

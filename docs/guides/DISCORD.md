@@ -20,8 +20,39 @@ Discord only lets a program show a status **under the name of a Discord applicat
 4. *(Optional, for the picture.)* **Rich Presence → Art Assets → Add Image(s)**: upload a square image (at least 512×512; `apps/web/public/icon-512.png` in the repository is the app's icon) and name it exactly **`logo`** (lower case). It can take a few minutes before Discord shows it.
 5. In the app: **Settings → This app → Discord → "Use my own Discord application"**, paste the Application ID, and make sure the box above is ticked.
 
+## Using Discord in a browser or as an installed web app (PWA)
+A browser tab, and Discord's "install as app" window, cannot talk to a program on your computer, so on their own they never show a status. The fix is **arRPC**, a small background program that pretends to be Discord's desktop app: TurboMusic talks to arRPC exactly as it would to Discord, and arRPC hands the status to the Discord web page through a **browser add-on or plugin** that is connected to it. So there are always three parts, and all three must be up:
+
+```
+TurboMusic desktop app  ->  arRPC (a program on your computer)  ->  add-on in the browser  ->  your Discord web page
+```
+This was checked here up to the middle: arRPC 3.6.0 was started, the same Discord library TurboMusic uses connected to its socket, and the status arrived on arRPC's bridge (`ws://127.0.0.1:1337`). The last hop (the add-on inside a real Discord page) could not be run from the sandbox.
+
+**Easiest:** use **Vesktop** or **Legcord** instead of the browser. They have arRPC built in (turn it on in their settings), no daemon, no add-on.
+
+**For the browser or PWA:**
+1. **Run arRPC** (needs Node 18 or newer) in a terminal and leave it open: `npx arrpc`. It prints three lines: `bridge listening on 1337`, `ipc listening at …/discord-ipc-0` and `websocket listening on 6463`. If those lines are not there, nothing else can work.
+2. **Real Discord desktop must not be running.** Two programs cannot both be Discord. (If it is, arRPC takes `discord-ipc-1` instead and TurboMusic talks to the real Discord, so the web page sees nothing.)
+3. **Connect the web page to arRPC.** Either:
+   - **Vencord** (browser extension or userscript from vencord.dev): Settings → Vencord → Plugins → enable **WebRichPresence (arRPC)**. It connects to `ws://127.0.0.1:1337`. It tries once, shows "Failed to connect to arRPC, is it running?" with a Retry button if the server was not up, and **never reconnects by itself**: if you restart arRPC, reload the Discord page.
+   - or, with no add-on, open Discord's web page → DevTools (Ctrl+Shift+I) → Console, and paste the contents of `examples/bridge_mod.js` from the arRPC repository (it has to be done again after every page reload, and Discord's page rules can block it).
+4. In TurboMusic: Settings → This app → Discord → tick the box and paste your Application ID (above). Play a song. The Settings line should say **Connected** (that is arRPC answering).
+5. Discord → User Settings → Activity Privacy → **Share your detected activities** on (without it nobody sees anything).
+
+**When "the extension and daemon" did not work, check in this order:**
+- **Is arRPC really listening?** Run `curl -i http://127.0.0.1:1337` while it runs: a reply (even an error page) means yes, "connection refused" means no. Windows: `netstat -ano | findstr 1337`.
+- **Does TurboMusic see it?** The Discord line in Settings must say Connected. If not, arRPC's socket is missing: on Linux it is `$XDG_RUNTIME_DIR/discord-ipc-N` (or `/tmp`), on Windows the pipe `\\?\pipe\discord-ipc-N`. Start arRPC from the same user account as TurboMusic.
+- **Did the web page connect?** In the arRPC terminal you should see `bridge web connected` when the plugin starts, and `bridge web disconnected` when you close the tab. Never seeing "web connected" means the add-on cannot reach `127.0.0.1:1337`: a browser may ask for permission to reach devices on your local network (Chrome 142 and newer do, for the site) and a "Block" answer silently breaks it; privacy add-ons, VPN "block local network" options and Safari can also stop it. Also look at the page's DevTools console for a blocked-connection message.
+- **A PWA window has its own add-on state.** Vencord installed in the browser is not necessarily inside the installed-app window (a PWA is its own window and can ignore extensions). Test in a normal tab first; if it works there and not in the PWA window, use the tab, or Vesktop.
+- **A second arRPC or a leftover one** (an old terminal) makes the new one take `discord-ipc-1`: close the old one, or kill the process, and start a single arRPC.
+- **After a restart of anything, reload the Discord page** (the plugin does not reconnect).
+- It says *Connected* but the status is missing: privacy setting (step 5), or you are looking at a different Discord login than the page that has the plugin.
+- arRPC calls itself experimental. If it misbehaves, the project's issue list is at github.com/OpenAsar/arrpc; the plugin is Vencord's `arRPC.web`.
+
+Sources: the [arRPC README](https://github.com/OpenAsar/arrpc) and Vencord's WebRichPresence (arRPC) plugin source.
+
 ## Rate limit and what the app tells you
-Discord accepts a few activity updates per 20 seconds, so the app sends at most one every 4 seconds (the newest state wins); skipping through tracks quickly shows the last one a moment later. While it cannot connect, **Settings > This app > Discord** says why in a sentence: either no `discord-ipc` socket exists in the folders it looked in (Discord is not running, or it is a sandboxed Flatpak/Snap one), or it found one and could not talk to it.
+Discord accepts a few activity updates per 20 seconds, so the app sends at most one every 4 seconds (the newest state wins); skipping through tracks quickly shows the last one a moment later. While it cannot connect, **Settings > This app > Discord** says why in a sentence: either no `discord-ipc` socket exists in the folders it looked in (Discord is not running, or it is a sandboxed Flatpak/Snap one, or you use Discord in a browser and have not set up arRPC: see the browser section above), or it found one and could not talk to it.
 
 ## It does not show up
 Work down this list; each step rules out one cause.
