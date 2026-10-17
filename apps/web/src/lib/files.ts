@@ -7,6 +7,8 @@ import { pickEvictions, type CacheEntry } from './cachePolicy.ts';
 import { sha256Sync } from './sha256.ts';
 import { api, useStore } from './store.ts';
 import { blobUrlViaHeaders, freshBlobUrlViaHeaders } from './accessMedia.ts';
+import { cachedImageUrl } from './imageCache.ts';
+import { isAndroidApp } from './native.ts';
 
 export async function sha256Hex(data: ArrayBuffer): Promise<string> {
   if (!globalThis.crypto?.subtle) return sha256Sync(new Uint8Array(data)); // insecure origin (plain http on the LAN)
@@ -115,6 +117,7 @@ export async function imageSource(hash: string): Promise<{ url: string; local: b
   const blob = await (await localDb()).get('blobs', hash);
   if (blob) return { url: URL.createObjectURL(blob), local: true };
   if (api().needsHeaderFetch) { try { return { url: await blobUrlViaHeaders(hash), local: false }; } catch { /* fall back to the plain link */ } }
+  if (isAndroidApp()) { const u = await cachedImageUrl(hash); if (u) return { url: u, local: false }; }
   return { url: api().fileUrl(hash), local: false };
 }
 
@@ -131,6 +134,7 @@ export function useFileUrl(hash: string | null | undefined): string | null {
       if (!live) return;
       if (blob) setUrl((revoke = URL.createObjectURL(blob)));
       else if (configured && api().needsHeaderFetch) void blobUrlViaHeaders(hash).then((u) => { if (live) setUrl(u); }, () => { if (live) setUrl(api().fileUrl(hash)); });
+      else if (configured && isAndroidApp()) void cachedImageUrl(hash).then((u) => { if (live) setUrl(u ?? api().fileUrl(hash)); });
       else if (configured) setUrl(api().fileUrl(hash));
     });
     return () => { live = false; if (revoke) URL.revokeObjectURL(revoke); };
