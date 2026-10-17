@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Only apps signed with the same key (the TurboMusic app) get this, and with it the right to start the server. -->
+    <permission android:name="app.turbomusic.server.permission.CONTROL" android:protectionLevel="signature" />
+
+    <!-- No activity on purpose: the app has no screen and no launcher icon; the TurboMusic app starts and stops it. -->
+    <application android:label="TurboMusic Server" android:allowBackup="false" android:supportsRtl="true">
+        <service
+            android:name=".ServerService"
+            android:process=":node"
+            android:exported="true"
+            android:permission="app.turbomusic.server.permission.CONTROL"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Runs the owner's own TurboMusic library server, which their other devices connect to" />
+        </service>
+    </application>
+</manifest>

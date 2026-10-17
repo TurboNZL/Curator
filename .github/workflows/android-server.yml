@@ -1,0 +1,38 @@
+# The Android server app (apps/android-server): a spike that runs the TurboMusic server inside an Android app with Node as a library.
+# It cannot be built in the author's sandbox, so this is where it is compiled and run: on every push that touches it, the debug app is built and
+# started on an emulator and /api/health must answer. Read this job's log first when touching the module.
+name: Android server
+on:
+  push:
+    paths: ['apps/android-server/**', '.github/workflows/android-server.yml']
+  workflow_dispatch:
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.9' }
+      - run: pnpm install --ignore-scripts --filter @turbomusic/web --filter @turbomusic/core --filter @turbomusic/server --filter @turbomusic/electron
+      - run: apps/android-server/scripts/make-bundle.sh
+      - run: apps/android-server/scripts/fetch-libnode.sh x86_64
+      - run: gradle -p apps/android-server -PserverAbis=x86_64 :app:testDebugUnitTest :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with: { name: turbomusic-server-debug-apk, path: apps/android-server/app/build/outputs/apk/debug/app-debug.apk }
+      - name: Allow the emulator to use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: default
+          script: bash apps/android-server/scripts/smoke.sh

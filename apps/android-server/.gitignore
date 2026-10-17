@@ -1,0 +1,7 @@
+# libnode.so (~85 MB per processor type) is downloaded by scripts/fetch-libnode.sh, the bundle is built by scripts/make-bundle.sh
+app/libnode/
+bundle/
+build/
+.gradle/
+.cxx/
+local.properties
