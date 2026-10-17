@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: the same service without the signature permission, so `adb shell am start-foreground-service` (CI's emulator test) may start it. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <service
+            android:name=".ServerService"
+            android:process=":node"
+            android:exported="true"
+            android:foregroundServiceType="specialUse"
+            tools:node="replace">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Runs the owner's own TurboMusic library server, which their other devices connect to" />
+        </service>
+    </application>
+</manifest>
