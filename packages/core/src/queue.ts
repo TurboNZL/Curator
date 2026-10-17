@@ -9,6 +9,12 @@ export interface PlaybackRule {
    * gapless), a number = fade A out and B in over that long.
    */
   crossfadeSec?: number | null;
+  /**
+   * Where the fade sits: how many seconds EARLIER than the end of A it finishes (0 = it ends exactly where A ends, the default). A song that
+   * ends in silence, or one that starts with silence, needs the next one to come in earlier; the fade is dragged there in the rule's editor.
+   * The last seconds of A are then not played. Only used when the change fades at all.
+   */
+  crossfadeShiftSec?: number | null;
 }
 
 export const MAX_CROSSFADE_SEC = 12;
@@ -19,6 +25,15 @@ export function crossfadeFor(rules: PlaybackRule[], fromId: string, toId: string
   const rule = ruleFor(rules, fromId, source);
   if (rule && rule.trackBId === toId && typeof rule.crossfadeSec === 'number' && Number.isFinite(rule.crossfadeSec)) return clampFade(rule.crossfadeSec);
   return clampFade(Number.isFinite(deviceSec) ? deviceSec : 0);
+}
+
+export const MAX_CROSSFADE_SHIFT_SEC = 12;
+
+/** How much earlier than the end of `fromId` the fade into `toId` is placed (0 unless that pair's rule moves it). */
+export function crossfadeShiftFor(rules: PlaybackRule[], fromId: string, toId: string, source?: SourceType): number {
+  const rule = ruleFor(rules, fromId, source);
+  if (rule && rule.trackBId === toId && typeof rule.crossfadeShiftSec === 'number' && Number.isFinite(rule.crossfadeShiftSec)) return Math.min(MAX_CROSSFADE_SHIFT_SEC, Math.max(0, rule.crossfadeShiftSec));
+  return 0;
 }
 
 export type SourceType = 'album' | 'playlist' | 'track' | 'shuffle' | 'search';

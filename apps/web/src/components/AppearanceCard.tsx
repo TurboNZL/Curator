@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { create } from 'zustand';
 import { Section } from './Section.tsx';
-import { Check, Eye, ImageIcon, ImageOff, Search, Upload, Wand2 } from 'lucide-react';
+import { Check, Eye, ImageIcon, ImageOff, Moon, Search, Sun, Upload, Wand2 } from 'lucide-react';
 import { useStore } from '../lib/store.ts';
 import { cn } from '../lib/cn.ts';
+import { counterpart } from '../lib/themePairs.ts';
 import { clearCustomWallpaper, deviceLook, effectiveUi, getCustomImage, isUiStyle, listStyles, listThemes, resolveTheme, saveCustomWallpaper, themeStyle, themeWallpaper } from 'turbothemes';
 import { useCatalog } from '../lib/useCatalog.ts';
 import { LAYOUTS } from '../lib/layout.ts';
@@ -62,7 +63,7 @@ export function PreviewApp({ theme, ui }: { theme: ThemeId; ui: UiStyleId }) {
   );
 }
 
-type Tone = 'all' | 'dark' | 'light';
+type Tone = 'dark' | 'light';
 
 /** What the preview shows: the option under the pointer, else the current choice. Shared by the two sections and the preview column. */
 const usePreview = create<{ theme: ThemeId | null; ui: UiStyleId | null; setTheme(t: ThemeId | null): void; setUi(u: UiStyleId | null): void }>((set) => ({
@@ -96,11 +97,18 @@ const TILE_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(8.25rem,1fr))] gap-1.
 
 /** Colour themes: three groups in one panel that grows with its content (no inner scrolling), dark/light filter on top. */
 export function ColourThemeSection() {
-  const [tone, setTone] = useState<Tone>('all');
+  const { settings, updateSettings } = useStore();
+  // Dark unless the chosen theme is a light one; flipping the switch also flips a theme that has a twin in the other mode
+  const [tone, setTone] = useState<Tone>(() => (resolveTheme(settings.theme).dark === false ? 'light' : 'dark'));
   const setHover = usePreview((s) => s.setTheme);
   useCatalog();
   const THEMES = listThemes();
-  const tonal = (t: ThemeChoice) => tone === 'all' || t.dark === null || (tone === 'dark') === t.dark;
+  const tonal = (t: ThemeChoice) => t.dark === null || (tone === 'dark') === t.dark;
+  const flip = (next: Tone) => {
+    setTone(next);
+    const twin = counterpart(settings.theme);
+    if (twin && resolveTheme(twin).dark === (next === 'dark')) updateSettings({ theme: twin });
+  };
   const groups = [
     { title: 'TurboMusic', note: 'The app\'s own looks; System follows your device.', list: THEMES.filter((t) => (t.id === 'system' || t.group === 'own') && tonal(t)) },
     { title: 'Colour themes', note: null, list: THEMES.filter((t) => t.id !== 'system' && (t.group === 'colour' || t.group === undefined) && tonal(t)) },
@@ -111,9 +119,10 @@ export function ColourThemeSection() {
     <Section title="Colour theme">
       <div className="flex flex-wrap items-center gap-2">
         <p className="mr-auto text-sm text-muted">Colours only: the accent comes from the theme. Any theme works with any UI style.</p>
-        <div role="group" aria-label="Show" className="flex gap-1 text-xs">
-          {(['all', 'dark', 'light'] as Tone[]).map((t) => <button key={t} aria-pressed={tone === t} onClick={() => setTone(t)} className={cn('rounded-full border px-2.5 py-0.5 capitalize', tone === t ? 'border-accent text-accent' : 'border-line text-muted hover:text-fg')}>{t}</button>)}
-        </div>
+        <button type="button" role="switch" aria-checked={tone === 'light'} aria-label="Light or dark colour themes" onClick={() => flip(tone === 'dark' ? 'light' : 'dark')}
+          className="flex items-center gap-1 rounded-full border border-line p-0.5 text-xs">
+          {(['dark', 'light'] as Tone[]).map((t) => <span key={t} className={cn('flex items-center gap-1 rounded-full px-2.5 py-0.5 capitalize transition-colors', tone === t ? 'bg-accent text-accent-fg' : 'text-muted')}>{t === 'dark' ? <Moon size={12} /> : <Sun size={12} />}{t}</span>)}
+        </button>
       </div>
       {groups.filter((g) => g.list.length).map((g) => (
         <div key={g.title} className="space-y-1.5">

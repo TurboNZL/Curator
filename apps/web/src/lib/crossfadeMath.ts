@@ -47,7 +47,22 @@ export function fadeLength(wantedSec: number, durationSec: number, remainingSec:
   return len >= MIN_FADE_SEC ? len : 0;
 }
 
-/** Is it time to load the next track into the spare? */
-export const shouldPrepare = (wantedSec: number, remainingSec: number) => wantedSec > 0 && remainingSec <= wantedSec + PREPARE_AHEAD_SEC;
+/**
+ * A rule can place the fade earlier than the end of the track (see `crossfadeShiftSec` in core). Never more than a third of the track
+ * (a short track must not be cut off right after it starts).
+ */
+export const clampShift = (shiftSec: number, durationSec: number) => (shiftSec > 0 && Number.isFinite(durationSec) && durationSec > 0 ? Math.min(shiftSec, durationSec / 3) : 0);
+
+/** Is it time to load the next track into the spare? `shiftSec` is how much earlier than the end the fade is placed. */
+export const shouldPrepare = (wantedSec: number, remainingSec: number, shiftSec = 0) => wantedSec > 0 && remainingSec <= wantedSec + shiftSec + PREPARE_AHEAD_SEC;
 /** Is it time to start the fade? */
-export const shouldFade = (wantedSec: number, remainingSec: number) => wantedSec > 0 && remainingSec <= wantedSec + TRIGGER_SLACK_SEC;
+export const shouldFade = (wantedSec: number, remainingSec: number, shiftSec = 0) => wantedSec > 0 && remainingSec <= wantedSec + shiftSec + TRIGGER_SLACK_SEC;
+
+/** The seconds of the end of a track that the alignment picture shows: the longest fade plus the furthest shift, plus a little air. */
+export const ALIGN_WINDOW_SEC = 26;
+/** New shift after dragging the fade `dxPx` to the right (later) over a picture `widthPx` wide: left = earlier = more shift, in tenths of a second. */
+export function shiftFromDrag(startShift: number, dxPx: number, widthPx: number, maxShift: number): number {
+  if (!(widthPx > 0)) return startShift;
+  const next = startShift - (dxPx / widthPx) * ALIGN_WINDOW_SEC;
+  return Math.round(Math.min(maxShift, Math.max(0, next)) * 10) / 10;
+}

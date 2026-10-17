@@ -32,7 +32,7 @@ export function PlaybackRules() {
             <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.playFirstOnShuffle} onChange={(e) => setRule(i, { playFirstOnShuffle: e.target.checked })} />Keep together when shuffling</label>
             <label className="flex items-center gap-1.5"><input type="checkbox" checked={r.applyToAlbumSource} onChange={(e) => setRule(i, { applyToAlbumSource: e.target.checked })} />Only when playing from an album</label>
             </div>
-          <div className="space-y-0.5 text-xs text-muted"><div>Crossfade into it</div><CrossfadePick value={r.crossfadeSec} onChange={(v) => setRule(i, { crossfadeSec: v })} /></div>
+          <div className="space-y-0.5 text-xs text-muted"><div>Crossfade into it</div><CrossfadePick value={r.crossfadeSec} onChange={(v) => setRule(i, { crossfadeSec: v })} shift={r.crossfadeShiftSec} onShift={(v) => setRule(i, { crossfadeShiftSec: v })} /></div>
         </div>))}
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-start">
         <TrackPicker value={a} onChange={setA} /><ArrowRight size={16} className="mt-2.5 hidden text-muted sm:block" /><TrackPicker value={b} onChange={setB} exclude={a ?? undefined} />

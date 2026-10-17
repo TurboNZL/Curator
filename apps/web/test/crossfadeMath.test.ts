@@ -37,3 +37,29 @@ describe('crossfade arithmetic', () => {
     expect(fadeLabel(0)).toBe('off'); expect(fadeLabel(2.25)).toBe('2.25 s'); expect(fadeLabel(8)).toBe('8 s');
   });
 });
+
+import { ALIGN_WINDOW_SEC, clampShift, shiftFromDrag } from '../src/lib/crossfadeMath.ts';
+describe('a fade placed earlier than the end', () => {
+  it('starts later by the shift: it must begin that much sooner', () => {
+    expect(shouldFade(4, 6.2, 2)).toBe(true);   // 4 s fade + 2 s earlier: it starts 6 s before the end
+    expect(shouldFade(4, 6.4, 2)).toBe(false);
+    expect(shouldPrepare(4, 12.1, 2)).toBe(false);
+    expect(shouldPrepare(4, 11.9, 2)).toBe(true);
+  });
+  it('never takes more than a third of a short track', () => {
+    expect(clampShift(10, 30)).toBe(10);
+    expect(clampShift(10, 21)).toBe(7);
+    expect(clampShift(0, 200)).toBe(0);
+    expect(clampShift(5, Number.NaN)).toBe(0);
+  });
+  it('turns a drag into a shift: left = earlier, clamped, in tenths', () => {
+    const w = 260; // 10 px per second
+    expect(ALIGN_WINDOW_SEC).toBe(26);
+    expect(shiftFromDrag(0, -25, w, 12)).toBe(2.5);
+    expect(shiftFromDrag(3, 20, w, 12)).toBe(1);
+    expect(shiftFromDrag(0, 40, w, 12)).toBe(0);
+    expect(shiftFromDrag(2, -500, w, 12)).toBe(12);
+    expect(shiftFromDrag(2, -14.3, w, 12)).toBe(3.4);
+    expect(shiftFromDrag(2, -50, 0, 12)).toBe(2);
+  });
+});
