@@ -8,3 +8,10 @@ describe('previewStart', () => {
   it('uses the seekable end when the length is unknown', () => expect(previewStart(Infinity, 120)).toBe(52.5));
   it('is null while nothing is known', () => { expect(previewStart(NaN)).toBeNull(); expect(previewStart(Infinity)).toBeNull(); });
 });
+
+import { sliceWindow, totalFromRange } from '../src/lib/rangePreview.ts';
+describe('range slice', () => {
+  it('reads the total from Content-Range', () => { expect(totalFromRange('bytes 0-0/9000000')).toBe(9000000); expect(totalFromRange('bytes 0-0/*')).toBeNull(); expect(totalFromRange(null)).toBeNull(); });
+  it('centres the slice on the middle of the file', () => { const w = sliceWindow(10_000_000)!; expect(w.start).toBe(5_000_000 - 393216); expect(w.end - w.start + 1).toBe(786432); });
+  it('uses small files whole', () => expect(sliceWindow(1_000_000)).toBeNull());
+});
